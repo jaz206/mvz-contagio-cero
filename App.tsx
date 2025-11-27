@@ -77,6 +77,7 @@ const App: React.FC = () => {
   const [lang, setLang] = useState<Language>('es');
   const [user, setUser] = useState<User | null>(null);
   const [loadingAuth, setLoadingAuth] = useState(true);
+  const [isGuest, setIsGuest] = useState(false); // New state for local guest access
   
   const [viewMode, setViewMode] = useState<'map' | 'bunker'>('map');
   const [selectedMission, setSelectedMission] = useState<Mission | null>(null);
@@ -91,6 +92,9 @@ const App: React.FC = () => {
       const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
           setUser(currentUser);
           setLoadingAuth(false);
+          if (currentUser) {
+            setIsGuest(false); // If actual user logs in, disable guest mode
+          }
       });
       return () => unsubscribe();
   }, []);
@@ -126,7 +130,7 @@ const App: React.FC = () => {
           setHeroes(INITIAL_HEROES);
       }
 
-  }, [user, loadingAuth]);
+  }, [user, loadingAuth, isGuest]); // Reload when guest mode toggles too
 
 
   // 3. Save Data when State changes
@@ -134,13 +138,13 @@ const App: React.FC = () => {
       if (loadingAuth) return;
       const storageKeyMissions = user ? `shield_missions_${user.uid}` : 'shield_missions_guest';
       localStorage.setItem(storageKeyMissions, JSON.stringify([...completedMissionIds]));
-  }, [completedMissionIds, user, loadingAuth]);
+  }, [completedMissionIds, user, loadingAuth, isGuest]);
 
   useEffect(() => {
       if (loadingAuth) return;
       const storageKeyHeroes = user ? `shield_heroes_${user.uid}` : 'shield_heroes_guest';
       localStorage.setItem(storageKeyHeroes, JSON.stringify(heroes));
-  }, [heroes, user, loadingAuth]);
+  }, [heroes, user, loadingAuth, isGuest]);
 
 
   // Define missions via useMemo so they update when language changes
@@ -223,6 +227,7 @@ const App: React.FC = () => {
 
   const handleLogout = async () => {
       await logout();
+      setIsGuest(false); // Reset guest state so login screen appears again
       setViewMode('map');
   };
 
@@ -264,11 +269,11 @@ const App: React.FC = () => {
       );
   };
 
-  // Login Screen rendered if no user and not loading
-  if (!loadingAuth && !user) {
+  // Login Screen rendered if no user, not loading, and NOT guest
+  if (!loadingAuth && !user && !isGuest) {
     return (
       <LoginScreen 
-        onLogin={() => {}} // Guest login not strictly implemented but kept for structure
+        onLogin={() => setIsGuest(true)} // Enable guest mode on local scan
         onGoogleLogin={() => {}} // Handled inside LoginScreen via service
         language={lang} 
         setLanguage={setLang} 
@@ -318,10 +323,10 @@ const App: React.FC = () => {
                 <div className="text-right flex flex-col items-end gap-1">
                 {/* Language Toggle & User Info */}
                 <div className="flex gap-2 mb-1 items-center">
-                    {user && (
+                    {(user || isGuest) && (
                          <div className="flex items-center gap-2 mr-2">
-                            {user.photoURL && <img src={user.photoURL} className="w-4 h-4 rounded-full border border-cyan-500" alt="Agent" />}
-                            <span className="text-[10px] text-cyan-600 hidden md:inline">{user.displayName || 'AGENT'}</span>
+                            {user && user.photoURL && <img src={user.photoURL} className="w-4 h-4 rounded-full border border-cyan-500" alt="Agent" />}
+                            <span className="text-[10px] text-cyan-600 hidden md:inline">{user ? (user.displayName || 'AGENT') : 'GUEST COMMANDER'}</span>
                             <button onClick={handleLogout} className="text-[10px] text-red-400 border border-red-900 px-2 hover:bg-red-900/50">{t.header.logout}</button>
                          </div>
                     )}
