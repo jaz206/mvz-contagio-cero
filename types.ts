@@ -1,0 +1,71 @@
+
+// types.ts
+
+export interface USATopoJSON {
+  type: "Topology";
+  objects: {
+    states: {
+      type: "GeometryCollection";
+      geometries: Array<{
+        type: "Polygon" | "MultiPolygon";
+        properties: {
+          name: string;
+          // Add other properties if available in your TopoJSON, e.g., id: number;
+        };
+        arcs: number[][];
+      }>;
+    };
+    counties: { // Add counties to the type, as us-atlas also contains them
+      type: "GeometryCollection";
+      geometries: Array<{
+        type: "Polygon" | "MultiPolygon";
+        properties: {
+          name: string;
+          // Add other properties if available in your TopoJSON, e.g., id: number;
+        };
+        arcs: number[][];
+      }>;
+    };
+  };
+  arcs: number[][][];
+  transform: {
+    scale: number[];
+    translate: number[];
+  };
+}
+
+export interface Objective {
+  title: string;
+  desc: string;
+}
+
+export interface Mission {
+  id: string;
+  prereq?: string; // ID of the mission that must be completed before this one appears
+  title: string;
+  description: string[]; // Array of paragraphs
+  objectives: Objective[];
+  location: {
+    state: string;
+    coordinates: [number, number]; // [Longitude, Latitude]
+  };
+  threatLevel: string;
+}
+
+export type HeroStatus = 'AVAILABLE' | 'DEPLOYED' | 'INJURED' | 'MIA';
+export type HeroClass = 'BRAWLER' | 'TACTICIAN' | 'SCOUT' | 'BLASTER';
+
+export interface Hero {
+  id: string;
+  name: string;
+  alias: string;
+  status: HeroStatus;
+  class: HeroClass;
+  bio: string;
+  stats: {
+    strength: number;
+    agility: number;
+    intellect: number;
+  };
+  assignedMissionId?: string | null;
+}

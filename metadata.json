@@ -1,0 +1,5 @@
+{
+  "name": "Copy of USA Zoomable Map",
+  "description": "A React application displaying a zoomable map of the United States, separated by states, with mouse wheel zoom functionality.",
+  "requestFramePermissions": []
+}
