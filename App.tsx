@@ -30,7 +30,7 @@ const FACTION_STATES = {
   // Doom: All others (Checked via else logic)
 };
 
-// Initial Heroes Constant to use if no local storage
+// Initial Living Heroes
 const INITIAL_HEROES: Hero[] = [
     {
         id: 'h1',
@@ -102,6 +102,58 @@ const INITIAL_HEROES: Hero[] = [
         bio: 'A lawyer who can bench press a tank. Retains her intelligence while transformed, making her a deadly combination of brains and brawn on the battlefield.',
         imageUrl: 'https://i.pinimg.com/736x/f2/6b/75/f26b75eafd31830b60979dc1c1b82d8a.jpg',
         stats: { strength: 10, agility: 6, intellect: 8 },
+        assignedMissionId: null
+    }
+];
+
+// Initial Zombie Heroes
+const INITIAL_ZOMBIE_HEROES: Hero[] = [
+    {
+        id: 'z1',
+        templateId: 'colonel',
+        name: 'Steve Rogers',
+        alias: 'COLONEL AMERICA',
+        status: 'AVAILABLE',
+        class: 'TACTICIAN',
+        bio: 'Tactical genius preserved in a rotting brain. Leads the horde.',
+        imageUrl: '',
+        stats: { strength: 8, agility: 6, intellect: 8 },
+        assignedMissionId: null
+    },
+    {
+        id: 'z2',
+        templateId: 'ironman_z',
+        name: 'Tony Stark',
+        alias: 'IRON MAN (Z)',
+        status: 'AVAILABLE',
+        class: 'BLASTER',
+        bio: 'Tech-enhanced hunger. Repulsors fueled by flesh.',
+        imageUrl: '',
+        stats: { strength: 7, agility: 6, intellect: 10 },
+        assignedMissionId: null
+    },
+    {
+        id: 'z3',
+        templateId: 'wolverine_z',
+        name: 'Logan',
+        alias: 'WOLVERINE (Z)',
+        status: 'AVAILABLE',
+        class: 'BRAWLER',
+        bio: 'Regenerating rot. The ultimate predator.',
+        imageUrl: '',
+        stats: { strength: 9, agility: 9, intellect: 5 },
+        assignedMissionId: null
+    },
+    {
+        id: 'z4',
+        templateId: 'phoenix_z',
+        name: 'Jean Grey',
+        alias: 'DARK PHOENIX (Z)',
+        status: 'AVAILABLE',
+        class: 'BLASTER',
+        bio: 'Cosmic hunger. Devourer of worlds.',
+        imageUrl: '',
+        stats: { strength: 10, agility: 8, intellect: 9 },
         assignedMissionId: null
     }
 ];
@@ -194,7 +246,7 @@ const App: React.FC = () => {
           if (savedHeroes) {
               setHeroes(JSON.parse(savedHeroes));
           } else {
-              // MIGRATION: Check legacy
+               // Load initial roster based on alignment
                if (playerAlignment === 'ALIVE') {
                    const legacyHeroes = localStorage.getItem(keys.legacyHeroes);
                    if (legacyHeroes) {
@@ -203,13 +255,12 @@ const App: React.FC = () => {
                        setHeroes(INITIAL_HEROES); 
                    }
                } else {
-                   // For Zombie mode default, maybe same heroes but... we'll stick to initial for now.
-                   // In a real game, zombie heroes might be different.
-                   setHeroes(INITIAL_HEROES); 
+                   // ZOMBIE MODE DEFAULT
+                   setHeroes(INITIAL_ZOMBIE_HEROES); 
                }
           }
       } catch (e) {
-          setHeroes(INITIAL_HEROES);
+          setHeroes(playerAlignment === 'ZOMBIE' ? INITIAL_ZOMBIE_HEROES : INITIAL_HEROES);
       }
 
   }, [user, loadingAuth, isGuest, playerAlignment, getStorageKeys]);

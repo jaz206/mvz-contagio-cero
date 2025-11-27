@@ -180,6 +180,73 @@ export const USAMap: React.FC<USAMapProps> = ({ language, missions, completedMis
       .style('text-shadow', '0px 0px 3px #000') 
       .text((d: any) => d.properties.name.toUpperCase());
 
+
+    // --- HULK ROAMING TOKEN ---
+    // Identify Hulk states for random movement
+    const hulkFeatures = states.features.filter((f: any) => factionStates.hulk.has(f.properties.name));
+    
+    if (hulkFeatures.length > 0) {
+        // Initial random position
+        const startState = hulkFeatures[Math.floor(Math.random() * hulkFeatures.length)];
+        const startCentroid = path.centroid(startState);
+        
+        if (startCentroid && !isNaN(startCentroid[0])) {
+            const hulkGroup = g.append('g')
+                .attr('id', 'hulk-token')
+                .attr('transform', `translate(${startCentroid[0]}, ${startCentroid[1]})`)
+                .attr('class', 'pointer-events-none'); // Hulk is just a visual threat, not clickable yet
+
+            // Radioactive Glow
+            hulkGroup.append('circle')
+                .attr('r', 12)
+                .attr('fill', '#84cc16') // Lime-500
+                .attr('opacity', 0.4)
+                .append('animate')
+                .attr('attributeName', 'r')
+                .attr('values', '12;20;12')
+                .attr('dur', '2s')
+                .attr('repeatCount', 'indefinite');
+
+            // Core
+            hulkGroup.append('circle')
+                .attr('r', 5)
+                .attr('fill', '#bef264') // Lime-200
+                .attr('stroke', '#365314') // Lime-950
+                .attr('stroke-width', 1);
+
+            // Label
+            hulkGroup.append('text')
+                .attr('y', -15)
+                .attr('text-anchor', 'middle')
+                .attr('class', 'text-[6px] font-bold fill-lime-400')
+                .text('HULK');
+
+            // Movement Logic
+            const moveHulk = () => {
+                const targetState = hulkFeatures[Math.floor(Math.random() * hulkFeatures.length)];
+                const targetCentroid = path.centroid(targetState);
+                
+                if (targetCentroid && !isNaN(targetCentroid[0])) {
+                    d3.select('#hulk-token')
+                        .transition()
+                        .duration(4000) // Slow movement
+                        .ease(d3.easeSinInOut)
+                        .attr('transform', `translate(${targetCentroid[0]}, ${targetCentroid[1]})`)
+                        .on('end', () => {
+                             // Wait a bit then move again
+                             setTimeout(moveHulk, 3000);
+                        });
+                } else {
+                    setTimeout(moveHulk, 2000);
+                }
+            };
+            
+            // Start moving after initial render
+            setTimeout(moveHulk, 2000);
+        }
+    }
+
+
     // --- S.H.I.E.L.D. BUNKER (BASE) ---
     // Location: No Man's Land (Kansas) - Approx Coordinates
     const bunkerCoords = projection([-98.5, 39.0]); // Center of USA/Kansas
@@ -285,6 +352,10 @@ export const USAMap: React.FC<USAMapProps> = ({ language, missions, completedMis
         e.stopPropagation(); // Prevent zoom or other interactions
         onMissionSelect(d);
       });
+    
+    // Add Tooltip (Title)
+    missionGroups.append('title')
+        .text(d => d.title);
 
     // 1. The Dot (Visible at Low Zoom) - INCREASED SIZE
     missionGroups.append('circle')
@@ -374,6 +445,15 @@ export const USAMap: React.FC<USAMapProps> = ({ language, missions, completedMis
             }
             return null;
         });
+        
+        // HULK SCALING
+        g.select('#hulk-token').attr('transform', function() {
+             // Hulk is moving, so we rely on current transform, but apply scale
+             // This is tricky with D3 transitions. 
+             // Simplification: We don't counter-scale Hulk, let him grow/shrink, it's a monster!
+             return null;
+        });
+
 
         // MISSION MARKER SCALING
         // Threshold for switching from Dot to Icon

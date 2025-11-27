@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Mission } from '../types';
 import { translations, Language } from '../translations';
 
@@ -13,9 +13,31 @@ interface MissionModalProps {
 }
 
 export const MissionModal: React.FC<MissionModalProps> = ({ mission, isOpen, onClose, onComplete, language, isCompleted }) => {
+  const [reporting, setReporting] = useState(false);
+  const [reportSuccess, setReportSuccess] = useState(false);
+  const t = translations[language].missionModal;
+
+  // Reset states when opening a new mission
+  useEffect(() => {
+    setReporting(false);
+    setReportSuccess(false);
+  }, [mission]);
+
   if (!isOpen) return null;
 
-  const t = translations[language].missionModal;
+  const handleReportClick = () => {
+    setReporting(true);
+    // Simulate satellite uplink
+    setTimeout(() => {
+      setReporting(false);
+      setReportSuccess(true);
+      // Wait a moment to show success state before triggering completion logic
+      setTimeout(() => {
+         onComplete(mission.id);
+         onClose();
+      }, 1500);
+    }, 3000);
+  };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -26,16 +48,16 @@ export const MissionModal: React.FC<MissionModalProps> = ({ mission, isOpen, onC
       ></div>
 
       {/* Modal Container */}
-      <div className={`relative w-full max-w-2xl bg-slate-900 border-2 shadow-[0_0_50px_rgba(0,0,0,0.5)] flex flex-col max-h-[90vh] overflow-hidden ${isCompleted ? 'border-emerald-600 shadow-emerald-900/20' : 'border-cyan-600 shadow-cyan-900/20'}`}>
+      <div className={`relative w-full max-w-2xl bg-slate-900 border-2 shadow-[0_0_50px_rgba(0,0,0,0.5)] flex flex-col max-h-[90vh] overflow-hidden ${isCompleted || reportSuccess ? 'border-emerald-600 shadow-emerald-900/20' : 'border-cyan-600 shadow-cyan-900/20'}`}>
         
         {/* Header - Folder Tab Style */}
-        <div className={`border-b p-4 flex justify-between items-center relative ${isCompleted ? 'bg-emerald-900/40 border-emerald-600' : 'bg-cyan-900/40 border-cyan-600'}`}>
-            <div className={`absolute top-0 left-0 w-24 h-1 ${isCompleted ? 'bg-emerald-400' : 'bg-cyan-400'}`}></div>
-            <h2 className={`text-xl md:text-2xl font-bold tracking-widest font-mono uppercase ${isCompleted ? 'text-emerald-300' : 'text-cyan-300'}`}>
-                {isCompleted ? 'MISSION COMPLETE' : t.title}
+        <div className={`border-b p-4 flex justify-between items-center relative ${isCompleted || reportSuccess ? 'bg-emerald-900/40 border-emerald-600' : 'bg-cyan-900/40 border-cyan-600'}`}>
+            <div className={`absolute top-0 left-0 w-24 h-1 ${isCompleted || reportSuccess ? 'bg-emerald-400' : 'bg-cyan-400'}`}></div>
+            <h2 className={`text-xl md:text-2xl font-bold tracking-widest font-mono uppercase ${isCompleted || reportSuccess ? 'text-emerald-300' : 'text-cyan-300'}`}>
+                {isCompleted || reportSuccess ? 'MISSION COMPLETE' : t.title}
             </h2>
-            <div className={`font-bold border px-2 py-0.5 text-xs animate-pulse ${isCompleted ? 'text-emerald-400 border-emerald-500' : 'text-red-500 border-red-500'}`}>
-                {isCompleted ? 'ARCHIVED' : 'TOP SECRET'}
+            <div className={`font-bold border px-2 py-0.5 text-xs animate-pulse ${isCompleted || reportSuccess ? 'text-emerald-400 border-emerald-500' : 'text-red-500 border-red-500'}`}>
+                {isCompleted || reportSuccess ? 'ARCHIVED' : 'TOP SECRET'}
             </div>
         </div>
 
@@ -79,11 +101,11 @@ export const MissionModal: React.FC<MissionModalProps> = ({ mission, isOpen, onC
                 <div className="space-y-4">
                     {mission.objectives.map((obj, idx) => (
                         <div key={idx} className="flex gap-3">
-                            <div className={`w-6 h-6 shrink-0 border rounded-full flex items-center justify-center text-xs font-bold ${isCompleted ? 'bg-emerald-900/30 border-emerald-500 text-emerald-400' : 'bg-red-900/30 border-red-500 text-red-400'}`}>
-                                {isCompleted ? '✓' : idx + 1}
+                            <div className={`w-6 h-6 shrink-0 border rounded-full flex items-center justify-center text-xs font-bold ${isCompleted || reportSuccess ? 'bg-emerald-900/30 border-emerald-500 text-emerald-400' : 'bg-red-900/30 border-red-500 text-red-400'}`}>
+                                {isCompleted || reportSuccess ? '✓' : idx + 1}
                             </div>
                             <div>
-                                <h5 className={`font-bold text-sm mb-1 ${isCompleted ? 'text-emerald-300' : 'text-red-300'}`}>{obj.title}</h5>
+                                <h5 className={`font-bold text-sm mb-1 ${isCompleted || reportSuccess ? 'text-emerald-300' : 'text-red-300'}`}>{obj.title}</h5>
                                 <p className="text-xs md:text-sm text-gray-400">{obj.desc}</p>
                             </div>
                         </div>
@@ -97,28 +119,29 @@ export const MissionModal: React.FC<MissionModalProps> = ({ mission, isOpen, onC
         <div className="p-4 border-t border-cyan-800 bg-slate-900/90 flex justify-between gap-4">
             <button 
                 onClick={onClose}
-                className="px-6 py-2 border border-cyan-700 text-cyan-500 text-xs tracking-widest hover:bg-cyan-900/20 hover:text-cyan-300 transition-colors"
+                disabled={reporting}
+                className="px-6 py-2 border border-cyan-700 text-cyan-500 text-xs tracking-widest hover:bg-cyan-900/20 hover:text-cyan-300 transition-colors disabled:opacity-50"
             >
                 {t.cancel}
             </button>
             <div className="flex gap-4">
                 <button 
-                    disabled={isCompleted}
+                    disabled={isCompleted || reporting || reportSuccess}
                     className={`px-6 py-2 text-white text-xs font-bold tracking-widest border shadow transition-all
-                        ${isCompleted 
+                        ${isCompleted || reportSuccess
                             ? 'bg-emerald-900/50 border-emerald-800 text-emerald-500 cursor-not-allowed' 
                             : 'bg-emerald-700/80 hover:bg-emerald-600 border-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.3)]'}
+                        ${reporting ? 'animate-pulse cursor-wait' : ''}
                     `}
                     onClick={() => {
                         if(!isCompleted) {
-                            onComplete(mission.id);
-                            onClose();
+                            handleReportClick();
                         }
                     }}
                 >
-                    {isCompleted ? 'MISSION LOGGED' : t.complete}
+                    {reporting ? t.sending : (reportSuccess || isCompleted ? t.sent : t.complete)}
                 </button>
-                {!isCompleted && (
+                {!isCompleted && !reporting && !reportSuccess && (
                     <button 
                         className="px-6 py-2 bg-red-600 hover:bg-red-500 text-white text-xs font-bold tracking-widest shadow-[0_0_15px_rgba(239,68,68,0.4)] transition-all"
                         onClick={onClose}
@@ -130,8 +153,8 @@ export const MissionModal: React.FC<MissionModalProps> = ({ mission, isOpen, onC
         </div>
 
         {/* Decor Lines */}
-        <div className={`absolute bottom-2 right-2 w-4 h-4 border-b border-r ${isCompleted ? 'border-emerald-500' : 'border-cyan-500'}`}></div>
-        <div className={`absolute bottom-2 left-2 w-4 h-4 border-b border-l ${isCompleted ? 'border-emerald-500' : 'border-cyan-500'}`}></div>
+        <div className={`absolute bottom-2 right-2 w-4 h-4 border-b border-r ${isCompleted || reportSuccess ? 'border-emerald-500' : 'border-cyan-500'}`}></div>
+        <div className={`absolute bottom-2 left-2 w-4 h-4 border-b border-l ${isCompleted || reportSuccess ? 'border-emerald-500' : 'border-cyan-500'}`}></div>
 
       </div>
     </div>

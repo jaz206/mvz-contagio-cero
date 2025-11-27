@@ -113,6 +113,7 @@ export const translations = {
         placeholderName: "EJ: CLINT BARTON"
     },
     heroes: {
+        // LIVING HEROES
         spiderman: {
             alias: "SPIDER-MAN",
             bio: "Antiguo Vengador. Su gran agilidad y sentido arácnido lo convierten en un explorador ideal para zonas infectadas. Carga con la culpa de haber sobrevivido."
@@ -136,6 +137,23 @@ export const translations = {
         shehulk: {
             alias: "SHE-HULK",
             bio: "Una abogada capaz de levantar un tanque. Conserva su inteligencia mientras se transforma, siendo una combinación letal de cerebro y músculo en el campo de batalla."
+        },
+        // ZOMBIE HEROES
+        colonel: {
+            alias: "CORONEL AMÉRICA",
+            bio: "El antiguo símbolo de la libertad, ahora con el cráneo expuesto. Mantiene sus habilidades tácticas, liderando la horda con precisión militar. Su escudo ya no protege, solo decapita."
+        },
+        ironman_z: {
+            alias: "IRON MAN (Z)",
+            bio: "La tecnología Stark impulsada por carne podrida. Sus repulsores fallan, pero sus dientes no. Busca incesantemente energía para mantener su traje funcionando."
+        },
+        wolverine_z: {
+            alias: "WOLVERINE (Z)",
+            bio: "Su factor de curación lucha contra el virus eternamente, manteniéndolo en un estado de descomposición y regeneración constante. El dolor infinito lo hace imparable."
+        },
+        phoenix_z: {
+            alias: "FÉNIX OSCURA (Z)",
+            bio: "El poder cósmico mezclado con el hambre insaciable. Una amenaza de nivel Omega que no solo quiere comer carne, sino consumir estrellas."
         }
     },
     missionModal: {
@@ -145,7 +163,9 @@ export const translations = {
         threat: "NIVEL DE AMENAZA",
         accept: "INICIAR MISIÓN",
         complete: "REPORTAR ÉXITO DE MISIÓN",
-        cancel: "CERRAR ARCHIVO"
+        cancel: "CERRAR ARCHIVO",
+        sending: "ENVIANDO REPORTE A SATÉLITE...",
+        sent: "REPORTE CONFIRMADO"
     },
     story: {
         skip: "SALTAR SECUENCIA",
@@ -168,7 +188,6 @@ export const translations = {
             { text: " Pero hay algo más ahí fuera. Algo peor que los muertos.\nS.H.I.E.L.D. sigue activo.", image: "https://i.pinimg.com/1200x/e2/5c/3a/e25c3ac26e5fc65f9119b6073912e856.jpg" },
             { text: " El \"Protocolo Lázaro\" sigue corriendo. S.H.I.E.L.D. ya no es una agencia; es un fantasma armado hasta los dientes.\nUna IA ciega, sorda y paranoica que elimina todo lo que se mueva.", image: "https://i.pinimg.com/1200x/39/c8/cd/39c8cde0a5b56acc78b41c4eecf91f0a.jpg" },
             { text: " Así que aquí estás. De pie sobre las cenizas.\nA tu izquierda, los muertos. A tu derecha, las máquinas.\nDime, superviviente... en esta nueva era de monstruos y máquinas:\n¿QUÉ ERES TÚ?", image: "https://i.pinimg.com/1200x/45/7d/c5/457dc515c61d470eb26cf1727ebd67ea.jpg" },
-            // Choices handled by UI
         ]
     },
     missions: {
@@ -218,7 +237,6 @@ export const translations = {
                 }
             ]
         },
-        // ZOMBIE CAMPAIGN MISSIONS
         freshMeat: {
             title: "CARNE FRESCA",
             description: [
@@ -344,7 +362,7 @@ export const translations = {
         bio: "BIOGRAPHICAL SUMMARY",
         stats: "COMBAT METRICS",
         str: "STRENGTH",
-        agi: "AGILIDAD",
+        agi: "AGILITY",
         int: "INTELLECT",
         assign: "ASSIGN TO MISSION",
         unassign: "WITHDRAW FROM SERVICE",
@@ -370,6 +388,7 @@ export const translations = {
         placeholderName: "EX: CLINT BARTON"
     },
     heroes: {
+        // LIVING
         spiderman: {
             alias: "SPIDER-MAN",
             bio: "Former Avenger. High agility and spider-sense make him an ideal scout for infected zones. Carries the guilt of survival."
@@ -393,6 +412,23 @@ export const translations = {
         shehulk: {
             alias: "SHE-HULK",
             bio: "A lawyer who can bench press a tank. Retains her intelligence while transformed, making her a deadly combination of brains and brawn on the battlefield."
+        },
+        // ZOMBIES
+        colonel: {
+            alias: "COLONEL AMERICA",
+            bio: "The former symbol of freedom, now with an exposed skull. Retains tactical skills, leading the horde with military precision. His shield no longer protects, it only decapitates."
+        },
+        ironman_z: {
+            alias: "IRON MAN (Z)",
+            bio: "Stark technology powered by rotting flesh. Repulsors glitching, but his teeth are not. Endlessly seeks energy sources to keep the suit running."
+        },
+        wolverine_z: {
+            alias: "WOLVERINE (Z)",
+            bio: "Healing factor fighting the virus eternally, keeping him in a state of constant rot and regeneration. Infinite pain makes him unstoppable."
+        },
+        phoenix_z: {
+            alias: "DARK PHOENIX (Z)",
+            bio: "Cosmic power mixed with insatiable hunger. An Omega-level threat that doesn't just want to eat flesh, but consume stars."
         }
     },
     missionModal: {
@@ -402,7 +438,9 @@ export const translations = {
         threat: "THREAT LEVEL",
         accept: "INITIATE MISSION",
         complete: "REPORT MISSION SUCCESS",
-        cancel: "CLOSE FILE"
+        cancel: "CLOSE FILE",
+        sending: "TRANSMITTING REPORT TO SATELLITE...",
+        sent: "REPORT CONFIRMED"
     },
     story: {
         skip: "SKIP SEQUENCE",
@@ -475,13 +513,12 @@ export const translations = {
                 }
             ]
         },
-        // ZOMBIE CAMPAIGN MISSIONS
         freshMeat: {
             title: "FRESH MEAT",
             description: [
                 "Hunger is a fire that never dies. The Hive whispers locations of human settlements undetected by S.H.I.E.L.D. In the heart of Texas, a convoy of survivors attempts to cross No Man's Land.",
                 "They don't know we own this wasteland. They think Hulk is the only danger. Poor fools.",
-                "The mission is simple: Intercept the convoy. We don't want total destruction. We want conversion. We need soldiers. We need food. We need to expand the family."
+                "The mission is simple: Interceptar el convoy. We don't want total destruction. We want conversion. We need soldiers. We need food. We need to expand the family."
             ],
             objectives: [
                 {
