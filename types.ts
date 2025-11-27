@@ -57,11 +57,13 @@ export type HeroClass = 'BRAWLER' | 'TACTICIAN' | 'SCOUT' | 'BLASTER';
 
 export interface Hero {
   id: string;
+  templateId?: string; // Key to look up translations (if a preset hero)
   name: string;
   alias: string;
   status: HeroStatus;
   class: HeroClass;
   bio: string;
+  imageUrl?: string; // Optional URL for hero portrait
   stats: {
     strength: number;
     agility: number;

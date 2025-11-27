@@ -1,5 +1,4 @@
 
-
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { USAMap } from './components/USAMap';
 import { LoginScreen } from './components/LoginScreen';
@@ -35,42 +34,74 @@ const FACTION_STATES = {
 const INITIAL_HEROES: Hero[] = [
     {
         id: 'h1',
+        templateId: 'spiderman',
         name: 'Peter Parker',
         alias: 'SPIDER-MAN',
         status: 'AVAILABLE',
         class: 'SCOUT',
         bio: 'Former Avenger. High agility and spider-sense make him an ideal scout for infected zones. Carries the guilt of survival.',
+        imageUrl: 'https://i.pinimg.com/736x/a7/b5/42/a7b5426842d78ac7e7230d8fc3899b4d.jpg',
         stats: { strength: 8, agility: 10, intellect: 9 },
         assignedMissionId: null
     },
     {
         id: 'h2',
-        name: 'Logan',
-        alias: 'WOLVERINE',
-        status: 'DEPLOYED',
-        class: 'BRAWLER',
-        bio: 'Healing factor suppresses the virus, but does not cure it. The best at what he does, and what he does is messy.',
-        stats: { strength: 9, agility: 8, intellect: 6 },
-        assignedMissionId: 'kraven-ny' // Initial assignment example
+        templateId: 'blackwidow',
+        name: 'Natasha Romanoff',
+        alias: 'BLACK WIDOW',
+        status: 'AVAILABLE',
+        class: 'TACTICIAN',
+        bio: 'Expert spy and assassin. Her skills are crucial for infiltration missions in Fisk\'s territory. Keeps the team focused on the objective.',
+        imageUrl: 'https://i.pinimg.com/736x/04/22/42/042242d9f82aa42ec72efb4339b0d43d.jpg',
+        stats: { strength: 6, agility: 9, intellect: 9 },
+        assignedMissionId: null
     },
     {
         id: 'h3',
-        name: 'T\'Challa',
-        alias: 'BLACK PANTHER',
+        templateId: 'scorpion',
+        name: 'Mac Gargan',
+        alias: 'SCORPION',
         status: 'AVAILABLE',
-        class: 'TACTICIAN',
-        bio: 'King of the dead. Uses Wakandan tech to analyze virus strains. Keeps the team organized.',
-        stats: { strength: 8, agility: 9, intellect: 10 },
+        class: 'BRAWLER',
+        bio: 'Former villain turned desperate survivor. His suit provides protection against bites. Unpredictable, but necessary muscle.',
+        imageUrl: 'https://i.pinimg.com/736x/b7/e4/90/b7e490624ade7c73bf8d4dc135bbbb58.jpg',
+        stats: { strength: 9, agility: 7, intellect: 5 },
         assignedMissionId: null
     },
     {
         id: 'h4',
-        name: 'Frank Castle',
-        alias: 'PUNISHER',
-        status: 'INJURED',
-        class: 'BLASTER',
-        bio: 'No powers. Just ammo. Lots of it. Recovering from a skirmish with Deadpools.',
-        stats: { strength: 7, agility: 6, intellect: 7 },
+        templateId: 'sabretooth',
+        name: 'Victor Creed',
+        alias: 'SABRETOOTH',
+        status: 'DEPLOYED',
+        class: 'BRAWLER',
+        bio: 'Driven by pure predatory instinct. S.H.I.E.L.D. keeps him on a tight leash. He tracks the infected not to save them, but for the sport.',
+        imageUrl: 'https://i.pinimg.com/1200x/b0/28/ce/b028ce5d3234fbeecc8d75b04a32c9d7.jpg',
+        stats: { strength: 10, agility: 7, intellect: 4 },
+        assignedMissionId: 'kraven-ny' 
+    },
+    {
+        id: 'h5',
+        templateId: 'reed',
+        name: 'Reed Richards',
+        alias: 'MR. FANTASTIC',
+        status: 'AVAILABLE',
+        class: 'TACTICIAN',
+        bio: 'The smartest man alive, struggling to find a cure in a world that has rejected science. His intellect is humanity\'s last hope.',
+        imageUrl: 'https://i.pinimg.com/1200x/14/53/8f/14538f644cde719845a2948c6df4d110.jpg',
+        stats: { strength: 5, agility: 6, intellect: 10 },
+        assignedMissionId: null
+    },
+    {
+        id: 'h6',
+        templateId: 'shehulk',
+        name: 'Jennifer Walters',
+        alias: 'SHE-HULK',
+        status: 'AVAILABLE',
+        class: 'BRAWLER',
+        bio: 'A lawyer who can bench press a tank. Retains her intelligence while transformed, making her a deadly combination of brains and brawn on the battlefield.',
+        imageUrl: 'https://i.pinimg.com/736x/f2/6b/75/f26b75eafd31830b60979dc1c1b82d8a.jpg',
+        stats: { strength: 10, agility: 6, intellect: 8 },
         assignedMissionId: null
     }
 ];
@@ -354,6 +385,10 @@ const App: React.FC = () => {
           return h;
       }));
   };
+  
+  const handleAddHero = (newHero: Hero) => {
+      setHeroes(prev => [...prev, newHero]);
+  };
 
   const handleLogout = async () => {
       await logout();
@@ -436,6 +471,7 @@ const App: React.FC = () => {
           missions={assignableMissions}
           onAssign={handleAssignHero}
           onUnassign={handleUnassignHero}
+          onAddHero={handleAddHero}
           onBack={() => setViewMode('map')} 
           language={lang} 
         />

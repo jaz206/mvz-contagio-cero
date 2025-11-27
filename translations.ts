@@ -1,5 +1,4 @@
 
-
 // translations.ts
 
 export type Language = 'es' | 'en';
@@ -80,6 +79,7 @@ export const translations = {
         title: "BÚNKER DE MANDO // NIVEL SUBTERRÁNEO 4",
         hiveTitle: "NIDO DE LA COLMENA // ZONA CERO",
         roster: "LISTA DE ACTIVOS",
+        recruit: "RECLUTAR ACTIVO",
         file: "EXPEDIENTE PERSONAL",
         return: "VOLVER AL MAPA TÁCTICO",
         status: "ESTADO OPERATIVO",
@@ -96,6 +96,44 @@ export const translations = {
         noMissions: "NO HAY MISIONES DISPONIBLES",
         maxHeroes: "CAPACIDAD MÁXIMA DE ESCUADRÓN (6) ALCANZADA",
         cancel: "CANCELAR"
+    },
+    recruit: {
+        title: "RECLUTAMIENTO DE ACTIVO",
+        alias: "ALIAS / NOMBRE EN CLAVE",
+        name: "NOMBRE REAL",
+        class: "CLASE TÁCTICA",
+        bio: "HISTORIAL / BIOGRAFÍA",
+        image: "URL DE IMAGEN (OPCIONAL)",
+        stats: "ASIGNACIÓN DE ESTADÍSTICAS (MAX 25 TOTAL)",
+        submit: "REGISTRAR EN LA BASE DE DATOS",
+        placeholderAlias: "EJ: HAWKEYE",
+        placeholderName: "EJ: CLINT BARTON"
+    },
+    heroes: {
+        spiderman: {
+            alias: "SPIDER-MAN",
+            bio: "Antiguo Vengador. Su gran agilidad y sentido arácnido lo convierten en un explorador ideal para zonas infectadas. Carga con la culpa de haber sobrevivido."
+        },
+        blackwidow: {
+            alias: "BLACK WIDOW",
+            bio: "Espía y asesina experta. Sus habilidades son cruciales para misiones de infiltración en territorio de Fisk. Mantiene al equipo enfocado en el objetivo."
+        },
+        scorpion: {
+            alias: "SCORPION",
+            bio: "Ex villano convertido en superviviente desesperado. Su traje le protege contra mordeduras. Músculo impredecible, pero necesario."
+        },
+        sabretooth: {
+            alias: "SABRETOOTH",
+            bio: "Impulsado por puro instinto depredador. S.H.I.E.L.D. lo mantiene con correa corta. Rastrea a los infectados no para salvarlos, sino por deporte."
+        },
+        reed: {
+            alias: "MR. FANTASTIC",
+            bio: "El hombre más inteligente vivo, luchando por encontrar una cura en un mundo que ha rechazado la ciencia. Su intelecto es la última esperanza de la humanidad."
+        },
+        shehulk: {
+            alias: "SHE-HULK",
+            bio: "Una abogada capaz de levantar un tanque. Conserva su inteligencia mientras se transforma, siendo una combinación letal de cerebro y músculo en el campo de batalla."
+        }
     },
     missionModal: {
         title: "DOSSIER DE MISIÓN // CLASIFICADO",
@@ -295,6 +333,7 @@ export const translations = {
         title: "COMMAND BUNKER // SUB-LEVEL 4",
         hiveTitle: "HIVE NEST // GROUND ZERO",
         roster: "ASSET ROSTER",
+        recruit: "RECRUIT ASSET",
         file: "PERSONNEL FILE",
         return: "RETURN TO TACTICAL MAP",
         status: "OPERATIONAL STATUS",
@@ -311,6 +350,44 @@ export const translations = {
         noMissions: "NO AVAILABLE MISSIONS",
         maxHeroes: "MAX SQUAD CAPACITY (6) REACHED",
         cancel: "CANCEL"
+    },
+    recruit: {
+        title: "ASSET RECRUITMENT",
+        alias: "ALIAS / CODENAME",
+        name: "REAL NAME",
+        class: "TACTICAL CLASS",
+        bio: "HISTORY / BIOGRAPHY",
+        image: "IMAGE URL (OPTIONAL)",
+        stats: "STAT ALLOCATION (MAX 25 TOTAL)",
+        submit: "REGISTER IN DATABASE",
+        placeholderAlias: "EX: HAWKEYE",
+        placeholderName: "EX: CLINT BARTON"
+    },
+    heroes: {
+        spiderman: {
+            alias: "SPIDER-MAN",
+            bio: "Former Avenger. High agility and spider-sense make him an ideal scout for infected zones. Carries the guilt of survival."
+        },
+        blackwidow: {
+            alias: "BLACK WIDOW",
+            bio: "Expert spy and assassin. Her skills are crucial for infiltration missions in Fisk's territory. Keeps the team focused on the objective."
+        },
+        scorpion: {
+            alias: "SCORPION",
+            bio: "Former villain turned desperate survivor. His suit provides protection against bites. Unpredictable, but necessary muscle."
+        },
+        sabretooth: {
+            alias: "SABRETOOTH",
+            bio: "Driven by pure predatory instinct. S.H.I.E.L.D. keeps him on a tight leash. He tracks the infected not to save them, but for the sport."
+        },
+        reed: {
+            alias: "MR. FANTASTIC",
+            bio: "The smartest man alive, struggling to find a cure in a world that has rejected science. His intellect is humanity's last hope."
+        },
+        shehulk: {
+            alias: "SHE-HULK",
+            bio: "A lawyer who can bench press a tank. Retains her intelligence while transformed, making her a deadly combination of brains and brawn on the battlefield."
+        }
     },
     missionModal: {
         title: "MISSION DOSSIER // CLASSIFIED",
