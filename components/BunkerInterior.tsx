@@ -2,6 +2,7 @@
 import React, { useState } from 'react';
 import { translations, Language } from '../translations';
 import { Hero, Mission, HeroClass } from '../types';
+import { generateHeroImage } from '../services/genaiService';
 
 interface BunkerInteriorProps {
   heroes: Hero[];
@@ -30,6 +31,9 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({ heroes, missions
       agi: 5,
       int: 5
   });
+  
+  const [isGeneratingImage, setIsGeneratingImage] = useState(false);
+  const [generationError, setGenerationError] = useState(false);
 
   const t = translations[language];
   const selectedHero = heroes.find(h => h.id === selectedHeroId);
@@ -84,6 +88,27 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({ heroes, missions
       }
   };
 
+  const handleGenerateImage = async () => {
+      if (!recruitForm.name || !recruitForm.bio) return;
+      
+      setIsGeneratingImage(true);
+      setGenerationError(false);
+      
+      try {
+          const imageBase64 = await generateHeroImage(recruitForm.alias || recruitForm.name, recruitForm.class, recruitForm.bio);
+          if (imageBase64) {
+              setRecruitForm(prev => ({ ...prev, imageUrl: imageBase64 }));
+          } else {
+              setGenerationError(true);
+          }
+      } catch (e) {
+          console.error(e);
+          setGenerationError(true);
+      } finally {
+          setIsGeneratingImage(false);
+      }
+  };
+
   const handleRecruitSubmit = (e: React.FormEvent) => {
       e.preventDefault();
       
@@ -118,6 +143,7 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({ heroes, missions
         agi: 5,
         int: 5
       });
+      setGenerationError(false);
   };
 
   // Helper to find mission name if assigned
@@ -403,13 +429,29 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({ heroes, missions
                                 </div>
                                 <div>
                                     <label className="block text-xs text-cyan-600 font-bold mb-1">{t.recruit.image}</label>
-                                    <input 
-                                        type="url" 
-                                        placeholder="https://..."
-                                        className="w-full bg-slate-950 border border-cyan-800 p-2 text-white focus:border-cyan-400 focus:outline-none"
-                                        value={recruitForm.imageUrl}
-                                        onChange={(e) => setRecruitForm({...recruitForm, imageUrl: e.target.value})}
-                                    />
+                                    <div className="flex gap-2">
+                                        <input 
+                                            type="url" 
+                                            placeholder="https://..."
+                                            className="w-full bg-slate-950 border border-cyan-800 p-2 text-white focus:border-cyan-400 focus:outline-none"
+                                            value={recruitForm.imageUrl}
+                                            onChange={(e) => setRecruitForm({...recruitForm, imageUrl: e.target.value})}
+                                        />
+                                        <button 
+                                            type="button"
+                                            onClick={handleGenerateImage}
+                                            disabled={isGeneratingImage || !recruitForm.alias || !recruitForm.bio}
+                                            className="whitespace-nowrap px-3 bg-purple-900/50 border border-purple-500 text-purple-300 text-[10px] font-bold hover:bg-purple-800/50 disabled:opacity-50 disabled:cursor-not-allowed"
+                                        >
+                                            {isGeneratingImage ? t.recruit.generating : t.recruit.generateBtn}
+                                        </button>
+                                    </div>
+                                    {generationError && <div className="text-[10px] text-red-500 mt-1 font-bold">{t.recruit.generateError}</div>}
+                                    {recruitForm.imageUrl && recruitForm.imageUrl.startsWith('data:') && (
+                                        <div className="mt-2 h-20 w-20 border border-cyan-800 overflow-hidden">
+                                            <img src={recruitForm.imageUrl} className="w-full h-full object-cover" alt="Preview" />
+                                        </div>
+                                    )}
                                 </div>
                             </div>
 

@@ -104,6 +104,9 @@ export const translations = {
         class: "CLASE TÁCTICA",
         bio: "HISTORIAL / BIOGRAFÍA",
         image: "URL DE IMAGEN (OPCIONAL)",
+        generateBtn: "GENERAR IMAGEN (IA)",
+        generating: "GENERANDO...",
+        generateError: "ERROR DE GENERACIÓN",
         stats: "ASIGNACIÓN DE ESTADÍSTICAS (MAX 25 TOTAL)",
         submit: "REGISTRAR EN LA BASE DE DATOS",
         placeholderAlias: "EJ: HAWKEYE",
@@ -252,7 +255,7 @@ export const translations = {
                 },
                 {
                     title: "Caza de Mutantes",
-                    desc: "Devora a la guardia de élite de Magneto."
+                    desc: "Devour Magneto's elite guard."
                 }
             ]
         }
@@ -358,6 +361,9 @@ export const translations = {
         class: "TACTICAL CLASS",
         bio: "HISTORY / BIOGRAPHY",
         image: "IMAGE URL (OPTIONAL)",
+        generateBtn: "GENERATE IMAGE (AI)",
+        generating: "GENERATING...",
+        generateError: "GENERATION ERROR",
         stats: "STAT ALLOCATION (MAX 25 TOTAL)",
         submit: "REGISTER IN DATABASE",
         placeholderAlias: "EX: HAWKEYE",
