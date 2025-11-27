@@ -1,11 +1,13 @@
 
-import React, { useState, useMemo, useEffect } from 'react';
+
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { USAMap } from './components/USAMap';
 import { LoginScreen } from './components/LoginScreen';
 import { translations, Language } from './translations';
 import { Mission, Hero } from './types';
 import { MissionModal } from './components/MissionModal';
 import { BunkerInterior } from './components/BunkerInterior';
+import { StoryMode } from './components/StoryMode';
 import { auth } from './firebaseConfig';
 import { onAuthStateChanged, User } from 'firebase/auth';
 import { logout } from './services/authService';
@@ -77,42 +79,79 @@ const App: React.FC = () => {
   const [lang, setLang] = useState<Language>('es');
   const [user, setUser] = useState<User | null>(null);
   const [loadingAuth, setLoadingAuth] = useState(true);
-  const [isGuest, setIsGuest] = useState(false); // New state for local guest access
+  const [isGuest, setIsGuest] = useState(false); 
   
   const [viewMode, setViewMode] = useState<'map' | 'bunker'>('map');
   const [selectedMission, setSelectedMission] = useState<Mission | null>(null);
+  const [showStory, setShowStory] = useState(false);
   const t = translations[lang];
 
   // -- STATE PERSISTENCE --
   const [completedMissionIds, setCompletedMissionIds] = useState<Set<string>>(new Set());
   const [heroes, setHeroes] = useState<Hero[]>(INITIAL_HEROES);
+  const [playerAlignment, setPlayerAlignment] = useState<'ALIVE' | 'ZOMBIE' | null>(null);
+
+  // Helper to get storage keys based on current user and alignment
+  const getStorageKeys = useCallback((alignment: 'ALIVE' | 'ZOMBIE' | null, currentUser: User | null, guestMode: boolean) => {
+      const uid = currentUser ? currentUser.uid : (guestMode ? 'guest' : null);
+      if (!uid || !alignment) return null;
+      
+      return {
+          missions: `shield_missions_${uid}_${alignment}`,
+          heroes: `shield_heroes_${uid}_${alignment}`,
+          legacyMissions: `shield_missions_${uid}`, // For migration
+          legacyHeroes: `shield_heroes_${uid}` // For migration
+      };
+  }, []);
 
   // 1. Auth Listener
   useEffect(() => {
       const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
           setUser(currentUser);
           setLoadingAuth(false);
+          
           if (currentUser) {
-            setIsGuest(false); // If actual user logs in, disable guest mode
+            setIsGuest(false);
+            // Check if user has seen intro and get LAST PLAYED alignment
+            const hasSeen = localStorage.getItem(`shield_intro_seen_${currentUser.uid}`);
+            const savedAlignment = localStorage.getItem(`shield_alignment_${currentUser.uid}`);
+            
+            if (!hasSeen) {
+                setShowStory(true);
+            }
+            if (savedAlignment) {
+                setPlayerAlignment(savedAlignment as 'ALIVE' | 'ZOMBIE');
+            }
           }
       });
       return () => unsubscribe();
   }, []);
 
-  // 2. Load Data when User changes
+  // 2. Load Data when User OR Alignment changes
   useEffect(() => {
-      if (loadingAuth) return;
+      if (loadingAuth || (!user && !isGuest)) return;
+      if (!playerAlignment) return; // Wait until alignment is selected (Story or saved)
 
-      const storageKeyMissions = user ? `shield_missions_${user.uid}` : 'shield_missions_guest';
-      const storageKeyHeroes = user ? `shield_heroes_${user.uid}` : 'shield_heroes_guest';
+      const keys = getStorageKeys(playerAlignment, user, isGuest);
+      if (!keys) return;
 
       // Load Missions
       try {
-          const savedMissions = localStorage.getItem(storageKeyMissions);
+          const savedMissions = localStorage.getItem(keys.missions);
           if (savedMissions) {
               setCompletedMissionIds(new Set(JSON.parse(savedMissions)));
           } else {
-              setCompletedMissionIds(new Set()); // Reset if new user has no data
+              // MIGRATION: Check if legacy data exists (from before update) and current alignment is ALIVE
+              if (playerAlignment === 'ALIVE') {
+                  const legacyMissions = localStorage.getItem(keys.legacyMissions);
+                  if (legacyMissions) {
+                      setCompletedMissionIds(new Set(JSON.parse(legacyMissions)));
+                  } else {
+                      setCompletedMissionIds(new Set()); 
+                  }
+              } else {
+                  setCompletedMissionIds(new Set()); 
+              }
           }
       } catch (e) {
           setCompletedMissionIds(new Set());
@@ -120,59 +159,150 @@ const App: React.FC = () => {
 
       // Load Heroes
       try {
-          const savedHeroes = localStorage.getItem(storageKeyHeroes);
+          const savedHeroes = localStorage.getItem(keys.heroes);
           if (savedHeroes) {
               setHeroes(JSON.parse(savedHeroes));
           } else {
-              setHeroes(INITIAL_HEROES); // Reset to default
+              // MIGRATION: Check legacy
+               if (playerAlignment === 'ALIVE') {
+                   const legacyHeroes = localStorage.getItem(keys.legacyHeroes);
+                   if (legacyHeroes) {
+                       setHeroes(JSON.parse(legacyHeroes));
+                   } else {
+                       setHeroes(INITIAL_HEROES); 
+                   }
+               } else {
+                   // For Zombie mode default, maybe same heroes but... we'll stick to initial for now.
+                   // In a real game, zombie heroes might be different.
+                   setHeroes(INITIAL_HEROES); 
+               }
           }
       } catch (e) {
           setHeroes(INITIAL_HEROES);
       }
 
-  }, [user, loadingAuth, isGuest]); // Reload when guest mode toggles too
+  }, [user, loadingAuth, isGuest, playerAlignment, getStorageKeys]);
 
 
-  // 3. Save Data when State changes
+  // 3. Save Data when State changes (using current alignment keys)
+  useEffect(() => {
+      if (loadingAuth || !playerAlignment) return;
+      
+      const keys = getStorageKeys(playerAlignment, user, isGuest);
+      if (!keys) return;
+
+      localStorage.setItem(keys.missions, JSON.stringify([...completedMissionIds]));
+  }, [completedMissionIds, user, loadingAuth, isGuest, playerAlignment, getStorageKeys]);
+
+  useEffect(() => {
+      if (loadingAuth || !playerAlignment) return;
+
+      const keys = getStorageKeys(playerAlignment, user, isGuest);
+      if (!keys) return;
+
+      localStorage.setItem(keys.heroes, JSON.stringify(heroes));
+  }, [heroes, user, loadingAuth, isGuest, playerAlignment, getStorageKeys]);
+
+  // Persist the alignment preference itself (so we reload into the same campaign)
   useEffect(() => {
       if (loadingAuth) return;
-      const storageKeyMissions = user ? `shield_missions_${user.uid}` : 'shield_missions_guest';
-      localStorage.setItem(storageKeyMissions, JSON.stringify([...completedMissionIds]));
-  }, [completedMissionIds, user, loadingAuth, isGuest]);
+      if (playerAlignment) {
+        const storageKeyAlignment = user ? `shield_alignment_${user.uid}` : 'shield_alignment_guest';
+        localStorage.setItem(storageKeyAlignment, playerAlignment);
+      }
+  }, [playerAlignment, user, loadingAuth, isGuest]);
 
-  useEffect(() => {
-      if (loadingAuth) return;
-      const storageKeyHeroes = user ? `shield_heroes_${user.uid}` : 'shield_heroes_guest';
-      localStorage.setItem(storageKeyHeroes, JSON.stringify(heroes));
-  }, [heroes, user, loadingAuth, isGuest]);
+  // Guest Login Handler
+  const handleGuestLogin = () => {
+      setIsGuest(true);
+      // Only show story if alignment is not set (first time guest)
+      const savedAlignment = localStorage.getItem('shield_alignment_guest');
+      if (!savedAlignment) {
+          setShowStory(true);
+      } else {
+          setPlayerAlignment(savedAlignment as 'ALIVE' | 'ZOMBIE');
+      }
+  };
 
+  // Story Completion Handler
+  const handleStoryComplete = (choice: 'ALIVE' | 'ZOMBIE') => {
+      setPlayerAlignment(choice);
+      setShowStory(false);
+      
+      // Mark intro as seen for Auth users
+      if (user) {
+          localStorage.setItem(`shield_intro_seen_${user.uid}`, 'true');
+      }
+  };
 
-  // Define missions via useMemo so they update when language changes
-  const allMissions: Mission[] = useMemo(() => [
-    {
-      id: 'kraven-ny',
-      title: t.missions.kraven.title,
-      description: t.missions.kraven.description,
-      objectives: t.missions.kraven.objectives,
-      location: {
-        state: 'New York',
-        coordinates: [-75.5, 43.0] 
-      },
-      threatLevel: 'CRITICAL'
-    },
-    {
-      id: 'flesh-sleeps',
-      prereq: 'kraven-ny',
-      title: t.missions.fleshSleeps.title,
-      description: t.missions.fleshSleeps.description,
-      objectives: t.missions.fleshSleeps.objectives,
-      location: {
-        state: 'New Jersey',
-        coordinates: [-74.4, 40.0] // New Jersey
-      },
-      threatLevel: 'EXTREME'
-    }
-  ], [t]);
+  const handleCampaignSwitch = (newAlignment: 'ALIVE' | 'ZOMBIE') => {
+      if (playerAlignment === newAlignment) return;
+      
+      // The current state is already saved by useEffects.
+      // We just update the alignment, and the Load effect will trigger to fetch the new campaign data.
+      setPlayerAlignment(newAlignment);
+      setViewMode('map'); // Reset view to map on switch
+  };
+
+  // --- MISSION DEFINITIONS ---
+  const allMissions: Mission[] = useMemo(() => {
+      
+      if (playerAlignment === 'ZOMBIE') {
+          // ZOMBIE CAMPAIGN
+          return [
+              {
+                id: 'fresh-meat-tx',
+                title: t.missions.freshMeat.title,
+                description: t.missions.freshMeat.description,
+                objectives: t.missions.freshMeat.objectives,
+                location: {
+                    state: 'Texas',
+                    coordinates: [-99.0, 31.0] 
+                },
+                threatLevel: 'HUNGER'
+              },
+              {
+                id: 'break-siege-ca',
+                prereq: 'fresh-meat-tx',
+                title: t.missions.breakSiege.title,
+                description: t.missions.breakSiege.description,
+                objectives: t.missions.breakSiege.objectives,
+                location: {
+                    state: 'California',
+                    coordinates: [-119.0, 36.0]
+                },
+                threatLevel: 'APOCALYPTIC'
+              }
+          ];
+      } else {
+          // ALIVE / HERO CAMPAIGN (Default)
+          return [
+            {
+                id: 'kraven-ny',
+                title: t.missions.kraven.title,
+                description: t.missions.kraven.description,
+                objectives: t.missions.kraven.objectives,
+                location: {
+                    state: 'New York',
+                    coordinates: [-75.5, 43.0] 
+                },
+                threatLevel: 'CRITICAL'
+            },
+            {
+                id: 'flesh-sleeps',
+                prereq: 'kraven-ny',
+                title: t.missions.fleshSleeps.title,
+                description: t.missions.fleshSleeps.description,
+                objectives: t.missions.fleshSleeps.objectives,
+                location: {
+                    state: 'New Jersey',
+                    coordinates: [-74.4, 40.0] 
+                },
+                threatLevel: 'EXTREME'
+            }
+          ];
+      }
+  }, [t, playerAlignment]);
 
   // Filter missions: Show ALL missions that are either completed OR have their prereq met.
   const visibleMissions = useMemo(() => {
@@ -229,6 +359,7 @@ const App: React.FC = () => {
       await logout();
       setIsGuest(false); // Reset guest state so login screen appears again
       setViewMode('map');
+      // We don't clear local alignment on logout to remember user choice, but we could if desired.
   };
 
   const getMissionsForFaction = (factionKey: 'magneto' | 'kingpin' | 'hulk' | 'doom') => {
@@ -273,8 +404,8 @@ const App: React.FC = () => {
   if (!loadingAuth && !user && !isGuest) {
     return (
       <LoginScreen 
-        onLogin={() => setIsGuest(true)} // Enable guest mode on local scan
-        onGoogleLogin={() => {}} // Handled inside LoginScreen via service
+        onLogin={handleGuestLogin} 
+        onGoogleLogin={() => {}} 
         language={lang} 
         setLanguage={setLang} 
       />
@@ -287,8 +418,17 @@ const App: React.FC = () => {
   }
 
   return (
-    <div className="flex flex-col h-screen w-full bg-slate-950 text-cyan-400 font-mono overflow-hidden relative">
+    <div className={`flex flex-col h-screen w-full bg-slate-950 text-cyan-400 font-mono overflow-hidden relative ${playerAlignment === 'ZOMBIE' ? 'hue-rotate-15 saturate-50' : ''}`}>
       
+      {/* Story Mode Overlay */}
+      {showStory && (
+          <StoryMode 
+            language={lang} 
+            onComplete={handleStoryComplete} 
+            onSkip={() => handleStoryComplete('ALIVE')} // Default if skipped
+          />
+      )}
+
       {/* View Mode Switching */}
       {viewMode === 'bunker' ? (
         <BunkerInterior 
@@ -359,12 +499,51 @@ const App: React.FC = () => {
                 {/* Bunker Button */}
                 <button
                     onClick={() => setViewMode('bunker')}
-                    className="w-full py-3 bg-cyan-900/30 border border-cyan-500 text-cyan-300 font-bold text-xs tracking-widest hover:bg-cyan-800/50 hover:text-white transition-all flex items-center justify-center gap-3 shadow-[0_0_10px_rgba(6,182,212,0.1)] group"
+                    className={`w-full py-3 border font-bold text-xs tracking-widest hover:text-white transition-all flex items-center justify-center gap-3 shadow-[0_0_10px_rgba(6,182,212,0.1)] group ${
+                        playerAlignment === 'ZOMBIE' 
+                        ? 'bg-lime-900/30 border-lime-500 text-lime-300 hover:bg-lime-800/50' 
+                        : 'bg-cyan-900/30 border-cyan-500 text-cyan-300 hover:bg-cyan-800/50'
+                    }`}
                 >
-                    <div className="w-5 h-5 border border-cyan-400 rounded-sm flex items-center justify-center group-hover:bg-cyan-400/20">
-                        <div className="w-2 h-2 bg-cyan-400 rotate-45"></div>
+                    <div className={`w-5 h-5 border rounded-sm flex items-center justify-center ${playerAlignment === 'ZOMBIE' ? 'border-lime-400 group-hover:bg-lime-400/20' : 'border-cyan-400 group-hover:bg-cyan-400/20'}`}>
+                        <div className={`w-2 h-2 rotate-45 ${playerAlignment === 'ZOMBIE' ? 'bg-lime-400' : 'bg-cyan-400'}`}></div>
                     </div>
-                    {t.sidebar.bunkerBtn}
+                    {playerAlignment === 'ZOMBIE' ? t.sidebar.hiveBtn : t.sidebar.bunkerBtn}
+                </button>
+                
+                {/* Campaign Switcher */}
+                <div className="w-full">
+                    <h3 className="text-[10px] text-cyan-600 mb-2 uppercase font-bold tracking-widest border-b border-cyan-900 pb-1">{t.sidebar.campaignMode}</h3>
+                    <div className="flex gap-2">
+                        <button
+                            onClick={() => handleCampaignSwitch('ALIVE')}
+                            className={`flex-1 py-2 text-[8px] font-bold border transition-all ${
+                                playerAlignment === 'ALIVE' 
+                                ? 'bg-cyan-800 text-white border-cyan-400' 
+                                : 'text-gray-500 border-gray-700 hover:text-cyan-400 hover:border-cyan-600'
+                            }`}
+                        >
+                            {playerAlignment === 'ALIVE' ? 'ACTIVE' : t.sidebar.switchHero}
+                        </button>
+                        <button
+                            onClick={() => handleCampaignSwitch('ZOMBIE')}
+                            className={`flex-1 py-2 text-[8px] font-bold border transition-all ${
+                                playerAlignment === 'ZOMBIE' 
+                                ? 'bg-lime-900 text-white border-lime-500' 
+                                : 'text-gray-500 border-gray-700 hover:text-lime-400 hover:border-lime-600'
+                            }`}
+                        >
+                            {playerAlignment === 'ZOMBIE' ? 'ACTIVE' : t.sidebar.switchZombie}
+                        </button>
+                    </div>
+                </div>
+
+                {/* Replay Story Button */}
+                <button
+                    onClick={() => setShowStory(true)}
+                    className="w-full py-2 bg-slate-900 border border-cyan-800 text-cyan-600 font-bold text-[10px] tracking-widest hover:bg-cyan-900/30 hover:text-cyan-400 transition-all flex items-center justify-center gap-2"
+                >
+                    {t.sidebar.replayStory}
                 </button>
 
                 <div className="border-l-4 border-red-600 pl-3">

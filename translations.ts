@@ -1,4 +1,7 @@
 
+
+// translations.ts
+
 export type Language = 'es' | 'en';
 
 export const translations = {
@@ -34,7 +37,12 @@ export const translations = {
       uplink: "ENLACE DE SUPERVIVIENTES ACTIVO",
       activeMissions: "MISIONES ACTIVAS",
       noMissions: "SIN ACTIVIDAD DETECTADA",
-      bunkerBtn: "ACCEDER AL BÚNKER DE MANDO"
+      bunkerBtn: "ACCEDER AL BÚNKER DE MANDO",
+      hiveBtn: "ACCEDER AL NIDO DE LA COLMENA",
+      replayStory: "REPRODUCIR ARCHIVO 0-Z",
+      campaignMode: "MODO DE CAMPAÑA",
+      switchHero: "ACTIVAR PROTOCOLO LÁZARO (HÉROE)",
+      switchZombie: "ACTIVAR HAMBRE VORAZ (ZOMBIE)"
     },
     factions: {
       magneto: {
@@ -66,9 +74,11 @@ export const translations = {
       error: "CONEXIÓN FALLIDA: SATÉLITE FUERA DE LÍNEA.",
       sector: "SECTOR",
       bunker: "BÚNKER DE MANDO",
+      hive: "NIDO CENTRAL"
     },
     bunker: {
         title: "BÚNKER DE MANDO // NIVEL SUBTERRÁNEO 4",
+        hiveTitle: "NIDO DE LA COLMENA // ZONA CERO",
         roster: "LISTA DE ACTIVOS",
         file: "EXPEDIENTE PERSONAL",
         return: "VOLVER AL MAPA TÁCTICO",
@@ -95,6 +105,30 @@ export const translations = {
         accept: "INICIAR MISIÓN",
         complete: "REPORTAR ÉXITO DE MISIÓN",
         cancel: "CERRAR ARCHIVO"
+    },
+    story: {
+        skip: "SALTAR SECUENCIA",
+        next: "SIGUIENTE",
+        prev: "ANTERIOR",
+        choose: "ELIGE TU CAMINO",
+        optionA: "OPCIÓN A: EL HÉROE VIVO",
+        optionB: "OPCIÓN B: EL HÉROE ZOMBIE",
+        slides: [
+            { text: "MARVEL ZOMBIES: CONTAGIO CERO\nLibro I: El Legado de la Arrogancia", image: "https://i.pinimg.com/1200x/18/85/ee/1885ee42132b6976d36896a81f33ad8c.jpg" },
+            { text: " No hubo trompetas. No hubo cielos rojos ni profecías antiguas cumpliéndose.\n El fin del mundo no vino del espacio exterior, ni de una dimensión oscura.", image: "https://i.pinimg.com/1200x/18/99/ec/1899ec756f8731e015eb941d7122fbec.jpg" },
+            { text: " Lo construimos nosotros. Aquí. En casa.\nO mejor dicho, lo construyeron ellos.\n\nFue en un laboratorio estéril. Tres hombres se reunieron allí: Victor Von Doom, Magneto y Wilson Fisk.\nDecidieron que la humanidad era demasiado caótica. Su solución fue la ciencia fría y dura: el Pulso Nulificador.", image: "https://i.pinimg.com/1200x/71/06/7d/71067db72856dfd6ca03d0d51a679bd6.jpg" },
+            { text: " Necesitaban cuerpos para afinar la fórmula. Usaron a Jamie Madrox para ver cómo se multiplicaba la infección.\nUsaron a los Reavers para ver si el metal podía enfermar.\nY funcionó. Dios, cómo funcionó.", image: "https://i.pinimg.com/1200x/99/80/1e/99801e7603e4a770127ce29530f13f87.jpg" },
+            { text: " Pero la arrogancia es una pistola cargada que siempre apunta hacia atrás.\nDecidieron probar su obra maestra en Bruce Banner. Buscaban energía infinita...", image: "https://i.pinimg.com/1200x/19/26/53/1926533335a2b27c4a79c9d2632ec83d.jpg" },
+            { text: " ...lo que consiguieron fue una bomba biológica.\nCuando el virus tocó la sangre gamma, no murió. Se enfureció.", image: "https://i.pinimg.com/1200x/b2/06/15/b20615925dfa53cdf9622fb596cdd5e3.jpg" },
+            { text: " El estallido no fue de fuego, fue de contagio.\nHulk rugió, y en ese rugido viajaba la extinción.", image: "https://i.pinimg.com/1200x/a8/e9/b7/a8e9b76d6a9a87de0cfba509d5fef534.jpg" },
+            { text: " En cuestión de horas, Nueva York era un matadero. Los Vengadores cayeron primero.\nLos X-Men aguantaron un poco más, solo para ver cómo su escuela se convertía en un buffet libre.", image: "https://i.pinimg.com/1200x/eb/db/e8/ebdbe8d5738acd105654dc8ddad8216f.jpg" },
+            { text: " ¿Y la Tríada? Doom, Magneto y Fisk fueron alcanzados por su propia creación.\nNo perdieron la mente. Sus cuerpos se pudrieron, pero su intelecto permaneció intacto.", image: "https://i.pinimg.com/1200x/b9/0a/18/b90a18369639b131f91273f019b699cd.jpg" },
+            { text: " Ahora, se sientan en tronos de huesos, gobernando facciones de pesadilla:\nDoomsberg, el Edén Roto y el Imperio de la Carne.", image: "https://i.pinimg.com/1200x/e1/02/86/e102864e130bfa5b5f2ffc5a9d9ed9c0.jpg" },
+            { text: " Pero hay algo más ahí fuera. Algo peor que los muertos.\nS.H.I.E.L.D. sigue activo.", image: "https://i.pinimg.com/1200x/e2/5c/3a/e25c3ac26e5fc65f9119b6073912e856.jpg" },
+            { text: " El \"Protocolo Lázaro\" sigue corriendo. S.H.I.E.L.D. ya no es una agencia; es un fantasma armado hasta los dientes.\nUna IA ciega, sorda y paranoica que elimina todo lo que se mueva.", image: "https://i.pinimg.com/1200x/39/c8/cd/39c8cde0a5b56acc78b41c4eecf91f0a.jpg" },
+            { text: " Así que aquí estás. De pie sobre las cenizas.\nA tu izquierda, los muertos. A tu derecha, las máquinas.\nDime, superviviente... en esta nueva era de monstruos y máquinas:\n¿QUÉ ERES TÚ?", image: "https://i.pinimg.com/1200x/45/7d/c5/457dc515c61d470eb26cf1727ebd67ea.jpg" },
+            // Choices handled by UI
+        ]
     },
     missions: {
         kraven: {
@@ -142,6 +176,47 @@ export const translations = {
                     desc: "Victoria: Completad A + B + C. Fracaso: Si el héroe cautivo muere, Kraven captura 2 víctimas (si sigue activo), o todos los héroes son eliminados."
                 }
             ]
+        },
+        // ZOMBIE CAMPAIGN MISSIONS
+        freshMeat: {
+            title: "CARNE FRESCA",
+            description: [
+                "El hambre es un fuego que nunca se apaga. La colmena susurra ubicaciones de asentamientos humanos no detectados por S.H.I.E.L.D. En el corazón de Texas, un convoy de supervivientes intenta cruzar la Tierra de Nadie.",
+                "No saben que somos los dueños de este páramo. Creen que Hulk es el único peligro. Pobres ilusos.",
+                "La misión es simple: Interceptar el convoy. No queremos destrucción total. Queremos conversión. Necesitamos soldados. Necesitamos comida. Necesitamos expandir la familia."
+            ],
+            objectives: [
+                {
+                    title: "Emboscada",
+                    desc: "Detén el vehículo principal del convoy antes de que cruce la frontera estatal."
+                },
+                {
+                    title: "Conversión",
+                    desc: "Infecta a 3 líderes de la resistencia."
+                },
+                {
+                    title: "Sin Testigos",
+                    desc: "Elimina cualquier señal de socorro antes de que contacten a S.H.I.E.L.D."
+                }
+            ]
+        },
+        breakSiege: {
+            title: "ROMPER EL ASEDIO",
+            description: [
+                "Magneto ha establecido un perímetro defensivo alrededor de San Francisco. Sus centinelas reprogramados están cazando a los nuestros. Es un insulto a nuestra supremacía.",
+                "S.H.I.E.L.D. cree que puede contenernos, pero el Edén Roto caerá. Hemos detectado una brecha en sus escudos magnéticos.",
+                "Infiltraos. Destruid los generadores. Haced que el Homo Superior se arrodille ante el Hambre Superior."
+            ],
+            objectives: [
+                {
+                    title: "Sabotaje",
+                    desc: "Destruye los 2 generadores de campo magnético."
+                },
+                {
+                    title: "Caza de Mutantes",
+                    desc: "Devora a la guardia de élite de Magneto."
+                }
+            ]
         }
     }
   },
@@ -177,7 +252,12 @@ export const translations = {
       uplink: "SURVIVOR UPLINK ACTIVE",
       activeMissions: "ACTIVE MISSIONS",
       noMissions: "NO ACTIVITY DETECTED",
-      bunkerBtn: "ACCESS COMMAND BUNKER"
+      bunkerBtn: "ACCESS COMMAND BUNKER",
+      hiveBtn: "ACCESS HIVE NEST",
+      replayStory: "REPLAY ARCHIVE 0-Z",
+      campaignMode: "CAMPAIGN MODE",
+      switchHero: "ACTIVATE LAZARUS PROTOCOL (HERO)",
+      switchZombie: "ACTIVATE RAVENOUS HUNGER (ZOMBIE)"
     },
     factions: {
       magneto: {
@@ -209,9 +289,11 @@ export const translations = {
       error: "CONNECTION FAILED: SATELLITE OFFLINE.",
       sector: "SECTOR",
       bunker: "COMMAND BUNKER",
+      hive: "CENTRAL HIVE"
     },
     bunker: {
         title: "COMMAND BUNKER // SUB-LEVEL 4",
+        hiveTitle: "HIVE NEST // GROUND ZERO",
         roster: "ASSET ROSTER",
         file: "PERSONNEL FILE",
         return: "RETURN TO TACTICAL MAP",
@@ -238,6 +320,30 @@ export const translations = {
         accept: "INITIATE MISSION",
         complete: "REPORT MISSION SUCCESS",
         cancel: "CLOSE FILE"
+    },
+    story: {
+        skip: "SKIP SEQUENCE",
+        next: "NEXT",
+        prev: "PREV",
+        choose: "CHOOSE YOUR PATH",
+        optionA: "OPTION A: THE LIVING HERO",
+        optionB: "OPTION B: THE ZOMBIE HERO",
+        slides: [
+            { text: "MARVEL ZOMBIES: CONTAGIO CERO\nBook I: The Legacy of Arrogance", image: "https://i.pinimg.com/1200x/18/85/ee/1885ee42132b6976d36896a81f33ad8c.jpg" },
+            { text: "There were no trumpets. No red skies or ancient prophecies being fulfilled.\nThe end of the world didn't come from outer space, nor from a dark dimension.", image: "https://i.pinimg.com/1200x/18/99/ec/1899ec756f8731e015eb941d7122fbec.jpg" },
+            { text: "We built it. Here. At home. Or rather, they built it.\n\nIt was in a sterile lab. Three men gathered there: Victor Von Doom, Magneto, and Wilson Fisk.\nThey decided humanity was too chaotic. Their solution was cold, hard science: the Nullifier Pulse.", image: "https://i.pinimg.com/1200x/71/06/7d/71067db72856dfd6ca03d0d51a679bd6.jpg" },
+            { text: "They needed bodies to refine the formula. They used Jamie Madrox to see how the infection multiplied.\nThey used the Reavers to see if metal could get sick.\nAnd it worked. God, how it worked.", image: "https://i.pinimg.com/1200x/99/80/1e/99801e7603e4a770127ce29530f13f87.jpg" },
+            { text: "But arrogance is a loaded gun that always points backwards.\nThey decided to test their masterpiece on Bruce Banner. They were looking for infinite energy...", image: "https://i.pinimg.com/1200x/19/26/53/1926533335a2b27c4a79c9d2632ec83d.jpg" },
+            { text: "...what they got was a biological bomb.\nWhen the virus touched gamma blood, he didn't die. He raged.", image: "https://i.pinimg.com/1200x/b2/06/15/b20615925dfa53cdf9622fb596cdd5e3.jpg" },
+            { text: "The blast wasn't fire, it was contagion.\nHulk roared, and in that roar traveled extinction.", image: "https://i.pinimg.com/1200x/a8/e9/b7/a8e9b76d6a9a87de0cfba509d5fef534.jpg" },
+            { text: "In a matter of hours, New York was a slaughterhouse. The Avengers fell first.\nThe X-Men held out a little longer, only to watch their school become an all-you-can-eat buffet.", image: "https://i.pinimg.com/1200x/eb/db/e8/ebdbe8d5738acd105654dc8ddad8216f.jpg" },
+            { text: "And the Triad? Doom, Magneto, and Fisk were caught by their own creation.\nThey didn't lose their minds. Their bodies rotted, but their intellect remained intact.", image: "https://i.pinimg.com/1200x/b9/0a/18/b90a18369639b131f91273f019b699cd.jpg" },
+            { text: "Now, they sit on thrones of bone, ruling nightmare factions:\nDoomsberg, the Broken Eden, and the Empire of Flesh.", image: "https://i.pinimg.com/1200x/e1/02/86/e102864e130bfa5b5f2ffc5a9d9ed9c0.jpg" },
+            { text: "But there's something else out there. Something worse than the dead.\nS.H.I.E.L.D. is still active.", image: "https://i.pinimg.com/1200x/e2/5c/3a/e25c3ac26e5fc65f9119b6073912e856.jpg" },
+            { text: "The \"Lazarus Protocol\" is still running. S.H.I.E.L.D. is no longer an agency; it's a ghost armed to the teeth.\nA blind, deaf, and paranoid AI that eliminates anything that moves.", image: "https://i.pinimg.com/1200x/39/c8/cd/39c8cde0a5b56acc78b41c4eecf91f0a.jpg" },
+            { text: "So here you are. Standing on the ashes.\nTo your left, the dead. To your right, the machines.\nTell me, survivor... in this new era of monsters and machines:\nWHAT ARE YOU?", image: "https://i.pinimg.com/1200x/45/7d/c5/457dc515c61d470eb26cf1727ebd67ea.jpg" },
+            // Choices handled by UI
+        ]
     },
     missions: {
         kraven: {
@@ -283,6 +389,47 @@ export const translations = {
                 {
                     title: "Conditions",
                     desc: "Victory: Complete A + B + C. Failure: If the captive hero dies, Kraven captures 2 victims (if still active), or all heroes are eliminated."
+                }
+            ]
+        },
+        // ZOMBIE CAMPAIGN MISSIONS
+        freshMeat: {
+            title: "FRESH MEAT",
+            description: [
+                "Hunger is a fire that never dies. The Hive whispers locations of human settlements undetected by S.H.I.E.L.D. In the heart of Texas, a convoy of survivors attempts to cross No Man's Land.",
+                "They don't know we own this wasteland. They think Hulk is the only danger. Poor fools.",
+                "The mission is simple: Intercept the convoy. We don't want total destruction. We want conversion. We need soldiers. We need food. We need to expand the family."
+            ],
+            objectives: [
+                {
+                    title: "Ambush",
+                    desc: "Stop the lead vehicle of the convoy before it crosses the state border."
+                },
+                {
+                    title: "Conversion",
+                    desc: "Infect 3 resistance leaders."
+                },
+                {
+                    title: "No Witnesses",
+                    desc: "Eliminate any distress signals before they contact S.H.I.E.L.D."
+                }
+            ]
+        },
+        breakSiege: {
+            title: "BREAK THE SIEGE",
+            description: [
+                "Magneto has established a defensive perimeter around San Francisco. His reprogrammed sentinels are hunting our own. It is an insult to our supremacy.",
+                "S.H.I.E.L.D. thinks they can contain us, but Broken Eden will fall. We have detected a breach in their magnetic shields.",
+                "Infiltrate. Destroy the generators. Make Homo Superior kneel before the Superior Hunger."
+            ],
+            objectives: [
+                {
+                    title: "Sabotage",
+                    desc: "Destroy the 2 magnetic field generators."
+                },
+                {
+                    title: "Mutant Hunt",
+                    desc: "Devour Magneto's elite guard."
                 }
             ]
         }

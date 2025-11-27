@@ -286,10 +286,10 @@ export const USAMap: React.FC<USAMapProps> = ({ language, missions, completedMis
         onMissionSelect(d);
       });
 
-    // 1. The Dot (Visible at Low Zoom)
+    // 1. The Dot (Visible at Low Zoom) - INCREASED SIZE
     missionGroups.append('circle')
       .attr('class', 'mission-dot')
-      .attr('r', (d) => completedMissionIds.has(d.id) ? 3 : 2)
+      .attr('r', (d) => completedMissionIds.has(d.id) ? 6 : 4.5) // WAS: 3 and 2. Increased for visibility.
       .attr('fill', (d) => completedMissionIds.has(d.id) ? '#10b981' : '#eab308') // Green if done, Yellow if active
       .attr('stroke', 'white')
       .attr('stroke-width', 0.5)
@@ -298,15 +298,15 @@ export const USAMap: React.FC<USAMapProps> = ({ language, missions, completedMis
     // Pulse animation only for active missions
     const activeMissionCircles = missionGroups.filter((d) => !completedMissionIds.has(d.id))
       .append('circle')
-      .attr('r', 2)
+      .attr('r', 4.5) // Match base size
       .attr('fill', 'none')
       .attr('stroke', '#eab308')
       .attr('stroke-width', 0.5);
 
     activeMissionCircles.append('animate')
       .attr('attributeName', 'r')
-      .attr('from', '2')
-      .attr('to', '8')
+      .attr('from', '4.5')
+      .attr('to', '15') // Increased pulse range
       .attr('dur', '1.5s')
       .attr('repeatCount', 'indefinite');
 
