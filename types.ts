@@ -41,6 +41,7 @@ export interface Objective {
 
 export interface Mission {
   id: string;
+  type?: 'STANDARD' | 'SHIELD_BASE'; // Distinguish between standard missions and hidden bases
   prereq?: string; // ID of the mission that must be completed before this one appears
   title: string;
   description: string[]; // Array of paragraphs
@@ -70,4 +71,16 @@ export interface Hero {
     intellect: number;
   };
   assignedMissionId?: string | null;
+}
+
+export interface HeroTemplate {
+  id: string; // Matches translation key
+  defaultName: string;
+  defaultClass: HeroClass;
+  defaultStats: {
+    strength: number;
+    agility: number;
+    intellect: number;
+  };
+  imageUrl: string;
 }

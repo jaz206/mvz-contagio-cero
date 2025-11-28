@@ -358,7 +358,7 @@ const App: React.FC = () => {
           ];
       } else {
           // ALIVE / HERO CAMPAIGN (Default)
-          return [
+          const baseMissions: Mission[] = [
             {
                 id: 'kraven-ny',
                 title: t.missions.kraven.title,
@@ -368,7 +368,8 @@ const App: React.FC = () => {
                     state: 'New York',
                     coordinates: [-75.5, 43.0] 
                 },
-                threatLevel: 'CRITICAL'
+                threatLevel: 'CRITICAL',
+                type: 'STANDARD'
             },
             {
                 id: 'flesh-sleeps',
@@ -380,9 +381,70 @@ const App: React.FC = () => {
                     state: 'New Jersey',
                     coordinates: [-74.4, 40.0] 
                 },
-                threatLevel: 'EXTREME'
+                threatLevel: 'EXTREME',
+                type: 'STANDARD'
             }
           ];
+
+          // HIDDEN SHIELD BASES (KINGPIN TERRITORY)
+          const shieldBases: Mission[] = [
+              {
+                  id: 'base-alpha',
+                  title: t.missions.bases.alpha,
+                  description: [t.missions.bases.desc],
+                  objectives: [{ title: 'SECURE', desc: t.missions.bases.objSecure }, { title: 'RETRIEVE', desc: t.missions.bases.objRetrieve }],
+                  location: { state: 'New York', coordinates: [-74.0, 44.0] },
+                  threatLevel: 'UNKNOWN',
+                  type: 'SHIELD_BASE'
+              },
+              {
+                  id: 'base-beta',
+                  title: t.missions.bases.beta,
+                  description: [t.missions.bases.desc],
+                  objectives: [{ title: 'SECURE', desc: t.missions.bases.objSecure }, { title: 'RETRIEVE', desc: t.missions.bases.objRetrieve }],
+                  location: { state: 'Pennsylvania', coordinates: [-77.5, 40.8] },
+                  threatLevel: 'UNKNOWN',
+                  type: 'SHIELD_BASE'
+              },
+              {
+                  id: 'base-gamma',
+                  title: t.missions.bases.gamma,
+                  description: [t.missions.bases.desc],
+                  objectives: [{ title: 'SECURE', desc: t.missions.bases.objSecure }, { title: 'RETRIEVE', desc: t.missions.bases.objRetrieve }],
+                  location: { state: 'Massachusetts', coordinates: [-72.0, 42.3] },
+                  threatLevel: 'UNKNOWN',
+                  type: 'SHIELD_BASE'
+              },
+              {
+                  id: 'base-delta',
+                  title: t.missions.bases.delta,
+                  description: [t.missions.bases.desc],
+                  objectives: [{ title: 'SECURE', desc: t.missions.bases.objSecure }, { title: 'RETRIEVE', desc: t.missions.bases.objRetrieve }],
+                  location: { state: 'Maryland', coordinates: [-76.8, 39.0] },
+                  threatLevel: 'UNKNOWN',
+                  type: 'SHIELD_BASE'
+              },
+              {
+                  id: 'base-epsilon',
+                  title: t.missions.bases.epsilon,
+                  description: [t.missions.bases.desc],
+                  objectives: [{ title: 'SECURE', desc: t.missions.bases.objSecure }, { title: 'RETRIEVE', desc: t.missions.bases.objRetrieve }],
+                  location: { state: 'New Jersey', coordinates: [-74.8, 39.8] },
+                  threatLevel: 'UNKNOWN',
+                  type: 'SHIELD_BASE'
+              },
+              {
+                  id: 'base-zeta',
+                  title: t.missions.bases.zeta,
+                  description: [t.missions.bases.desc],
+                  objectives: [{ title: 'SECURE', desc: t.missions.bases.objSecure }, { title: 'RETRIEVE', desc: t.missions.bases.objRetrieve }],
+                  location: { state: 'Connecticut', coordinates: [-72.7, 41.6] },
+                  threatLevel: 'UNKNOWN',
+                  type: 'SHIELD_BASE'
+              }
+          ];
+
+          return [...baseMissions, ...shieldBases];
       }
   }, [t, playerAlignment]);
 
@@ -468,6 +530,7 @@ const App: React.FC = () => {
               <div className="text-[10px] text-cyan-600 mb-1">{t.sidebar.activeMissions}:</div>
               {missions.map(m => {
                   const isCompleted = completedMissionIds.has(m.id);
+                  const isBase = m.type === 'SHIELD_BASE';
                   return (
                     <div 
                         key={m.id} 
@@ -475,10 +538,12 @@ const App: React.FC = () => {
                         className={`text-xs border p-1 mb-1 transition-all cursor-pointer hover:brightness-110 ${
                             isCompleted 
                             ? 'text-emerald-300 bg-emerald-900/20 border-emerald-500/50 opacity-80' 
-                            : 'text-yellow-100 bg-yellow-900/40 border-yellow-500/50 animate-pulse'
+                            : isBase
+                                ? 'text-cyan-100 bg-cyan-900/40 border-cyan-500/50 animate-pulse'
+                                : 'text-yellow-100 bg-yellow-900/40 border-yellow-500/50 animate-pulse'
                         }`}
                     >
-                        {isCompleted ? '✓' : '⚠'} {m.title}
+                        {isCompleted ? '✓' : (isBase ? '⌖' : '⚠')} {m.title}
                     </div>
                   );
               })}
@@ -525,6 +590,7 @@ const App: React.FC = () => {
           onAddHero={handleAddHero}
           onBack={() => setViewMode('map')} 
           language={lang} 
+          playerAlignment={playerAlignment}
         />
       ) : (
         <>
@@ -719,6 +785,7 @@ const App: React.FC = () => {
                     onMissionSelect={setSelectedMission}
                     onBunkerClick={() => setViewMode('bunker')}
                     factionStates={FACTION_STATES}
+                    playerAlignment={playerAlignment}
                 />
 
                 {/* Overlay UI elements on the map */}

@@ -2,6 +2,7 @@
 import React, { useState } from 'react';
 import { translations, Language } from '../translations';
 import { Hero, Mission, HeroClass } from '../types';
+import { HERO_DATABASE } from '../data/heroDatabase';
 
 interface BunkerInteriorProps {
   heroes: Hero[];
@@ -11,9 +12,10 @@ interface BunkerInteriorProps {
   onAddHero: (hero: Hero) => void;
   onBack: () => void;
   language: Language;
+  playerAlignment?: 'ALIVE' | 'ZOMBIE' | null;
 }
 
-export const BunkerInterior: React.FC<BunkerInteriorProps> = ({ heroes, missions, onAssign, onUnassign, onAddHero, onBack, language }) => {
+export const BunkerInterior: React.FC<BunkerInteriorProps> = ({ heroes, missions, onAssign, onUnassign, onAddHero, onBack, language, playerAlignment }) => {
   const [selectedHeroId, setSelectedHeroId] = useState<string>(heroes[0]?.id || '');
   const [showAssignModal, setShowAssignModal] = useState(false);
   const [showRecruitModal, setShowRecruitModal] = useState(false);
@@ -21,6 +23,7 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({ heroes, missions
 
   // Form State
   const [recruitForm, setRecruitForm] = useState({
+      templateId: '', // Added for tracking DB templates
       name: '',
       alias: '',
       class: 'BRAWLER' as HeroClass,
@@ -84,11 +87,45 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({ heroes, missions
       }
   };
 
+  const handleSelectTemplate = (templateId: string) => {
+      const template = HERO_DATABASE.find(h => h.id === templateId);
+      if (template) {
+          // Find translation for bio alias if available
+          const tHero = t.heroes[templateId as keyof typeof t.heroes];
+          
+          setRecruitForm({
+              templateId: templateId,
+              name: template.defaultName,
+              alias: tHero ? tHero.alias : template.defaultName.toUpperCase(),
+              class: template.defaultClass,
+              bio: tHero ? tHero.bio : 'No bio available',
+              imageUrl: template.imageUrl,
+              str: template.defaultStats.strength,
+              agi: template.defaultStats.agility,
+              int: template.defaultStats.intellect
+          });
+      } else {
+          // Reset if empty selection
+          setRecruitForm({
+            templateId: '',
+            name: '',
+            alias: '',
+            class: 'BRAWLER',
+            bio: '',
+            imageUrl: '',
+            str: 5,
+            agi: 5,
+            int: 5
+          });
+      }
+  };
+
   const handleRecruitSubmit = (e: React.FormEvent) => {
       e.preventDefault();
       
       const newHero: Hero = {
           id: `custom_${Date.now()}`,
+          templateId: recruitForm.templateId || undefined, // Link to template if selected
           name: recruitForm.name || 'UNKNOWN',
           alias: recruitForm.alias || 'AGENT',
           class: recruitForm.class,
@@ -109,6 +146,7 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({ heroes, missions
       
       // Reset form
       setRecruitForm({
+        templateId: '',
         name: '',
         alias: '',
         class: 'BRAWLER',
@@ -125,6 +163,9 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({ heroes, missions
     ? missions.find(m => m.id === selectedHero.assignedMissionId)?.title 
     : null;
 
+  // Determine Title
+  const title = playerAlignment === 'ZOMBIE' ? t.bunker.hiveTitle : t.bunker.title;
+
   return (
     <div className="w-full h-full bg-slate-950 flex flex-col font-mono relative overflow-hidden">
          {/* Background Grid Pattern Overlay */}
@@ -134,7 +175,7 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({ heroes, missions
 
         {/* Header */}
         <header className="flex justify-between items-center p-6 border-b border-cyan-800 bg-slate-900/80 z-20">
-            <h2 className="text-2xl text-cyan-300 font-bold tracking-widest">{t.bunker.title}</h2>
+            <h2 className="text-2xl text-cyan-300 font-bold tracking-widest">{title}</h2>
             <button 
                 onClick={onBack}
                 className="px-4 py-2 border border-cyan-500 text-cyan-400 hover:bg-cyan-900/40 hover:text-cyan-200 transition-colors text-xs font-bold tracking-widest"
@@ -366,6 +407,20 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({ heroes, missions
                         <form onSubmit={handleRecruitSubmit} className="p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
                             
                             <div className="space-y-4">
+                                <div className="col-span-1 md:col-span-2">
+                                    <label className="block text-xs text-cyan-400 font-bold mb-1 border-b border-cyan-900 pb-1">{t.recruit.selectDb}</label>
+                                    <select
+                                        className="w-full bg-slate-900 border border-cyan-700 p-2 text-white focus:border-cyan-400 focus:outline-none text-sm"
+                                        onChange={(e) => handleSelectTemplate(e.target.value)}
+                                        value={recruitForm.templateId}
+                                    >
+                                        <option value="">-- {t.recruit.selectDb} --</option>
+                                        {HERO_DATABASE.map(h => (
+                                            <option key={h.id} value={h.id}>{h.defaultName} ({t.heroes[h.id as keyof typeof t.heroes]?.alias || h.id.toUpperCase()})</option>
+                                        ))}
+                                    </select>
+                                </div>
+
                                 <div>
                                     <label className="block text-xs text-cyan-600 font-bold mb-1">{t.recruit.alias}</label>
                                     <input 

@@ -75,9 +75,13 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin, onGoogleLogin
         </div>
 
         {/* Logo */}
-        <div className="w-24 h-24 mb-6 border-4 border-cyan-500 rounded-full flex items-center justify-center relative shadow-[0_0_20px_rgba(6,182,212,0.3)]">
-            <div className="absolute inset-2 border border-cyan-800 rounded-full"></div>
-            <div className="text-4xl font-bold tracking-tighter">S.H.</div>
+        <div className="w-24 h-24 mb-6 border-4 border-cyan-500 rounded-full flex items-center justify-center relative shadow-[0_0_20px_rgba(6,182,212,0.3)] overflow-hidden">
+            <div className="absolute inset-2 border border-cyan-800 rounded-full z-10"></div>
+            <img 
+                src="https://i.pinimg.com/736x/63/1e/3a/631e3a68228c97963e78381ad11bf3bb.jpg"
+                className="w-full h-full object-cover opacity-90 relative z-0"
+                alt="S.H.I.E.L.D."
+            />
         </div>
 
         {/* Header */}

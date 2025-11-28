@@ -139,7 +139,7 @@ export const MissionModal: React.FC<MissionModalProps> = ({ mission, isOpen, onC
                         }
                     }}
                 >
-                    {reporting ? t.sending : (reportSuccess || isCompleted ? t.sent : t.complete)}
+                    {reporting ? t.sending : (reportSuccess || isCompleted ? `✓ ${t.sent}` : t.complete)}
                 </button>
                 {!isCompleted && !reporting && !reportSuccess && (
                     <button 

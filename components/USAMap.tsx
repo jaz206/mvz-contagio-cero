@@ -18,9 +18,10 @@ interface USAMapProps {
       kingpin: Set<string>;
       hulk: Set<string>;
   };
+  playerAlignment?: 'ALIVE' | 'ZOMBIE' | null;
 }
 
-export const USAMap: React.FC<USAMapProps> = ({ language, missions, completedMissionIds, onMissionSelect, onBunkerClick, factionStates }) => {
+export const USAMap: React.FC<USAMapProps> = ({ language, missions, completedMissionIds, onMissionSelect, onBunkerClick, factionStates, playerAlignment }) => {
   const svgRef = useRef<SVGSVGElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [usData, setUsData] = useState<USATopoJSON | null>(null);
@@ -29,6 +30,9 @@ export const USAMap: React.FC<USAMapProps> = ({ language, missions, completedMis
   const [svgWidth, setSvgWidth] = useState(0);
   const [svgHeight, setSvgHeight] = useState(0);
   
+  // Ref to track the Hulk movement timeout so we can clear it on unmount/re-render
+  const hulkTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   // Get translation helper based on current language prop
   const t = translations[language];
 
@@ -99,6 +103,9 @@ export const USAMap: React.FC<USAMapProps> = ({ language, missions, completedMis
     if (!usData || !svgRef.current || svgWidth === 0 || svgHeight === 0) {
       return;
     }
+    
+    // Clear any existing Hulk timer to prevent multiple loops
+    if (hulkTimerRef.current) clearTimeout(hulkTimerRef.current);
 
     const svg = d3.select(svgRef.current);
     svg.selectAll('*').remove();
@@ -135,6 +142,14 @@ export const USAMap: React.FC<USAMapProps> = ({ language, missions, completedMis
     const feMerge = filter.append("feMerge");
     feMerge.append("feMergeNode").attr("in", "coloredBlur");
     feMerge.append("feMergeNode").attr("in", "SourceGraphic");
+
+    // Hulk Clip Path (Circular Crop) - Increased Size
+    defs.append("clipPath")
+      .attr("id", "hulk-clip")
+      .append("circle")
+      .attr("cx", 0)
+      .attr("cy", 0)
+      .attr("r", 50); 
 
 
     // Group for map content
@@ -182,22 +197,27 @@ export const USAMap: React.FC<USAMapProps> = ({ language, missions, completedMis
 
 
     // --- HULK ROAMING TOKEN ---
-    // Identify Hulk states for random movement
     const hulkFeatures = states.features.filter((f: any) => factionStates.hulk.has(f.properties.name));
     
     if (hulkFeatures.length > 0) {
-        // Initial random position
-        const startState = hulkFeatures[Math.floor(Math.random() * hulkFeatures.length)];
-        const startCentroid = path.centroid(startState);
+        // Track where Hulk currently is to calculate nearest neighbors
+        let currentHulkFeature = hulkFeatures[Math.floor(Math.random() * hulkFeatures.length)];
+        const startCentroid = path.centroid(currentHulkFeature);
         
         if (startCentroid && !isNaN(startCentroid[0])) {
             const hulkGroup = g.append('g')
                 .attr('id', 'hulk-token')
                 .attr('transform', `translate(${startCentroid[0]}, ${startCentroid[1]})`)
-                .attr('class', 'pointer-events-none'); // Hulk is just a visual threat, not clickable yet
+                .attr('class', 'pointer-events-none'); 
 
+            // Wrapper for Jump Animation (Scale)
+            const jumpWrapper = hulkGroup.append('g').attr('class', 'hulk-jump-wrapper');
+
+            // 1. DISTANT VISUAL (Orb)
+            const hulkOrb = jumpWrapper.append('g').attr('class', 'hulk-orb');
+            
             // Radioactive Glow
-            hulkGroup.append('circle')
+            hulkOrb.append('circle')
                 .attr('r', 12)
                 .attr('fill', '#84cc16') // Lime-500
                 .attr('opacity', 0.4)
@@ -208,41 +228,98 @@ export const USAMap: React.FC<USAMapProps> = ({ language, missions, completedMis
                 .attr('repeatCount', 'indefinite');
 
             // Core
-            hulkGroup.append('circle')
+            hulkOrb.append('circle')
                 .attr('r', 5)
                 .attr('fill', '#bef264') // Lime-200
                 .attr('stroke', '#365314') // Lime-950
                 .attr('stroke-width', 1);
-
-            // Label
-            hulkGroup.append('text')
+            
+            hulkOrb.append('text')
                 .attr('y', -15)
                 .attr('text-anchor', 'middle')
                 .attr('class', 'text-[6px] font-bold fill-lime-400')
                 .text('HULK');
 
-            // Movement Logic
+            // 2. ZOOMED VISUAL (Image Token) - Hidden initially
+            const hulkIcon = jumpWrapper.append('g')
+                .attr('class', 'hulk-icon')
+                .style('display', 'none')
+                .style('opacity', 0);
+            
+            // Backlight (Light source to make the figure pop against dark map with multiply)
+            hulkIcon.append('circle')
+                .attr('r', 40)
+                .attr('fill', '#d9f99d') // Lime-200 / Bright backing
+                .attr('opacity', 0.5)
+                .style('filter', 'url(#glow)');
+
+            // The Image with Clip Path and Multiply Mode
+            hulkIcon.append('image')
+                .attr('href', 'https://i.pinimg.com/1200x/dd/fa/7b/ddfa7b9d3e2b76cbd33af6647308f3a7.jpg')
+                .attr('x', -50) 
+                .attr('y', -50) 
+                .attr('width', 100) 
+                .attr('height', 100)
+                .style('mix-blend-mode', 'multiply')
+                .attr('clip-path', 'url(#hulk-clip)');
+
+            // MOVEMENT LOGIC (Restricted Jump with Random Times)
             const moveHulk = () => {
-                const targetState = hulkFeatures[Math.floor(Math.random() * hulkFeatures.length)];
-                const targetCentroid = path.centroid(targetState);
+                const currentCentroid = path.centroid(currentHulkFeature);
                 
-                if (targetCentroid && !isNaN(targetCentroid[0])) {
+                // Calculate distance to all other Hulk faction states
+                const neighbors = hulkFeatures
+                    .filter((f: any) => f !== currentHulkFeature) // Don't stay in same spot
+                    .map((f: any) => {
+                        const c = path.centroid(f);
+                        if (!c || isNaN(c[0])) return { feature: f, dist: Infinity, centroid: [0,0] };
+                        const dist = Math.sqrt(Math.pow(c[0] - currentCentroid[0], 2) + Math.pow(c[1] - currentCentroid[1], 2));
+                        return { feature: f, dist, centroid: c };
+                    })
+                    .sort((a: any, b: any) => a.dist - b.dist) // Sort by distance
+                    .slice(0, 4); // Pick from the 4 closest states
+                
+                // Calculate random delay between 5 seconds and 3 minutes
+                const minDelay = 5000; // 5 seconds
+                const maxDelay = 180000; // 3 minutes
+                const randomDelay = Math.floor(Math.random() * (maxDelay - minDelay + 1) + minDelay);
+
+                if (neighbors.length > 0) {
+                    const nextMove = neighbors[Math.floor(Math.random() * neighbors.length)];
+                    currentHulkFeature = nextMove.feature; // Update location tracker
+
+                    const jumpDuration = 3000;
+
+                    // 1. Move Translation (X/Y)
                     d3.select('#hulk-token')
                         .transition()
-                        .duration(4000) // Slow movement
-                        .ease(d3.easeSinInOut)
-                        .attr('transform', `translate(${targetCentroid[0]}, ${targetCentroid[1]})`)
+                        .duration(jumpDuration) 
+                        .ease(d3.easeLinear) 
+                        .attr('transform', `translate(${nextMove.centroid[0]}, ${nextMove.centroid[1]})`);
+                    
+                    // 2. Jump Animation (Scale Up/Down)
+                    d3.select('.hulk-jump-wrapper')
+                        .transition()
+                        .duration(jumpDuration / 2)
+                        .ease(d3.easeQuadOut)
+                        .attr('transform', 'scale(1.5)') // Jump Peak
+                        .transition()
+                        .duration(jumpDuration / 2)
+                        .ease(d3.easeQuadIn)
+                        .attr('transform', 'scale(1)') // Land
                         .on('end', () => {
-                             // Wait a bit then move again
-                             setTimeout(moveHulk, 3000);
+                             // Wait random time before next move
+                             hulkTimerRef.current = setTimeout(moveHulk, randomDelay);
                         });
+
                 } else {
-                    setTimeout(moveHulk, 2000);
+                    // If no neighbors (isolated), just wait
+                    hulkTimerRef.current = setTimeout(moveHulk, randomDelay);
                 }
             };
             
-            // Start moving after initial render
-            setTimeout(moveHulk, 2000);
+            // Start moving after initial delay
+            hulkTimerRef.current = setTimeout(moveHulk, 3000);
         }
     }
 
@@ -295,18 +372,18 @@ export const USAMap: React.FC<USAMapProps> = ({ language, missions, completedMis
             .style('filter', 'url(#glow)');
 
         // Bunker Label
+        const bunkerLabel = playerAlignment === 'ZOMBIE' ? t.map.hive : t.map.bunker;
         bunkerGroup.append('text')
             .attr('y', 25)
             .attr('text-anchor', 'middle')
             .attr('class', 'font-mono font-bold fill-cyan-400 text-[8px] tracking-widest')
             .style('text-shadow', '0 0 5px black')
-            .text(`[ ${t.map.bunker} ]`);
+            .text(`[ ${bunkerLabel} ]`);
     }
 
     // --- MISSION LINES (CONNECTORS) ---
-    // Draw lines first so they are under the tokens
     g.selectAll('path.mission-line')
-      .data(missions.filter(m => m.prereq)) // Only connect missions that have a prereq
+      .data(missions.filter(m => m.prereq)) 
       .join('path')
       .attr('class', 'mission-line')
       .attr('d', (d) => {
@@ -318,7 +395,6 @@ export const USAMap: React.FC<USAMapProps> = ({ language, missions, completedMis
 
           if (!startCoords || !endCoords) return null;
 
-          // Simple curve
           const dx = endCoords[0] - startCoords[0];
           const dy = endCoords[1] - startCoords[1];
           const dr = Math.sqrt(dx * dx + dy * dy);
@@ -326,11 +402,11 @@ export const USAMap: React.FC<USAMapProps> = ({ language, missions, completedMis
           return `M${startCoords[0]},${startCoords[1]}A${dr},${dr} 0 0,1 ${endCoords[0]},${endCoords[1]}`;
       })
       .attr('fill', 'none')
-      .attr('stroke', '#eab308') // Yellowish
+      .attr('stroke', '#eab308') 
       .attr('stroke-width', 1.5)
       .attr('stroke-dasharray', '4,4')
       .attr('opacity', 0.6)
-      .append('animate') // Animate the dash offset to look like data flow
+      .append('animate')
       .attr('attributeName', 'stroke-dashoffset')
       .attr('from', '0')
       .attr('to', '-8')
@@ -339,7 +415,6 @@ export const USAMap: React.FC<USAMapProps> = ({ language, missions, completedMis
 
 
     // --- MISSION TOKENS ---
-    // Create a group for each mission
     const missionGroups = g.selectAll('g.mission')
       .data(missions)
       .join('g')
@@ -349,35 +424,39 @@ export const USAMap: React.FC<USAMapProps> = ({ language, missions, completedMis
         return coords ? `translate(${coords[0]}, ${coords[1]})` : 'translate(-100,-100)';
       })
       .on('click', (e, d) => {
-        e.stopPropagation(); // Prevent zoom or other interactions
+        e.stopPropagation(); 
         onMissionSelect(d);
       });
     
-    // Add Tooltip (Title)
+    // Add Tooltip
     missionGroups.append('title')
         .text(d => d.title);
 
-    // 1. The Dot (Visible at Low Zoom) - INCREASED SIZE
+    // Mission Dot (Visible at Low Zoom)
     missionGroups.append('circle')
       .attr('class', 'mission-dot')
-      .attr('r', (d) => completedMissionIds.has(d.id) ? 6 : 4.5) // WAS: 3 and 2. Increased for visibility.
-      .attr('fill', (d) => completedMissionIds.has(d.id) ? '#10b981' : '#eab308') // Green if done, Yellow if active
+      .attr('r', (d) => completedMissionIds.has(d.id) ? 6 : 4.5) 
+      .attr('fill', (d) => {
+          if (completedMissionIds.has(d.id)) return '#10b981'; // Green
+          if (d.type === 'SHIELD_BASE') return '#06b6d4'; // Cyan for Shield Bases
+          return '#eab308'; // Yellow for standard
+      }) 
       .attr('stroke', 'white')
       .attr('stroke-width', 0.5)
       .style('filter', 'url(#glow)');
     
-    // Pulse animation only for active missions
+    // Pulse animation (Only for incomplete missions)
     const activeMissionCircles = missionGroups.filter((d) => !completedMissionIds.has(d.id))
       .append('circle')
-      .attr('r', 4.5) // Match base size
+      .attr('r', 4.5) 
       .attr('fill', 'none')
-      .attr('stroke', '#eab308')
+      .attr('stroke', (d) => d.type === 'SHIELD_BASE' ? '#06b6d4' : '#eab308')
       .attr('stroke-width', 0.5);
 
     activeMissionCircles.append('animate')
       .attr('attributeName', 'r')
       .attr('from', '4.5')
-      .attr('to', '15') // Increased pulse range
+      .attr('to', '15') 
       .attr('dur', '1.5s')
       .attr('repeatCount', 'indefinite');
 
@@ -388,37 +467,45 @@ export const USAMap: React.FC<USAMapProps> = ({ language, missions, completedMis
       .attr('dur', '1.5s')
       .attr('repeatCount', 'indefinite');
 
-    // 2. The Icon (Visible at High Zoom)
+    // Mission Icon (Visible at High Zoom)
     const iconGroup = missionGroups.append('g')
       .attr('class', 'mission-icon')
-      .style('opacity', 0) // Hidden by default
+      .style('opacity', 0) 
       .style('display', 'none');
 
-    // Icon Circle Background
     iconGroup.append('circle')
       .attr('r', 8)
       .attr('fill', '#0f172a')
-      .attr('stroke', (d) => completedMissionIds.has(d.id) ? '#10b981' : '#eab308')
+      .attr('stroke', (d) => {
+          if (completedMissionIds.has(d.id)) return '#10b981';
+          if (d.type === 'SHIELD_BASE') return '#06b6d4';
+          return '#eab308';
+      })
       .attr('stroke-width', 1);
 
-    // Icon Inner Graphic 
-    // Target for active, Shield/Check for complete
     iconGroup.each(function(d) {
         const sel = d3.select(this);
-        const color = completedMissionIds.has(d.id) ? '#10b981' : '#eab308';
+        const isCompleted = completedMissionIds.has(d.id);
         
-        if (completedMissionIds.has(d.id)) {
+        if (isCompleted) {
             // Checkmark
             sel.append('path')
                .attr('d', "M-3,0 L0,3 L5,-4")
-               .attr('stroke', color)
+               .attr('stroke', '#10b981')
                .attr('stroke-width', 2)
                .attr('fill', 'none');
+        } else if (d.type === 'SHIELD_BASE') {
+             // SHIELD EAGLE ICON (Simplified Vector)
+             sel.append('path')
+                .attr('d', "M0,-5 C-2,-5 -4,-3 -4,0 L-3,4 L0,2 L3,4 L4,0 C4,-3 2,-5 0,-5 M-3,4 L0,6 L3,4")
+                .attr('fill', '#06b6d4')
+                .attr('stroke', 'none')
+                .attr('transform', 'scale(1.2)'); // Slight scale adjustment
         } else {
-             // Target
+             // Standard Target
              sel.append('path')
                 .attr('d', "M-4,-4 L4,4 M-4,4 L4,-4 M0,-6 L0,-3 M0,6 L0,3 M-6,0 L-3,0 M6,0 L3,0")
-                .attr('stroke', color)
+                .attr('stroke', '#eab308')
                 .attr('stroke-width', 1.5)
                 .attr('fill', 'none');
         }
@@ -428,7 +515,7 @@ export const USAMap: React.FC<USAMapProps> = ({ language, missions, completedMis
     const zoom = d3.zoom<SVGSVGElement, unknown>()
       .scaleExtent([1, 8])
       .on('zoom', (event) => {
-        const { k, x, y } = event.transform;
+        const { k } = event.transform;
         
         // Transform the whole map group
         g.attr('transform', event.transform.toString());
@@ -436,58 +523,67 @@ export const USAMap: React.FC<USAMapProps> = ({ language, missions, completedMis
         // --- DYNAMIC MARKER SCALING ---
         
         // BUNKER SCALING
-        // Keep bunker roughly constant visual size
         g.selectAll('.bunker').attr('transform', function() {
-            // Need to get the original translation from the projection first
-            // Since we can't easily parse 'transform', we re-calculate
             if (bunkerCoords) {
                 return `translate(${bunkerCoords[0]},${bunkerCoords[1]}) scale(${1/k})`;
             }
             return null;
         });
         
-        // HULK SCALING
-        g.select('#hulk-token').attr('transform', function() {
-             // Hulk is moving, so we rely on current transform, but apply scale
-             // This is tricky with D3 transitions. 
-             // Simplification: We don't counter-scale Hulk, let him grow/shrink, it's a monster!
-             return null;
-        });
+        // HULK SCALING & ICON SWAPPING
+        const showHulkIconThreshold = 2.5;
+        const hulkGroup = g.select('#hulk-token');
+        if (!hulkGroup.empty()) {
+            if (k >= showHulkIconThreshold) {
+                hulkGroup.select('.hulk-orb').style('display', 'none').style('opacity', 0);
+                hulkGroup.select('.hulk-icon')
+                    .style('display', 'block')
+                    .style('opacity', 1)
+                    // The jump wrapper handles the jump scale, here we apply zoom compensation
+                    // We apply it to the icon itself inside the wrapper
+                    .attr('transform', `scale(${1/k * 2.5})`); 
+            } else {
+                hulkGroup.select('.hulk-icon').style('display', 'none').style('opacity', 0);
+                hulkGroup.select('.hulk-orb')
+                    .style('display', 'block')
+                    .style('opacity', 1)
+                    .attr('transform', `scale(${1/Math.sqrt(k)})`);
+            }
+        }
 
 
         // MISSION MARKER SCALING
-        // Threshold for switching from Dot to Icon
         const showIconThreshold = 2.5;
 
         if (k >= showIconThreshold) {
-            // Show Icons
             g.selectAll('.mission-dot').style('opacity', 0).style('display', 'none');
             
             g.selectAll('.mission-icon')
                 .style('display', 'block')
                 .style('opacity', 1)
-                // Counter-scale the icon so it stays roughly the same screen size
                 .attr('transform', `scale(${1/k * 2})`); 
         } else {
-            // Show Dots
             g.selectAll('.mission-icon').style('opacity', 0).style('display', 'none');
             
             g.selectAll('.mission-dot')
                 .style('display', 'block')
                 .style('opacity', 1)
-                // Keep dots somewhat small but visible
                 .attr('transform', `scale(${1/Math.sqrt(k)})`);
         }
       });
 
     svg.call(zoom);
 
-  }, [usData, svgWidth, svgHeight, getFactionLabel, missions, factionStates, completedMissionIds, onMissionSelect, onBunkerClick, t]);
+  }, [usData, svgWidth, svgHeight, getFactionLabel, missions, factionStates, completedMissionIds, onMissionSelect, onBunkerClick, t, playerAlignment]);
 
   useEffect(() => {
     if (usData && svgWidth > 0 && svgHeight > 0) {
       renderMap();
     }
+    // Cleanup timer on unmount
+    return () => {
+        if (hulkTimerRef.current) clearTimeout(hulkTimerRef.current);
+    };
   }, [usData, svgWidth, svgHeight, renderMap]);
 
   if (loading) {

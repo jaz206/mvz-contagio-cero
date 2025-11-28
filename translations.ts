@@ -99,6 +99,7 @@ export const translations = {
     },
     recruit: {
         title: "RECLUTAMIENTO DE ACTIVO",
+        selectDb: "SELECCIONAR DE LA BASE DE DATOS (OPCIONAL)",
         alias: "ALIAS / NOMBRE EN CLAVE",
         name: "NOMBRE REAL",
         class: "CLASE TÁCTICA",
@@ -137,6 +138,27 @@ export const translations = {
         shehulk: {
             alias: "SHE-HULK",
             bio: "Una abogada capaz de levantar un tanque. Conserva su inteligencia mientras se transforma, siendo una combinación letal de cerebro y músculo en el campo de batalla."
+        },
+        // DATABASE HEROES
+        hawkeye: {
+            alias: "HAWKEYE",
+            bio: "Francotirador inigualable. Sus ojos ven lo que los satélites pierden. Lucha por aquellos que no pueden luchar."
+        },
+        lukecage: {
+            alias: "LUKE CAGE",
+            bio: "Piel impenetrable, voluntad inquebrantable. Un tanque humano capaz de resistir mordeduras y explosiones mientras protege a los civiles."
+        },
+        daredevil: {
+            alias: "DAREDEVIL",
+            bio: "El Hombre sin Miedo. Sus sentidos aumentados son el radar perfecto en la oscuridad de la zona de cuarentena."
+        },
+        thor: {
+            alias: "THOR",
+            bio: "El Dios del Trueno. Aunque Asgard cayó, su martillo sigue trayendo la tormenta a los muertos."
+        },
+        storm: {
+            alias: "STORM",
+            bio: "Diosa del clima. Puede limpiar zonas enteras de zombis con un solo tornado. La reina necesita su reino de vuelta."
         },
         // ZOMBIE HEROES
         colonel: {
@@ -276,6 +298,17 @@ export const translations = {
                     desc: "Devour Magneto's elite guard."
                 }
             ]
+        },
+        bases: {
+            desc: "Señal encriptada detectada. Firma de energía coincide con tecnología S.H.I.E.L.D. pre-colapso.",
+            objSecure: "Asegurar el perímetro",
+            objRetrieve: "Recuperar datos",
+            alpha: "BASE OCULTA: ALPHA",
+            beta: "BASE OCULTA: BETA",
+            gamma: "BASE OCULTA: GAMMA",
+            delta: "BASE OCULTA: DELTA",
+            epsilon: "BASE OCULTA: EPSILON",
+            zeta: "BASE OCULTA: ZETA"
         }
     }
   },
@@ -374,6 +407,7 @@ export const translations = {
     },
     recruit: {
         title: "ASSET RECRUITMENT",
+        selectDb: "SELECT FROM DATABASE (OPTIONAL)",
         alias: "ALIAS / CODENAME",
         name: "REAL NAME",
         class: "TACTICAL CLASS",
@@ -413,10 +447,31 @@ export const translations = {
             alias: "SHE-HULK",
             bio: "A lawyer who can bench press a tank. Retains her intelligence while transformed, making her a deadly combination of brains and brawn on the battlefield."
         },
+        // DATABASE
+        hawkeye: {
+            alias: "HAWKEYE",
+            bio: "Unmatched marksman. His eyes see what satellites miss. Fights for those who cannot fight."
+        },
+        lukecage: {
+            alias: "LUKE CAGE",
+            bio: "Impenetrable skin, unbreakable will. A human tank capable of withstanding bites and explosions while protecting civilians."
+        },
+        daredevil: {
+            alias: "DAREDEVIL",
+            bio: "The Man Without Fear. His enhanced senses are the perfect radar in the darkness of the quarantine zone."
+        },
+        thor: {
+            alias: "THOR",
+            bio: "The God of Thunder. Though Asgard fell, his hammer still brings the storm to the dead."
+        },
+        storm: {
+            alias: "STORM",
+            bio: "Weather Goddess. Can clear entire zones of zombies with a single tornado. The Queen needs her kingdom back."
+        },
         // ZOMBIES
         colonel: {
             alias: "COLONEL AMERICA",
-            bio: "The former symbol of freedom, now with an exposed skull. Retains tactical skills, leading the horde with military precision. His shield no longer protects, it only decapitates."
+            bio: "The former symbol of freedom, now with an exposed skull. Retains tactical skills, leading the horde with military precision. His shield no longer protects, it only decapitaes."
         },
         ironman_z: {
             alias: "IRON MAN (Z)",
@@ -518,7 +573,7 @@ export const translations = {
             description: [
                 "Hunger is a fire that never dies. The Hive whispers locations of human settlements undetected by S.H.I.E.L.D. In the heart of Texas, a convoy of survivors attempts to cross No Man's Land.",
                 "They don't know we own this wasteland. They think Hulk is the only danger. Poor fools.",
-                "The mission is simple: Interceptar el convoy. We don't want total destruction. We want conversion. We need soldiers. We need food. We need to expand the family."
+                "The mission is simple: Intercept the convoy. We don't want total destruction. We want conversion. We need soldiers. We need food. We need to expand the family."
             ],
             objectives: [
                 {
@@ -552,6 +607,17 @@ export const translations = {
                     desc: "Devour Magneto's elite guard."
                 }
             ]
+        },
+        bases: {
+            desc: "Encrypted signal detected. Energy signature matches pre-collapse S.H.I.E.L.D. technology.",
+            objSecure: "Secure the perimeter",
+            objRetrieve: "Retrieve Data",
+            alpha: "HIDDEN BASE: ALPHA",
+            beta: "HIDDEN BASE: BETA",
+            gamma: "HIDDEN BASE: GAMMA",
+            delta: "HIDDEN BASE: DELTA",
+            epsilon: "HIDDEN BASE: EPSILON",
+            zeta: "HIDDEN BASE: ZETA"
         }
     }
   }
