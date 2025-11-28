@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import { USATopoJSON } from './types'; 
 import { USAMap } from './components/USAMap';
@@ -225,6 +226,35 @@ const App: React.FC = () => {
       };
   }, []);
 
+  // FORCE UPDATE HELPER: Merges saved data with latest code definitions
+  const mergeWithLatestContent = useCallback((savedHeroes: Hero[], alignment: 'ALIVE' | 'ZOMBIE'): Hero[] => {
+      const initialList = alignment === 'ALIVE' ? INITIAL_HEROES : INITIAL_ZOMBIE_HEROES;
+      
+      // 1. Update existing heroes with latest content from code
+      const updatedHeroes = savedHeroes.map(savedHero => {
+          const latestDef = initialList.find(h => h.id === savedHero.id);
+          if (latestDef) {
+              return {
+                  ...savedHero,
+                  // Overwrite content fields with latest from code
+                  bio: latestDef.bio,
+                  currentStory: latestDef.currentStory,
+                  objectives: latestDef.objectives,
+                  imageUrl: latestDef.imageUrl,
+                  alias: latestDef.alias,
+                  name: latestDef.name
+                  // Keep status, assignedMissionId, completedObjectiveIndices from savedHero
+              };
+          }
+          return savedHero;
+      });
+
+      // 2. Add any NEW heroes that might have been added to code but aren't in save
+      // (Optional, usually we just update content of existing ones for now)
+      
+      return updatedHeroes;
+  }, []);
+
   // 1. Auth Listener
   useEffect(() => {
       const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
@@ -261,7 +291,9 @@ const App: React.FC = () => {
               setSavingStatus('SAVING'); // Reusing saving status for loading indication mostly
               const cloudProfile = await getUserProfile(user.uid, playerAlignment);
               if (cloudProfile) {
-                  setHeroes(cloudProfile.heroes);
+                  // MERGE LOGIC: Combine Cloud Save Data with Latest Code Content
+                  const mergedHeroes = mergeWithLatestContent(cloudProfile.heroes, playerAlignment);
+                  setHeroes(mergedHeroes);
                   setCompletedMissionIds(new Set(cloudProfile.completedMissionIds));
                   loadedFromCloud = true;
                   setSavingStatus('SAVED');
@@ -293,11 +325,18 @@ const App: React.FC = () => {
                   try {
                       const savedHeroes = localStorage.getItem(keys.heroes);
                       if (savedHeroes) {
-                          setHeroes(JSON.parse(savedHeroes));
+                          // MERGE LOGIC: Combine Local Save Data with Latest Code Content
+                          const localHeroes = JSON.parse(savedHeroes);
+                          const mergedHeroes = mergeWithLatestContent(localHeroes, playerAlignment);
+                          setHeroes(mergedHeroes);
                       } else if (playerAlignment === 'ALIVE') {
                           // Migration Logic
                           const legacyHeroes = localStorage.getItem(keys.legacyHeroes);
-                          if (legacyHeroes) setHeroes(JSON.parse(legacyHeroes));
+                          if (legacyHeroes) {
+                              const localLegacyHeroes = JSON.parse(legacyHeroes);
+                              const mergedHeroes = mergeWithLatestContent(localLegacyHeroes, playerAlignment);
+                              setHeroes(mergedHeroes);
+                          }
                           else setHeroes(INITIAL_HEROES);
                       } else {
                           setHeroes(INITIAL_ZOMBIE_HEROES);
@@ -310,7 +349,7 @@ const App: React.FC = () => {
       };
 
       loadData();
-  }, [user, isGuest, playerAlignment, loadingAuth, getStorageKeys]);
+  }, [user, isGuest, playerAlignment, loadingAuth, getStorageKeys, mergeWithLatestContent]);
 
 
   // 3. Save Data Logic (Local + Cloud Auto-Save)
