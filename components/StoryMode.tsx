@@ -9,16 +9,33 @@ interface StoryModeProps {
 }
 
 export const StoryMode: React.FC<StoryModeProps> = ({ language, onComplete, onSkip }) => {
+  const [introStep, setIntroStep] = useState(0); // 0: line1, 1: line2, 2: line3, 3: line4, 4: content
   const [currentIndex, setCurrentIndex] = useState(0);
   const [displayText, setDisplayText] = useState('');
   const t = translations[language].story;
+  const loadingText = translations[language].story.loading;
   const slides = t.slides;
   
+  // INTRO SEQUENCE LOGIC
+  useEffect(() => {
+      const step1 = setTimeout(() => setIntroStep(1), 1500);
+      const step2 = setTimeout(() => setIntroStep(2), 3000);
+      const step3 = setTimeout(() => setIntroStep(3), 4500);
+      const step4 = setTimeout(() => setIntroStep(4), 6000);
+      
+      return () => {
+          clearTimeout(step1);
+          clearTimeout(step2);
+          clearTimeout(step3);
+          clearTimeout(step4);
+      };
+  }, []);
+
   const currentSlide = slides[currentIndex];
   
-  // Typewriter effect
+  // Typewriter effect for slides
   useEffect(() => {
-    if (!currentSlide) return;
+    if (introStep < 4 || !currentSlide) return;
     
     let charIndex = 0;
     setDisplayText('');
@@ -33,7 +50,7 @@ export const StoryMode: React.FC<StoryModeProps> = ({ language, onComplete, onSk
     }, 30); // Speed of typing
 
     return () => clearInterval(intervalId);
-  }, [currentIndex, currentSlide]);
+  }, [currentIndex, currentSlide, introStep]);
 
   const handleNext = () => {
     if (currentIndex < slides.length) {
@@ -49,8 +66,51 @@ export const StoryMode: React.FC<StoryModeProps> = ({ language, onComplete, onSk
 
   const isChoiceScreen = currentIndex === slides.length;
 
+  // RENDER INTRO SEQUENCE
+  if (introStep < 4) {
+      return (
+          <div className="fixed inset-0 z-[60] bg-black text-green-500 font-mono flex flex-col items-center justify-center p-8 text-xs md:text-sm tracking-widest leading-loose">
+              <div className="w-full max-w-md">
+                  <div className="mb-2">
+                      <span className="text-green-700 mr-2">{'>'}</span> 
+                      {loadingText.line1} 
+                      {introStep === 0 && <span className="animate-pulse">_</span>}
+                  </div>
+                  
+                  {introStep >= 1 && (
+                      <div className="mb-2">
+                          <span className="text-green-700 mr-2">{'>'}</span> 
+                          {loadingText.line2}
+                          {introStep === 1 && <span className="animate-pulse">_</span>}
+                      </div>
+                  )}
+
+                  {introStep >= 2 && (
+                      <div className="mb-2">
+                          <span className="text-green-700 mr-2">{'>'}</span> 
+                          {loadingText.line3}
+                          {introStep === 2 && <span className="animate-pulse">_</span>}
+                      </div>
+                  )}
+
+                  {introStep >= 3 && (
+                      <div className="mb-2 text-green-300 font-bold border-b border-green-700 pb-2">
+                          <span className="text-green-700 mr-2">{'>'}</span> 
+                          {loadingText.line4}
+                          <span className="animate-pulse">_</span>
+                      </div>
+                  )}
+                  
+                  {/* Decorative Scanline */}
+                  <div className="fixed top-0 left-0 w-full h-1 bg-green-500/20 opacity-20 animate-scanline pointer-events-none"></div>
+              </div>
+          </div>
+      );
+  }
+
+  // RENDER MAIN STORY
   return (
-    <div className="fixed inset-0 z-[60] bg-slate-950 text-cyan-400 font-mono flex flex-col">
+    <div className="fixed inset-0 z-[60] bg-slate-950 text-cyan-400 font-mono flex flex-col animate-fade-in">
       
       {/* Background Grid */}
       <div className="absolute inset-0 pointer-events-none opacity-20" 

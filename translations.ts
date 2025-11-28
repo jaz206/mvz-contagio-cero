@@ -22,7 +22,9 @@ export const translations = {
       failure: "FALLO DE CONTENCIÓN GLOBAL",
       biohazard: "/// AMENAZA BIOLÓGICA DETECTADA ///",
       clearance: "NIVEL: DIRECTOR",
-      logout: "CERRAR SESIÓN"
+      logout: "CERRAR SESIÓN",
+      saving: "GUARDANDO...",
+      saved: "GUARDADO EN NUBE"
     },
     sidebar: {
       threatLevelTitle: "NIVEL DE AMENAZA",
@@ -85,6 +87,8 @@ export const translations = {
         status: "ESTADO OPERATIVO",
         class: "CLASE",
         bio: "RESUMEN BIOGRÁFICO",
+        currentStory: "SITUACIÓN ACTUAL",
+        objectives: "OBJETIVOS PRIORITARIOS",
         stats: "MÉTRICAS DE COMBATE",
         str: "FUERZA",
         agi: "AGILIDAD",
@@ -99,7 +103,10 @@ export const translations = {
     },
     recruit: {
         title: "RECLUTAMIENTO DE ACTIVO",
-        selectDb: "SELECCIONAR DE LA BASE DE DATOS (OPCIONAL)",
+        selectDb: "SELECCIONAR DE LA BASE DE DATOS (NUBE)",
+        loadingDb: "CARGANDO ARCHIVOS...",
+        adminSeed: "ADMIN: SUBIR DATOS INICIALES",
+        seedSuccess: "BASE DE DATOS ACTUALIZADA",
         alias: "ALIAS / NOMBRE EN CLAVE",
         name: "NOMBRE REAL",
         class: "CLASE TÁCTICA",
@@ -196,6 +203,12 @@ export const translations = {
         choose: "ELIGE TU CAMINO",
         optionA: "OPCIÓN A: EL HÉROE VIVO",
         optionB: "OPCIÓN B: EL HÉROE ZOMBIE",
+        loading: {
+            line1: "ESTABLECIENDO CONEXIÓN SEGURA...",
+            line2: "RECUPERANDO ARCHIVO 0-Z...",
+            line3: "DESENCRIPTACIÓN COMPLETADA.",
+            line4: "INICIANDO VISUALIZACIÓN."
+        },
         slides: [
             { text: "MARVEL ZOMBIES: CONTAGIO CERO\nLibro I: El Legado de la Arrogancia", image: "https://i.pinimg.com/1200x/18/85/ee/1885ee42132b6976d36896a81f33ad8c.jpg" },
             { text: " No hubo trompetas. No hubo cielos rojos ni profecías antiguas cumpliéndose.\n El fin del mundo no vino del espacio exterior, ni de una dimensión oscura.", image: "https://i.pinimg.com/1200x/18/99/ec/1899ec756f8731e015eb941d7122fbec.jpg" },
@@ -330,7 +343,9 @@ export const translations = {
       failure: "GLOBAL CONTAINMENT FAILURE",
       biohazard: "/// BIO-HAZARD DETECTED ///",
       clearance: "CLEARANCE: DIRECTOR",
-      logout: "LOGOUT"
+      logout: "LOGOUT",
+      saving: "SAVING...",
+      saved: "SAVED TO CLOUD"
     },
     sidebar: {
       threatLevelTitle: "THREAT LEVEL",
@@ -393,10 +408,12 @@ export const translations = {
         status: "OPERATIONAL STATUS",
         class: "CLASS",
         bio: "BIOGRAPHICAL SUMMARY",
+        currentStory: "CURRENT STATUS / INTEL",
+        objectives: "PRIORITY OBJECTIVES",
         stats: "COMBAT METRICS",
         str: "STRENGTH",
         agi: "AGILITY",
-        int: "INTELLECT",
+        int: "INTELECTO",
         assign: "ASSIGN TO MISSION",
         unassign: "WITHDRAW FROM SERVICE",
         assignModalTitle: "SELECT TACTICAL MISSION",
@@ -407,7 +424,10 @@ export const translations = {
     },
     recruit: {
         title: "ASSET RECRUITMENT",
-        selectDb: "SELECT FROM DATABASE (OPTIONAL)",
+        selectDb: "SELECT FROM DATABASE (CLOUD)",
+        loadingDb: "LOADING FILES...",
+        adminSeed: "ADMIN: UPLOAD INITIAL DATA",
+        seedSuccess: "DATABASE UPDATED",
         alias: "ALIAS / CODENAME",
         name: "REAL NAME",
         class: "TACTICAL CLASS",
@@ -504,6 +524,12 @@ export const translations = {
         choose: "CHOOSE YOUR PATH",
         optionA: "OPTION A: THE LIVING HERO",
         optionB: "OPTION B: THE ZOMBIE HERO",
+        loading: {
+            line1: "ESTABLISHING SECURE CONNECTION...",
+            line2: "RETRIEVING FILE 0-Z...",
+            line3: "DECRYPTION COMPLETE.",
+            line4: "INITIATING PLAYBACK."
+        },
         slides: [
             { text: "MARVEL ZOMBIES: CONTAGIO CERO\nBook I: The Legacy of Arrogance", image: "https://i.pinimg.com/1200x/18/85/ee/1885ee42132b6976d36896a81f33ad8c.jpg" },
             { text: "There were no trumpets. No red skies or ancient prophecies being fulfilled.\nThe end of the world didn't come from outer space, nor from a dark dimension.", image: "https://i.pinimg.com/1200x/18/99/ec/1899ec756f8731e015eb941d7122fbec.jpg" },

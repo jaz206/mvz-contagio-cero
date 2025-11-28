@@ -1,5 +1,5 @@
-
-import React, { useState, useMemo, useEffect, useCallback } from 'react';
+import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
+import { USATopoJSON } from './types'; 
 import { USAMap } from './components/USAMap';
 import { LoginScreen } from './components/LoginScreen';
 import { translations, Language } from './translations';
@@ -10,6 +10,7 @@ import { StoryMode } from './components/StoryMode';
 import { auth } from './firebaseConfig';
 import { onAuthStateChanged, User } from 'firebase/auth';
 import { logout } from './services/authService';
+import { getUserProfile, saveUserProfile } from './services/dbService';
 
 // Centralized Faction Definitions
 const FACTION_STATES = {
@@ -40,6 +41,9 @@ const INITIAL_HEROES: Hero[] = [
         status: 'AVAILABLE',
         class: 'SCOUT',
         bio: 'Former Avenger. High agility and spider-sense make him an ideal scout for infected zones. Carries the guilt of survival.',
+        currentStory: 'Patrolling the perimeter of the safe zone. Still looking for MJ.',
+        objectives: ['Secure 3 Intel Drops', 'Rescue 1 Civilian'],
+        completedObjectiveIndices: [],
         imageUrl: 'https://i.pinimg.com/736x/a7/b5/42/a7b5426842d78ac7e7230d8fc3899b4d.jpg',
         stats: { strength: 8, agility: 10, intellect: 9 },
         assignedMissionId: null
@@ -52,6 +56,9 @@ const INITIAL_HEROES: Hero[] = [
         status: 'AVAILABLE',
         class: 'TACTICIAN',
         bio: 'Expert spy and assassin. Her skills are crucial for infiltration missions in Fisk\'s territory. Keeps the team focused on the objective.',
+        currentStory: 'Monitoring Fisk\'s communications channels. Something big is happening in the East.',
+        objectives: ['Infiltrate Kingpin Outpost', 'Assassinate Zombie Target'],
+        completedObjectiveIndices: [],
         imageUrl: 'https://i.pinimg.com/736x/04/22/42/042242d9f82aa42ec72efb4339b0d43d.jpg',
         stats: { strength: 6, agility: 9, intellect: 9 },
         assignedMissionId: null
@@ -64,6 +71,9 @@ const INITIAL_HEROES: Hero[] = [
         status: 'AVAILABLE',
         class: 'BRAWLER',
         bio: 'Former villain turned desperate survivor. His suit provides protection against bites. Unpredictable, but necessary muscle.',
+        currentStory: 'Complaint filed: Rations are insufficient. Requesting combat duty.',
+        objectives: ['Survive 3 Missions', 'Destroy 10 Zombies'],
+        completedObjectiveIndices: [],
         imageUrl: 'https://i.pinimg.com/736x/b7/e4/90/b7e490624ade7c73bf8d4dc135bbbb58.jpg',
         stats: { strength: 9, agility: 7, intellect: 5 },
         assignedMissionId: null
@@ -76,6 +86,9 @@ const INITIAL_HEROES: Hero[] = [
         status: 'DEPLOYED',
         class: 'BRAWLER',
         bio: 'Driven by pure predatory instinct. S.H.I.E.L.D. keeps him on a tight leash. He tracks the infected not to save them, but for the sport.',
+        currentStory: 'Currently tracking a high-value target in Sector 4.',
+        objectives: ['Hunt Alpha Zombie', 'Bring back proof of kill'],
+        completedObjectiveIndices: [],
         imageUrl: 'https://i.pinimg.com/1200x/b0/28/ce/b028ce5d3234fbeecc8d75b04a32c9d7.jpg',
         stats: { strength: 10, agility: 7, intellect: 4 },
         assignedMissionId: 'kraven-ny' 
@@ -88,6 +101,12 @@ const INITIAL_HEROES: Hero[] = [
         status: 'AVAILABLE',
         class: 'TACTICIAN',
         bio: 'The smartest man alive, struggling to find a cure in a world that has rejected science. His intellect is humanity\'s last hope.',
+        currentStory: "Reed no habla de ese día. El día que el Edificio Baxter cayó. Johnny Storm intentó contener la horda haciendo 'Supernova', pero eran demasiados. Reed vio cómo la luz de la Antorcha se apagaba bajo una montaña de carne podrida mientras Johnny gritaba su nombre. Ben Grimm se quedó atrás para bloquear el ascensor, una roca inamovible siendo erosionada por dientes. Sue... Sue se volvió invisible para esconderse y no la ha vuelto a ver. Reed solo logró escapar con Franklin y Valeria, a los que congeló para detener su infección. Ahora, cada ecuación que escribe es un intento de pedir perdón a los fantasmas de su familia.",
+        objectives: [
+            'Cero Absoluto: Recuperar núcleos de criogenización de un laboratorio SHIELD para mantener a los niños en estasis.',
+            'Informe de Bajas: Localizar a Sue, Johnny y Ben. Confirmar estado: Supervivientes o Hostiles.'
+        ],
+        completedObjectiveIndices: [],
         imageUrl: 'https://i.pinimg.com/1200x/14/53/8f/14538f644cde719845a2948c6df4d110.jpg',
         stats: { strength: 5, agility: 6, intellect: 10 },
         assignedMissionId: null
@@ -100,6 +119,9 @@ const INITIAL_HEROES: Hero[] = [
         status: 'AVAILABLE',
         class: 'BRAWLER',
         bio: 'A lawyer who can bench press a tank. Retains her intelligence while transformed, making her a deadly combination of brains and brawn on the battlefield.',
+        currentStory: 'Drafting new protocols for survivor intake. Also punching zombies.',
+        objectives: ['Defend the Bunker', 'Clear Route 66'],
+        completedObjectiveIndices: [],
         imageUrl: 'https://i.pinimg.com/736x/f2/6b/75/f26b75eafd31830b60979dc1c1b82d8a.jpg',
         stats: { strength: 10, agility: 6, intellect: 8 },
         assignedMissionId: null
@@ -116,6 +138,9 @@ const INITIAL_ZOMBIE_HEROES: Hero[] = [
         status: 'AVAILABLE',
         class: 'TACTICIAN',
         bio: 'Tactical genius preserved in a rotting brain. Leads the horde.',
+        currentStory: 'Organizing the horde for a strike on the Western Front.',
+        objectives: ['Devour 10 Humans', 'Breach Defenses'],
+        completedObjectiveIndices: [],
         imageUrl: '',
         stats: { strength: 8, agility: 6, intellect: 8 },
         assignedMissionId: null
@@ -128,6 +153,9 @@ const INITIAL_ZOMBIE_HEROES: Hero[] = [
         status: 'AVAILABLE',
         class: 'BLASTER',
         bio: 'Tech-enhanced hunger. Repulsors fueled by flesh.',
+        currentStory: 'Suit power critical. Seeking bio-fuel source.',
+        objectives: ['Consume Energy Core', 'Upgrade Armor'],
+        completedObjectiveIndices: [],
         imageUrl: '',
         stats: { strength: 7, agility: 6, intellect: 10 },
         assignedMissionId: null
@@ -140,6 +168,9 @@ const INITIAL_ZOMBIE_HEROES: Hero[] = [
         status: 'AVAILABLE',
         class: 'BRAWLER',
         bio: 'Regenerating rot. The ultimate predator.',
+        currentStory: 'Tracking scent of fresh meat in the sewers.',
+        objectives: ['Hunt Resistance Leader', 'Survive Explosion'],
+        completedObjectiveIndices: [],
         imageUrl: '',
         stats: { strength: 9, agility: 9, intellect: 5 },
         assignedMissionId: null
@@ -152,6 +183,9 @@ const INITIAL_ZOMBIE_HEROES: Hero[] = [
         status: 'AVAILABLE',
         class: 'BLASTER',
         bio: 'Cosmic hunger. Devourer of worlds.',
+        currentStory: 'The Hunger is growing. A planet is not enough.',
+        objectives: ['Consume Solar Flare', 'Destroy S.H.I.E.L.D. Base'],
+        completedObjectiveIndices: [],
         imageUrl: '',
         stats: { strength: 10, agility: 8, intellect: 9 },
         assignedMissionId: null
@@ -173,6 +207,10 @@ const App: React.FC = () => {
   const [completedMissionIds, setCompletedMissionIds] = useState<Set<string>>(new Set());
   const [heroes, setHeroes] = useState<Hero[]>(INITIAL_HEROES);
   const [playerAlignment, setPlayerAlignment] = useState<'ALIVE' | 'ZOMBIE' | null>(null);
+  
+  // Cloud Save State
+  const [savingStatus, setSavingStatus] = useState<'IDLE' | 'SAVING' | 'SAVED' | 'ERROR'>('IDLE');
+  const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Helper to get storage keys based on current user and alignment
   const getStorageKeys = useCallback((alignment: 'ALIVE' | 'ZOMBIE' | null, currentUser: User | null, guestMode: boolean) => {
@@ -210,82 +248,106 @@ const App: React.FC = () => {
       return () => unsubscribe();
   }, []);
 
-  // 2. Load Data when User OR Alignment changes
+  // 2. Load Data Strategy (Cloud Priority -> Local Fallback)
   useEffect(() => {
       if (loadingAuth || (!user && !isGuest)) return;
-      if (!playerAlignment) return; // Wait until alignment is selected (Story or saved)
+      if (!playerAlignment) return;
 
-      const keys = getStorageKeys(playerAlignment, user, isGuest);
-      if (!keys) return;
+      const loadData = async () => {
+          let loadedFromCloud = false;
 
-      // Load Missions
-      try {
-          const savedMissions = localStorage.getItem(keys.missions);
-          if (savedMissions) {
-              setCompletedMissionIds(new Set(JSON.parse(savedMissions)));
-          } else {
-              // MIGRATION: Check if legacy data exists (from before update) and current alignment is ALIVE
-              if (playerAlignment === 'ALIVE') {
-                  const legacyMissions = localStorage.getItem(keys.legacyMissions);
-                  if (legacyMissions) {
-                      setCompletedMissionIds(new Set(JSON.parse(legacyMissions)));
-                  } else {
-                      setCompletedMissionIds(new Set()); 
-                  }
+          // Try Cloud First if Authenticated
+          if (user) {
+              setSavingStatus('SAVING'); // Reusing saving status for loading indication mostly
+              const cloudProfile = await getUserProfile(user.uid, playerAlignment);
+              if (cloudProfile) {
+                  setHeroes(cloudProfile.heroes);
+                  setCompletedMissionIds(new Set(cloudProfile.completedMissionIds));
+                  loadedFromCloud = true;
+                  setSavingStatus('SAVED');
               } else {
-                  setCompletedMissionIds(new Set()); 
+                  setSavingStatus('IDLE');
               }
           }
-      } catch (e) {
-          setCompletedMissionIds(new Set());
-      }
 
-      // Load Heroes
-      try {
-          const savedHeroes = localStorage.getItem(keys.heroes);
-          if (savedHeroes) {
-              setHeroes(JSON.parse(savedHeroes));
-          } else {
-               // Load initial roster based on alignment
-               if (playerAlignment === 'ALIVE') {
-                   const legacyHeroes = localStorage.getItem(keys.legacyHeroes);
-                   if (legacyHeroes) {
-                       setHeroes(JSON.parse(legacyHeroes));
-                   } else {
-                       setHeroes(INITIAL_HEROES); 
-                   }
-               } else {
-                   // ZOMBIE MODE DEFAULT
-                   setHeroes(INITIAL_ZOMBIE_HEROES); 
-               }
+          // Fallback to LocalStorage if cloud failed or empty (or guest)
+          if (!loadedFromCloud) {
+              const keys = getStorageKeys(playerAlignment, user, isGuest);
+              if (keys) {
+                  // Load Missions
+                  try {
+                      const savedMissions = localStorage.getItem(keys.missions);
+                      if (savedMissions) {
+                          setCompletedMissionIds(new Set(JSON.parse(savedMissions)));
+                      } else if (playerAlignment === 'ALIVE') {
+                          // Migration Logic
+                          const legacyMissions = localStorage.getItem(keys.legacyMissions);
+                          if (legacyMissions) setCompletedMissionIds(new Set(JSON.parse(legacyMissions)));
+                          else setCompletedMissionIds(new Set());
+                      } else {
+                          setCompletedMissionIds(new Set());
+                      }
+                  } catch (e) { setCompletedMissionIds(new Set()); }
+
+                  // Load Heroes
+                  try {
+                      const savedHeroes = localStorage.getItem(keys.heroes);
+                      if (savedHeroes) {
+                          setHeroes(JSON.parse(savedHeroes));
+                      } else if (playerAlignment === 'ALIVE') {
+                          // Migration Logic
+                          const legacyHeroes = localStorage.getItem(keys.legacyHeroes);
+                          if (legacyHeroes) setHeroes(JSON.parse(legacyHeroes));
+                          else setHeroes(INITIAL_HEROES);
+                      } else {
+                          setHeroes(INITIAL_ZOMBIE_HEROES);
+                      }
+                  } catch (e) {
+                      setHeroes(playerAlignment === 'ZOMBIE' ? INITIAL_ZOMBIE_HEROES : INITIAL_HEROES);
+                  }
+              }
           }
-      } catch (e) {
-          setHeroes(playerAlignment === 'ZOMBIE' ? INITIAL_ZOMBIE_HEROES : INITIAL_HEROES);
-      }
+      };
 
-  }, [user, loadingAuth, isGuest, playerAlignment, getStorageKeys]);
+      loadData();
+  }, [user, isGuest, playerAlignment, loadingAuth, getStorageKeys]);
 
 
-  // 3. Save Data when State changes (using current alignment keys)
+  // 3. Save Data Logic (Local + Cloud Auto-Save)
   useEffect(() => {
       if (loadingAuth || !playerAlignment) return;
       
       const keys = getStorageKeys(playerAlignment, user, isGuest);
       if (!keys) return;
 
+      // IMMEDIATE LOCAL SAVE
       localStorage.setItem(keys.missions, JSON.stringify([...completedMissionIds]));
-  }, [completedMissionIds, user, loadingAuth, isGuest, playerAlignment, getStorageKeys]);
-
-  useEffect(() => {
-      if (loadingAuth || !playerAlignment) return;
-
-      const keys = getStorageKeys(playerAlignment, user, isGuest);
-      if (!keys) return;
-
       localStorage.setItem(keys.heroes, JSON.stringify(heroes));
-  }, [heroes, user, loadingAuth, isGuest, playerAlignment, getStorageKeys]);
 
-  // Persist the alignment preference itself (so we reload into the same campaign)
+      // DEBOUNCED CLOUD SAVE (Only for authenticated users)
+      if (user) {
+          if (saveTimeoutRef.current) {
+              clearTimeout(saveTimeoutRef.current);
+          }
+
+          setSavingStatus('SAVING');
+          
+          saveTimeoutRef.current = setTimeout(async () => {
+              try {
+                  await saveUserProfile(user.uid, playerAlignment, heroes, [...completedMissionIds]);
+                  setSavingStatus('SAVED');
+                  // Revert status to idle after a few seconds
+                  setTimeout(() => setSavingStatus('IDLE'), 3000);
+              } catch (e) {
+                  console.error("Cloud save failed", e);
+                  setSavingStatus('ERROR');
+              }
+          }, 2000); // 2 second debounce
+      }
+
+  }, [heroes, completedMissionIds, user, loadingAuth, isGuest, playerAlignment, getStorageKeys]);
+
+  // Persist the alignment preference
   useEffect(() => {
       if (loadingAuth) return;
       if (playerAlignment) {
@@ -297,7 +359,6 @@ const App: React.FC = () => {
   // Guest Login Handler
   const handleGuestLogin = () => {
       setIsGuest(true);
-      // Only show story if alignment is not set (first time guest)
       const savedAlignment = localStorage.getItem('shield_alignment_guest');
       if (!savedAlignment) {
           setShowStory(true);
@@ -311,7 +372,6 @@ const App: React.FC = () => {
       setPlayerAlignment(choice);
       setShowStory(false);
       
-      // Mark intro as seen for Auth users
       if (user) {
           localStorage.setItem(`shield_intro_seen_${user.uid}`, 'true');
       }
@@ -319,11 +379,8 @@ const App: React.FC = () => {
 
   const handleCampaignSwitch = (newAlignment: 'ALIVE' | 'ZOMBIE') => {
       if (playerAlignment === newAlignment) return;
-      
-      // The current state is already saved by useEffects.
-      // We just update the alignment, and the Load effect will trigger to fetch the new campaign data.
       setPlayerAlignment(newAlignment);
-      setViewMode('map'); // Reset view to map on switch
+      setViewMode('map');
   };
 
   // --- MISSION DEFINITIONS ---
@@ -448,7 +505,7 @@ const App: React.FC = () => {
       }
   }, [t, playerAlignment]);
 
-  // Filter missions: Show ALL missions that are either completed OR have their prereq met.
+  // Filter missions
   const visibleMissions = useMemo(() => {
     return allMissions.filter(m => {
         const isCompleted = completedMissionIds.has(m.id);
@@ -457,7 +514,6 @@ const App: React.FC = () => {
     });
   }, [allMissions, completedMissionIds]);
 
-  // Filter only missions available for assignment (not completed, currently active)
   const assignableMissions = useMemo(() => {
       return visibleMissions.filter(m => !completedMissionIds.has(m.id));
   }, [visibleMissions, completedMissionIds]);
@@ -467,33 +523,22 @@ const App: React.FC = () => {
   };
 
   const handleAssignHero = (heroId: string, missionId: string) => {
-      // Check limits: Max 6 heroes per mission
       const heroesOnMission = heroes.filter(h => h.assignedMissionId === missionId);
-      if (heroesOnMission.length >= 6) {
-          return false; // Limit reached
-      }
+      if (heroesOnMission.length >= 6) return false;
 
       setHeroes(prev => prev.map(h => {
           if (h.id === heroId) {
-              return { 
-                  ...h, 
-                  status: 'DEPLOYED', 
-                  assignedMissionId: missionId 
-              };
+              return { ...h, status: 'DEPLOYED', assignedMissionId: missionId };
           }
           return h;
       }));
-      return true; // Success
+      return true;
   };
 
   const handleUnassignHero = (heroId: string) => {
       setHeroes(prev => prev.map(h => {
           if (h.id === heroId) {
-              return { 
-                  ...h, 
-                  status: 'AVAILABLE', 
-                  assignedMissionId: null 
-              };
+              return { ...h, status: 'AVAILABLE', assignedMissionId: null };
           }
           return h;
       }));
@@ -503,11 +548,26 @@ const App: React.FC = () => {
       setHeroes(prev => [...prev, newHero]);
   };
 
+  const handleToggleHeroObjective = (heroId: string, objectiveIndex: number) => {
+      setHeroes(prev => prev.map(h => {
+          if (h.id === heroId) {
+              const currentIndices = h.completedObjectiveIndices || [];
+              let newIndices;
+              if (currentIndices.includes(objectiveIndex)) {
+                  newIndices = currentIndices.filter(i => i !== objectiveIndex);
+              } else {
+                  newIndices = [...currentIndices, objectiveIndex];
+              }
+              return { ...h, completedObjectiveIndices: newIndices };
+          }
+          return h;
+      }));
+  };
+
   const handleLogout = async () => {
       await logout();
-      setIsGuest(false); // Reset guest state so login screen appears again
+      setIsGuest(false);
       setViewMode('map');
-      // We don't clear local alignment on logout to remember user choice, but we could if desired.
   };
 
   const getMissionsForFaction = (factionKey: 'magneto' | 'kingpin' | 'hulk' | 'doom') => {
@@ -516,7 +576,6 @@ const App: React.FC = () => {
           if (factionKey === 'magneto') return FACTION_STATES.magneto.has(state);
           if (factionKey === 'kingpin') return FACTION_STATES.kingpin.has(state);
           if (factionKey === 'hulk') return FACTION_STATES.hulk.has(state);
-          // Doom is fallback
           return !FACTION_STATES.magneto.has(state) && !FACTION_STATES.kingpin.has(state) && !FACTION_STATES.hulk.has(state);
       });
   };
@@ -551,19 +610,10 @@ const App: React.FC = () => {
       );
   };
 
-  // Login Screen rendered if no user, not loading, and NOT guest
   if (!loadingAuth && !user && !isGuest) {
-    return (
-      <LoginScreen 
-        onLogin={handleGuestLogin} 
-        onGoogleLogin={() => {}} 
-        language={lang} 
-        setLanguage={setLang} 
-      />
-    );
+    return <LoginScreen onLogin={handleGuestLogin} onGoogleLogin={() => {}} language={lang} setLanguage={setLang} />;
   }
 
-  // Loading Screen while checking auth
   if (loadingAuth) {
       return <div className="h-screen w-full bg-slate-950 flex items-center justify-center text-cyan-500 font-mono">INITIALIZING UPLINK...</div>;
   }
@@ -571,16 +621,14 @@ const App: React.FC = () => {
   return (
     <div className={`flex flex-col h-screen w-full bg-slate-950 text-cyan-400 font-mono overflow-hidden relative ${playerAlignment === 'ZOMBIE' ? 'hue-rotate-15 saturate-50' : ''}`}>
       
-      {/* Story Mode Overlay */}
       {showStory && (
           <StoryMode 
             language={lang} 
             onComplete={handleStoryComplete} 
-            onSkip={() => handleStoryComplete('ALIVE')} // Default if skipped
+            onSkip={() => handleStoryComplete('ALIVE')} 
           />
       )}
 
-      {/* View Mode Switching */}
       {viewMode === 'bunker' ? (
         <BunkerInterior 
           heroes={heroes} 
@@ -588,18 +636,17 @@ const App: React.FC = () => {
           onAssign={handleAssignHero}
           onUnassign={handleUnassignHero}
           onAddHero={handleAddHero}
+          onToggleObjective={handleToggleHeroObjective}
           onBack={() => setViewMode('map')} 
           language={lang} 
           playerAlignment={playerAlignment}
         />
       ) : (
         <>
-            {/* BACKGROUND OVERLAY for Map Mode */}
             <div className="absolute inset-0 pointer-events-none opacity-10" 
                 style={{backgroundImage: 'linear-gradient(rgba(6,182,212, 0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(6,182,212, 0.1) 1px, transparent 1px)', backgroundSize: '40px 40px'}}>
             </div>
 
-            {/* Header / Top Bar */}
             <header className="flex justify-between items-center p-4 border-b border-cyan-800 bg-slate-900/80 z-20 backdrop-blur-sm">
                 <div className="flex items-center gap-4">
                 <div className="w-12 h-12 border-2 border-cyan-400 rounded-full flex items-center justify-center relative overflow-hidden">
@@ -614,12 +661,20 @@ const App: React.FC = () => {
                 </div>
                 </div>
                 <div className="text-right flex flex-col items-end gap-1">
-                {/* Language Toggle & User Info */}
                 <div className="flex gap-2 mb-1 items-center">
                     {(user || isGuest) && (
                          <div className="flex items-center gap-2 mr-2">
                             {user && user.photoURL && <img src={user.photoURL} className="w-4 h-4 rounded-full border border-cyan-500" alt="Agent" />}
                             <span className="text-[10px] text-cyan-600 hidden md:inline">{user ? (user.displayName || 'AGENT') : 'GUEST COMMANDER'}</span>
+                            {/* SAVING STATUS INDICATOR */}
+                            {savingStatus !== 'IDLE' && (
+                                <span className={`text-[10px] font-bold ${
+                                    savingStatus === 'SAVING' ? 'text-yellow-500 animate-pulse' : 
+                                    savingStatus === 'SAVED' ? 'text-emerald-500' : 'text-red-500'
+                                }`}>
+                                    {savingStatus === 'SAVING' ? t.header.saving : savingStatus === 'SAVED' ? t.header.saved : 'SYNC ERROR'}
+                                </span>
+                            )}
                             <button onClick={handleLogout} className="text-[10px] text-red-400 border border-red-900 px-2 hover:bg-red-900/50">{t.header.logout}</button>
                          </div>
                     )}
@@ -643,13 +698,10 @@ const App: React.FC = () => {
                 </div>
             </header>
 
-            {/* Main Content Area */}
             <main className="flex flex-1 overflow-hidden relative p-4 gap-4">
                 
-                {/* Left Sidebar - Tactical Data */}
                 <aside className="hidden lg:flex flex-col w-80 border border-cyan-900 bg-slate-900/80 p-4 gap-6 z-10 shadow-lg overflow-y-auto scrollbar-thin scrollbar-thumb-cyan-800">
                 
-                {/* Bunker Button */}
                 <button
                     onClick={() => setViewMode('bunker')}
                     className={`w-full py-3 border font-bold text-xs tracking-widest hover:text-white transition-all flex items-center justify-center gap-3 shadow-[0_0_10px_rgba(6,182,212,0.1)] group ${
@@ -664,7 +716,6 @@ const App: React.FC = () => {
                     {playerAlignment === 'ZOMBIE' ? t.sidebar.hiveBtn : t.sidebar.bunkerBtn}
                 </button>
                 
-                {/* Campaign Switcher */}
                 <div className="w-full">
                     <h3 className="text-[10px] text-cyan-600 mb-2 uppercase font-bold tracking-widest border-b border-cyan-900 pb-1">{t.sidebar.campaignMode}</h3>
                     <div className="flex gap-2">
@@ -691,7 +742,6 @@ const App: React.FC = () => {
                     </div>
                 </div>
 
-                {/* Replay Story Button */}
                 <button
                     onClick={() => setShowStory(true)}
                     className="w-full py-2 bg-slate-900 border border-cyan-800 text-cyan-600 font-bold text-[10px] tracking-widest hover:bg-cyan-900/30 hover:text-cyan-400 transition-all flex items-center justify-center gap-2"
@@ -708,7 +758,6 @@ const App: React.FC = () => {
                 <div className="space-y-4">
                     <h3 className="text-xs text-cyan-400 border-b border-cyan-800 pb-1 tracking-widest">{t.sidebar.factionIntel}</h3>
                     
-                    {/* Broken Eden Intel (Magneto) - RED */}
                     <div className="bg-slate-800/50 p-2 border-l-2 border-red-600">
                     <div className="flex justify-between text-sm font-bold text-red-400">
                         <span>{t.factions.magneto.name}</span>
@@ -719,7 +768,6 @@ const App: React.FC = () => {
                     {renderMissionList('magneto')}
                     </div>
 
-                    {/* Empire of Flesh Intel (Kingpin) - PURPLE */}
                     <div className="bg-slate-800/50 p-2 border-l-2 border-purple-500">
                     <div className="flex justify-between text-sm font-bold text-purple-400">
                         <span>{t.factions.kingpin.name}</span>
@@ -730,7 +778,6 @@ const App: React.FC = () => {
                     {renderMissionList('kingpin')}
                     </div>
 
-                    {/* Doomsberg Intel (Doom) - DARK GREEN */}
                     <div className="bg-slate-800/50 p-2 border-l-2 border-emerald-700">
                     <div className="flex justify-between text-sm font-bold text-emerald-500">
                         <span>{t.factions.doom.name}</span>
@@ -741,7 +788,6 @@ const App: React.FC = () => {
                     {renderMissionList('doom')}
                     </div>
 
-                    {/* No Man's Land (Hulk) - LIME/WASTELAND */}
                     <div className="bg-slate-800/50 p-2 border-l-2 border-lime-600">
                     <div className="flex justify-between text-sm font-bold text-lime-400">
                         <span>{t.factions.hulk.name}</span>
@@ -764,19 +810,15 @@ const App: React.FC = () => {
                 </div>
                 </aside>
 
-                {/* Map Container - The Viewport */}
                 <div className="flex-1 relative border border-cyan-700/50 bg-slate-900/40 shadow-[inset_0_0_50px_rgba(0,0,0,0.8)] rounded-sm overflow-hidden group">
                 
-                {/* Decorative Corner Brackets */}
                 <div className="absolute top-0 left-0 w-8 h-8 border-t-2 border-l-2 border-cyan-400 z-20"></div>
                 <div className="absolute top-0 right-0 w-8 h-8 border-t-2 border-r-2 border-cyan-400 z-20"></div>
                 <div className="absolute bottom-0 left-0 w-8 h-8 border-b-2 border-l-2 border-cyan-400 z-20"></div>
                 <div className="absolute bottom-0 right-0 w-8 h-8 border-b-2 border-r-2 border-cyan-400 z-20"></div>
 
-                {/* Animated Scanline (defined in index.html styles) */}
                 <div className="scanline"></div>
 
-                {/* The Map Component */}
                 <USAMap 
                     language={lang} 
                     missions={visibleMissions}
@@ -788,7 +830,6 @@ const App: React.FC = () => {
                     playerAlignment={playerAlignment}
                 />
 
-                {/* Overlay UI elements on the map */}
                 <div className="absolute bottom-4 left-4 z-20 text-[10px] md:text-xs text-cyan-600 bg-slate-900/80 p-2 border border-cyan-900 pointer-events-none">
                     <div>{t.map.satellite}</div>
                     <div>{t.map.zoom}</div>
@@ -798,7 +839,6 @@ const App: React.FC = () => {
 
             </main>
 
-            {/* Mission Dossier Modal - Rendered at App level */}
             {selectedMission && (
                 <MissionModal 
                     mission={selectedMission} 

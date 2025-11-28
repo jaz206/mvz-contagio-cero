@@ -64,6 +64,10 @@ export interface Hero {
   status: HeroStatus;
   class: HeroClass;
   bio: string;
+  // Nuevos campos
+  currentStory?: string; // historia_actual
+  objectives?: string[]; // array de objetivos personales
+  completedObjectiveIndices?: number[]; // Índices de los objetivos cumplidos
   imageUrl?: string; // Optional URL for hero portrait
   stats: {
     strength: number;
@@ -83,4 +87,9 @@ export interface HeroTemplate {
     intellect: number;
   };
   imageUrl: string;
+  // Optional fields for dynamic data from DB (if no translation exists)
+  bio?: string;
+  alias?: string;
+  currentStory?: string;
+  objectives?: string[];
 }
