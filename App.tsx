@@ -711,9 +711,12 @@ const App: React.FC = () => {
 
             <header className="flex justify-between items-center p-4 border-b border-cyan-800 bg-slate-900/80 z-20 backdrop-blur-sm">
                 <div className="flex items-center gap-4">
-                <div className="w-12 h-12 border-2 border-cyan-400 rounded-full flex items-center justify-center relative overflow-hidden">
-                    <div className="absolute inset-0 bg-cyan-900/20"></div>
-                    <span className="text-2xl font-bold">S.H.I.E.L.D.</span>
+                <div className="w-12 h-12 border-2 border-cyan-400 rounded-full flex items-center justify-center relative overflow-hidden shadow-[0_0_10px_rgba(6,182,212,0.5)]">
+                    <img 
+                        src="https://i.pinimg.com/736x/63/1e/3a/631e3a68228c97963e78381ad11bf3bb.jpg" 
+                        alt="SHIELD Logo" 
+                        className="w-full h-full object-cover"
+                    />
                 </div>
                 <div>
                     <h1 className="text-xl md:text-2xl font-bold tracking-[0.2em] text-cyan-300 drop-shadow-[0_0_5px_rgba(6,182,212,0.8)]">
