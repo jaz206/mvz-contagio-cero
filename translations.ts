@@ -192,6 +192,7 @@ export const translations = {
         threat: "NIVEL DE AMENAZA",
         accept: "INICIAR MISIÓN",
         complete: "REPORTAR ÉXITO DE MISIÓN",
+        reactivate: "REACTIVAR OPERACIÓN",
         cancel: "CERRAR ARCHIVO",
         sending: "ENVIANDO REPORTE A SATÉLITE...",
         sent: "REPORTE CONFIRMADO"
@@ -412,7 +413,7 @@ export const translations = {
         objectives: "PRIORITY OBJECTIVES",
         stats: "COMBAT METRICS",
         str: "STRENGTH",
-        agi: "AGILITY",
+        agi: "AGILIDAD",
         int: "INTELECTO",
         assign: "ASSIGN TO MISSION",
         unassign: "WITHDRAW FROM SERVICE",
@@ -513,6 +514,7 @@ export const translations = {
         threat: "THREAT LEVEL",
         accept: "INITIATE MISSION",
         complete: "REPORT MISSION SUCCESS",
+        reactivate: "REACTIVATE OPERATION",
         cancel: "CLOSE FILE",
         sending: "TRANSMITTING REPORT TO SATELLITE...",
         sent: "REPORT CONFIRMED"

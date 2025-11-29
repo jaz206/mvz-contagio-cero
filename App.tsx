@@ -42,10 +42,13 @@ const INITIAL_HEROES: Hero[] = [
         status: 'AVAILABLE',
         class: 'SCOUT',
         bio: 'Former Avenger. High agility and spider-sense make him an ideal scout for infected zones. Carries the guilt of survival.',
-        currentStory: 'Patrolling the perimeter of the safe zone. Still looking for MJ.',
-        objectives: ['Secure 3 Intel Drops', 'Rescue 1 Civilian'],
+        currentStory: "Peter no hace chistes. La máscara está sucia y huele a sangre seca. El día del brote, Peter tuvo que tomar una decisión en fracciones de segundo: detener un camión cisterna fuera de control o llegar a casa de Tía May. Salvó el camión. Cuando llegó a Queens, la casa estaba en silencio. Encontró a May sentada en su sillón, ya transformada, con la boca manchada de sangre. Peter no pudo matarla; la envolvió en una crisálida de telaraña reforzada y selló la puerta con tablas. Ella sigue allí, siseando en la oscuridad. De MJ solo tiene un rastro digital. Le regaló un reloj con rastreador de Stark Industries. La señal sigue activa. Se mueve por los túneles del metro y las azoteas de la Zona Roja. Peter no sabe si persigue a su esposa viva huyendo, a una MJ zombie vagando sin rumbo, o a una Abominación que se tragó el reloj. Cada noche, Peter sale a cazar esa señal, aterrorizado de alcanzarla y descubrir la verdad.",
+        objectives: [
+            "El Fantasma de Queens: Peter debe volver a su casa. Debe entrar, enfrentarse a lo que queda de Tía May, matarla definitivamente para darle descanso y recuperar el álbum de fotos familiar que ella protegía.",
+            "Rastro Fantasma: Triangular la señal del reloj Stark en los túneles de la Zona Roja. Confirmar estado de MJ: Superviviente o Hostil."
+        ],
         completedObjectiveIndices: [],
-        imageUrl: 'https://i.pinimg.com/736x/a7/b5/42/a7b5426842d78ac7e7230d8fc3899b4d.jpg',
+        imageUrl: 'https://i.pinimg.com/736x/97/f1/96/97f1965bf162c5eb2f7aa8cb4be4bf97.jpg',
         stats: { strength: 8, agility: 10, intellect: 9 },
         assignedMissionId: null
     },
@@ -57,26 +60,32 @@ const INITIAL_HEROES: Hero[] = [
         status: 'AVAILABLE',
         class: 'TACTICIAN',
         bio: 'Expert spy and assassin. Her skills are crucial for infiltration missions in Fisk\'s territory. Keeps the team focused on the objective.',
-        currentStory: 'Monitoring Fisk\'s communications channels. Something big is happening in the East.',
-        objectives: ['Infiltrate Kingpin Outpost', 'Assassinate Zombie Target'],
+        currentStory: 'Natasha no es una víctima. Ella fue quien colocó los explosivos en la carretera para volcar el transporte de la Tríada. Esa figura que emergió de las sombras en la Misión 0 era ella. Ha pasado meses rastreando prisioneros útiles para formar la Iniciativa Lázaro. S.H.I.E.L.D. cayó, Fury murió gritando, pero Natasha sobrevivió porque sabe ser invisible. Su frialdad es una armadura; sacrifica peones para salvar reyes. Sin embargo, su armadura tiene una grieta: ha interceptado una señal analógica, un código Morse antiguo que solo dos personas conocen. Clint Barton (Hawkeye) está vivo, retenido por Kingpin como trofeo o cebo. Natasha quemará la ciudad entera y usará a este nuevo equipo de "zombies renegados" como carne de cañón si eso le permite llegar hasta él.',
+        objectives: [
+            'Ojo de Halcón: Localizar y extraer a Clint Barton de la fortaleza de Kingpin.',
+            'Sacrificio Calculado: Usar activos prescindibles para asegurar objetivos de alto valor.'
+        ],
         completedObjectiveIndices: [],
-        imageUrl: 'https://i.pinimg.com/736x/04/22/42/042242d9f82aa42ec72efb4339b0d43d.jpg',
+        imageUrl: 'https://i.pinimg.com/736x/a5/8f/e9/a58fe99516a31f494c1d4dcb22231c46.jpg',
         stats: { strength: 6, agility: 9, intellect: 9 },
         assignedMissionId: null
     },
     {
         id: 'h3',
-        templateId: 'scorpion',
-        name: 'Mac Gargan',
-        alias: 'SCORPION',
+        templateId: 'loki',
+        name: 'Loki Laufeyson',
+        alias: 'LOKI',
         status: 'AVAILABLE',
-        class: 'BRAWLER',
-        bio: 'Former villain turned desperate survivor. His suit provides protection against bites. Unpredictable, but necessary muscle.',
-        currentStory: 'Complaint filed: Rations are insufficient. Requesting combat duty.',
-        objectives: ['Survive 3 Missions', 'Destroy 10 Zombies'],
+        class: 'TACTICIAN',
+        bio: 'God of Mischief. Exiled on Earth when Asgard closed the Bifrost. Driven by a twisted mix of arrogance, survival instinct, and a grudge against Doom.',
+        currentStory: 'Loki estaba en la Tierra para conquistar, como siempre. Cuando Thor cayó infectado en la primera oleada, Loki se rio. Pensó que era el final perfecto para su arrogante hermano: convertido en un animal babeante. Se acercó para burlarse de él... y Thor, con la mente podrida, lo miró y lloró sangre. En ese momento, Loki se dio cuenta de que sin Thor, él no es nada. Intentó usar su magia para curarlo, pero el virus de la Tríada (Ciencia + Magia de Doom) rechazó sus hechizos. Loki tuvo que huir de su propio hermano. Asgard cerró el Bifrost, dejándolo exiliado en este infierno. Ahora, Loki camina entre los muertos usando ilusiones para parecer uno de ellos. Se ha unido a la Iniciativa Lázaro por puro rencor: Doom usó magia asgardiana robada para crear el virus. Loki va a recuperar esa magia, va a despellejar a Doom y luego va a buscar a Thor para concederle la misericordia que le negó el primer día.',
+        objectives: [
+            'Venganza Divina: Recuperar la magia asgardiana robada de los laboratorios de Doom.',
+            'Misericordia Fraternal: Localizar a Thor Zombie y concederle el descanso final.'
+        ],
         completedObjectiveIndices: [],
-        imageUrl: 'https://i.pinimg.com/736x/b7/e4/90/b7e490624ade7c73bf8d4dc135bbbb58.jpg',
-        stats: { strength: 9, agility: 7, intellect: 5 },
+        imageUrl: 'https://i.pinimg.com/736x/98/50/d0/9850d063395efd498cce84be09da69fd.jpg',
+        stats: { strength: 7, agility: 8, intellect: 10 },
         assignedMissionId: null
     },
     {
@@ -87,10 +96,13 @@ const INITIAL_HEROES: Hero[] = [
         status: 'DEPLOYED',
         class: 'BRAWLER',
         bio: 'Driven by pure predatory instinct. S.H.I.E.L.D. keeps him on a tight leash. He tracks the infected not to save them, but for the sport.',
-        currentStory: 'Currently tracking a high-value target in Sector 4.',
-        objectives: ['Hunt Alpha Zombie', 'Bring back proof of kill'],
+        currentStory: 'Víctor Creed fue el primer experimento. Antes de capturar a Banner, la Tríada necesitaba probar la resistencia del tejido al virus. Capturaron a Creed y lo ataron en el "Laboratorio X". No buscaban un arma; buscaban una granja. Lo infectaban, esperaban a que la carne se pudriera, y luego cortaban los trozos podridos mientras su factor de curación regeneraba tejido nuevo. Un ciclo infinito de infección y vivisección. Creed era carne infinita para alimentar sus pruebas. Escapó el día que Hulk estalló, aprovechando el fallo de seguridad para arrancar la garganta de su torturador con los dientes. Ahora, su factor de curación está sobrecargado, luchando perpetuamente contra residuos del virus en su sangre. Se une a Lázaro porque sabe dónde están los laboratorios secretos y quiere quemarlos hasta los cimientos... con los científicos dentro.',
+        objectives: [
+            'Tierra Quemada: Localizar y destruir el "Laboratorio X" y todas las instalaciones de prueba.',
+            'Cacería de Batas Blancas: Eliminar a cualquier científico asociado con el proyecto del virus.'
+        ],
         completedObjectiveIndices: [],
-        imageUrl: 'https://i.pinimg.com/1200x/b0/28/ce/b028ce5d3234fbeecc8d75b04a32c9d7.jpg',
+        imageUrl: 'https://i.pinimg.com/736x/31/eb/4c/31eb4c0f0dba5c96c80da093a4d83a50.jpg',
         stats: { strength: 10, agility: 7, intellect: 4 },
         assignedMissionId: 'kraven-ny' 
     },
@@ -102,13 +114,13 @@ const INITIAL_HEROES: Hero[] = [
         status: 'AVAILABLE',
         class: 'TACTICIAN',
         bio: 'The smartest man alive, struggling to find a cure in a world that has rejected science. His intellect is humanity\'s last hope.',
-        currentStory: "Reed no habla de ese día. El día que el Edificio Baxter cayó. Johnny Storm intentó contener la horda haciendo 'Supernova', pero eran demasiados. Reed vio cómo la luz de la Antorcha se apagaba bajo una montaña de carne podrida mientras Johnny gritaba su nombre. Ben Grimm se quedó atrás para bloquear el ascensor, una roca inamovible siendo erosionada por dientes. Sue... Sue se volvió invisible para esconderse y no la ha vuelto a ver. Reed solo logró escapar con Franklin y Valeria, a los que congeló para detener su infección. Ahora, cada ecuación que escribe es un intento de pedir perdón a los fantasmas de su familia.",
+        currentStory: "Reed no habla de ese día. La horda irrumpió en el Edificio Baxter. Johnny Storm se lanzó con una 'Supernova' desesperada, pero fue sofocado por la carne muerta. Ben Grimm no huyó; gritando el nombre de Johnny, se lanzó a ayudarlo y a bloquear el pasillo principal. Sue Storm, sabiendo que Reed era la única esperanza de cura, lo empujó a él y a los niños a la cámara de estasis y selló el acceso con un campo de fuerza desde fuera. Reed, impotente, vio por última vez a Sue, apenas visible tras su campo de energía, mientras su figura se volvía invisible entre los infectados. Sin cuerpos confirmados, Reed vive en una tortura constante: debe encontrarlos para descubrir la verdad, sin saber si hallará a su familia o a monstruos que llevan sus rostros.",
         objectives: [
-            'Cero Absoluto: Recuperar núcleos de criogenización de un laboratorio SHIELD para mantener a los niños en estasis.',
+            'Cero Absoluto: El sistema de refrigeración del búnker falla. Recuperar núcleos de criogenización de un laboratorio de SHIELD para que los niños no se descongelen.',
             'Informe de Bajas: Localizar a Sue, Johnny y Ben. Confirmar estado: Supervivientes o Hostiles.'
         ],
         completedObjectiveIndices: [],
-        imageUrl: 'https://i.pinimg.com/1200x/14/53/8f/14538f644cde719845a2948c6df4d110.jpg',
+        imageUrl: 'https://i.pinimg.com/736x/58/3c/d3/583cd39457c96e1858ecfbab1db06cce.jpg',
         stats: { strength: 5, agility: 6, intellect: 10 },
         assignedMissionId: null
     },
@@ -120,10 +132,13 @@ const INITIAL_HEROES: Hero[] = [
         status: 'AVAILABLE',
         class: 'BRAWLER',
         bio: 'A lawyer who can bench press a tank. Retains her intelligence while transformed, making her a deadly combination of brains and brawn on the battlefield.',
-        currentStory: 'Drafting new protocols for survivor intake. Also punching zombies.',
-        objectives: ['Defend the Bunker', 'Clear Route 66'],
+        currentStory: 'Jennifer intentó detenerlos legalmente, pero la Tríada secuestró a Bruce bajo "Leyes de Emergencia". Mentira. Lo querían como cobaya para el Pulso Nulificador. Jennifer asaltó el laboratorio rompiendo paredes, pero llegó segundos tarde. Vio a Bruce atado como un animal de matadero. Vio el momento exacto en que le inyectaron el virus y cómo la sangre Gamma reaccionó, convirtiéndolo en una bomba biológica que reventó el mundo. Ella sobrevivió a la explosión gracias a su piel; Bruce se convirtió en el Monstruo Infinito. Ahora Jennifer sabe que el Apocalipsis tiene nombres y apellidos: Doom, Magneto, Fisk. No descansará hasta romperles la columna a los tres y darle a su primo la eutanasia que merece.',
+        objectives: [
+            'Juicio Final: Desmantelar el liderazgo de la Tríada (Doom, Magneto, Fisk).',
+            'Paz Gamma: Localizar a Hulk y neutralizarlo permanentemente.'
+        ],
         completedObjectiveIndices: [],
-        imageUrl: 'https://i.pinimg.com/736x/f2/6b/75/f26b75eafd31830b60979dc1c1b82d8a.jpg',
+        imageUrl: 'https://i.pinimg.com/736x/bb/2a/f6/bb2af63dbdbf782daf9af337915489c0.jpg',
         stats: { strength: 10, agility: 6, intellect: 8 },
         assignedMissionId: null
     }
@@ -561,6 +576,14 @@ const App: React.FC = () => {
     setCompletedMissionIds(prev => new Set(prev).add(id));
   };
 
+  const handleMissionReactivate = (id: string) => {
+    setCompletedMissionIds(prev => {
+        const next = new Set(prev);
+        next.delete(id);
+        return next;
+    });
+  };
+
   const handleAssignHero = (heroId: string, missionId: string) => {
       const heroesOnMission = heroes.filter(h => h.assignedMissionId === missionId);
       if (heroesOnMission.length >= 6) return false;
@@ -884,6 +907,7 @@ const App: React.FC = () => {
                     isOpen={!!selectedMission} 
                     onClose={() => setSelectedMission(null)}
                     onComplete={handleMissionComplete}
+                    onReactivate={handleMissionReactivate}
                     language={lang}
                     isCompleted={completedMissionIds.has(selectedMission.id)}
                 />

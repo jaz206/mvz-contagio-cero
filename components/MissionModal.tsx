@@ -8,11 +8,12 @@ interface MissionModalProps {
   isOpen: boolean;
   onClose: () => void;
   onComplete: (missionId: string) => void;
+  onReactivate?: (missionId: string) => void;
   language: Language;
   isCompleted?: boolean;
 }
 
-export const MissionModal: React.FC<MissionModalProps> = ({ mission, isOpen, onClose, onComplete, language, isCompleted }) => {
+export const MissionModal: React.FC<MissionModalProps> = ({ mission, isOpen, onClose, onComplete, onReactivate, language, isCompleted }) => {
   const [reporting, setReporting] = useState(false);
   const [reportSuccess, setReportSuccess] = useState(false);
   const t = translations[language].missionModal;
@@ -37,6 +38,13 @@ export const MissionModal: React.FC<MissionModalProps> = ({ mission, isOpen, onC
          onClose();
       }, 1500);
     }, 3000);
+  };
+
+  const handleReactivateClick = () => {
+      if (onReactivate) {
+          onReactivate(mission.id);
+          onClose();
+      }
   };
 
   return (
@@ -125,6 +133,15 @@ export const MissionModal: React.FC<MissionModalProps> = ({ mission, isOpen, onC
                 {t.cancel}
             </button>
             <div className="flex gap-4">
+                {isCompleted && onReactivate && (
+                    <button 
+                        onClick={handleReactivateClick}
+                        className="px-6 py-2 border border-yellow-600 text-yellow-500 text-xs tracking-widest hover:bg-yellow-900/20 hover:text-yellow-300 transition-colors"
+                    >
+                        {t.reactivate}
+                    </button>
+                )}
+
                 <button 
                     disabled={isCompleted || reporting || reportSuccess}
                     className={`px-6 py-2 text-white text-xs font-bold tracking-widest border shadow transition-all

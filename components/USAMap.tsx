@@ -163,6 +163,98 @@ export const USAMap: React.FC<USAMapProps> = ({ language, missions, completedMis
     projection.fitSize([svgWidth, svgHeight], states);
     path.projection(projection);
 
+    // Zoom behavior declaration
+    const zoom = d3.zoom<SVGSVGElement, unknown>()
+      .scaleExtent([1, 8])
+      .on('zoom', (event) => {
+        const { k } = event.transform;
+        
+        // Transform the whole map group
+        g.attr('transform', event.transform.toString());
+        
+        // --- DYNAMIC MARKER SCALING ---
+        
+        // BUNKER SCALING
+        g.selectAll('.bunker').attr('transform', function() {
+            if (bunkerCoords) {
+                return `translate(${bunkerCoords[0]},${bunkerCoords[1]}) scale(${1/k})`;
+            }
+            return null;
+        });
+        
+        // HULK SCALING & ICON SWAPPING
+        const showHulkIconThreshold = 2.5;
+        const hulkGroup = g.select('#hulk-token');
+        if (!hulkGroup.empty()) {
+            if (k >= showHulkIconThreshold) {
+                hulkGroup.select('.hulk-orb').style('display', 'none').style('opacity', 0);
+                hulkGroup.select('.hulk-icon')
+                    .style('display', 'block')
+                    .style('opacity', 1)
+                    // The jump wrapper handles the jump scale, here we apply zoom compensation
+                    // We apply it to the icon itself inside the wrapper
+                    .attr('transform', `scale(${1/k * 2.5})`); 
+            } else {
+                hulkGroup.select('.hulk-icon').style('display', 'none').style('opacity', 0);
+                hulkGroup.select('.hulk-orb')
+                    .style('display', 'block')
+                    .style('opacity', 1)
+                    .attr('transform', `scale(${1/Math.sqrt(k)})`);
+            }
+        }
+
+
+        // MISSION MARKER SCALING
+        const showIconThreshold = 2.5;
+
+        if (k >= showIconThreshold) {
+            g.selectAll('.mission-dot').style('opacity', 0).style('display', 'none');
+            
+            g.selectAll('.mission-icon')
+                .style('display', 'block')
+                .style('opacity', 1)
+                .attr('transform', `scale(${1/k * 2})`); 
+        } else {
+            g.selectAll('.mission-icon').style('opacity', 0).style('display', 'none');
+            
+            g.selectAll('.mission-dot')
+                .style('display', 'block')
+                .style('opacity', 1)
+                .attr('transform', `scale(${1/Math.sqrt(k)})`);
+        }
+      });
+
+    // Attach zoom to SVG
+    svg.call(zoom);
+
+    // CLICK ZOOM HANDLER
+    const handleStateClick = (event: any, d: any) => {
+        event.stopPropagation();
+        
+        const bounds = path.bounds(d);
+        const dx = bounds[1][0] - bounds[0][0];
+        const dy = bounds[1][1] - bounds[0][1];
+        const x = (bounds[0][0] + bounds[1][0]) / 2;
+        const y = (bounds[0][1] + bounds[1][1]) / 2;
+        
+        const scale = Math.max(1, Math.min(8, 0.9 / Math.max(dx / svgWidth, dy / svgHeight)));
+        const translate = [svgWidth / 2 - scale * x, svgHeight / 2 - scale * y];
+
+        svg.transition()
+            .duration(750)
+            .call(
+                zoom.transform,
+                d3.zoomIdentity.translate(translate[0], translate[1]).scale(scale)
+            );
+    };
+
+    // Reset zoom on background click
+    svg.on('click', () => {
+        svg.transition()
+            .duration(750)
+            .call(zoom.transform, d3.zoomIdentity);
+    });
+
     // Draw States
     g.selectAll('path.state')
       .data(states.features)
@@ -170,6 +262,7 @@ export const USAMap: React.FC<USAMapProps> = ({ language, missions, completedMis
       .attr('class', 'state')
       .attr('d', path as d3.GeoPath<any, d3.GeoGeometryObjects>)
       .attr('class', (d: any) => `${getFactionStyle(d.properties.name)} transition-all duration-200 cursor-crosshair`)
+      .on('click', handleStateClick) // Add click listener
       .append('title')
       .text((d: any) => `${d.properties.name.toUpperCase()}\n${getFactionLabel(d.properties.name)}`);
 
@@ -510,69 +603,6 @@ export const USAMap: React.FC<USAMapProps> = ({ language, missions, completedMis
                 .attr('fill', 'none');
         }
     });
-
-    // Zoom behavior
-    const zoom = d3.zoom<SVGSVGElement, unknown>()
-      .scaleExtent([1, 8])
-      .on('zoom', (event) => {
-        const { k } = event.transform;
-        
-        // Transform the whole map group
-        g.attr('transform', event.transform.toString());
-        
-        // --- DYNAMIC MARKER SCALING ---
-        
-        // BUNKER SCALING
-        g.selectAll('.bunker').attr('transform', function() {
-            if (bunkerCoords) {
-                return `translate(${bunkerCoords[0]},${bunkerCoords[1]}) scale(${1/k})`;
-            }
-            return null;
-        });
-        
-        // HULK SCALING & ICON SWAPPING
-        const showHulkIconThreshold = 2.5;
-        const hulkGroup = g.select('#hulk-token');
-        if (!hulkGroup.empty()) {
-            if (k >= showHulkIconThreshold) {
-                hulkGroup.select('.hulk-orb').style('display', 'none').style('opacity', 0);
-                hulkGroup.select('.hulk-icon')
-                    .style('display', 'block')
-                    .style('opacity', 1)
-                    // The jump wrapper handles the jump scale, here we apply zoom compensation
-                    // We apply it to the icon itself inside the wrapper
-                    .attr('transform', `scale(${1/k * 2.5})`); 
-            } else {
-                hulkGroup.select('.hulk-icon').style('display', 'none').style('opacity', 0);
-                hulkGroup.select('.hulk-orb')
-                    .style('display', 'block')
-                    .style('opacity', 1)
-                    .attr('transform', `scale(${1/Math.sqrt(k)})`);
-            }
-        }
-
-
-        // MISSION MARKER SCALING
-        const showIconThreshold = 2.5;
-
-        if (k >= showIconThreshold) {
-            g.selectAll('.mission-dot').style('opacity', 0).style('display', 'none');
-            
-            g.selectAll('.mission-icon')
-                .style('display', 'block')
-                .style('opacity', 1)
-                .attr('transform', `scale(${1/k * 2})`); 
-        } else {
-            g.selectAll('.mission-icon').style('opacity', 0).style('display', 'none');
-            
-            g.selectAll('.mission-dot')
-                .style('display', 'block')
-                .style('opacity', 1)
-                .attr('transform', `scale(${1/Math.sqrt(k)})`);
-        }
-      });
-
-    svg.call(zoom);
 
   }, [usData, svgWidth, svgHeight, getFactionLabel, missions, factionStates, completedMissionIds, onMissionSelect, onBunkerClick, t, playerAlignment]);
 
