@@ -5,6 +5,7 @@ export type Language = 'es' | 'en';
 
 export const translations = {
   es: {
+    // ... existing translations ...
     login: {
       title: "S.H.I.E.L.D.",
       subtitle: "TERMINAL DE ACCESO SEGURO",
@@ -167,6 +168,10 @@ export const translations = {
             alias: "STORM",
             bio: "Diosa del clima. Puede limpiar zonas enteras de zombis con un solo tornado. La reina necesita su reino de vuelta."
         },
+        loki: {
+            alias: "LOKI",
+            bio: "Dios del Engaño. Exiliado en la Tierra tras el cierre del Bifrost. Motivado por una retorcida mezcla de arrogancia, instinto de supervivencia y rencor contra Doom."
+        },
         // ZOMBIE HEROES
         colonel: {
             alias: "CORONEL AMÉRICA",
@@ -226,7 +231,33 @@ export const translations = {
             { text: " Así que aquí estás. De pie sobre las cenizas.\nA tu izquierda, los muertos. A tu derecha, las máquinas.\nDime, superviviente... en esta nueva era de monstruos y máquinas:\n¿QUÉ ERES TÚ?", image: "https://i.pinimg.com/1200x/45/7d/c5/457dc515c61d470eb26cf1727ebd67ea.jpg" },
         ]
     },
+    tutorial: {
+        welcome: {
+            title: "BIENVENIDO A LA INTERFAZ TÁCTICA",
+            text: "Soy la I.A. central de S.H.I.E.L.D. Te guiaré a través de los sistemas básicos de supervivencia y mando."
+        },
+        bunker: {
+            title: "BASE DE OPERACIONES",
+            text: "Aquí gestionarás tu escuadrón. Recluta héroes, consulta sus expedientes y asígnalos a misiones críticas. Es tu único refugio seguro."
+        },
+        missions: {
+            title: "INTELIGENCIA DE CAMPAÑA",
+            text: "Este panel muestra el estado de las facciones enemigas y las misiones activas. Monitoriza el nivel de amenaza global constantemente."
+        },
+        threat: {
+            title: "AMENAZA NIVEL OMEGA",
+            text: "Cuidado con la Zona Central. Hulk y otros horrores patrullan estas áreas. Evita el enfrentamiento directo sin la fuerza necesaria."
+        },
+        map: {
+            title: "MAPA ESTRATÉGICO",
+            text: "Tu ventana al mundo. Usa el ratón para moverte y hacer zoom. Localiza misiones (puntos amarillos) y rastrea movimientos enemigos en tiempo real."
+        },
+        next: "ENTENDIDO // SIGUIENTE",
+        skip: "OMITIR TUTORIAL",
+        finish: "INICIAR MANDO"
+    },
     missions: {
+        // ... existing missions ...
         kraven: {
             title: "LA CAZA MAYOR DE KRAVEN",
             description: [
@@ -309,7 +340,7 @@ export const translations = {
                 },
                 {
                     title: "Caza de Mutantes",
-                    desc: "Devour Magneto's elite guard."
+                    desc: "Devorar a la guardia de élite de Magneto."
                 }
             ]
         },
@@ -327,6 +358,7 @@ export const translations = {
     }
   },
   en: {
+    // ... existing translations ...
     login: {
       title: "S.H.I.E.L.D.",
       subtitle: "SECURE ACCESS TERMINAL",
@@ -489,6 +521,10 @@ export const translations = {
             alias: "STORM",
             bio: "Weather Goddess. Can clear entire zones of zombies with a single tornado. The Queen needs her kingdom back."
         },
+        loki: {
+            alias: "LOKI",
+            bio: "God of Mischief. Exiled on Earth when Asgard closed the Bifrost. Driven by a twisted mix of arrogance, survival instinct, and a grudge against Doom."
+        },
         // ZOMBIES
         colonel: {
             alias: "COLONEL AMERICA",
@@ -507,7 +543,33 @@ export const translations = {
             bio: "Cosmic power mixed with insatiable hunger. An Omega-level threat that doesn't just want to eat flesh, but consume stars."
         }
     },
+    tutorial: {
+        welcome: {
+            title: "WELCOME TO THE TACTICAL INTERFACE",
+            text: "I am S.H.I.E.L.D.'s central AI. I will guide you through the basic survival and command systems."
+        },
+        bunker: {
+            title: "BASE OF OPERATIONS",
+            text: "Here you will manage your squad. Recruit heroes, view their files, and assign them to critical missions. It is your only safe haven."
+        },
+        missions: {
+            title: "CAMPAIGN INTEL",
+            text: "This panel displays enemy faction status and active missions. Monitor the global threat level constantly."
+        },
+        threat: {
+            title: "THREAT LEVEL OMEGA",
+            text: "Beware the Central Zone. Hulk and other horrors patrol these areas. Avoid direct confrontation without necessary force."
+        },
+        map: {
+            title: "STRATEGIC MAP",
+            text: "Your window to the world. Use your mouse to pan and zoom. Locate missions (yellow dots) and track enemy movements in real-time."
+        },
+        next: "ACKNOWLEDGED // NEXT",
+        skip: "SKIP TUTORIAL",
+        finish: "INITIALIZE COMMAND"
+    },
     missionModal: {
+        // ... existing ...
         title: "MISSION DOSSIER // CLASSIFIED",
         objectives: "TACTICAL OBJECTIVES",
         briefing: "SITUATION REPORT",
@@ -520,6 +582,7 @@ export const translations = {
         sent: "REPORT CONFIRMED"
     },
     story: {
+        // ... existing ...
         skip: "SKIP SEQUENCE",
         next: "NEXT",
         prev: "PREV",
@@ -533,6 +596,7 @@ export const translations = {
             line4: "INITIATING PLAYBACK."
         },
         slides: [
+            // ... existing slides ...
             { text: "MARVEL ZOMBIES: CONTAGIO CERO\nBook I: The Legacy of Arrogance", image: "https://i.pinimg.com/1200x/18/85/ee/1885ee42132b6976d36896a81f33ad8c.jpg" },
             { text: "There were no trumpets. No red skies or ancient prophecies being fulfilled.\nThe end of the world didn't come from outer space, nor from a dark dimension.", image: "https://i.pinimg.com/1200x/18/99/ec/1899ec756f8731e015eb941d7122fbec.jpg" },
             { text: "We built it. Here. At home. Or rather, they built it.\n\nIt was in a sterile lab. Three men gathered there: Victor Von Doom, Magneto, and Wilson Fisk.\nThey decided humanity was too chaotic. Their solution was cold, hard science: the Nullifier Pulse.", image: "https://i.pinimg.com/1200x/71/06/7d/71067db72856dfd6ca03d0d51a679bd6.jpg" },
@@ -546,7 +610,6 @@ export const translations = {
             { text: "But there's something else out there. Something worse than the dead.\nS.H.I.E.L.D. is still active.", image: "https://i.pinimg.com/1200x/e2/5c/3a/e25c3ac26e5fc65f9119b6073912e856.jpg" },
             { text: "The \"Lazarus Protocol\" is still running. S.H.I.E.L.D. is no longer an agency; it's a ghost armed to the teeth.\nA blind, deaf, and paranoid AI that eliminates anything that moves.", image: "https://i.pinimg.com/1200x/39/c8/cd/39c8cde0a5b56acc78b41c4eecf91f0a.jpg" },
             { text: "So here you are. Standing on the ashes.\nTo your left, the dead. To your right, the machines.\nTell me, survivor... in this new era of monsters and machines:\nWHAT ARE YOU?", image: "https://i.pinimg.com/1200x/45/7d/c5/457dc515c61d470eb26cf1727ebd67ea.jpg" },
-            // Choices handled by UI
         ]
     },
     missions: {

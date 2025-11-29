@@ -8,6 +8,7 @@ import { Mission, Hero } from './types';
 import { MissionModal } from './components/MissionModal';
 import { BunkerInterior } from './components/BunkerInterior';
 import { StoryMode } from './components/StoryMode';
+import { TutorialOverlay } from './components/TutorialOverlay'; // Import Tutorial
 import { auth } from './firebaseConfig';
 import { onAuthStateChanged, User } from 'firebase/auth';
 import { logout } from './services/authService';
@@ -217,6 +218,7 @@ const App: React.FC = () => {
   const [viewMode, setViewMode] = useState<'map' | 'bunker'>('map');
   const [selectedMission, setSelectedMission] = useState<Mission | null>(null);
   const [showStory, setShowStory] = useState(false);
+  const [showTutorial, setShowTutorial] = useState(false); // Tutorial State
   const t = translations[lang];
 
   // -- STATE PERSISTENCE --
@@ -410,6 +412,27 @@ const App: React.FC = () => {
       }
   }, [playerAlignment, user, loadingAuth, isGuest]);
 
+  // Check Tutorial Status whenever Story finishes or Alignment is set
+  useEffect(() => {
+      if (!playerAlignment) return;
+      if (showStory) return; // Don't show during story
+
+      // Unique key for tutorial seen
+      const tutorialKey = user ? `shield_tutorial_seen_${user.uid}` : 'shield_tutorial_seen_guest';
+      const hasSeenTutorial = localStorage.getItem(tutorialKey);
+
+      if (!hasSeenTutorial) {
+          // Delay slightly so UI is ready
+          setTimeout(() => setShowTutorial(true), 1000);
+      }
+  }, [playerAlignment, showStory, user]);
+
+  const handleTutorialComplete = () => {
+      setShowTutorial(false);
+      const tutorialKey = user ? `shield_tutorial_seen_${user.uid}` : 'shield_tutorial_seen_guest';
+      localStorage.setItem(tutorialKey, 'true');
+  };
+
   // Guest Login Handler
   const handleGuestLogin = () => {
       setIsGuest(true);
@@ -437,7 +460,7 @@ const App: React.FC = () => {
       setViewMode('map');
   };
 
-  // --- MISSION DEFINITIONS ---
+  // ... (keep missions logic as is)
   const allMissions: Mission[] = useMemo(() => {
       
       if (playerAlignment === 'ZOMBIE') {
@@ -691,6 +714,10 @@ const App: React.FC = () => {
           />
       )}
 
+      {showTutorial && (
+          <TutorialOverlay language={lang} onComplete={handleTutorialComplete} />
+      )}
+
       {viewMode === 'bunker' ? (
         <BunkerInterior 
           heroes={heroes} 
@@ -768,6 +795,7 @@ const App: React.FC = () => {
                 <aside className="hidden lg:flex flex-col w-80 border border-cyan-900 bg-slate-900/80 p-4 gap-6 z-10 shadow-lg overflow-y-auto scrollbar-thin scrollbar-thumb-cyan-800">
                 
                 <button
+                    id="tutorial-bunker-btn"
                     onClick={() => setViewMode('bunker')}
                     className={`w-full py-3 border font-bold text-xs tracking-widest hover:text-white transition-all flex items-center justify-center gap-3 shadow-[0_0_10px_rgba(6,182,212,0.1)] group ${
                         playerAlignment === 'ZOMBIE' 
@@ -814,13 +842,13 @@ const App: React.FC = () => {
                     {t.sidebar.replayStory}
                 </button>
 
-                <div className="border-l-4 border-red-600 pl-3">
+                <div id="tutorial-threat-level" className="border-l-4 border-red-600 pl-3">
                     <h3 className="text-xs text-red-400 mb-1 font-bold">{t.sidebar.threatLevelTitle}</h3>
                     <div className="text-2xl font-bold text-white animate-pulse">{t.sidebar.threatLevelValue}</div>
                     <div className="text-[10px] text-red-400">{t.sidebar.infectionRate}</div>
                 </div>
                 
-                <div className="space-y-4">
+                <div id="tutorial-sidebar-missions" className="space-y-4">
                     <h3 className="text-xs text-cyan-400 border-b border-cyan-800 pb-1 tracking-widest">{t.sidebar.factionIntel}</h3>
                     
                     <div className="bg-slate-800/50 p-2 border-l-2 border-red-600">
@@ -875,7 +903,7 @@ const App: React.FC = () => {
                 </div>
                 </aside>
 
-                <div className="flex-1 relative border border-cyan-700/50 bg-slate-900/40 shadow-[inset_0_0_50px_rgba(0,0,0,0.8)] rounded-sm overflow-hidden group">
+                <div id="tutorial-map" className="flex-1 relative border border-cyan-700/50 bg-slate-900/40 shadow-[inset_0_0_50px_rgba(0,0,0,0.8)] rounded-sm overflow-hidden group">
                 
                 <div className="absolute top-0 left-0 w-8 h-8 border-t-2 border-l-2 border-cyan-400 z-20"></div>
                 <div className="absolute top-0 right-0 w-8 h-8 border-t-2 border-r-2 border-cyan-400 z-20"></div>
