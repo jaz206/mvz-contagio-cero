@@ -236,25 +236,41 @@ export const translations = {
             title: "BIENVENIDO A LA INTERFAZ TÁCTICA",
             text: "Soy la I.A. central de S.H.I.E.L.D. Te guiaré a través de los sistemas básicos de supervivencia y mando."
         },
-        bunker: {
-            title: "BASE DE OPERACIONES",
-            text: "Aquí gestionarás tu escuadrón. Recluta héroes, consulta sus expedientes y asígnalos a misiones críticas. Es tu único refugio seguro."
+        map_zones: {
+            title: "MAPA DE TERRITORIOS",
+            text: "EE. UU. ha caído. ROJO: El Edén Roto (Magneto). MORADO: Imperio de la Carne (Kingpin). VERDE OSCURO: Doomsberg (Dr. Doom). VERDE CLARO: Tierra de Nadie (Hulk)."
+        },
+        hulk: {
+            title: "AMENAZA MÓVIL",
+            text: "El token verde brillante es HULK. Se mueve aleatoriamente por la Tierra de Nadie. Es indestructible. Si está en un estado, ninguna misión allí puede completarse."
         },
         missions: {
-            title: "INTELIGENCIA DE CAMPAÑA",
-            text: "Este panel muestra el estado de las facciones enemigas y las misiones activas. Monitoriza el nivel de amenaza global constantemente."
+            title: "OPERACIONES",
+            text: "AMARILLO: Misiones de Campaña. Al completar una, se desbloquearán otras. AZUL: Bases Ocultas de S.H.I.E.L.D. Recupéralas para obtener recursos."
         },
-        threat: {
-            title: "AMENAZA NIVEL OMEGA",
-            text: "Cuidado con la Zona Central. Hulk y otros horrores patrullan estas áreas. Evita el enfrentamiento directo sin la fuerza necesaria."
+        bunker_entry: {
+            title: "ACCESO AL BÚNKER",
+            text: "Tu refugio seguro. Haz clic aquí para entrar, gestionar tu equipo y preparar la siguiente ofensiva."
         },
-        map: {
-            title: "MAPA ESTRATÉGICO",
-            text: "Tu ventana al mundo. Usa el ratón para moverte y hacer zoom. Localiza misiones (puntos amarillos) y rastrea movimientos enemigos en tiempo real."
+        roster: {
+            title: "LISTA DE ACTIVOS",
+            text: "Aquí ves a tus héroes disponibles. Controla su estado (Disponible, Desplegado, Herido) y selecciona uno para ver detalles."
+        },
+        file: {
+            title: "EXPEDIENTE TÁCTICO",
+            text: "Consulta la historia, biografía y escanea la ubicación. MARCA los Objetivos Prioritarios a medida que los completes en tu partida."
+        },
+        recruit: {
+            title: "RECLUTAMIENTO",
+            text: "¿Has encontrado nuevos aliados? Usa este botón para registrarlos en la base de datos y añadirlos a tu equipo."
+        },
+        finish: {
+            title: "SISTEMAS EN LÍNEA",
+            text: "El tutorial ha finalizado. La suerte está echada, Comandante. Salve lo que queda del mundo."
         },
         next: "ENTENDIDO // SIGUIENTE",
         skip: "OMITIR TUTORIAL",
-        finish: "INICIAR MANDO"
+        finishBtn: "INICIAR OPERACIONES"
     },
     missions: {
         // ... existing missions ...
@@ -548,28 +564,43 @@ export const translations = {
             title: "WELCOME TO THE TACTICAL INTERFACE",
             text: "I am S.H.I.E.L.D.'s central AI. I will guide you through the basic survival and command systems."
         },
-        bunker: {
-            title: "BASE OF OPERATIONS",
-            text: "Here you will manage your squad. Recruit heroes, view their files, and assign them to critical missions. It is your only safe haven."
+        map_zones: {
+            title: "TERRITORY MAP",
+            text: "The USA has fallen. RED: Broken Eden (Magneto). PURPLE: Empire of Flesh (Kingpin). DARK GREEN: Doomsberg (Dr. Doom). LIGHT GREEN: No Man's Land (Hulk)."
+        },
+        hulk: {
+            title: "MOBILE THREAT",
+            text: "The bright green token is HULK. He roams randomly across No Man's Land. He is indestructible. If he enters a state, no mission there can be completed."
         },
         missions: {
-            title: "CAMPAIGN INTEL",
-            text: "This panel displays enemy faction status and active missions. Monitor the global threat level constantly."
+            title: "OPERATIONS",
+            text: "YELLOW: Campaign Missions. Completing one unlocks others. BLUE: Hidden S.H.I.E.L.D. Bases. Reclaim them for resources."
         },
-        threat: {
-            title: "THREAT LEVEL OMEGA",
-            text: "Beware the Central Zone. Hulk and other horrors patrol these areas. Avoid direct confrontation without necessary force."
+        bunker_entry: {
+            title: "BUNKER ACCESS",
+            text: "Your safe haven. Click here to enter, manage your team, and prepare the next offensive."
         },
-        map: {
-            title: "STRATEGIC MAP",
-            text: "Your window to the world. Use your mouse to pan and zoom. Locate missions (yellow dots) and track enemy movements in real-time."
+        roster: {
+            title: "ASSET ROSTER",
+            text: "View your available heroes here. Monitor their status (Available, Deployed, Injured) and select one for details."
+        },
+        file: {
+            title: "TACTICAL FILE",
+            text: "Review history, biography, and scan location. MARK Priority Objectives as you complete them in your game."
+        },
+        recruit: {
+            title: "RECRUITMENT",
+            text: "Found new allies? Use this button to register them in the database and add them to your team."
+        },
+        finish: {
+            title: "SYSTEMS ONLINE",
+            text: "Tutorial complete. The die is cast, Commander. Save what remains of the world."
         },
         next: "ACKNOWLEDGED // NEXT",
         skip: "SKIP TUTORIAL",
-        finish: "INITIALIZE COMMAND"
+        finishBtn: "COMMENCE OPERATIONS"
     },
     missionModal: {
-        // ... existing ...
         title: "MISSION DOSSIER // CLASSIFIED",
         objectives: "TACTICAL OBJECTIVES",
         briefing: "SITUATION REPORT",
@@ -582,7 +613,6 @@ export const translations = {
         sent: "REPORT CONFIRMED"
     },
     story: {
-        // ... existing ...
         skip: "SKIP SEQUENCE",
         next: "NEXT",
         prev: "PREV",
@@ -596,7 +626,6 @@ export const translations = {
             line4: "INITIATING PLAYBACK."
         },
         slides: [
-            // ... existing slides ...
             { text: "MARVEL ZOMBIES: CONTAGIO CERO\nBook I: The Legacy of Arrogance", image: "https://i.pinimg.com/1200x/18/85/ee/1885ee42132b6976d36896a81f33ad8c.jpg" },
             { text: "There were no trumpets. No red skies or ancient prophecies being fulfilled.\nThe end of the world didn't come from outer space, nor from a dark dimension.", image: "https://i.pinimg.com/1200x/18/99/ec/1899ec756f8731e015eb941d7122fbec.jpg" },
             { text: "We built it. Here. At home. Or rather, they built it.\n\nIt was in a sterile lab. Three men gathered there: Victor Von Doom, Magneto, and Wilson Fisk.\nThey decided humanity was too chaotic. Their solution was cold, hard science: the Nullifier Pulse.", image: "https://i.pinimg.com/1200x/71/06/7d/71067db72856dfd6ca03d0d51a679bd6.jpg" },
@@ -611,105 +640,6 @@ export const translations = {
             { text: "The \"Lazarus Protocol\" is still running. S.H.I.E.L.D. is no longer an agency; it's a ghost armed to the teeth.\nA blind, deaf, and paranoid AI that eliminates anything that moves.", image: "https://i.pinimg.com/1200x/39/c8/cd/39c8cde0a5b56acc78b41c4eecf91f0a.jpg" },
             { text: "So here you are. Standing on the ashes.\nTo your left, the dead. To your right, the machines.\nTell me, survivor... in this new era of monsters and machines:\nWHAT ARE YOU?", image: "https://i.pinimg.com/1200x/45/7d/c5/457dc515c61d470eb26cf1727ebd67ea.jpg" },
         ]
-    },
-    missions: {
-        kraven: {
-            title: "KRAVEN'S LAST HUNT",
-            description: [
-                "There are no orders. Only the trail of screams and despair. Kraven the Hunter, Fisk's zombie predator, has marked these urban ruins as his personal hunting ground. It is an active purge to secure live 'merchandise'.",
-                "Your access is the unstable Subway tunnel, your only safe entry and exit. The few survivors will be forced out of their hiding places throughout the assaults.",
-                "Time is running out. You must intercept, protect, and evacuate a minimum of 5 survivors via the Subway. Kraven is relentless; if he secures 2 victims before you, the mission will be a total failure. Justice is dead, but hatred is your only escape strategy.",
-                "Take to the streets and stop Kraven's Great Hunt!"
-            ],
-            objectives: [
-                {
-                    title: "Stop the Hunt!",
-                    desc: "Rescue and evacuate 5 survivors via the subway before Kraven completes his trophy quota."
-                },
-                {
-                    title: "Escape",
-                    desc: "All Superheroes must escape via the Exit Zone. Any Superhero may exit through this Zone at the end of their turn at no cost, provided there are no enemies in it."
-                }
-            ]
-        },
-        fleshSleeps: {
-            title: "WHERE THE FLESH SLEEPS",
-            description: [
-                "The Subway was left behind, devoured by dust and silence. Among the survivors you managed to get out, one —a maintenance technician— kept muttering disconnected things while you dragged him to the surface.",
-                "“Trucks… marked containers… an old prison in the east… cold, so cold…” Then he fell silent. He didn't die, but he disappeared at dawn.",
-                "Since then, rumors have multiplied. In neighborhoods controlled by Fisk, they speak of a place where no one returns, of engines roaring underground and lights that never go out. No one knows exactly what it is. Some call it “the warehouse”. Others, “the chamber”. Only one thing is certain: Fisk keeps something there he doesn't want anyone to see.",
-                "Your route ends in front of the walls of a forgotten prison, covered in makeshift fences and emblems engraved with fire. If the rumor is true, inside you will find more than answers. And if it isn't… you will have walked into the heart of the empire of flesh."
-            ],
-            objectives: [
-                {
-                    title: "The Deception of Levers",
-                    desc: "Open the complex doors. Activate the two real levers in the same turn."
-                },
-                {
-                    title: "The Cell of Silence",
-                    desc: "Free the captive hero."
-                },
-                {
-                    title: "Those Who Still Breathe",
-                    desc: "Rescue the prisoners. Evacuate at least 3 bystanders."
-                },
-                {
-                    title: "Conditions",
-                    desc: "Victory: Complete A + B + C. Failure: If the captive hero dies, Kraven captures 2 victims (if still active), or all heroes are eliminated."
-                }
-            ]
-        },
-        freshMeat: {
-            title: "FRESH MEAT",
-            description: [
-                "Hunger is a fire that never dies. The Hive whispers locations of human settlements undetected by S.H.I.E.L.D. In the heart of Texas, a convoy of survivors attempts to cross No Man's Land.",
-                "They don't know we own this wasteland. They think Hulk is the only danger. Poor fools.",
-                "The mission is simple: Intercept the convoy. We don't want total destruction. We want conversion. We need soldiers. We need food. We need to expand the family."
-            ],
-            objectives: [
-                {
-                    title: "Ambush",
-                    desc: "Stop the lead vehicle of the convoy before it crosses the state border."
-                },
-                {
-                    title: "Conversion",
-                    desc: "Infect 3 resistance leaders."
-                },
-                {
-                    title: "No Witnesses",
-                    desc: "Eliminate any distress signals before they contact S.H.I.E.L.D."
-                }
-            ]
-        },
-        breakSiege: {
-            title: "BREAK THE SIEGE",
-            description: [
-                "Magneto has established a defensive perimeter around San Francisco. His reprogrammed sentinels are hunting our own. It is an insult to our supremacy.",
-                "S.H.I.E.L.D. thinks they can contain us, but Broken Eden will fall. We have detected a breach in their magnetic shields.",
-                "Infiltrate. Destroy the generators. Make Homo Superior kneel before the Superior Hunger."
-            ],
-            objectives: [
-                {
-                    title: "Sabotage",
-                    desc: "Destroy the 2 magnetic field generators."
-                },
-                {
-                    title: "Mutant Hunt",
-                    desc: "Devour Magneto's elite guard."
-                }
-            ]
-        },
-        bases: {
-            desc: "Encrypted signal detected. Energy signature matches pre-collapse S.H.I.E.L.D. technology.",
-            objSecure: "Secure the perimeter",
-            objRetrieve: "Retrieve Data",
-            alpha: "HIDDEN BASE: ALPHA",
-            beta: "HIDDEN BASE: BETA",
-            gamma: "HIDDEN BASE: GAMMA",
-            delta: "HIDDEN BASE: DELTA",
-            epsilon: "HIDDEN BASE: EPSILON",
-            zeta: "HIDDEN BASE: ZETA"
-        }
     }
   }
 };

@@ -1,4 +1,5 @@
 
+// ... existing imports ...
 import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import { USATopoJSON } from './types'; 
 import { USAMap } from './components/USAMap';
@@ -14,6 +15,8 @@ import { onAuthStateChanged, User } from 'firebase/auth';
 import { logout } from './services/authService';
 import { getUserProfile, saveUserProfile } from './services/dbService';
 
+// ... existing constants FACTION_STATES, INITIAL_HEROES, INITIAL_ZOMBIE_HEROES ...
+// (Omitting data for brevity as it is unchanged from previous step unless specified)
 // Centralized Faction Definitions
 const FACTION_STATES = {
   magneto: new Set([
@@ -218,7 +221,7 @@ const App: React.FC = () => {
   const [viewMode, setViewMode] = useState<'map' | 'bunker'>('map');
   const [selectedMission, setSelectedMission] = useState<Mission | null>(null);
   const [showStory, setShowStory] = useState(false);
-  const [showTutorial, setShowTutorial] = useState(false); // Tutorial State
+  const [showTutorial, setShowTutorial] = useState(false); 
   const t = translations[lang];
 
   // -- STATE PERSISTENCE --
@@ -226,11 +229,10 @@ const App: React.FC = () => {
   const [heroes, setHeroes] = useState<Hero[]>(INITIAL_HEROES);
   const [playerAlignment, setPlayerAlignment] = useState<'ALIVE' | 'ZOMBIE' | null>(null);
   
-  // Cloud Save State
   const [savingStatus, setSavingStatus] = useState<'IDLE' | 'SAVING' | 'SAVED' | 'ERROR'>('IDLE');
   const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Helper to get storage keys based on current user and alignment
+  // Helper to get storage keys
   const getStorageKeys = useCallback((alignment: 'ALIVE' | 'ZOMBIE' | null, currentUser: User | null, guestMode: boolean) => {
       const uid = currentUser ? currentUser.uid : (guestMode ? 'guest' : null);
       if (!uid || !alignment) return null;
@@ -238,37 +240,29 @@ const App: React.FC = () => {
       return {
           missions: `shield_missions_${uid}_${alignment}`,
           heroes: `shield_heroes_${uid}_${alignment}`,
-          legacyMissions: `shield_missions_${uid}`, // For migration
-          legacyHeroes: `shield_heroes_${uid}` // For migration
+          legacyMissions: `shield_missions_${uid}`, 
+          legacyHeroes: `shield_heroes_${uid}` 
       };
   }, []);
 
-  // FORCE UPDATE HELPER: Merges saved data with latest code definitions
+  // FORCE UPDATE HELPER
   const mergeWithLatestContent = useCallback((savedHeroes: Hero[], alignment: 'ALIVE' | 'ZOMBIE'): Hero[] => {
       const initialList = alignment === 'ALIVE' ? INITIAL_HEROES : INITIAL_ZOMBIE_HEROES;
-      
-      // 1. Update existing heroes with latest content from code
       const updatedHeroes = savedHeroes.map(savedHero => {
           const latestDef = initialList.find(h => h.id === savedHero.id);
           if (latestDef) {
               return {
                   ...savedHero,
-                  // Overwrite content fields with latest from code
                   bio: latestDef.bio,
                   currentStory: latestDef.currentStory,
                   objectives: latestDef.objectives,
                   imageUrl: latestDef.imageUrl,
                   alias: latestDef.alias,
                   name: latestDef.name
-                  // Keep status, assignedMissionId, completedObjectiveIndices from savedHero
               };
           }
           return savedHero;
       });
-
-      // 2. Add any NEW heroes that might have been added to code but aren't in save
-      // (Optional, usually we just update content of existing ones for now)
-      
       return updatedHeroes;
   }, []);
 
@@ -280,35 +274,27 @@ const App: React.FC = () => {
           
           if (currentUser) {
             setIsGuest(false);
-            // Check if user has seen intro and get LAST PLAYED alignment
             const hasSeen = localStorage.getItem(`shield_intro_seen_${currentUser.uid}`);
             const savedAlignment = localStorage.getItem(`shield_alignment_${currentUser.uid}`);
             
-            if (!hasSeen) {
-                setShowStory(true);
-            }
-            if (savedAlignment) {
-                setPlayerAlignment(savedAlignment as 'ALIVE' | 'ZOMBIE');
-            }
+            if (!hasSeen) setShowStory(true);
+            if (savedAlignment) setPlayerAlignment(savedAlignment as 'ALIVE' | 'ZOMBIE');
           }
       });
       return () => unsubscribe();
   }, []);
 
-  // 2. Load Data Strategy (Cloud Priority -> Local Fallback)
+  // 2. Load Data Strategy
   useEffect(() => {
       if (loadingAuth || (!user && !isGuest)) return;
       if (!playerAlignment) return;
 
       const loadData = async () => {
           let loadedFromCloud = false;
-
-          // Try Cloud First if Authenticated
           if (user) {
-              setSavingStatus('SAVING'); // Reusing saving status for loading indication mostly
+              setSavingStatus('SAVING');
               const cloudProfile = await getUserProfile(user.uid, playerAlignment);
               if (cloudProfile) {
-                  // MERGE LOGIC: Combine Cloud Save Data with Latest Code Content
                   const mergedHeroes = mergeWithLatestContent(cloudProfile.heroes, playerAlignment);
                   setHeroes(mergedHeroes);
                   setCompletedMissionIds(new Set(cloudProfile.completedMissionIds));
@@ -319,17 +305,14 @@ const App: React.FC = () => {
               }
           }
 
-          // Fallback to LocalStorage if cloud failed or empty (or guest)
           if (!loadedFromCloud) {
               const keys = getStorageKeys(playerAlignment, user, isGuest);
               if (keys) {
-                  // Load Missions
                   try {
                       const savedMissions = localStorage.getItem(keys.missions);
                       if (savedMissions) {
                           setCompletedMissionIds(new Set(JSON.parse(savedMissions)));
                       } else if (playerAlignment === 'ALIVE') {
-                          // Migration Logic
                           const legacyMissions = localStorage.getItem(keys.legacyMissions);
                           if (legacyMissions) setCompletedMissionIds(new Set(JSON.parse(legacyMissions)));
                           else setCompletedMissionIds(new Set());
@@ -338,16 +321,13 @@ const App: React.FC = () => {
                       }
                   } catch (e) { setCompletedMissionIds(new Set()); }
 
-                  // Load Heroes
                   try {
                       const savedHeroes = localStorage.getItem(keys.heroes);
                       if (savedHeroes) {
-                          // MERGE LOGIC: Combine Local Save Data with Latest Code Content
                           const localHeroes = JSON.parse(savedHeroes);
                           const mergedHeroes = mergeWithLatestContent(localHeroes, playerAlignment);
                           setHeroes(mergedHeroes);
                       } else if (playerAlignment === 'ALIVE') {
-                          // Migration Logic
                           const legacyHeroes = localStorage.getItem(keys.legacyHeroes);
                           if (legacyHeroes) {
                               const localLegacyHeroes = JSON.parse(legacyHeroes);
@@ -364,46 +344,35 @@ const App: React.FC = () => {
               }
           }
       };
-
       loadData();
   }, [user, isGuest, playerAlignment, loadingAuth, getStorageKeys, mergeWithLatestContent]);
 
-
-  // 3. Save Data Logic (Local + Cloud Auto-Save)
+  // 3. Save Data Logic
   useEffect(() => {
       if (loadingAuth || !playerAlignment) return;
-      
       const keys = getStorageKeys(playerAlignment, user, isGuest);
       if (!keys) return;
 
-      // IMMEDIATE LOCAL SAVE
       localStorage.setItem(keys.missions, JSON.stringify([...completedMissionIds]));
       localStorage.setItem(keys.heroes, JSON.stringify(heroes));
 
-      // DEBOUNCED CLOUD SAVE (Only for authenticated users)
       if (user) {
-          if (saveTimeoutRef.current) {
-              clearTimeout(saveTimeoutRef.current);
-          }
-
+          if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
           setSavingStatus('SAVING');
-          
           saveTimeoutRef.current = setTimeout(async () => {
               try {
                   await saveUserProfile(user.uid, playerAlignment, heroes, [...completedMissionIds]);
                   setSavingStatus('SAVED');
-                  // Revert status to idle after a few seconds
                   setTimeout(() => setSavingStatus('IDLE'), 3000);
               } catch (e) {
                   console.error("Cloud save failed", e);
                   setSavingStatus('ERROR');
               }
-          }, 2000); // 2 second debounce
+          }, 2000);
       }
-
   }, [heroes, completedMissionIds, user, loadingAuth, isGuest, playerAlignment, getStorageKeys]);
 
-  // Persist the alignment preference
+  // Persist alignment
   useEffect(() => {
       if (loadingAuth) return;
       if (playerAlignment) {
@@ -412,17 +381,15 @@ const App: React.FC = () => {
       }
   }, [playerAlignment, user, loadingAuth, isGuest]);
 
-  // Check Tutorial Status whenever Story finishes or Alignment is set
+  // Check Tutorial
   useEffect(() => {
       if (!playerAlignment) return;
-      if (showStory) return; // Don't show during story
+      if (showStory) return;
 
-      // Unique key for tutorial seen
       const tutorialKey = user ? `shield_tutorial_seen_${user.uid}` : 'shield_tutorial_seen_guest';
       const hasSeenTutorial = localStorage.getItem(tutorialKey);
 
       if (!hasSeenTutorial) {
-          // Delay slightly so UI is ready
           setTimeout(() => setShowTutorial(true), 1000);
       }
   }, [playerAlignment, showStory, user]);
@@ -433,25 +400,25 @@ const App: React.FC = () => {
       localStorage.setItem(tutorialKey, 'true');
   };
 
-  // Guest Login Handler
-  const handleGuestLogin = () => {
-      setIsGuest(true);
-      const savedAlignment = localStorage.getItem('shield_alignment_guest');
-      if (!savedAlignment) {
-          setShowStory(true);
-      } else {
-          setPlayerAlignment(savedAlignment as 'ALIVE' | 'ZOMBIE');
+  const handleTutorialStepChange = (stepKey: string) => {
+      // If tutorial moves to 'roster', it means we should be in the bunker
+      // We check specifically for 'roster' because 'bunker_entry' highlights the button to go there
+      if (stepKey === 'roster') {
+          setViewMode('bunker');
       }
   };
 
-  // Story Completion Handler
+  const handleGuestLogin = () => {
+      setIsGuest(true);
+      const savedAlignment = localStorage.getItem('shield_alignment_guest');
+      if (!savedAlignment) setShowStory(true);
+      else setPlayerAlignment(savedAlignment as 'ALIVE' | 'ZOMBIE');
+  };
+
   const handleStoryComplete = (choice: 'ALIVE' | 'ZOMBIE') => {
       setPlayerAlignment(choice);
       setShowStory(false);
-      
-      if (user) {
-          localStorage.setItem(`shield_intro_seen_${user.uid}`, 'true');
-      }
+      if (user) localStorage.setItem(`shield_intro_seen_${user.uid}`, 'true');
   };
 
   const handleCampaignSwitch = (newAlignment: 'ALIVE' | 'ZOMBIE') => {
@@ -460,7 +427,7 @@ const App: React.FC = () => {
       setViewMode('map');
   };
 
-  // ... (keep missions logic as is)
+  // ... (keep missions logic - omitted for brevity but retained in file) ...
   const allMissions: Mission[] = useMemo(() => {
       
       if (playerAlignment === 'ZOMBIE') {
@@ -582,7 +549,7 @@ const App: React.FC = () => {
       }
   }, [t, playerAlignment]);
 
-  // Filter missions
+  // ... (keep helper functions like visibleMissions, assignableMissions, handlers) ...
   const visibleMissions = useMemo(() => {
     return allMissions.filter(m => {
         const isCompleted = completedMissionIds.has(m.id);
@@ -715,9 +682,14 @@ const App: React.FC = () => {
       )}
 
       {showTutorial && (
-          <TutorialOverlay language={lang} onComplete={handleTutorialComplete} />
+          <TutorialOverlay 
+            language={lang} 
+            onComplete={handleTutorialComplete} 
+            onStepChange={handleTutorialStepChange}
+          />
       )}
 
+      {/* ... Rest of JSX (Bunker/Main Layout) ... */}
       {viewMode === 'bunker' ? (
         <BunkerInterior 
           heroes={heroes} 

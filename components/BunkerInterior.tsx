@@ -1,4 +1,5 @@
 
+// ... existing imports ...
 import React, { useState, useEffect } from 'react';
 import { translations, Language } from '../translations';
 import { Hero, Mission, HeroClass, HeroTemplate } from '../types';
@@ -74,13 +75,13 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({ heroes, missions
 
   // Form State
   const [recruitForm, setRecruitForm] = useState({
-      templateId: '', // Added for tracking DB templates
+      templateId: '', 
       name: '',
       alias: '',
       class: 'BRAWLER' as HeroClass,
       bio: '',
-      currentStory: '', // NEW
-      objectives: [] as string[], // NEW
+      currentStory: '',
+      objectives: [] as string[],
       imageUrl: '',
       str: 5,
       agi: 5,
@@ -107,7 +108,6 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({ heroes, missions
           setSeedStatus('idle');
           await seedHeroTemplates();
           setSeedStatus('success');
-          // Refresh list
           const templates = await getHeroTemplates();
           setDbTemplates(templates);
       } catch (e) {
@@ -119,17 +119,15 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({ heroes, missions
   // Helper to get translated hero text
   const getHeroText = (hero: Hero) => {
       if (hero.templateId) {
-          // Look up in translations
           const tHero = t.heroes[hero.templateId as keyof typeof t.heroes];
           if (tHero) {
               return {
-                  name: hero.name, // Usually kept as is, but could be translated
+                  name: hero.name, 
                   alias: tHero.alias,
                   bio: tHero.bio
               };
           }
       }
-      // Fallback to hero object data (for custom heroes)
       return {
           name: hero.name,
           alias: hero.alias,
@@ -163,7 +161,6 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({ heroes, missions
   const handleSelectTemplate = (templateId: string) => {
       const template = dbTemplates.find(h => h.id === templateId);
       if (template) {
-          // Find translation for bio alias if available
           const tHero = t.heroes[templateId as keyof typeof t.heroes];
           
           setRecruitForm({
@@ -172,15 +169,14 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({ heroes, missions
               alias: tHero ? tHero.alias : (template.alias || template.defaultName.toUpperCase()),
               class: template.defaultClass,
               bio: tHero ? tHero.bio : (template.bio || 'No bio available'),
-              currentStory: template.currentStory || '', // Load from template
-              objectives: template.objectives || [],     // Load from template
+              currentStory: template.currentStory || '', 
+              objectives: template.objectives || [],     
               imageUrl: template.imageUrl,
               str: template.defaultStats.strength,
               agi: template.defaultStats.agility,
               int: template.defaultStats.intellect
           });
       } else {
-          // Reset if empty selection
           setRecruitForm({
             templateId: '',
             name: '',
@@ -207,8 +203,8 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({ heroes, missions
           alias: recruitForm.alias || 'AGENT',
           class: recruitForm.class,
           bio: recruitForm.bio,
-          currentStory: recruitForm.currentStory, // SAVE
-          objectives: recruitForm.objectives,     // SAVE
+          currentStory: recruitForm.currentStory,
+          objectives: recruitForm.objectives,
           completedObjectiveIndices: [],
           imageUrl: recruitForm.imageUrl,
           status: 'AVAILABLE',
@@ -248,7 +244,6 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({ heroes, missions
 
   const availableTemplates = dbTemplates.filter(template => {
       const templateAlias = t.heroes[template.id as keyof typeof t.heroes]?.alias || template.alias || template.defaultName;
-      // Filter out existing
       const exists = heroes.some(existingHero => {
           if (existingHero.templateId === template.id) return true;
           if (existingHero.alias.toUpperCase() === templateAlias.toUpperCase()) return true;
@@ -256,7 +251,6 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({ heroes, missions
       });
       if (exists) return false;
 
-      // Filter by search term
       if (searchTerm) {
           const term = searchTerm.toLowerCase();
           return templateAlias.toLowerCase().includes(term) || template.defaultName.toLowerCase().includes(term);
@@ -284,10 +278,11 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({ heroes, missions
         <div className="flex flex-1 overflow-hidden p-6 gap-6 relative z-10">
             
             {/* Left Column: Roster List */}
-            <div className="w-1/3 flex flex-col gap-4 border-r border-cyan-900 pr-6 overflow-y-auto scrollbar-thin scrollbar-thumb-cyan-800">
+            <div id="tutorial-bunker-roster" className="w-1/3 flex flex-col gap-4 border-r border-cyan-900 pr-6 overflow-y-auto scrollbar-thin scrollbar-thumb-cyan-800">
                 <div className="flex justify-between items-center border-b border-cyan-800 pb-2 mb-2">
                     <h3 className="text-sm text-cyan-600 font-bold">{t.bunker.roster}</h3>
                     <button 
+                        id="tutorial-recruit-btn"
                         onClick={() => setShowRecruitModal(true)}
                         className="text-xs bg-cyan-900/50 hover:bg-cyan-800 border border-cyan-500 text-cyan-300 px-2 py-1 flex items-center gap-1"
                     >
@@ -331,7 +326,7 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({ heroes, missions
             </div>
 
             {/* Right Column: Personnel File - NEW DASHBOARD DESIGN */}
-            <div className="flex-1 flex flex-col gap-6 overflow-y-auto relative">
+            <div id="tutorial-bunker-file" className="flex-1 flex flex-col gap-6 overflow-y-auto relative">
                 {selectedHero && heroDisplay ? (
                     <div className="flex flex-col md:flex-row gap-6 flex-1 min-h-0">
                         {/* LEFT COL: Photo & Scanner */}
@@ -471,6 +466,7 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({ heroes, missions
                 )}
             </div>
 
+            {/* ... Modals (Assign, Recruit, Lightbox) ... */}
             {/* ASSIGNMENT MODAL */}
             {showAssignModal && (
                 <div className="absolute inset-0 z-50 flex items-center justify-center bg-slate-950/90 backdrop-blur-sm p-4">
@@ -516,7 +512,7 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({ heroes, missions
                 </div>
             )}
 
-            {/* RECRUITMENT MODAL - COMPACT DASHBOARD STYLE WITH LIVE SEARCH */}
+            {/* RECRUITMENT MODAL */}
             {showRecruitModal && (
                 <div className="absolute inset-0 z-50 flex items-center justify-center bg-slate-950/95 backdrop-blur-sm p-4 overflow-y-auto">
                     <div className="w-full max-w-5xl bg-slate-900 border-2 border-cyan-500 shadow-[0_0_50px_rgba(6,182,212,0.3)] flex flex-col">
@@ -529,7 +525,7 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({ heroes, missions
                         
                         <form onSubmit={handleRecruitSubmit} className="flex-1 p-6 flex flex-col gap-4 overflow-hidden">
                             
-                            {/* DB Selector Row WITH SEARCH - CUSTOM LIST IMPLEMENTATION */}
+                            {/* DB Selector Row WITH SEARCH */}
                             <div className="w-full pb-4 border-b border-cyan-900 shrink-0 space-y-2">
                                 <label className="block text-[10px] text-cyan-400 font-bold tracking-widest">{t.recruit.selectDb}</label>
                                 
