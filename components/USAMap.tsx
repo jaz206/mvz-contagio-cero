@@ -143,13 +143,29 @@ export const USAMap: React.FC<USAMapProps> = ({ language, missions, completedMis
     feMerge.append("feMergeNode").attr("in", "coloredBlur");
     feMerge.append("feMergeNode").attr("in", "SourceGraphic");
 
-    // Hulk Clip Path (Circular Crop) - Increased Size
+    // Hulk Clip Path (Circular Crop)
     defs.append("clipPath")
       .attr("id", "hulk-clip")
       .append("circle")
       .attr("cx", 0)
       .attr("cy", 0)
       .attr("r", 50); 
+
+    // Bunker Clip Path
+    defs.append("clipPath")
+      .attr("id", "bunker-clip")
+      .append("circle")
+      .attr("cx", 0)
+      .attr("cy", 0)
+      .attr("r", 12);
+
+    // Mission Clip Path (Small)
+    defs.append("clipPath")
+      .attr("id", "mission-clip")
+      .append("circle")
+      .attr("cx", 0)
+      .attr("cy", 0)
+      .attr("r", 8);
 
 
     // Group for map content
@@ -432,19 +448,19 @@ export const USAMap: React.FC<USAMapProps> = ({ language, missions, completedMis
         
         // Bunker Pulse
         bunkerGroup.append('circle')
-            .attr('r', 10)
+            .attr('r', 12)
             .attr('fill', 'none')
             .attr('stroke', '#06b6d4')
             .attr('stroke-width', 1)
             .append('animate')
             .attr('attributeName', 'r')
-            .attr('from', '5')
-            .attr('to', '20')
+            .attr('from', '12')
+            .attr('to', '25')
             .attr('dur', '2s')
             .attr('repeatCount', 'indefinite');
             
         bunkerGroup.append('circle')
-            .attr('r', 20)
+            .attr('r', 25)
             .attr('fill', 'none')
             .attr('stroke', '#06b6d4')
             .attr('stroke-width', 0.5)
@@ -456,13 +472,14 @@ export const USAMap: React.FC<USAMapProps> = ({ language, missions, completedMis
             .attr('dur', '2s')
             .attr('repeatCount', 'indefinite');
 
-        // Bunker Icon (Shield Shape)
-        bunkerGroup.append('path')
-            .attr('d', "M0,10 L-8,2 L-8,-5 L0,-8 L8,-5 L8,2 Z")
-            .attr('fill', '#06b6d4')
-            .attr('stroke', '#ecfeff')
-            .attr('stroke-width', 1)
-            .style('filter', 'url(#glow)');
+        // Bunker Icon (IMAGE LOGO)
+        bunkerGroup.append('image')
+            .attr('href', 'https://i.pinimg.com/736x/63/1e/3a/631e3a68228c97963e78381ad11bf3bb.jpg')
+            .attr('x', -12)
+            .attr('y', -12)
+            .attr('width', 24)
+            .attr('height', 24)
+            .attr('clip-path', 'url(#bunker-clip)');
 
         // Bunker Label
         const bunkerLabel = playerAlignment === 'ZOMBIE' ? t.map.hive : t.map.bunker;
@@ -588,12 +605,14 @@ export const USAMap: React.FC<USAMapProps> = ({ language, missions, completedMis
                .attr('stroke-width', 2)
                .attr('fill', 'none');
         } else if (d.type === 'SHIELD_BASE') {
-             // SHIELD EAGLE ICON (Simplified Vector)
-             sel.append('path')
-                .attr('d', "M0,-5 C-2,-5 -4,-3 -4,0 L-3,4 L0,2 L3,4 L4,0 C4,-3 2,-5 0,-5 M-3,4 L0,6 L3,4")
-                .attr('fill', '#06b6d4')
-                .attr('stroke', 'none')
-                .attr('transform', 'scale(1.2)'); // Slight scale adjustment
+             // SHIELD EAGLE ICON (IMAGE)
+             sel.append('image')
+                .attr('href', 'https://i.pinimg.com/736x/63/1e/3a/631e3a68228c97963e78381ad11bf3bb.jpg')
+                .attr('x', -8)
+                .attr('y', -8)
+                .attr('width', 16)
+                .attr('height', 16)
+                .attr('clip-path', 'url(#mission-clip)');
         } else {
              // Standard Target
              sel.append('path')
