@@ -197,7 +197,6 @@ export const translations = {
             ]
         }
     },
-    // New Mission Editor Translations
     missionEditor: {
         title: "CREADOR DE MISIONES TÁCTICAS",
         missionTitle: "TÍTULO DE OPERACIÓN",
@@ -224,9 +223,8 @@ export const translations = {
         cancel: "CERRAR ARCHIVO",
         sending: "ENVIANDO REPORTE A SATÉLITE...",
         sent: "REPORTE CONFIRMADO",
-        downloadPdf: "DESCARGAR INFORME TÁCTICO (PDF)" // Added
+        downloadPdf: "DESCARGAR INFORME TÁCTICO (PDF)"
     },
-    // ... rest of translations
     heroes: {
         spiderman: {
             alias: "SPIDER-MAN",
@@ -293,6 +291,35 @@ export const translations = {
             bio: "El poder cósmico mezclado con el hambre insaciable. Una amenaza de nivel Omega que no solo quiere comer carne, sino consumir estrellas."
         }
     },
+    story: {
+        loading: {
+            line1: "ESTABLECIENDO CONEXIÓN SEGURA...",
+            line2: "DESENCRIPTANDO ARCHIVO...",
+            line3: "ACCEDIENDO A LA BASE DE DATOS...",
+            line4: "ACCESO CONCEDIDO"
+        },
+        skip: "OMITIR INTRO",
+        prev: "ANTERIOR",
+        next: "SIGUIENTE",
+        choose: "¿QUÉ CAMINO ELIGES?",
+        optionA: "EL HÉROE VIVO",
+        optionB: "EL HÉROE ZOMBIE",
+        slides: [
+            { text: "No hubo trompetas. No hubo cielos rojos ni profecías antiguas cumpliéndose. El fin del mundo no vino del espacio exterior, ni de una dimensión oscura.", image: "https://i.pinimg.com/1200x/18/99/ec/1899ec756f8731e015eb941d7122fbec.jpg" },
+            { text: "Lo construimos nosotros. Aquí. En casa.\nO mejor dicho, lo construyeron ellos.\nFue en un laboratorio estéril. Tres hombres se reunieron allí: Victor Von Doom, Magneto y Wilson Fisk.\nDecidieron que la humanidad era demasiado caótica. Su solución fue la ciencia fría y dura: el Pulso Nulificador.", image: "https://i.pinimg.com/1200x/71/06/7d/71067db72856dfd6ca03d0d51a679bd6.jpg" },
+            { text: "Necesitaban cuerpos para afinar la fórmula. Usaron a Jamie Madrox para ver cómo se multiplicaba la infección. Usaron a los Reavers para ver si el metal podía enfermar. Y funcionó. Dios, cómo funcionó.", image: "https://i.pinimg.com/1200x/99/80/1e/99801e7603e4a770127ce29530f13f87.jpg" },
+            { text: "Pero la arrogancia es una pistola cargada que siempre apunta hacia atrás.", image: "https://i.pinimg.com/1200x/19/26/53/1926533335a2b27c4a79c9d2632ec83d.jpg" },
+            { text: "Decidieron probar su obra maestra en Bruce Banner. Buscaban una fuente de energía infinita...", image: "https://i.pinimg.com/1200x/b2/06/15/b20615925dfa53cdf9622fb596cdd5e3.jpg" },
+            { text: "...lo que consiguieron fue una bomba biológica. Cuando el virus tocó la sangre gamma, no murió. Se enfureció.", image: "https://i.pinimg.com/1200x/a8/e9/b7/a8e9b76d6a9a87de0cfba509d5fef534.jpg" },
+            { text: "El estallido no fue de fuego, fue de contagio. Hulk rugió, y en ese rugido viajaba la extinción.", image: "https://i.pinimg.com/1200x/eb/db/e8/ebdbe8d5738acd105654dc8ddad8216f.jpg" },
+            { text: "En cuestión de horas, Nueva York era un matadero. Los Vengadores cayeron primero... Los X-Men aguantaron un poco más, solo para ver cómo su escuela se convertía en un buffet libre.", image: "https://i.pinimg.com/1200x/b9/0a/18/b90a18369639b131f91273f019b699cd.jpg" },
+            { text: "¿Y la Tríada? Doom, Magneto y Fisk fueron alcanzados por su propia creación. Pero el destino tiene un sentido del humor cruel. No perdieron la mente.", image: "https://i.pinimg.com/1200x/e1/02/86/e102864e130bfa5b5f2ffc5a9d9ed9c0.jpg" },
+            { text: "Sus cuerpos se pudrieron... pero su intelecto permaneció intacto, afilado y hambriento. Ahora, se sientan en tronos de huesos, gobernando facciones de pesadilla.", image: "https://i.pinimg.com/1200x/e2/5c/3a/e25c3ac26e5fc65f9119b6073912e856.jpg" },
+            { text: "Pero hay algo más ahí fuera. Algo peor que los muertos. S.H.I.E.L.D. sigue activo.", image: "https://i.pinimg.com/1200x/39/c8/cd/39c8cde0a5b56acc78b41c4eecf91f0a.jpg" },
+            { text: "S.H.I.E.L.D. ya no es una agencia; es un fantasma armado hasta los dientes. Una inteligencia artificial ciega, sorda y paranoica.", image: "https://i.pinimg.com/1200x/45/7d/c5/457dc515c61d470eb26cf1727ebd67ea.jpg" },
+            { text: "Dime, superviviente... en esta nueva era de monstruos y máquinas: ¿QUÉ ERES TÚ?", image: "https://i.pinimg.com/1200x/18/85/ee/1885ee42132b6976d36896a81f33ad8c.jpg" }
+        ]
+    },
     tutorial: {
         welcome: {
             title: "BIENVENIDO A LA INTERFAZ TÁCTICA",
@@ -353,36 +380,6 @@ export const translations = {
     }
   },
   en: {
-    // ... copy existing en and update
-    missionEditor: {
-        title: "TACTICAL MISSION CREATOR",
-        missionTitle: "OPERATION TITLE",
-        description: "DESCRIPTION / BRIEFING (PARAGRAPHS)",
-        objectives: "MISSION OBJECTIVES",
-        location: "LOCATION (STATE)",
-        threat: "THREAT LEVEL",
-        type: "MISSION TYPE",
-        pdfUrl: "TACTICAL REPORT URL (PDF)",
-        addObjective: "ADD OBJECTIVE",
-        save: "SAVE TO DATABASE",
-        cancel: "CANCEL",
-        objTitle: "OBJECTIVE TITLE",
-        objDesc: "OBJECTIVE DESCRIPTION"
-    },
-    missionModal: {
-        title: "MISSION DOSSIER // CLASSIFIED",
-        objectives: "TACTICAL OBJECTIVES",
-        briefing: "SITUATION REPORT",
-        threat: "THREAT LEVEL",
-        accept: "INITIATE MISSION",
-        complete: "REPORT MISSION SUCCESS",
-        reactivate: "REACTIVATE OPERATION",
-        cancel: "CLOSE FILE",
-        sending: "UPLINKING REPORT...",
-        sent: "REPORT CONFIRMED",
-        downloadPdf: "DOWNLOAD TACTICAL REPORT (PDF)"
-    },
-    // ... keep existing en translations ...
     login: {
       title: "S.H.I.E.L.D.",
       subtitle: "SECURE ACCESS TERMINAL",
@@ -575,6 +572,35 @@ export const translations = {
             ]
         }
     },
+    story: {
+        loading: {
+            line1: "ESTABLISHING SECURE CONNECTION...",
+            line2: "DECRYPTING FILE...",
+            line3: "ACCESSING DATABASE...",
+            line4: "ACCESS GRANTED"
+        },
+        skip: "SKIP INTRO",
+        prev: "PREV",
+        next: "NEXT",
+        choose: "CHOOSE YOUR PATH",
+        optionA: "THE LIVING HERO",
+        optionB: "THE ZOMBIE HERO",
+        slides: [
+            { text: "No trumpets sounded. No red skies or ancient prophecies fulfilled. The end of the world didn't come from outer space, or a dark dimension.", image: "https://i.pinimg.com/1200x/18/99/ec/1899ec756f8731e015eb941d7122fbec.jpg" },
+            { text: "We built it. Here. At home.\nOr rather, they built it.\nIt was in a sterile lab. Three men met there: Victor Von Doom, Magneto, and Wilson Fisk.\nThey decided humanity was too chaotic. Their solution was cold, hard science: the Nullifier Pulse.", image: "https://i.pinimg.com/1200x/71/06/7d/71067db72856dfd6ca03d0d51a679bd6.jpg" },
+            { text: "They needed bodies to refine the formula. Used Jamie Madrox to see how the infection multiplied. Used the Reavers to see if metal could get sick. And it worked. God, how it worked.", image: "https://i.pinimg.com/1200x/99/80/1e/99801e7603e4a770127ce29530f13f87.jpg" },
+            { text: "But arrogance is a loaded gun that always points backward.", image: "https://i.pinimg.com/1200x/19/26/53/1926533335a2b27c4a79c9d2632ec83d.jpg" },
+            { text: "They decided to test their masterpiece on Bruce Banner. They were looking for an infinite energy source...", image: "https://i.pinimg.com/1200x/b2/06/15/b20615925dfa53cdf9622fb596cdd5e3.jpg" },
+            { text: "...what they got was a biological bomb. When the virus touched the gamma blood, he didn't die. He got angry.", image: "https://i.pinimg.com/1200x/a8/e9/b7/a8e9b76d6a9a87de0cfba509d5fef534.jpg" },
+            { text: "The outbreak wasn't fire, it was contagion. Hulk roared, and in that roar traveled extinction.", image: "https://i.pinimg.com/1200x/eb/db/e8/ebdbe8d5738acd105654dc8ddad8216f.jpg" },
+            { text: "In a matter of hours, New York was a slaughterhouse. The Avengers fell first... The X-Men held out a bit longer, only to watch their school become an all-you-can-eat buffet.", image: "https://i.pinimg.com/1200x/b9/0a/18/b90a18369639b131f91273f019b699cd.jpg" },
+            { text: "And the Triad? Doom, Magneto, and Fisk were caught by their own creation. But fate has a cruel sense of humor. They didn't lose their minds.", image: "https://i.pinimg.com/1200x/e1/02/86/e102864e130bfa5b5f2ffc5a9d9ed9c0.jpg" },
+            { text: "Their bodies rotted... but their intellect remained intact, sharp, and hungry. Now, they sit on thrones of bone, ruling nightmare factions.", image: "https://i.pinimg.com/1200x/e2/5c/3a/e25c3ac26e5fc65f9119b6073912e856.jpg" },
+            { text: "But there is something else out there. Something worse than the dead. S.H.I.E.L.D. is still active.", image: "https://i.pinimg.com/1200x/39/c8/cd/39c8cde0a5b56acc78b41c4eecf91f0a.jpg" },
+            { text: "S.H.I.E.L.D. is no longer an agency; it's a ghost armed to the teeth. A blind, deaf, and paranoid artificial intelligence.", image: "https://i.pinimg.com/1200x/45/7d/c5/457dc515c61d470eb26cf1727ebd67ea.jpg" },
+            { text: "Tell me, survivor... in this new era of monsters and machines: WHAT ARE YOU?", image: "https://i.pinimg.com/1200x/18/85/ee/1885ee42132b6976d36896a81f33ad8c.jpg" }
+        ]
+    },
     tutorial: {
         welcome: {
             title: "WELCOME TO THE TACTICAL INTERFACE",
@@ -615,6 +641,34 @@ export const translations = {
         next: "ACKNOWLEDGED // NEXT",
         skip: "SKIP TUTORIAL",
         finishBtn: "COMMENCE OPERATIONS"
+    },
+    missionEditor: {
+        title: "TACTICAL MISSION CREATOR",
+        missionTitle: "OPERATION TITLE",
+        description: "DESCRIPTION / BRIEFING (PARAGRAPHS)",
+        objectives: "MISSION OBJECTIVES",
+        location: "LOCATION (STATE)",
+        threat: "THREAT LEVEL",
+        type: "MISSION TYPE",
+        pdfUrl: "TACTICAL REPORT URL (PDF)",
+        addObjective: "ADD OBJECTIVE",
+        save: "SAVE TO DATABASE",
+        cancel: "CANCEL",
+        objTitle: "OBJECTIVE TITLE",
+        objDesc: "OBJECTIVE DESCRIPTION"
+    },
+    missionModal: {
+        title: "MISSION DOSSIER // CLASSIFIED",
+        objectives: "TACTICAL OBJECTIVES",
+        briefing: "SITUATION REPORT",
+        threat: "THREAT LEVEL",
+        accept: "INITIATE MISSION",
+        complete: "REPORT MISSION SUCCESS",
+        reactivate: "REACTIVATE OPERATION",
+        cancel: "CLOSE FILE",
+        sending: "UPLINKING REPORT...",
+        sent: "REPORT CONFIRMED",
+        downloadPdf: "DOWNLOAD TACTICAL REPORT (PDF)"
     },
     events: {
         anomaly: {
