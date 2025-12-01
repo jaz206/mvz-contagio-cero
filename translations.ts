@@ -5,18 +5,21 @@ export type Language = 'es' | 'en';
 
 export const translations = {
   es: {
-    // ... existing translations ...
     login: {
       title: "S.H.I.E.L.D.",
       subtitle: "TERMINAL DE ACCESO SEGURO",
       clearance: "SE REQUIERE NIVEL 7",
       scanBtn: "INICIAR ESCANEO BIOMÉTRICO",
       googleBtn: "ACCEDER CON CREDENCIALES (GOOGLE)",
+      editorBtn: "ACCESO DE EDITOR (NIVEL 10)",
+      editorPass: "CÓDIGO DE ACCESO MAESTRO",
+      editorEnter: "ENTRAR",
       scanning: "VERIFICANDO IDENTIDAD...",
       granted: "ACCESO CONCEDIDO. BIENVENIDO, DIRECTOR.",
       selectLang: "IDIOMA / LANGUAGE",
       idPrompt: "IDENTIFICACIÓN REQUERIDA",
-      error: "ERROR DE AUTENTICACIÓN"
+      error: "ERROR DE AUTENTICACIÓN",
+      passError: "CÓDIGO INCORRECTO"
     },
     header: {
       project: "PROYECTO: LÁZARO",
@@ -121,8 +124,80 @@ export const translations = {
         placeholderAlias: "EJ: HAWKEYE",
         placeholderName: "EJ: CLINT BARTON"
     },
+    missions: {
+        kraven: {
+            title: "LA CAZA MAYOR DE KRAVEN",
+            description: [
+                "No hay órdenes. Solo el rastro de los gritos y la desesperación. Kraven el Cazador, el predador zombi de Fisk, ha marcado estas ruinas urbanas como su coto de caza personal.",
+                "Vuestro acceso es el túnel inestable del Metro. El tiempo se agota. Debéis interceptar, proteger y evacuar a un mínimo de 5 supervivientes.",
+                "Kraven es implacable. La justicia ha muerto, pero el odio es vuestra única estrategia de escape."
+            ],
+            objectives: [
+                { title: "¡Detén la cacería!", desc: "Rescata y evacua a 5 supervivientes por el metro antes de que Kraven complete su cuota." },
+                { title: "Escapar", desc: "Todos los Superhéroes deben escapar por la Zona de salida sin bajas." }
+            ]
+        },
+        fleshSleeps: {
+            title: "DONDE LA CARNE DUERME",
+            description: [
+                "El Metro quedó atrás. Entre los supervivientes, uno murmuraba sobre un viejo penal en el este.",
+                "En los barrios de Fisk se habla de un lugar donde nadie regresa. Motores que rugen bajo tierra.",
+                "Vuestra ruta termina frente a los muros de una prisión olvidada. Si el rumor es cierto, dentro hallaréis más que respuestas."
+            ],
+            objectives: [
+                { title: "El Engaño de las Palancas", desc: "Activad las dos palancas verdaderas en el mismo turno para abrir el complejo." },
+                { title: "Los Que Aún Respiran", desc: "Liberar al héroe cautivo y evacuar al menos 3 prisioneros." }
+            ]
+        },
+        freshMeat: {
+            title: "CARNE FRESCA",
+            description: [
+                "El Hambre quema. Olemos sangre caliente al sur. Un convoy de refugiados intenta cruzar la frontera del estado.",
+                "Son lentos. Son débiles. Son comida.",
+                "No dejes que ninguno escape. La Colmena necesita crecer."
+            ],
+            objectives: [
+                { title: "Banquete", desc: "Devora a 15 civiles antes de que alcancen el refugio." },
+                { title: "Sin Testigos", desc: "Destruye el vehículo de escolta blindado." }
+            ]
+        },
+        breakSiege: {
+            title: "ROMPER EL ASEDIO",
+            description: [
+                "La resistencia se ha hecho fuerte en una base militar de la costa. Creen que sus muros los protegerán.",
+                "Ilusos. No saben que no necesitamos puertas.",
+                "Lidera la horda. Trepad los muros. Inundad sus pasillos con dientes y garras."
+            ],
+            objectives: [
+                { title: "Marea Muerta", desc: "Supera las defensas perimetrales y abre la puerta principal." },
+                { title: "Asimilación", desc: "Infecta al Comandante de la base." }
+            ]
+        },
+        bases: {
+            desc: "Señal encriptada de S.H.I.E.L.D. detectada. Búnker de suministros oculto activo.",
+            objSecure: "Asegurar el perímetro de hostiles.",
+            objRetrieve: "Recuperar tecnología y suministros.",
+            alpha: "BASE OCULTA: ALPHA",
+            beta: "BASE OCULTA: BETA",
+            gamma: "BASE OCULTA: GAMMA",
+            delta: "BASE OCULTA: DELTA",
+            epsilon: "BASE OCULTA: EPSILON",
+            zeta: "BASE OCULTA: ZETA"
+        },
+        galactus: {
+            title: "EL JUICIO FINAL CÓSMICO",
+            description: [
+                "El cielo ya no es negro. Es violeta. Galactus ha llegado para devorar una Tierra que ya estaba muerta.",
+                "Su Heraldo Zombi, Silver Surfer, ha marcado el núcleo del planeta para su consumo.",
+                "La Tríada, S.H.I.E.L.D. y la Horda son irrelevantes. Si no detenemos esto, no quedará ni polvo."
+            ],
+            objectives: [
+                { title: "Derribar al Heraldo", desc: "Neutralizar a Silver Surfer Zombi para cegar a Galactus." },
+                { title: "El Nulificador Supremo", desc: "Desplegar el arma definitiva robada a Doom antes de que el planeta sea consumido." }
+            ]
+        }
+    },
     heroes: {
-        // LIVING HEROES
         spiderman: {
             alias: "SPIDER-MAN",
             bio: "Antiguo Vengador. Su gran agilidad y sentido arácnido lo convierten en un explorador ideal para zonas infectadas. Carga con la culpa de haber sobrevivido."
@@ -147,7 +222,6 @@ export const translations = {
             alias: "SHE-HULK",
             bio: "Una abogada capaz de levantar un tanque. Conserva su inteligencia mientras se transforma, siendo una combinación letal de cerebro y músculo en el campo de batalla."
         },
-        // DATABASE HEROES
         hawkeye: {
             alias: "HAWKEYE",
             bio: "Francotirador inigualable. Sus ojos ven lo que los satélites pierden. Lucha por aquellos que no pueden luchar."
@@ -172,7 +246,6 @@ export const translations = {
             alias: "LOKI",
             bio: "Dios del Engaño. Exiliado en la Tierra tras el cierre del Bifrost. Motivado por una retorcida mezcla de arrogancia, instinto de supervivencia y rencor contra Doom."
         },
-        // ZOMBIE HEROES
         colonel: {
             alias: "CORONEL AMÉRICA",
             bio: "El antiguo símbolo de la libertad, ahora con el cráneo expuesto. Mantiene sus habilidades tácticas, liderando la horda con precisión militar. Su escudo ya no protege, solo decapita."
@@ -272,121 +345,42 @@ export const translations = {
         skip: "OMITIR TUTORIAL",
         finishBtn: "INICIAR OPERACIONES"
     },
-    missions: {
-        // ... existing missions ...
-        kraven: {
-            title: "LA CAZA MAYOR DE KRAVEN",
-            description: [
-                "No hay órdenes. Solo el rastro de los gritos y la desesperación. Kraven el Cazador, el predador zombi de Fisk, ha marcado estas ruinas urbanas como su coto de caza personal. Es una purga activa para asegurar la 'mercancía' viva.",
-                "Vuestro acceso es el túnel inestable del Metro, vuestra única entrada y salida segura. Los pocos supervivientes serán forzados a salir de sus escondites a lo largo de los asaltos.",
-                "El tiempo se agota. Debéis interceptar, proteger y evacuar a un mínimo de 5 supervivientes por el Metro. Kraven es implacable; si asegura 2 víctimas antes que ustedes, la misión será un fracaso total. La justicia ha muerto, pero el odio es vuestra única estrategia de escape.",
-                "¡Salid a las calles y detened la Caza Mayor de Kraven!"
-            ],
-            objectives: [
-                {
-                    title: "¡Detén la cacería!",
-                    desc: "Rescata y evacua a 5 supervivientes por el metro antes de que Kraven complete su cuota de trofeos."
-                },
-                {
-                    title: "Escapar",
-                    desc: "Todos los Superhéroes deben escapar por la Zona de salida. Cualquier Superhéroe puede salir a través de esta Zona al final de su turno sin coste alguno, siempre y cuando no haya ningún enemigo en ella."
-                }
-            ]
+    events: {
+        anomaly: {
+            title: "ANOMALÍA CÓSMICA DETECTADA",
+            desc: "LECTURAS DE ENERGÍA DESCONOCIDA EN EL ESPACIO PROFUNDO. REED RICHARDS CONFIRMA: UN PLANETA DEL SISTEMA VEGA HA DEJADO DE EXISTIR INSTANTÁNEAMENTE.",
+            ack: "CONTINUAR MONITORIZACIÓN"
         },
-        fleshSleeps: {
-            title: "DONDE LA CARNE DUERME",
-            description: [
-                "El Metro quedó atrás, devorado por el polvo y el silencio. Entre los supervivientes que lograsteis sacar, uno —un técnico de mantenimiento— no paraba de murmurar cosas inconexas mientras lo arrastrabais hacia la superficie.",
-                "“Camiones… contenedores marcados… un viejo penal en el este… frío, tanto frío…” Luego calló. No murió, pero desapareció al amanecer.",
-                "Desde entonces, los rumores se han multiplicado. En los barrios controlados por Fisk se habla de un lugar donde nadie regresa, de motores que rugen bajo tierra y de luces que nunca se apagan. Nadie sabe qué es exactamente. Algunos lo llaman “el almacén”. Otros, “la cámara”. Solo hay una certeza: Fisk guarda algo allí que no quiere que nadie vea.",
-                "Vuestra ruta termina frente a los muros de una prisión olvidada, cubierta de vallas improvisadas y emblemas grabados con fuego. Si el rumor es cierto, dentro hallaréis más que respuestas. Y si no lo es… habréis caminado hasta el corazón del imperio de la carne."
-            ],
-            objectives: [
-                {
-                    title: "El Engaño de las Palancas",
-                    desc: "Abrir las puertas del complejo. Activad las dos palancas verdaderas en el mismo turno."
-                },
-                {
-                    title: "La Celda del Silencio",
-                    desc: "Liberar al héroe cautivo."
-                },
-                {
-                    title: "Los Que Aún Respiran",
-                    desc: "Rescatar a los prisioneros. Evacuad al menos 3 transeúntes."
-                },
-                {
-                    title: "Condiciones",
-                    desc: "Victoria: Completad A + B + C. Fracaso: Si el héroe cautivo muere, Kraven captura 2 víctimas (si sigue activo), o todos los héroes son eliminados."
-                }
-            ]
+        surfer: {
+            title: "LA CAÍDA DEL HERALDO",
+            desc: "OBJETO PLATEADO ENTRÓ EN LA ATMÓSFERA. INTERCEPTADO POR HULK EN KANSAS. VÍDEO CONFIRMA INFECCIÓN. SILVER SURFER HA CAÍDO ANTE EL HAMBRE. REPITÓ: TENEMOS A UN HERALDO ZOMBIE EN JUEGO.",
+            ack: "ACTIVAR PROTOCOLO OMEGA"
         },
-        freshMeat: {
-            title: "CARNE FRESCA",
-            description: [
-                "El hambre es un fuego que nunca se apaga. La colmena susurra ubicaciones de asentamientos humanos no detectados por S.H.I.E.L.D. En el corazón de Texas, un convoy de supervivientes intenta cruzar la Tierra de Nadie.",
-                "No saben que somos los dueños de este páramo. Creen que Hulk es el único peligro. Pobres ilusos.",
-                "La misión es simple: Interceptar el convoy. No queremos destrucción total. Queremos conversión. Necesitamos soldados. Necesitamos comida. Necesitamos expandir la familia."
-            ],
-            objectives: [
-                {
-                    title: "Emboscada",
-                    desc: "Detén el vehículo principal del convoy antes de que cruce la frontera estatal."
-                },
-                {
-                    title: "Conversión",
-                    desc: "Infecta a 3 líderes de la resistencia."
-                },
-                {
-                    title: "Sin Testigos",
-                    desc: "Elimina cualquier señal de socorro antes de que contacten a S.H.I.E.L.D."
-                }
-            ]
-        },
-        breakSiege: {
-            title: "ROMPER EL ASEDIO",
-            description: [
-                "Magneto ha establecido un perímetro defensivo alrededor de San Francisco. Sus centinelas reprogramados están cazando a los nuestros. Es un insulto a nuestra supremacía.",
-                "S.H.I.E.L.D. cree que puede contenernos, pero el Edén Roto caerá. Hemos detectado una brecha en sus escudos magnéticos.",
-                "Infiltraos. Destruid los generadores. Haced que el Homo Superior se arrodille ante el Hambre Superior."
-            ],
-            objectives: [
-                {
-                    title: "Sabotaje",
-                    desc: "Destruye los 2 generadores de campo magnético."
-                },
-                {
-                    title: "Caza de Mutantes",
-                    desc: "Devorar a la guardia de élite de Magneto."
-                }
-            ]
-        },
-        bases: {
-            desc: "Señal encriptada detectada. Firma de energía coincide con tecnología S.H.I.E.L.D. pre-colapso.",
-            objSecure: "Asegurar el perímetro",
-            objRetrieve: "Recuperar datos",
-            alpha: "BASE OCULTA: ALPHA",
-            beta: "BASE OCULTA: BETA",
-            gamma: "BASE OCULTA: GAMMA",
-            delta: "BASE OCULTA: DELTA",
-            epsilon: "BASE OCULTA: EPSILON",
-            zeta: "BASE OCULTA: ZETA"
+        galactus: {
+            title: "LLEGADA DE GALACTUS",
+            desc: "EL DEVORADOR DE MUNDOS ESTÁ EN ÓRBITA. EL CIELO SE HA VUELTO PÚRPURA. NO VIENE A SALVARNOS. VIENE A COMER. LA ÚLTIMA BATALLA POR LA TIERRA HA COMENZADO.",
+            ack: "PREPARARSE PARA EL JUICIO FINAL"
         }
     }
   },
   en: {
-    // ... existing translations ...
     login: {
       title: "S.H.I.E.L.D.",
       subtitle: "SECURE ACCESS TERMINAL",
       clearance: "LEVEL 7 CLEARANCE REQUIRED",
       scanBtn: "INITIATE BIOMETRIC SCAN",
       googleBtn: "ACCESS WITH CREDENTIALS (GOOGLE)",
+      editorBtn: "EDITOR ACCESS (LEVEL 10)",
+      editorPass: "MASTER OVERRIDE CODE",
+      editorEnter: "ENTER",
       scanning: "VERIFYING IDENTITY...",
       granted: "ACCESS GRANTED. WELCOME, DIRECTOR.",
       selectLang: "LANGUAGE / IDIOMA",
       idPrompt: "IDENTIFICATION REQUIRED",
-      error: "AUTHENTICATION ERROR"
+      error: "AUTHENTICATION ERROR",
+      passError: "INVALID PASSCODE"
     },
+    // ... existing header, sidebar, factions, map, bunker, recruit, heroes ...
     header: {
       project: "PROJECT: LAZARUS",
       failure: "GLOBAL CONTAINMENT FAILURE",
@@ -490,73 +484,77 @@ export const translations = {
         placeholderAlias: "EX: HAWKEYE",
         placeholderName: "EX: CLINT BARTON"
     },
-    heroes: {
-        // LIVING
-        spiderman: {
-            alias: "SPIDER-MAN",
-            bio: "Former Avenger. High agility and spider-sense make him an ideal scout for infected zones. Carries the guilt of survival."
+    missions: {
+        kraven: {
+            title: "KRAVEN'S LAST HUNT",
+            description: [
+                "No orders. Just the trail of screams. Kraven the Hunter, Fisk's zombie predator, has marked these ruins as his hunting grounds.",
+                "Your access point is the unstable subway tunnel. Time is running out. Evacuate at least 5 survivors.",
+                "Justice is dead, but survival is your only strategy."
+            ],
+            objectives: [
+                { title: "Stop the Hunt!", desc: "Rescue and evacuate 5 survivors via the subway." },
+                { title: "Escape", desc: "All Superheroes must exit via the Extraction Zone." }
+            ]
         },
-        blackwidow: {
-            alias: "BLACK WIDOW",
-            bio: "Expert spy and assassin. Her skills are crucial for infiltration missions in Fisk's territory. Keeps the team focused on the objective."
+        fleshSleeps: {
+            title: "WHERE THE FLESH SLEEPS",
+            description: [
+                "The subway is behind you. Survivors speak of an old prison in the east.",
+                "Fisk is hiding something there. Engines roaring underground.",
+                "Your path ends at the forgotten prison walls. Inside, you may find more than just answers."
+            ],
+            objectives: [
+                { title: "The Lever Deception", desc: "Activate the two true switches in the same turn to open the complex." },
+                { title: "Those Who Still Breathe", desc: "Rescue the captive hero and evacuate 3 prisoners." }
+            ]
         },
-        scorpion: {
-            alias: "SCORPION",
-            bio: "Former villain turned desperate survivor. His suit provides protection against bites. Unpredictable, but necessary muscle."
+        freshMeat: {
+            title: "FRESH MEAT",
+            description: [
+                "The Hunger burns. We smell warm blood south. A refugee convoy is trying to cross the state line.",
+                "They are slow. They are weak. They are food.",
+                "Let none escape. The Hive must grow."
+            ],
+            objectives: [
+                { title: "Feast", desc: "Devour 15 civilians before they reach the shelter." },
+                { title: "No Witnesses", desc: "Destroy the armored escort vehicle." }
+            ]
         },
-        sabretooth: {
-            alias: "SABRETOOTH",
-            bio: "Driven by pure predatory instinct. S.H.I.E.L.D. keeps him on a tight leash. He tracks the infected not to save them, but for the sport."
+        breakSiege: {
+            title: "BREAK THE SIEGE",
+            description: [
+                "The resistance has fortified a coastal military base. They think walls will save them.",
+                "Fools. We do not need doors.",
+                "Lead the horde. Climb the walls. Flood their halls with teeth and claws."
+            ],
+            objectives: [
+                { title: "Dead Tide", desc: "Breach perimeter defenses and open the main gate." },
+                { title: "Assimilation", desc: "Infect the Base Commander." }
+            ]
         },
-        reed: {
-            alias: "MR. FANTASTIC",
-            bio: "The smartest man alive, struggling to find a cure in a world that has rejected science. His intellect is humanity's last hope."
+        bases: {
+            desc: "Encrypted S.H.I.E.L.D. signal detected. Hidden supply bunker active.",
+            objSecure: "Secure perimeter from hostiles.",
+            objRetrieve: "Retrieve tech and supplies.",
+            alpha: "HIDDEN BASE: ALPHA",
+            beta: "HIDDEN BASE: BETA",
+            gamma: "HIDDEN BASE: GAMMA",
+            delta: "HIDDEN BASE: DELTA",
+            epsilon: "HIDDEN BASE: EPSILON",
+            zeta: "HIDDEN BASE: ZETA"
         },
-        shehulk: {
-            alias: "SHE-HULK",
-            bio: "A lawyer who can bench press a tank. Retains her intelligence while transformed, making her a deadly combination of brains and brawn on the battlefield."
-        },
-        // DATABASE
-        hawkeye: {
-            alias: "HAWKEYE",
-            bio: "Unmatched marksman. His eyes see what satellites miss. Fights for those who cannot fight."
-        },
-        lukecage: {
-            alias: "LUKE CAGE",
-            bio: "Impenetrable skin, unbreakable will. A human tank capable of withstanding bites and explosions while protecting civilians."
-        },
-        daredevil: {
-            alias: "DAREDEVIL",
-            bio: "The Man Without Fear. His enhanced senses are the perfect radar in the darkness of the quarantine zone."
-        },
-        thor: {
-            alias: "THOR",
-            bio: "The God of Thunder. Though Asgard fell, his hammer still brings the storm to the dead."
-        },
-        storm: {
-            alias: "STORM",
-            bio: "Weather Goddess. Can clear entire zones of zombies with a single tornado. The Queen needs her kingdom back."
-        },
-        loki: {
-            alias: "LOKI",
-            bio: "God of Mischief. Exiled on Earth when Asgard closed the Bifrost. Driven by a twisted mix of arrogance, survival instinct, and a grudge against Doom."
-        },
-        // ZOMBIES
-        colonel: {
-            alias: "COLONEL AMERICA",
-            bio: "The former symbol of freedom, now with an exposed skull. Retains tactical skills, leading the horde with military precision. His shield no longer protects, it only decapitaes."
-        },
-        ironman_z: {
-            alias: "IRON MAN (Z)",
-            bio: "Stark technology powered by rotting flesh. Repulsors glitching, but his teeth are not. Endlessly seeks energy sources to keep the suit running."
-        },
-        wolverine_z: {
-            alias: "WOLVERINE (Z)",
-            bio: "Healing factor fighting the virus eternally, keeping him in a state of constant rot and regeneration. Infinite pain makes him unstoppable."
-        },
-        phoenix_z: {
-            alias: "DARK PHOENIX (Z)",
-            bio: "Cosmic power mixed with insatiable hunger. An Omega-level threat that doesn't just want to eat flesh, but consume stars."
+        galactus: {
+            title: "COSMIC FINAL JUDGMENT",
+            description: [
+                "The sky is no longer black. It is violet. Galactus has arrived to devour a Earth that was already dead.",
+                "His Zombie Herald, Silver Surfer, has marked the planet's core for consumption.",
+                "The Triad, S.H.I.E.L.D., and the Horde are irrelevant. If we don't stop this, not even dust will remain."
+            ],
+            objectives: [
+                { title: "Down the Herald", desc: "Neutralize Zombie Silver Surfer to blind Galactus." },
+                { title: "The Ultimate Nullifier", desc: "Deploy the ultimate weapon stolen from Doom before the planet is consumed." }
+            ]
         }
     },
     tutorial: {
@@ -600,46 +598,22 @@ export const translations = {
         skip: "SKIP TUTORIAL",
         finishBtn: "COMMENCE OPERATIONS"
     },
-    missionModal: {
-        title: "MISSION DOSSIER // CLASSIFIED",
-        objectives: "TACTICAL OBJECTIVES",
-        briefing: "SITUATION REPORT",
-        threat: "THREAT LEVEL",
-        accept: "INITIATE MISSION",
-        complete: "REPORT MISSION SUCCESS",
-        reactivate: "REACTIVATE OPERATION",
-        cancel: "CLOSE FILE",
-        sending: "TRANSMITTING REPORT TO SATELLITE...",
-        sent: "REPORT CONFIRMED"
-    },
-    story: {
-        skip: "SKIP SEQUENCE",
-        next: "NEXT",
-        prev: "PREV",
-        choose: "CHOOSE YOUR PATH",
-        optionA: "OPTION A: THE LIVING HERO",
-        optionB: "OPTION B: THE ZOMBIE HERO",
-        loading: {
-            line1: "ESTABLISHING SECURE CONNECTION...",
-            line2: "RETRIEVING FILE 0-Z...",
-            line3: "DECRYPTION COMPLETE.",
-            line4: "INITIATING PLAYBACK."
+    events: {
+        anomaly: {
+            title: "COSMIC ANOMALY DETECTED",
+            desc: "UNKNOWN ENERGY READINGS IN DEEP SPACE. REED RICHARDS CONFIRMS: A PLANET IN THE VEGA SYSTEM CEASED TO EXIST INSTANTANEOUSLY.",
+            ack: "CONTINUE MONITORING"
         },
-        slides: [
-            { text: "MARVEL ZOMBIES: CONTAGIO CERO\nBook I: The Legacy of Arrogance", image: "https://i.pinimg.com/1200x/18/85/ee/1885ee42132b6976d36896a81f33ad8c.jpg" },
-            { text: "There were no trumpets. No red skies or ancient prophecies being fulfilled.\nThe end of the world didn't come from outer space, nor from a dark dimension.", image: "https://i.pinimg.com/1200x/18/99/ec/1899ec756f8731e015eb941d7122fbec.jpg" },
-            { text: "We built it. Here. At home. Or rather, they built it.\n\nIt was in a sterile lab. Three men gathered there: Victor Von Doom, Magneto, and Wilson Fisk.\nThey decided humanity was too chaotic. Their solution was cold, hard science: the Nullifier Pulse.", image: "https://i.pinimg.com/1200x/71/06/7d/71067db72856dfd6ca03d0d51a679bd6.jpg" },
-            { text: "They needed bodies to refine the formula. They used Jamie Madrox to see how the infection multiplied.\nThey used the Reavers to see if metal could get sick.\nAnd it worked. God, how it worked.", image: "https://i.pinimg.com/1200x/99/80/1e/99801e7603e4a770127ce29530f13f87.jpg" },
-            { text: "But arrogance is a loaded gun that always points backwards.\nThey decided to test their masterpiece on Bruce Banner. They were looking for infinite energy...", image: "https://i.pinimg.com/1200x/19/26/53/1926533335a2b27c4a79c9d2632ec83d.jpg" },
-            { text: "...what they got was a biological bomb.\nWhen the virus touched gamma blood, he didn't die. He raged.", image: "https://i.pinimg.com/1200x/b2/06/15/b20615925dfa53cdf9622fb596cdd5e3.jpg" },
-            { text: "The blast wasn't fire, it was contagion.\nHulk roared, and in that roar traveled extinction.", image: "https://i.pinimg.com/1200x/a8/e9/b7/a8e9b76d6a9a87de0cfba509d5fef534.jpg" },
-            { text: "In a matter of hours, New York was a slaughterhouse. The Avengers fell first.\nThe X-Men held out a little longer, only to watch their school become an all-you-can-eat buffet.", image: "https://i.pinimg.com/1200x/eb/db/e8/ebdbe8d5738acd105654dc8ddad8216f.jpg" },
-            { text: "And the Triad? Doom, Magneto, and Fisk were caught by their own creation.\nThey didn't lose their minds. Their bodies rotted, but their intellect remained intact.", image: "https://i.pinimg.com/1200x/b9/0a/18/b90a18369639b131f91273f019b699cd.jpg" },
-            { text: "Now, they sit on thrones of bone, ruling nightmare factions:\nDoomsberg, the Broken Eden, and the Empire of Flesh.", image: "https://i.pinimg.com/1200x/e1/02/86/e102864e130bfa5b5f2ffc5a9d9ed9c0.jpg" },
-            { text: "But there's something else out there. Something worse than the dead.\nS.H.I.E.L.D. is still active.", image: "https://i.pinimg.com/1200x/e2/5c/3a/e25c3ac26e5fc65f9119b6073912e856.jpg" },
-            { text: "The \"Lazarus Protocol\" is still running. S.H.I.E.L.D. is no longer an agency; it's a ghost armed to the teeth.\nA blind, deaf, and paranoid AI that eliminates anything that moves.", image: "https://i.pinimg.com/1200x/39/c8/cd/39c8cde0a5b56acc78b41c4eecf91f0a.jpg" },
-            { text: "So here you are. Standing on the ashes.\nTo your left, the dead. To your right, the machines.\nTell me, survivor... in this new era of monsters and machines:\nWHAT ARE YOU?", image: "https://i.pinimg.com/1200x/45/7d/c5/457dc515c61d470eb26cf1727ebd67ea.jpg" },
-        ]
+        surfer: {
+            title: "FALL OF THE HERALD",
+            desc: "SILVER OBJECT ENTERED ATMOSPHERE. INTERCEPTED BY HULK IN KANSAS. FOOTAGE CONFIRMS INFECTION. SILVER SURFER HAS FALLEN TO THE HUNGER. REPEAT: WE HAVE A ZOMBIE HERALD IN PLAY.",
+            ack: "ACTIVATE OMEGA PROTOCOL"
+        },
+        galactus: {
+            title: "ARRIVAL OF GALACTUS",
+            desc: "THE DEVOURER OF WORLDS IS IN ORBIT. THE SKY HAS TURNED PURPLE. HE IS NOT HERE TO SAVE US. HE IS HERE TO EAT. THE FINAL BATTLE FOR EARTH HAS BEGUN.",
+            ack: "PREPARE FOR JUDGMENT"
+        }
     }
   }
 };

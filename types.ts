@@ -41,7 +41,7 @@ export interface Objective {
 
 export interface Mission {
   id: string;
-  type?: 'STANDARD' | 'SHIELD_BASE'; // Distinguish between standard missions and hidden bases
+  type?: 'STANDARD' | 'SHIELD_BASE' | 'BOSS'; // Distinguish between standard missions, hidden bases, and boss events
   prereq?: string; // ID of the mission that must be completed before this one appears
   title: string;
   description: string[]; // Array of paragraphs
@@ -92,4 +92,13 @@ export interface HeroTemplate {
   alias?: string;
   currentStory?: string;
   objectives?: string[];
+}
+
+export type WorldStage = 'NORMAL' | 'ANOMALY' | 'SURFER' | 'GALACTUS';
+
+export interface GlobalEvent {
+    stage: WorldStage;
+    title: string;
+    description: string;
+    image?: string;
 }

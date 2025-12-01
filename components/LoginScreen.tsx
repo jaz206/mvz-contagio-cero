@@ -6,14 +6,20 @@ import { signInWithGoogle } from '../services/authService';
 interface LoginScreenProps {
   onLogin: () => void;
   onGoogleLogin: () => void;
+  onEditorLogin: () => void; // New prop for editor login
   language: Language;
   setLanguage: (lang: Language) => void;
 }
 
-export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin, onGoogleLogin, language, setLanguage }) => {
+export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin, onGoogleLogin, onEditorLogin, language, setLanguage }) => {
   const [scanning, setScanning] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  
+  // Editor Mode State
+  const [showEditorInput, setShowEditorInput] = useState(false);
+  const [editorPassword, setEditorPassword] = useState('');
+
   const t = translations[language];
 
   const handleScan = () => {
@@ -36,12 +42,23 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin, onGoogleLogin
         await signInWithGoogle();
         // The App component will handle the state change via onAuthStateChanged
         setSuccess(true);
-        // Note: we don't strictly need to call onGoogleLogin manually if the parent listens to Auth state,
-        // but for compatibility with the prop interface, we can leave it or just let the effect handle it.
       } catch (err) {
         console.error(err);
         setScanning(false);
         setError(t.login.error);
+      }
+  };
+
+  const handleEditorSubmit = (e: React.FormEvent) => {
+      e.preventDefault();
+      if (editorPassword === '123456789') {
+          setSuccess(true);
+          setTimeout(() => {
+              onEditorLogin();
+          }, 1000);
+      } else {
+          setError(t.login.passError);
+          setEditorPassword('');
       }
   };
 
@@ -161,6 +178,33 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin, onGoogleLogin
                 {t.login.googleBtn}
             </span>
         </button>
+
+        {/* Editor Mode Access */}
+        {!showEditorInput ? (
+            <button 
+                onClick={() => setShowEditorInput(true)}
+                className="mt-6 text-[9px] text-cyan-800 hover:text-cyan-500 uppercase tracking-widest transition-colors"
+            >
+                {t.login.editorBtn}
+            </button>
+        ) : (
+            <form onSubmit={handleEditorSubmit} className="mt-4 w-full flex gap-2 animate-fade-in">
+                <input 
+                    type="password" 
+                    value={editorPassword}
+                    onChange={(e) => setEditorPassword(e.target.value)}
+                    placeholder={t.login.editorPass}
+                    className="flex-1 bg-slate-950 border border-cyan-800 px-2 py-1 text-xs text-center text-cyan-300 focus:border-cyan-500 outline-none"
+                    autoFocus
+                />
+                <button 
+                    type="submit"
+                    className="px-3 py-1 bg-cyan-900 border border-cyan-600 text-cyan-200 text-xs font-bold hover:bg-cyan-800"
+                >
+                    OK
+                </button>
+            </form>
+        )}
 
         <div className="mt-6 text-[10px] text-cyan-800">
             SECURE CONNECTION // ENCRYPTED: AES-256
