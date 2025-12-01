@@ -5,6 +5,7 @@ import { User } from 'firebase/auth';
 import { auth } from './firebaseConfig';
 import { onAuthStateChanged } from 'firebase/auth';
 import { getUserProfile, saveUserProfile } from './services/dbService';
+import { logout } from './services/authService';
 
 import { LoginScreen } from './components/LoginScreen';
 import { StoryMode } from './components/StoryMode';
@@ -165,7 +166,6 @@ const INITIAL_ZOMBIE_HEROES: Hero[] = [
         stats: { strength: 8, agility: 8, intellect: 8 },
         assignedMissionId: null
     },
-    // ... add more zombie heroes here
 ];
 
 const App: React.FC = () => {
@@ -182,6 +182,7 @@ const App: React.FC = () => {
     const [worldStage, setWorldStage] = useState<WorldStage>('NORMAL');
     const [activeGlobalEvent, setActiveGlobalEvent] = useState<GlobalEvent | null>(null);
     const [isGuest, setIsGuest] = useState(false);
+    const [isSaving, setIsSaving] = useState(false);
     
     // EDITOR MODE STATE
     const [isEditorMode, setIsEditorMode] = useState(false);
@@ -214,7 +215,6 @@ const App: React.FC = () => {
         return () => unsubscribe();
     }, [isGuest]);
 
-    // EDITOR LOGIN HANDLER - Now correctly connected
     const handleEditorLogin = () => {
         setIsGuest(true);
         setIsEditorMode(true);
@@ -223,17 +223,22 @@ const App: React.FC = () => {
         setShowTutorial(false);
         setViewMode('map');
         setHeroes(INITIAL_HEROES);
-        // Reset progress for editor session
         setCompletedMissionIds(new Set());
         setWorldStage('NORMAL');
     };
 
-    // Guest Login Handler
     const handleGuestLogin = () => {
         setIsGuest(true);
         setPlayerAlignment('ALIVE');
         setShowStory(true);
         setViewMode('story');
+    };
+
+    const handleLogout = async () => {
+      await logout();
+      setIsGuest(false);
+      setIsEditorMode(false);
+      setViewMode('login');
     };
 
     const mergeWithLatestContent = (savedHeroes: Hero[], isZombie: boolean): Hero[] => {
@@ -294,7 +299,21 @@ const App: React.FC = () => {
         loadData();
     }, [user, isGuest, playerAlignment, isEditorMode]);
 
-    // ... (Tutorial Effect remains the same) ...
+    // Auto-Save
+    useEffect(() => {
+        if (isEditorMode || !user || !playerAlignment) return;
+
+        const timeout = setTimeout(async () => {
+            setIsSaving(true);
+            await saveUserProfile(user.uid, playerAlignment, heroes, Array.from(completedMissionIds));
+            setTimeout(() => setIsSaving(false), 1000);
+        }, 2000);
+
+        return () => clearTimeout(timeout);
+    }, [heroes, completedMissionIds, user, playerAlignment, isEditorMode]);
+
+
+    // Check Tutorial
     useEffect(() => {
         if (!playerAlignment) return;
         if (showStory) return;
@@ -308,9 +327,7 @@ const App: React.FC = () => {
         }
     }, [playerAlignment, showStory, user, viewMode, isEditorMode]);
 
-    // Event Engine - UPDATED TO USE >= FOR EDITOR SIMULATION
     const checkGlobalEvents = (completedCount: number) => {
-        // We use >= to allow the editor buttons (+5 missions) to trigger events correctly even if skipping the exact number
         if (completedCount >= 15 && worldStage !== 'GALACTUS') {
             setActiveGlobalEvent({ stage: 'GALACTUS', title: '', description: '' });
             setWorldStage('GALACTUS');
@@ -323,7 +340,6 @@ const App: React.FC = () => {
         }
     };
 
-    // EDITOR SIMULATION HANDLERS
     const handleSimulateProgress = (amount: number) => {
         const newSet = new Set(completedMissionIds);
         for (let i = 0; i < amount; i++) {
@@ -370,7 +386,6 @@ const App: React.FC = () => {
          }
     };
 
-    // ... (allMissions and visibleMissions logic remains same) ...
     const allMissions: Mission[] = useMemo(() => {
         const missionList: Mission[] = [
             {
@@ -440,29 +455,14 @@ const App: React.FC = () => {
                         <div>STAGE: <span className="text-yellow-400">{worldStage}</span></div>
                     </div>
                     <div className="flex flex-col gap-2">
-                        <button
-                            onClick={() => handleSimulateProgress(1)}
-                            className="px-3 py-1 bg-cyan-900/50 hover:bg-cyan-800 text-cyan-300 text-[9px] font-bold border border-cyan-700 uppercase tracking-wider"
-                        >
-                            +1 MISSION
-                        </button>
-                        <button
-                            onClick={() => handleSimulateProgress(5)}
-                            className="px-3 py-1 bg-cyan-900/50 hover:bg-cyan-800 text-cyan-300 text-[9px] font-bold border border-cyan-700 uppercase tracking-wider"
-                        >
-                            +5 MISSIONS
-                        </button>
-                        <button
-                            onClick={handleResetProgress}
-                            className="px-3 py-1 bg-red-900/50 hover:bg-red-800 text-red-300 text-[9px] font-bold border border-red-700 uppercase tracking-wider"
-                        >
-                            RESET
-                        </button>
+                        <button onClick={() => handleSimulateProgress(1)} className="px-3 py-1 bg-cyan-900/50 hover:bg-cyan-800 text-cyan-300 text-[9px] font-bold border border-cyan-700 uppercase tracking-wider">+1 MISSION</button>
+                        <button onClick={() => handleSimulateProgress(5)} className="px-3 py-1 bg-cyan-900/50 hover:bg-cyan-800 text-cyan-300 text-[9px] font-bold border border-cyan-700 uppercase tracking-wider">+5 MISSIONS</button>
+                        <button onClick={handleResetProgress} className="px-3 py-1 bg-red-900/50 hover:bg-red-800 text-red-300 text-[9px] font-bold border border-red-700 uppercase tracking-wider">RESET</button>
                     </div>
                 </div>
             )}
 
-            {/* ... Other modals (Event, Mission) ... */}
+            {/* MODALS */}
             {activeGlobalEvent && (
                 <EventModal event={activeGlobalEvent} isOpen={!!activeGlobalEvent} onAcknowledge={handleEventAcknowledge} language={lang} />
             )}
@@ -470,67 +470,154 @@ const App: React.FC = () => {
                 <MissionModal mission={selectedMission} isOpen={!!selectedMission} onClose={() => setSelectedMission(null)} onComplete={handleMissionComplete} onReactivate={handleMissionReactivate} language={lang} isCompleted={completedMissionIds.has(selectedMission.id)} />
             )}
 
-            {/* VIEWS */}
+            {/* FULL SCREEN VIEWS */}
             {viewMode === 'login' && (
-                <LoginScreen 
-                    onLogin={handleGuestLogin} 
-                    onGoogleLogin={() => {}} 
-                    onEditorLogin={handleEditorLogin} // CORRECTED: Now calls the real handler
-                    language={lang}
-                    setLanguage={setLang}
-                />
+                <LoginScreen onLogin={handleGuestLogin} onGoogleLogin={() => {}} onEditorLogin={handleEditorLogin} language={lang} setLanguage={setLang} />
             )}
 
             {viewMode === 'story' && (
-                <StoryMode 
-                    language={lang} 
-                    onComplete={(choice) => { setPlayerAlignment(choice); if(user) localStorage.setItem(`shield_intro_seen_${user.uid}`, 'true'); setViewMode('tutorial'); }}
-                    onSkip={() => { setPlayerAlignment('ALIVE'); setViewMode('map'); }}
-                />
+                <StoryMode language={lang} onComplete={(choice) => { setPlayerAlignment(choice); if(user) localStorage.setItem(`shield_intro_seen_${user.uid}`, 'true'); setViewMode('tutorial'); }} onSkip={() => { setPlayerAlignment('ALIVE'); setViewMode('map'); }} />
             )}
 
-            {viewMode === 'tutorial' && (
-                <div className="relative h-full w-full">
-                     <USAMap 
-                        language={lang} missions={visibleMissions} completedMissionIds={completedMissionIds} onMissionComplete={() => {}} onMissionSelect={() => {}} onBunkerClick={() => {}} factionStates={FACTION_STATES} playerAlignment={playerAlignment} worldStage={worldStage}
-                    />
-                    <TutorialOverlay language={lang} onComplete={() => { if(user) localStorage.setItem(`shield_tutorial_seen_${user.uid}`, 'true'); setViewMode('map'); }} />
-                </div>
-            )}
+            {/* MAIN APP LAYOUT (HEADER + SIDEBAR + CONTENT) */}
+            {(viewMode === 'map' || viewMode === 'bunker' || viewMode === 'tutorial') && (
+                <>
+                    {/* HEADER */}
+                    <header className="flex-none h-16 border-b border-cyan-900 bg-slate-900/90 flex items-center justify-between px-6 z-30 relative">
+                        <div className="flex items-center gap-4">
+                            <div className="w-10 h-10 border-2 border-cyan-500 rounded-full flex items-center justify-center overflow-hidden bg-slate-950 shadow-[0_0_10px_rgba(6,182,212,0.3)]">
+                                <img src="https://i.pinimg.com/736x/63/1e/3a/631e3a68228c97963e78381ad11bf3bb.jpg" alt="Logo" className="w-full h-full object-cover" />
+                            </div>
+                            <div>
+                                <h1 className="text-xl font-bold tracking-[0.2em] text-cyan-100 leading-none">{t.header.project}</h1>
+                                <div className="text-[10px] text-red-500 font-bold tracking-widest animate-pulse">{t.header.failure}</div>
+                            </div>
+                        </div>
 
-            {viewMode === 'map' && (
-                <USAMap 
-                    language={lang} missions={visibleMissions} completedMissionIds={completedMissionIds} onMissionComplete={handleMissionComplete} onMissionSelect={setSelectedMission} onBunkerClick={() => setViewMode('bunker')} factionStates={FACTION_STATES} playerAlignment={playerAlignment} worldStage={worldStage}
-                />
-            )}
-            
-            {viewMode === 'bunker' && (
-                <BunkerInterior 
-                    heroes={heroes} missions={visibleMissions.filter(m => !completedMissionIds.has(m.id))} 
-                    onAssign={(heroId, missionId) => {
-                         const hIndex = heroes.findIndex(h => h.id === heroId);
-                         if(hIndex >= 0) {
-                             const newHeroes = [...heroes];
-                             newHeroes[hIndex] = { ...newHeroes[hIndex], status: 'DEPLOYED', assignedMissionId: missionId };
-                             setHeroes(newHeroes);
-                             return true;
-                         }
-                         return false;
-                    }}
-                    onUnassign={(heroId) => {
-                         const hIndex = heroes.findIndex(h => h.id === heroId);
-                         if(hIndex >= 0) {
-                             const newHeroes = [...heroes];
-                             newHeroes[hIndex] = { ...newHeroes[hIndex], status: 'AVAILABLE', assignedMissionId: null };
-                             setHeroes(newHeroes);
-                         }
-                    }}
-                    onAddHero={(hero) => setHeroes([...heroes, hero])}
-                    onToggleObjective={handleToggleHeroObjective}
-                    onBack={() => setViewMode('map')}
-                    language={lang}
-                    playerAlignment={playerAlignment}
-                />
+                        <div className="flex items-center gap-6">
+                            <div className="text-right hidden md:block">
+                                <div className="text-[10px] text-cyan-600 font-bold">{t.header.biohazard}</div>
+                                <div className="text-xs text-cyan-300 tracking-widest">{t.header.clearance}</div>
+                            </div>
+                            
+                            <div className="flex items-center gap-3 border-l border-cyan-900 pl-6">
+                                <div className="flex flex-col items-end mr-2">
+                                    {isSaving ? <div className="text-[9px] font-bold tracking-widest text-yellow-500 animate-pulse">{t.header.saving}</div> : <div className="text-[9px] font-bold tracking-widest text-emerald-500/80">{t.header.saved}</div>}
+                                </div>
+                                <button onClick={() => setLang(lang === 'es' ? 'en' : 'es')} className="text-xs border border-cyan-700 px-2 py-1 hover:bg-cyan-900/50 transition-colors">{lang.toUpperCase()}</button>
+                                <button onClick={handleLogout} className="text-xs bg-red-900/20 text-red-400 border border-red-900 px-3 py-1 hover:bg-red-900/40 transition-colors">{t.header.logout}</button>
+                            </div>
+                        </div>
+                    </header>
+
+                    <div className="flex-1 flex overflow-hidden relative">
+                        {/* SIDEBAR */}
+                        <aside className="w-80 flex-none bg-slate-900 border-r border-cyan-900 flex flex-col z-20 shadow-xl overflow-hidden relative">
+                            {/* Threat Level */}
+                            <div className="p-6 border-b border-cyan-900 bg-red-950/10">
+                                <div className="flex justify-between items-end mb-2">
+                                    <h3 className="text-xs font-bold text-red-500 tracking-widest">{t.sidebar.threatLevelTitle}</h3>
+                                    <span className="text-3xl font-black text-red-600 tracking-tighter drop-shadow-[0_0_10px_rgba(220,38,38,0.5)]">{t.sidebar.threatLevelValue}</span>
+                                </div>
+                                <div className="w-full bg-red-900/30 h-1 mt-1"><div className="h-full bg-red-600 w-[95%] animate-pulse"></div></div>
+                                <div className="text-[9px] text-red-400 mt-1 text-right">{t.sidebar.infectionRate}</div>
+                            </div>
+
+                            {/* BUNKER BUTTON */}
+                            <div className="p-4 border-b border-cyan-900">
+                                <button 
+                                    id="tutorial-bunker-btn"
+                                    onClick={() => setViewMode('bunker')}
+                                    className={`w-full py-4 border-2 flex items-center justify-center gap-3 transition-all duration-300 group relative overflow-hidden ${playerAlignment === 'ZOMBIE' ? 'border-lime-600 bg-lime-900/10 hover:bg-lime-900/30 text-lime-400' : 'border-cyan-500 bg-cyan-900/10 hover:bg-cyan-900/30 text-cyan-300'}`}
+                                >
+                                    <div className={`absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 ${playerAlignment === 'ZOMBIE' ? 'bg-[linear-gradient(45deg,transparent_25%,rgba(132,204,22,0.1)_50%,transparent_75%)]' : 'bg-[linear-gradient(45deg,transparent_25%,rgba(6,182,212,0.1)_50%,transparent_75%)]'} bg-[length:250%_250%] animate-[shimmer_2s_linear_infinite]`}></div>
+                                    <span className="text-2xl group-hover:scale-110 transition-transform">{playerAlignment === 'ZOMBIE' ? '☣' : '🛡'}</span>
+                                    <span className="font-bold tracking-widest text-xs">{playerAlignment === 'ZOMBIE' ? t.sidebar.hiveBtn : t.sidebar.bunkerBtn}</span>
+                                </button>
+                            </div>
+
+                            {/* CAMPAIGN SWITCHER */}
+                            <div className="p-4 border-b border-cyan-900">
+                                <h4 className="text-[10px] font-bold text-gray-500 uppercase mb-2 tracking-widest">{t.sidebar.campaignMode}</h4>
+                                <div className="flex flex-col gap-2">
+                                    <button disabled={playerAlignment === 'ALIVE'} onClick={() => { setPlayerAlignment('ALIVE'); setViewMode('map'); setHeroes([]); }} className={`w-full py-2 px-3 border text-[9px] font-bold tracking-wider flex justify-between items-center transition-all ${playerAlignment === 'ALIVE' ? 'bg-cyan-900/50 border-cyan-500 text-white' : 'border-gray-800 text-gray-500 hover:border-cyan-700 hover:text-cyan-400'}`}>
+                                        <span>PROTOCOL: LAZARUS</span>
+                                        {playerAlignment === 'ALIVE' && <span className="w-2 h-2 bg-cyan-400 rounded-full animate-pulse"></span>}
+                                    </button>
+                                    <button disabled={playerAlignment === 'ZOMBIE'} onClick={() => { setPlayerAlignment('ZOMBIE'); setViewMode('map'); setHeroes([]); }} className={`w-full py-2 px-3 border text-[9px] font-bold tracking-wider flex justify-between items-center transition-all ${playerAlignment === 'ZOMBIE' ? 'bg-lime-900/50 border-lime-500 text-white' : 'border-gray-800 text-gray-500 hover:border-lime-700 hover:text-lime-400'}`}>
+                                        <span>PROTOCOL: HUNGER</span>
+                                        {playerAlignment === 'ZOMBIE' && <span className="w-2 h-2 bg-lime-400 rounded-full animate-pulse"></span>}
+                                    </button>
+                                </div>
+                            </div>
+
+                            {/* Missions List */}
+                            <div id="tutorial-sidebar-missions" className="flex-1 overflow-y-auto p-4 scrollbar-thin scrollbar-thumb-cyan-900">
+                                <h4 className="text-[10px] font-bold text-cyan-600 uppercase mb-3 tracking-widest border-b border-cyan-900 pb-1">{t.sidebar.activeMissions}</h4>
+                                <div className="space-y-2">
+                                    {visibleMissions.length > 0 ? (
+                                        visibleMissions.map(m => {
+                                            const isCompleted = completedMissionIds.has(m.id);
+                                            if (isCompleted) return null;
+                                            return (
+                                                <div key={m.id} onClick={() => setSelectedMission(m)} className="p-3 border border-yellow-500/30 bg-yellow-900/5 hover:bg-yellow-900/20 cursor-pointer transition-all group relative overflow-hidden">
+                                                    <div className="absolute left-0 top-0 bottom-0 w-1 bg-yellow-500 group-hover:w-1.5 transition-all"></div>
+                                                    <div className="flex justify-between items-start pl-2">
+                                                        <div className="text-[10px] font-bold text-yellow-200 group-hover:text-white uppercase tracking-wider">{m.title}</div>
+                                                        <div className="w-2 h-2 bg-yellow-500 rounded-full animate-pulse shrink-0 mt-1"></div>
+                                                    </div>
+                                                    <div className="pl-2 mt-1 text-[9px] text-yellow-500/70">LOC: {m.location.state}</div>
+                                                </div>
+                                            );
+                                        })
+                                    ) : (
+                                        <div className="text-center text-[10px] text-gray-600 italic py-4">{t.sidebar.noMissions}</div>
+                                    )}
+                                    
+                                    {Array.from(completedMissionIds).length > 0 && (
+                                        <>
+                                            <div className="my-4 border-t border-cyan-900/50"></div>
+                                            {visibleMissions.filter(m => completedMissionIds.has(m.id)).map(m => (
+                                                <div key={m.id} onClick={() => setSelectedMission(m)} className="p-2 border border-emerald-900/30 bg-emerald-900/5 hover:bg-emerald-900/10 cursor-pointer opacity-70 hover:opacity-100 transition-all pl-3">
+                                                    <div className="flex justify-between items-center">
+                                                        <div className="text-[9px] font-bold text-emerald-400 line-through decoration-emerald-600">{m.title}</div>
+                                                        <div className="text-[10px] text-emerald-600">✓</div>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </>
+                                    )}
+                                </div>
+                            </div>
+
+                            {/* Replay Story */}
+                            <div className="p-4 border-t border-cyan-900 bg-slate-900 text-center">
+                                <button onClick={() => setViewMode('story')} className="text-[9px] text-cyan-800 hover:text-cyan-500 uppercase tracking-widest transition-colors flex items-center justify-center gap-2 w-full">
+                                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
+                                    {t.sidebar.replayStory}
+                                </button>
+                            </div>
+                        </aside>
+
+                        {/* CONTENT */}
+                        <main className="flex-1 relative bg-slate-950 overflow-hidden">
+                            {viewMode === 'map' && (
+                                <USAMap language={lang} missions={visibleMissions} completedMissionIds={completedMissionIds} onMissionComplete={handleMissionComplete} onMissionSelect={setSelectedMission} onBunkerClick={() => setViewMode('bunker')} factionStates={FACTION_STATES} playerAlignment={playerAlignment} worldStage={worldStage} />
+                            )}
+                            
+                            {viewMode === 'bunker' && (
+                                <BunkerInterior heroes={heroes} missions={visibleMissions.filter(m => !completedMissionIds.has(m.id))} onAssign={(heroId, missionId) => { const hIndex = heroes.findIndex(h => h.id === heroId); if(hIndex >= 0) { const newHeroes = [...heroes]; newHeroes[hIndex] = { ...newHeroes[hIndex], status: 'DEPLOYED', assignedMissionId: missionId }; setHeroes(newHeroes); return true; } return false; }} onUnassign={(heroId) => { const hIndex = heroes.findIndex(h => h.id === heroId); if(hIndex >= 0) { const newHeroes = [...heroes]; newHeroes[hIndex] = { ...newHeroes[hIndex], status: 'AVAILABLE', assignedMissionId: null }; setHeroes(newHeroes); } }} onAddHero={(hero) => setHeroes([...heroes, hero])} onToggleObjective={handleToggleHeroObjective} onBack={() => setViewMode('map')} language={lang} playerAlignment={playerAlignment} />
+                            )}
+
+                            {viewMode === 'tutorial' && (
+                                <div className="absolute inset-0 z-40">
+                                    <USAMap language={lang} missions={visibleMissions} completedMissionIds={completedMissionIds} onMissionComplete={() => {}} onMissionSelect={() => {}} onBunkerClick={() => {}} factionStates={FACTION_STATES} playerAlignment={playerAlignment} worldStage={worldStage} />
+                                    <TutorialOverlay language={lang} onComplete={() => { if(user) localStorage.setItem(`shield_tutorial_seen_${user.uid}`, 'true'); setViewMode('map'); }} onStepChange={(stepKey) => { if (['roster', 'file', 'recruit'].includes(stepKey)) { setViewMode('bunker'); } }} />
+                                </div>
+                            )}
+                        </main>
+                    </div>
+                </>
             )}
         </div>
     );
