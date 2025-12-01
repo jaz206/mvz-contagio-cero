@@ -1,6 +1,4 @@
-
-// ... existing imports ...
-
+// translations.ts
 export type Language = 'es' | 'en';
 
 export const translations = {
@@ -177,9 +175,20 @@ export const translations = {
             line4: "SISTEMA LISTO"
         },
         slides: [
-            { text: "El mundo terminó ayer.", image: "https://i.pinimg.com/736x/8a/9b/8c/8a9b8c9d7e6f5a4b3c2d1e0f9a8b7c6d.jpg" },
-            { text: "No hubo explosiones nucleares. No hubo invasión alienígena.", image: "https://i.pinimg.com/736x/1a/2b/3c/1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d.jpg" },
-            { text: "Solo hubo... hambre.", image: "https://i.pinimg.com/736x/0f/1e/2d/0f1e2d3c4b5a69788910111213141516.jpg" }
+            { text: "No hubo trompetas. No hubo cielos rojos ni profecías antiguas cumpliéndose. El fin del mundo no vino del espacio exterior, ni de una dimensión oscura.", image: "https://i.pinimg.com/1200x/18/99/ec/1899ec756f8731e015eb941d7122fbec.jpg" },
+            { text: "Lo construimos nosotros. Aquí. En casa.\nO mejor dicho, lo construyeron ellos.", image: "https://i.pinimg.com/1200x/71/06/7d/71067db72856dfd6ca03d0d51a679bd6.jpg" },
+            { text: "Fue en un laboratorio estéril. Tres hombres se reunieron allí: Victor Von Doom, Magneto y Wilson Fisk.\nDecidieron que la humanidad era demasiado caótica. Su solución fue la ciencia fría y dura: el Pulso Nulificador.", image: "https://i.pinimg.com/1200x/71/06/7d/71067db72856dfd6ca03d0d51a679bd6.jpg" },
+            { text: "Necesitaban cuerpos para afinar la fórmula. Usaron a Jamie Madrox para ver cómo se multiplicaba la infección. Usaron a los Reavers para ver si el metal podía enfermar. Y funcionó.", image: "https://i.pinimg.com/1200x/99/80/1e/99801e7603e4a770127ce29530f13f87.jpg" },
+            { text: "Pero la arrogancia es una pistola cargada que siempre apunta hacia atrás.", image: "https://i.pinimg.com/1200x/19/26/53/1926533335a2b27c4a79c9d2632ec83d.jpg" },
+            { text: "Decidieron probar su obra maestra en Bruce Banner. Buscaban una fuente de energía infinita; lo que consiguieron fue una bomba biológica.", image: "https://i.pinimg.com/1200x/b2/06/15/b20615925dfa53cdf9622fb596cdd5e3.jpg" },
+            { text: "Cuando el virus tocó la sangre gamma, no murió. Se enfureció. Banner no cayó. La cosa que despertó ya no tenía a nadie al volante.", image: "https://i.pinimg.com/1200x/a8/e9/b7/a8e9b76d6a9a87de0cfba509d5fef534.jpg" },
+            { text: "El estallido no fue de fuego, fue de contagio. Hulk rugió, y en ese rugido viajaba la extinción.", image: "https://i.pinimg.com/1200x/eb/db/e8/ebdbe8d5738acd105654dc8ddad8216f.jpg" },
+            { text: "En cuestión de horas, Nueva York era un matadero. Los Vengadores cayeron primero, destrozados por los amigos que intentaban salvar.", image: "https://i.pinimg.com/1200x/b9/0a/18/b90a18369639b131f91273f019b699cd.jpg" },
+            { text: "¿Y la Tríada? Doom, Magneto y Fisk fueron alcanzados por su propia creación. Pero el destino tiene un sentido del humor cruel.", image: "https://i.pinimg.com/1200x/e1/02/86/e102864e130bfa5b5f2ffc5a9d9ed9c0.jpg" },
+            { text: "No perdieron la mente. Sus cuerpos se pudrieron, pero su intelecto permaneció intacto. Ahora se sientan en tronos de huesos, gobernando facciones de pesadilla.", image: "https://i.pinimg.com/1200x/e2/5c/3a/e25c3ac26e5fc65f9119b6073912e856.jpg" },
+            { text: "Pero hay algo más ahí fuera. S.H.I.E.L.D. sigue activo. No es una agencia; es un fantasma armado. Una IA paranoica que ha decidido que la única forma de mantener el orden es eliminar todo lo que se mueva.", image: "https://i.pinimg.com/1200x/39/c8/cd/39c8cde0a5b56acc78b41c4eecf91f0a.jpg" },
+            { text: "Así que aquí estás. De pie sobre las cenizas. Ya no se trata de salvar el mundo. Se trata de ver quién queda en pie.", image: "https://i.pinimg.com/1200x/45/7d/c5/457dc515c61d470eb26cf1727ebd67ea.jpg" },
+            { text: "Dime, superviviente... en esta nueva era de monstruos y máquinas: ¿QUÉ ERES TÚ?", image: "https://i.pinimg.com/1200x/18/85/ee/1885ee42132b6976d36896a81f33ad8c.jpg" }
         ],
         choose: "ELIGE TU DESTINO",
         optionA: "SUPERVIVIENTE",
@@ -378,7 +387,20 @@ export const translations = {
         slides: [
             { text: "The world ended yesterday.", image: "https://i.pinimg.com/736x/8a/9b/8c/8a9b8c9d7e6f5a4b3c2d1e0f9a8b7c6d.jpg" },
             { text: "There were no nuclear explosions. No alien invasion.", image: "https://i.pinimg.com/736x/1a/2b/3c/1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d.jpg" },
-            { text: "There was only... hunger.", image: "https://i.pinimg.com/736x/0f/1e/2d/0f1e2d3c4b5a69788910111213141516.jpg" }
+            { text: "There was only... hunger.", image: "https://i.pinimg.com/736x/0f/1e/2d/0f1e2d3c4b5a69788910111213141516.jpg" },
+            { text: "We built it ourselves. Here. At home.\nOr rather, they built it.", image: "https://i.pinimg.com/1200x/71/06/7d/71067db72856dfd6ca03d0d51a679bd6.jpg" },
+            { text: "It was in a sterile lab. Three men met there: Doom, Magneto, and Fisk.\nThey decided humanity was too chaotic. Their solution was cold science: The Nullifier Pulse.", image: "https://i.pinimg.com/1200x/71/06/7d/71067db72856dfd6ca03d0d51a679bd6.jpg" },
+            { text: "They needed bodies to fine-tune the formula. They used Jamie Madrox. They used the Reavers. And it worked.", image: "https://i.pinimg.com/1200x/99/80/1e/99801e7603e4a770127ce29530f13f87.jpg" },
+            { text: "But arrogance is a loaded gun that always points backward.", image: "https://i.pinimg.com/1200x/19/26/53/1926533335a2b27c4a79c9d2632ec83d.jpg" },
+            { text: "They decided to test their masterpiece on Bruce Banner. They sought infinite energy; they got a biological bomb.", image: "https://i.pinimg.com/1200x/b2/06/15/b20615925dfa53cdf9622fb596cdd5e3.jpg" },
+            { text: "When the virus touched the gamma blood, it didn't die. It raged. Banner didn't fall. The thing that woke up had no one at the wheel.", image: "https://i.pinimg.com/1200x/a8/e9/b7/a8e9b76d6a9a87de0cfba509d5fef534.jpg" },
+            { text: "The outbreak wasn't fire, it was contagion. Hulk roared, and in that roar traveled extinction.", image: "https://i.pinimg.com/1200x/eb/db/e8/ebdbe8d5738acd105654dc8ddad8216f.jpg" },
+            { text: "In hours, New York was a slaughterhouse. The Avengers fell first, torn apart by the friends they tried to save.", image: "https://i.pinimg.com/1200x/b9/0a/18/b90a18369639b131f91273f019b699cd.jpg" },
+            { text: "And the Triad? Doom, Magneto, and Fisk were caught by their own creation. But fate has a cruel sense of humor.", image: "https://i.pinimg.com/1200x/e1/02/86/e102864e130bfa5b5f2ffc5a9d9ed9c0.jpg" },
+            { text: "They didn't lose their minds. Their bodies rotted, but their intellect remained intact. Now they sit on thrones of bone.", image: "https://i.pinimg.com/1200x/e2/5c/3a/e25c3ac26e5fc65f9119b6073912e856.jpg" },
+            { text: "But something else is out there. S.H.I.E.L.D. remains active. Not an agency, but a weaponized ghost. A paranoid AI.", image: "https://i.pinimg.com/1200x/39/c8/cd/39c8cde0a5b56acc78b41c4eecf91f0a.jpg" },
+            { text: "So here you are. Standing on the ashes. It's no longer about saving the world. It's about who's left standing.", image: "https://i.pinimg.com/1200x/45/7d/c5/457dc515c61d470eb26cf1727ebd67ea.jpg" },
+            { text: "Tell me, survivor... in this new era of monsters and machines: WHAT ARE YOU?", image: "https://i.pinimg.com/1200x/18/85/ee/1885ee42132b6976d36896a81f33ad8c.jpg" }
         ],
         choose: "CHOOSE YOUR DESTINY",
         optionA: "SURVIVOR",
