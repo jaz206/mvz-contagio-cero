@@ -425,13 +425,9 @@ const App: React.FC = () => {
              { id: 'base_zeta', title: t.missions.bases.zeta, description: [t.missions.bases.desc], objectives: [{ title: t.missions.bases.objSecure, desc: '' }, { title: t.missions.bases.objRetrieve, desc: '' }], location: { state: 'Pennsylvania', coordinates: [-78.0, 40.5] }, threatLevel: 'MEDIUM', type: 'SHIELD_BASE' }
         ];
 
-        // Deduplicate missions: If a custom mission (from DB) has the same ID as a hardcoded one, use the custom one (the edited version)
         const missionMap = new Map<string, Mission>();
         
-        // Load hardcoded first
         hardcodedMissions.forEach(m => missionMap.set(m.id, m));
-        
-        // Override with custom/DB missions
         customMissions.forEach(m => missionMap.set(m.id, m));
 
         const missionList = Array.from(missionMap.values());
@@ -469,7 +465,6 @@ const App: React.FC = () => {
                 isOpen={showMissionEditor}
                 onClose={() => { setShowMissionEditor(false); setMissionToEdit(null); }}
                 onSave={async (newMission) => {
-                    // Refresh missions list from DB
                     const loaded = await getCustomMissions();
                     setCustomMissions(loaded);
                 }}
@@ -547,20 +542,31 @@ const App: React.FC = () => {
 
                     <div className="flex-1 flex overflow-hidden relative">
                         <aside className="w-80 flex-none bg-slate-900 border-r border-cyan-900 flex flex-col z-20 shadow-xl overflow-hidden relative">
-                            {/* EDITOR PANEL - INTEGRATED INTO SIDEBAR */}
+                            {/* EDITOR PANEL - REORGANIZED INTO SECTIONS */}
                             {isEditorMode && (
-                                <div className="p-4 bg-slate-800 border-b border-cyan-500">
-                                    <h3 className="text-[10px] font-bold text-cyan-300 mb-2 tracking-widest border-b border-cyan-600 pb-1">EDITOR CONTROL</h3>
-                                    <div className="flex flex-col gap-2">
-                                        <button onClick={() => { setMissionToEdit(null); setShowMissionEditor(true); }} className="w-full py-2 bg-blue-600 hover:bg-blue-500 text-white text-[10px] font-bold uppercase tracking-wider">
+                                <div className="p-4 bg-slate-800 border-b border-cyan-500 overflow-y-auto max-h-[50vh]">
+                                    <h3 className="text-[10px] font-bold text-cyan-300 mb-3 tracking-widest border-b border-cyan-600 pb-1">EDITOR CONTROL</h3>
+                                    
+                                    {/* SECTION 1: CONTENT MANAGEMENT */}
+                                    <div className="mb-3 p-2 border border-blue-600/50 bg-blue-900/10 rounded">
+                                        <div className="text-[8px] text-blue-400 font-bold mb-2 uppercase tracking-wider">CONTENT MANAGEMENT</div>
+                                        <button onClick={() => { setMissionToEdit(null); setShowMissionEditor(true); }} className="w-full py-2 bg-blue-600 hover:bg-blue-500 text-white text-[10px] font-bold uppercase tracking-wider shadow-sm transition-all hover:shadow-blue-500/20">
                                             CREATE MISSION
                                         </button>
-                                        <div className="grid grid-cols-2 gap-2">
-                                            <button onClick={() => handleSimulateProgress(1)} className="py-1 bg-cyan-900 border border-cyan-600 text-[9px] hover:bg-cyan-800">+1 MISSION</button>
-                                            <button onClick={() => handleSimulateProgress(5)} className="py-1 bg-cyan-900 border border-cyan-600 text-[9px] hover:bg-cyan-800">+5 MISSIONS</button>
+                                    </div>
+
+                                    {/* SECTION 2: EVENT SIMULATION */}
+                                    <div className="p-2 border border-orange-600/50 bg-orange-900/10 rounded">
+                                        <div className="text-[8px] text-orange-400 font-bold mb-2 uppercase tracking-wider">EVENT SIMULATION</div>
+                                        <div className="text-[9px] text-gray-400 mb-2 flex justify-between">
+                                            <span>COMPLETED: <span className="text-white">{completedMissionIds.size}</span></span>
+                                            <span>STAGE: <span className="text-yellow-400">{worldStage}</span></span>
                                         </div>
-                                        <button onClick={handleResetProgress} className="w-full py-1 bg-red-900/50 border border-red-600 text-red-300 text-[9px] hover:bg-red-900">RESET PROGRESS</button>
-                                        <div className="text-[9px] text-gray-400 text-center">COMPLETED: {completedMissionIds.size} | STAGE: {worldStage}</div>
+                                        <div className="grid grid-cols-2 gap-2 mb-2">
+                                            <button onClick={() => handleSimulateProgress(1)} className="py-1 bg-slate-700 border border-orange-500/50 text-orange-200 text-[9px] hover:bg-orange-900/50 hover:text-white transition-colors">+1 MISSION</button>
+                                            <button onClick={() => handleSimulateProgress(5)} className="py-1 bg-slate-700 border border-orange-500/50 text-orange-200 text-[9px] hover:bg-orange-900/50 hover:text-white transition-colors">+5 MISSIONS</button>
+                                        </div>
+                                        <button onClick={handleResetProgress} className="w-full py-1 bg-red-900/50 border border-red-600 text-red-300 text-[9px] hover:bg-red-900 hover:text-white transition-colors">RESET PROGRESS</button>
                                     </div>
                                 </div>
                             )}
@@ -603,14 +609,41 @@ const App: React.FC = () => {
                                         visibleMissions.map(m => {
                                             const isCompleted = completedMissionIds.has(m.id);
                                             if (isCompleted) return null;
+                                            
+                                            // STYLE LOGIC FOR MISSIONS
+                                            const isShield = m.type === 'SHIELD_BASE';
+                                            // Check for Starting Mission (ID or Title match)
+                                            const isStartMission = m.id === 'm_kraven' || m.title.includes("MH0") || m.title.toUpperCase().includes("CADENAS ROTAS");
+                                            
+                                            let borderClass = 'border-yellow-500/30 bg-yellow-900/5 hover:bg-yellow-900/20';
+                                            let barClass = 'bg-yellow-500';
+                                            let textClass = 'text-yellow-200';
+                                            let subTextClass = 'text-yellow-500/70';
+
+                                            if (isShield) {
+                                                borderClass = 'border-cyan-500/30 bg-cyan-900/5 hover:bg-cyan-900/20';
+                                                barClass = 'bg-cyan-500';
+                                                textClass = 'text-cyan-200';
+                                                subTextClass = 'text-cyan-500/70';
+                                            } else if (isStartMission) {
+                                                borderClass = 'border-emerald-500/30 bg-emerald-900/5 hover:bg-emerald-900/20';
+                                                barClass = 'bg-emerald-500';
+                                                textClass = 'text-emerald-200';
+                                                subTextClass = 'text-emerald-500/70';
+                                            }
+                                            
                                             return (
-                                                <div key={m.id} onClick={() => setSelectedMission(m)} className="p-3 border border-yellow-500/30 bg-yellow-900/5 hover:bg-yellow-900/20 cursor-pointer transition-all group relative overflow-hidden">
-                                                    <div className="absolute left-0 top-0 bottom-0 w-1 bg-yellow-500 group-hover:w-1.5 transition-all"></div>
+                                                <div 
+                                                    key={m.id} 
+                                                    onClick={() => setSelectedMission(m)} 
+                                                    className={`p-3 border cursor-pointer transition-all group relative overflow-hidden ${borderClass}`}
+                                                >
+                                                    <div className={`absolute left-0 top-0 bottom-0 w-1 ${barClass} group-hover:w-1.5 transition-all`}></div>
                                                     <div className="flex justify-between items-start pl-2">
-                                                        <div className="text-[10px] font-bold text-yellow-200 group-hover:text-white uppercase tracking-wider">{m.title}</div>
-                                                        <div className="w-2 h-2 bg-yellow-500 rounded-full animate-pulse shrink-0 mt-1"></div>
+                                                        <div className={`text-[10px] font-bold ${textClass} group-hover:text-white uppercase tracking-wider`}>{m.title}</div>
+                                                        <div className={`w-2 h-2 ${barClass} rounded-full animate-pulse shrink-0 mt-1`}></div>
                                                     </div>
-                                                    <div className="pl-2 mt-1 text-[9px] text-yellow-500/70">LOC: {m.location.state}</div>
+                                                    <div className={`pl-2 mt-1 text-[9px] ${subTextClass}`}>LOC: {m.location.state}</div>
                                                 </div>
                                             );
                                         })

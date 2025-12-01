@@ -358,7 +358,8 @@ export const USAMap: React.FC<USAMapProps> = ({ language, missions, completedMis
     }
 
     // --- S.H.I.E.L.D. BUNKER (BASE) ---
-    const bunkerCoords = projection([-98.5, 39.0]);
+    // Update Bunker coordinates to Ohio (approx -82.9, 40.0)
+    const bunkerCoords = projection([-82.9, 40.0]);
     if (bunkerCoords) {
         const bunkerGroup = g.append('g').attr('class', 'bunker cursor-pointer hover:opacity-100').attr('transform', `translate(${bunkerCoords[0]}, ${bunkerCoords[1]})`).on('click', (e) => { e.stopPropagation(); onBunkerClick(); });
         bunkerGroup.append('circle').attr('r', 12).attr('fill', 'none').attr('stroke', '#06b6d4').attr('stroke-width', 1).append('animate').attr('attributeName', 'r').attr('from', '12').attr('to', '25').attr('dur', '2s').attr('repeatCount', 'indefinite');
