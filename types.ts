@@ -1,6 +1,4 @@
 
-// types.ts
-
 export interface USATopoJSON {
   type: "Topology";
   objects: {
@@ -51,6 +49,7 @@ export interface Mission {
     coordinates: [number, number]; // [Longitude, Latitude]
   };
   threatLevel: string;
+  pdfUrl?: string; // Optional URL for full tactical report
 }
 
 export type HeroStatus = 'AVAILABLE' | 'DEPLOYED' | 'INJURED' | 'MIA';

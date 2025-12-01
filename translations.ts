@@ -197,6 +197,36 @@ export const translations = {
             ]
         }
     },
+    // New Mission Editor Translations
+    missionEditor: {
+        title: "CREADOR DE MISIONES TÁCTICAS",
+        missionTitle: "TÍTULO DE OPERACIÓN",
+        description: "DESCRIPCIÓN / INFORME (PÁRRAFOS)",
+        objectives: "OBJETIVOS DE MISIÓN",
+        location: "UBICACIÓN (ESTADO)",
+        threat: "NIVEL DE AMENAZA",
+        type: "TIPO DE MISIÓN",
+        pdfUrl: "URL DE INFORME TÁCTICO (PDF)",
+        addObjective: "AÑADIR OBJETIVO",
+        save: "GUARDAR EN LA BASE DE DATOS",
+        cancel: "CANCELAR",
+        objTitle: "TÍTULO DEL OBJETIVO",
+        objDesc: "DESCRIPCIÓN DEL OBJETIVO"
+    },
+    missionModal: {
+        title: "DOSSIER DE MISIÓN // CLASIFICADO",
+        objectives: "OBJETIVOS TÁCTICOS",
+        briefing: "INFORME DE SITUACIÓN",
+        threat: "NIVEL DE AMENAZA",
+        accept: "INICIAR MISIÓN",
+        complete: "REPORTAR ÉXITO DE MISIÓN",
+        reactivate: "REACTIVAR OPERACIÓN",
+        cancel: "CERRAR ARCHIVO",
+        sending: "ENVIANDO REPORTE A SATÉLITE...",
+        sent: "REPORTE CONFIRMADO",
+        downloadPdf: "DESCARGAR INFORME TÁCTICO (PDF)" // Added
+    },
+    // ... rest of translations
     heroes: {
         spiderman: {
             alias: "SPIDER-MAN",
@@ -263,47 +293,6 @@ export const translations = {
             bio: "El poder cósmico mezclado con el hambre insaciable. Una amenaza de nivel Omega que no solo quiere comer carne, sino consumir estrellas."
         }
     },
-    missionModal: {
-        title: "DOSSIER DE MISIÓN // CLASIFICADO",
-        objectives: "OBJETIVOS TÁCTICOS",
-        briefing: "INFORME DE SITUACIÓN",
-        threat: "NIVEL DE AMENAZA",
-        accept: "INICIAR MISIÓN",
-        complete: "REPORTAR ÉXITO DE MISIÓN",
-        reactivate: "REACTIVAR OPERACIÓN",
-        cancel: "CERRAR ARCHIVO",
-        sending: "ENVIANDO REPORTE A SATÉLITE...",
-        sent: "REPORTE CONFIRMADO"
-    },
-    story: {
-        skip: "SALTAR SECUENCIA",
-        next: "SIGUIENTE",
-        prev: "ANTERIOR",
-        choose: "ELIGE TU CAMINO",
-        optionA: "OPCIÓN A: EL HÉROE VIVO",
-        optionB: "OPCIÓN B: EL HÉROE ZOMBIE",
-        loading: {
-            line1: "ESTABLECIENDO CONEXIÓN SEGURA...",
-            line2: "RECUPERANDO ARCHIVO 0-Z...",
-            line3: "DESENCRIPTACIÓN COMPLETADA.",
-            line4: "INICIANDO VISUALIZACIÓN."
-        },
-        slides: [
-            { text: "MARVEL ZOMBIES: CONTAGIO CERO\nLibro I: El Legado de la Arrogancia", image: "https://i.pinimg.com/1200x/18/85/ee/1885ee42132b6976d36896a81f33ad8c.jpg" },
-            { text: " No hubo trompetas. No hubo cielos rojos ni profecías antiguas cumpliéndose.\n El fin del mundo no vino del espacio exterior, ni de una dimensión oscura.", image: "https://i.pinimg.com/1200x/18/99/ec/1899ec756f8731e015eb941d7122fbec.jpg" },
-            { text: " Lo construimos nosotros. Aquí. En casa.\nO mejor dicho, lo construyeron ellos.\n\nFue en un laboratorio estéril. Tres hombres se reunieron allí: Victor Von Doom, Magneto y Wilson Fisk.\nDecidieron que la humanidad era demasiado caótica. Su solución fue la ciencia fría y dura: el Pulso Nulificador.", image: "https://i.pinimg.com/1200x/71/06/7d/71067db72856dfd6ca03d0d51a679bd6.jpg" },
-            { text: " Necesitaban cuerpos para afinar la fórmula. Usaron a Jamie Madrox para ver cómo se multiplicaba la infección.\nUsaron a los Reavers para ver si el metal podía enfermar.\nY funcionó. Dios, cómo funcionó.", image: "https://i.pinimg.com/1200x/99/80/1e/99801e7603e4a770127ce29530f13f87.jpg" },
-            { text: " Pero la arrogancia es una pistola cargada que siempre apunta hacia atrás.\nDecidieron probar su obra maestra en Bruce Banner. Buscaban energía infinita...", image: "https://i.pinimg.com/1200x/19/26/53/1926533335a2b27c4a79c9d2632ec83d.jpg" },
-            { text: " ...lo que consiguieron fue una bomba biológica.\nCuando el virus tocó la sangre gamma, no murió. Se enfureció.", image: "https://i.pinimg.com/1200x/b2/06/15/b20615925dfa53cdf9622fb596cdd5e3.jpg" },
-            { text: " El estallido no fue de fuego, fue de contagio.\nHulk rugió, y en ese rugido viajaba la extinción.", image: "https://i.pinimg.com/1200x/a8/e9/b7/a8e9b76d6a9a87de0cfba509d5fef534.jpg" },
-            { text: " En cuestión de horas, Nueva York era un matadero. Los Vengadores cayeron primero.\nLos X-Men aguantaron un poco más, solo para ver cómo su escuela se convertía en un buffet libre.", image: "https://i.pinimg.com/1200x/eb/db/e8/ebdbe8d5738acd105654dc8ddad8216f.jpg" },
-            { text: " ¿Y la Tríada? Doom, Magneto y Fisk fueron alcanzados por su propia creación.\nNo perdieron la mente. Sus cuerpos se pudrieron, pero su intelecto permaneció intacto.", image: "https://i.pinimg.com/1200x/b9/0a/18/b90a18369639b131f91273f019b699cd.jpg" },
-            { text: " Ahora, se sientan en tronos de huesos, gobernando facciones de pesadilla:\nDoomsberg, el Edén Roto y el Imperio de la Carne.", image: "https://i.pinimg.com/1200x/e1/02/86/e102864e130bfa5b5f2ffc5a9d9ed9c0.jpg" },
-            { text: " Pero hay algo más ahí fuera. Algo peor que los muertos.\nS.H.I.E.L.D. sigue activo.", image: "https://i.pinimg.com/1200x/e2/5c/3a/e25c3ac26e5fc65f9119b6073912e856.jpg" },
-            { text: " El \"Protocolo Lázaro\" sigue corriendo. S.H.I.E.L.D. ya no es una agencia; es un fantasma armado hasta los dientes.\nUna IA ciega, sorda y paranoica que elimina todo lo que se mueva.", image: "https://i.pinimg.com/1200x/39/c8/cd/39c8cde0a5b56acc78b41c4eecf91f0a.jpg" },
-            { text: " Así que aquí estás. De pie sobre las cenizas.\nA tu izquierda, los muertos. A tu derecha, las máquinas.\nDime, superviviente... en esta nueva era de monstruos y máquinas:\n¿QUÉ ERES TÚ?", image: "https://i.pinimg.com/1200x/45/7d/c5/457dc515c61d470eb26cf1727ebd67ea.jpg" },
-        ]
-    },
     tutorial: {
         welcome: {
             title: "BIENVENIDO A LA INTERFAZ TÁCTICA",
@@ -364,6 +353,36 @@ export const translations = {
     }
   },
   en: {
+    // ... copy existing en and update
+    missionEditor: {
+        title: "TACTICAL MISSION CREATOR",
+        missionTitle: "OPERATION TITLE",
+        description: "DESCRIPTION / BRIEFING (PARAGRAPHS)",
+        objectives: "MISSION OBJECTIVES",
+        location: "LOCATION (STATE)",
+        threat: "THREAT LEVEL",
+        type: "MISSION TYPE",
+        pdfUrl: "TACTICAL REPORT URL (PDF)",
+        addObjective: "ADD OBJECTIVE",
+        save: "SAVE TO DATABASE",
+        cancel: "CANCEL",
+        objTitle: "OBJECTIVE TITLE",
+        objDesc: "OBJECTIVE DESCRIPTION"
+    },
+    missionModal: {
+        title: "MISSION DOSSIER // CLASSIFIED",
+        objectives: "TACTICAL OBJECTIVES",
+        briefing: "SITUATION REPORT",
+        threat: "THREAT LEVEL",
+        accept: "INITIATE MISSION",
+        complete: "REPORT MISSION SUCCESS",
+        reactivate: "REACTIVATE OPERATION",
+        cancel: "CLOSE FILE",
+        sending: "UPLINKING REPORT...",
+        sent: "REPORT CONFIRMED",
+        downloadPdf: "DOWNLOAD TACTICAL REPORT (PDF)"
+    },
+    // ... keep existing en translations ...
     login: {
       title: "S.H.I.E.L.D.",
       subtitle: "SECURE ACCESS TERMINAL",
@@ -380,7 +399,6 @@ export const translations = {
       error: "AUTHENTICATION ERROR",
       passError: "INVALID PASSCODE"
     },
-    // ... existing header, sidebar, factions, map, bunker, recruit, heroes ...
     header: {
       project: "PROJECT: LAZARUS",
       failure: "GLOBAL CONTAINMENT FAILURE",

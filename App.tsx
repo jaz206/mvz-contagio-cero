@@ -4,7 +4,7 @@ import { translations, Language } from './translations';
 import { User } from 'firebase/auth';
 import { auth } from './firebaseConfig';
 import { onAuthStateChanged } from 'firebase/auth';
-import { getUserProfile, saveUserProfile } from './services/dbService';
+import { getUserProfile, saveUserProfile, getCustomMissions } from './services/dbService';
 import { logout } from './services/authService';
 
 import { LoginScreen } from './components/LoginScreen';
@@ -14,9 +14,11 @@ import { USAMap } from './components/USAMap';
 import { BunkerInterior } from './components/BunkerInterior';
 import { MissionModal } from './components/MissionModal';
 import { EventModal } from './components/EventModal';
+import { MissionEditor } from './components/MissionEditor';
 
 import { Mission, Hero, WorldStage, GlobalEvent } from './types';
 
+// ... (Existing FACTION_STATES and INITIAL_HEROES constants remain unchanged)
 const FACTION_STATES = {
     magneto: new Set([
         'Washington', 'Oregon', 'California', 'Nevada', 'Idaho', 
@@ -186,7 +188,11 @@ const App: React.FC = () => {
     
     // EDITOR MODE STATE
     const [isEditorMode, setIsEditorMode] = useState(false);
+    const [showMissionEditor, setShowMissionEditor] = useState(false); // NEW STATE FOR EDITOR
     
+    // Custom Missions State
+    const [customMissions, setCustomMissions] = useState<Mission[]>([]);
+
     // UI State
     const [selectedMission, setSelectedMission] = useState<Mission | null>(null);
     const [showStory, setShowStory] = useState(false);
@@ -260,6 +266,15 @@ const App: React.FC = () => {
             return savedHero;
         });
     };
+
+    // Load Custom Missions
+    useEffect(() => {
+        const loadMissions = async () => {
+            const loaded = await getCustomMissions();
+            setCustomMissions(loaded);
+        };
+        loadMissions();
+    }, []);
 
     // Load Profile
     useEffect(() => {
@@ -415,6 +430,9 @@ const App: React.FC = () => {
              { id: 'base_zeta', title: t.missions.bases.zeta, description: [t.missions.bases.desc], objectives: [{ title: t.missions.bases.objSecure, desc: '' }, { title: t.missions.bases.objRetrieve, desc: '' }], location: { state: 'Pennsylvania', coordinates: [-78.0, 40.5] }, threatLevel: 'MEDIUM', type: 'SHIELD_BASE' }
         ];
 
+        // ADD CUSTOM MISSIONS FROM DB
+        missionList.push(...customMissions);
+
         if (worldStage === 'GALACTUS' && playerAlignment === 'ALIVE') {
             missionList.push({
                 id: 'boss-galactus',
@@ -428,7 +446,7 @@ const App: React.FC = () => {
         }
         
         return missionList;
-    }, [t, playerAlignment, worldStage]);
+    }, [t, playerAlignment, worldStage, customMissions]);
 
     const visibleMissions = useMemo(() => {
         if (isEditorMode) return allMissions;
@@ -455,6 +473,7 @@ const App: React.FC = () => {
                         <div>STAGE: <span className="text-yellow-400">{worldStage}</span></div>
                     </div>
                     <div className="flex flex-col gap-2">
+                        <button onClick={() => setShowMissionEditor(true)} className="px-3 py-1 bg-blue-900/50 hover:bg-blue-800 text-blue-300 text-[9px] font-bold border border-blue-700 uppercase tracking-wider mb-2">CREATE MISSION</button>
                         <button onClick={() => handleSimulateProgress(1)} className="px-3 py-1 bg-cyan-900/50 hover:bg-cyan-800 text-cyan-300 text-[9px] font-bold border border-cyan-700 uppercase tracking-wider">+1 MISSION</button>
                         <button onClick={() => handleSimulateProgress(5)} className="px-3 py-1 bg-cyan-900/50 hover:bg-cyan-800 text-cyan-300 text-[9px] font-bold border border-cyan-700 uppercase tracking-wider">+5 MISSIONS</button>
                         <button onClick={handleResetProgress} className="px-3 py-1 bg-red-900/50 hover:bg-red-800 text-red-300 text-[9px] font-bold border border-red-700 uppercase tracking-wider">RESET</button>
@@ -462,7 +481,15 @@ const App: React.FC = () => {
                 </div>
             )}
 
-            {/* MODALS */}
+            {/* MISSION EDITOR MODAL */}
+            <MissionEditor 
+                isOpen={showMissionEditor}
+                onClose={() => setShowMissionEditor(false)}
+                onSave={(newMission) => setCustomMissions([...customMissions, newMission])}
+                language={lang}
+            />
+
+            {/* ... Other modals (Event, Mission) ... */}
             {activeGlobalEvent && (
                 <EventModal event={activeGlobalEvent} isOpen={!!activeGlobalEvent} onAcknowledge={handleEventAcknowledge} language={lang} />
             )}
@@ -470,7 +497,7 @@ const App: React.FC = () => {
                 <MissionModal mission={selectedMission} isOpen={!!selectedMission} onClose={() => setSelectedMission(null)} onComplete={handleMissionComplete} onReactivate={handleMissionReactivate} language={lang} isCompleted={completedMissionIds.has(selectedMission.id)} />
             )}
 
-            {/* FULL SCREEN VIEWS */}
+            {/* VIEWS */}
             {viewMode === 'login' && (
                 <LoginScreen onLogin={handleGuestLogin} onGoogleLogin={() => {}} onEditorLogin={handleEditorLogin} language={lang} setLanguage={setLang} />
             )}

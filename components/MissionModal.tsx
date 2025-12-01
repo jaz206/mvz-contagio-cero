@@ -121,6 +121,20 @@ export const MissionModal: React.FC<MissionModalProps> = ({ mission, isOpen, onC
                 </div>
             </div>
 
+            {/* PDF Report Button */}
+            {mission.pdfUrl && (
+                <div className="mt-6">
+                    <a 
+                        href={mission.pdfUrl} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="block w-full text-center px-6 py-3 border border-cyan-500 bg-cyan-900/20 hover:bg-cyan-900/40 text-cyan-300 text-xs font-bold tracking-widest transition-all"
+                    >
+                        {t.downloadPdf} ⭳
+                    </a>
+                </div>
+            )}
+
         </div>
 
         {/* Footer Actions */}

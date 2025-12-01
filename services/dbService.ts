@@ -1,5 +1,5 @@
 
-import { collection, getDocs, doc, writeBatch, getDoc, setDoc, Timestamp } from 'firebase/firestore';
+import { collection, getDocs, doc, writeBatch, getDoc, setDoc, addDoc, Timestamp } from 'firebase/firestore';
 import { db } from '../firebaseConfig';
 import { HeroTemplate, HeroClass, Hero, Mission } from '../types';
 import { HERO_DATABASE } from '../data/heroDatabase';
@@ -7,6 +7,7 @@ import { HERO_DATABASE } from '../data/heroDatabase';
 // Changed to 'heroes' to match your manual collection
 const COLLECTION_NAME = 'heroes';
 const USERS_COLLECTION = 'users';
+const MISSIONS_COLLECTION = 'missions';
 
 // Helper to find a value in an object using multiple possible key variations (case-insensitive, trimming whitespace)
 const findField = (data: any, possibleKeys: string[]): any => {
@@ -147,6 +148,33 @@ export const saveUserProfile = async (
         console.log(`Cloud save successful for ${campaignMode}`);
     } catch (error) {
         console.error("Error saving user profile:", error);
+        throw error;
+    }
+};
+
+// --- CUSTOM MISSIONS ---
+
+export const getCustomMissions = async (): Promise<Mission[]> => {
+    try {
+        const querySnapshot = await getDocs(collection(db, MISSIONS_COLLECTION));
+        const missions: Mission[] = [];
+        querySnapshot.forEach((doc) => {
+            const data = doc.data() as Mission;
+            missions.push({ ...data, id: doc.id });
+        });
+        return missions;
+    } catch (error) {
+        console.error("Error fetching missions:", error);
+        return [];
+    }
+};
+
+export const createMissionInDB = async (missionData: Omit<Mission, 'id'>): Promise<string> => {
+    try {
+        const docRef = await addDoc(collection(db, MISSIONS_COLLECTION), missionData);
+        return docRef.id;
+    } catch (error) {
+        console.error("Error creating mission:", error);
         throw error;
     }
 };
