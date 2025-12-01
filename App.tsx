@@ -1,4 +1,5 @@
 
+// ... existing imports ...
 import React, { useState, useEffect, useMemo } from 'react';
 import { translations, Language } from './translations';
 import { User } from 'firebase/auth';
@@ -18,6 +19,7 @@ import { MissionEditor } from './components/MissionEditor';
 
 import { Mission, Hero, WorldStage, GlobalEvent } from './types';
 
+// ... constants FACTION_STATES, INITIAL_HEROES, INITIAL_ZOMBIE_HEROES ...
 const FACTION_STATES = {
     magneto: new Set([
         'Washington', 'Oregon', 'California', 'Nevada', 'Idaho', 
@@ -170,14 +172,12 @@ const INITIAL_ZOMBIE_HEROES: Hero[] = [
 ];
 
 const App: React.FC = () => {
-    // ... states ...
     const [user, setUser] = useState<User | null>(null);
     const [loading, setLoading] = useState(true);
     const [loadingAuth, setLoadingAuth] = useState(true);
     const [lang, setLang] = useState<Language>('es');
     const [viewMode, setViewMode] = useState<'login' | 'story' | 'tutorial' | 'map' | 'bunker'>('login');
     
-    // Game State
     const [playerAlignment, setPlayerAlignment] = useState<'ALIVE' | 'ZOMBIE' | null>(null);
     const [heroes, setHeroes] = useState<Hero[]>([]);
     const [completedMissionIds, setCompletedMissionIds] = useState<Set<string>>(new Set());
@@ -186,10 +186,9 @@ const App: React.FC = () => {
     const [isGuest, setIsGuest] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
     
-    // EDITOR MODE STATE
     const [isEditorMode, setIsEditorMode] = useState(false);
     const [showMissionEditor, setShowMissionEditor] = useState(false); 
-    const [missionToEdit, setMissionToEdit] = useState<Mission | null>(null); // For Editing
+    const [missionToEdit, setMissionToEdit] = useState<Mission | null>(null); 
     
     const [customMissions, setCustomMissions] = useState<Mission[]>([]);
 
@@ -199,7 +198,6 @@ const App: React.FC = () => {
     
     const t = translations[lang];
 
-    // ... Auth Listener ...
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
             setUser(currentUser);
@@ -370,7 +368,14 @@ const App: React.FC = () => {
         newSet.add(id);
         setCompletedMissionIds(newSet);
         setSelectedMission(null);
-        checkGlobalEvents(newSet.size);
+        
+        // SPECIAL BOSS LOGIC
+        if (id === 'boss-galactus') {
+            setWorldStage('NORMAL'); // DEFEATED: Reset world stage to remove shadow and surfer
+            setActiveGlobalEvent(null);
+        } else {
+            checkGlobalEvents(newSet.size);
+        }
     };
 
     const handleMissionReactivate = (id: string) => {
@@ -426,10 +431,8 @@ const App: React.FC = () => {
         ];
 
         const missionMap = new Map<string, Mission>();
-        
         hardcodedMissions.forEach(m => missionMap.set(m.id, m));
         customMissions.forEach(m => missionMap.set(m.id, m));
-
         const missionList = Array.from(missionMap.values());
 
         if (worldStage === 'GALACTUS' && playerAlignment === 'ALIVE') {
@@ -449,12 +452,18 @@ const App: React.FC = () => {
 
     const visibleMissions = useMemo(() => {
         if (isEditorMode) return allMissions;
+        
+        // GALACTUS EVENT: HIDE ALL STANDARD MISSIONS
+        if (worldStage === 'GALACTUS') {
+            return allMissions.filter(m => m.type === 'BOSS');
+        }
+
         return allMissions.filter(m => {
             const isCompleted = completedMissionIds.has(m.id);
             const prereqMet = !m.prereq || completedMissionIds.has(m.prereq);
             return isCompleted || prereqMet;
         });
-    }, [allMissions, completedMissionIds, isEditorMode]);
+    }, [allMissions, completedMissionIds, isEditorMode, worldStage]);
 
     if (loading || loadingAuth) return <div className="bg-slate-950 text-cyan-500 h-screen flex items-center justify-center font-mono">LOADING SHIELD OS...</div>;
 
@@ -542,12 +551,11 @@ const App: React.FC = () => {
 
                     <div className="flex-1 flex overflow-hidden relative">
                         <aside className="w-80 flex-none bg-slate-900 border-r border-cyan-900 flex flex-col z-20 shadow-xl overflow-hidden relative">
-                            {/* EDITOR PANEL - REORGANIZED INTO SECTIONS */}
+                            
                             {isEditorMode && (
                                 <div className="p-4 bg-slate-800 border-b border-cyan-500 overflow-y-auto max-h-[50vh]">
                                     <h3 className="text-[10px] font-bold text-cyan-300 mb-3 tracking-widest border-b border-cyan-600 pb-1">EDITOR CONTROL</h3>
                                     
-                                    {/* SECTION 1: CONTENT MANAGEMENT */}
                                     <div className="mb-3 p-2 border border-blue-600/50 bg-blue-900/10 rounded">
                                         <div className="text-[8px] text-blue-400 font-bold mb-2 uppercase tracking-wider">CONTENT MANAGEMENT</div>
                                         <button onClick={() => { setMissionToEdit(null); setShowMissionEditor(true); }} className="w-full py-2 bg-blue-600 hover:bg-blue-500 text-white text-[10px] font-bold uppercase tracking-wider shadow-sm transition-all hover:shadow-blue-500/20">
@@ -555,7 +563,6 @@ const App: React.FC = () => {
                                         </button>
                                     </div>
 
-                                    {/* SECTION 2: EVENT SIMULATION */}
                                     <div className="p-2 border border-orange-600/50 bg-orange-900/10 rounded">
                                         <div className="text-[8px] text-orange-400 font-bold mb-2 uppercase tracking-wider">EVENT SIMULATION</div>
                                         <div className="text-[9px] text-gray-400 mb-2 flex justify-between">
@@ -610,17 +617,21 @@ const App: React.FC = () => {
                                             const isCompleted = completedMissionIds.has(m.id);
                                             if (isCompleted) return null;
                                             
-                                            // STYLE LOGIC FOR MISSIONS
                                             const isShield = m.type === 'SHIELD_BASE';
-                                            // Check for Starting Mission (ID or Title match)
                                             const isStartMission = m.id === 'm_kraven' || m.title.includes("MH0") || m.title.toUpperCase().includes("CADENAS ROTAS");
+                                            const isBoss = m.type === 'BOSS';
                                             
                                             let borderClass = 'border-yellow-500/30 bg-yellow-900/5 hover:bg-yellow-900/20';
                                             let barClass = 'bg-yellow-500';
                                             let textClass = 'text-yellow-200';
                                             let subTextClass = 'text-yellow-500/70';
 
-                                            if (isShield) {
+                                            if (isBoss) {
+                                                borderClass = 'border-purple-500/30 bg-purple-900/20 hover:bg-purple-900/40 animate-pulse';
+                                                barClass = 'bg-purple-500';
+                                                textClass = 'text-purple-200';
+                                                subTextClass = 'text-purple-500/70';
+                                            } else if (isShield) {
                                                 borderClass = 'border-cyan-500/30 bg-cyan-900/5 hover:bg-cyan-900/20';
                                                 barClass = 'bg-cyan-500';
                                                 textClass = 'text-cyan-200';

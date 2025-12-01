@@ -60,7 +60,7 @@ export const TutorialOverlay: React.FC<TutorialOverlayProps> = ({ language, onCo
             const nextIndex = stepIndex + 1;
             setStepIndex(nextIndex);
             if (onStepChange) {
-                onStepChange(steps[nextIndex].translationKey);
+                onStepChange(steps[nextIndex].translationKey as string);
             }
         } else {
             onComplete();

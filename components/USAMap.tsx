@@ -1,4 +1,5 @@
 
+// ... existing imports ...
 import React, { useRef, useEffect, useState, useCallback } from 'react';
 import * as d3 from 'd3';
 import * as topojson from 'topojson-client';
@@ -31,10 +32,26 @@ export const USAMap: React.FC<USAMapProps> = ({ language, missions, completedMis
   const [svgWidth, setSvgWidth] = useState(0);
   const [svgHeight, setSvgHeight] = useState(0);
   
+  // State for Event Choreography
+  const [tokensReleased, setTokensReleased] = useState(false);
+  
   const hulkTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const surferTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const t = translations[language];
+
+  // Token Release Timer Logic (10 seconds after Surfer arrives)
+  useEffect(() => {
+      if (worldStage === 'SURFER') {
+          setTokensReleased(false);
+          const timer = setTimeout(() => {
+              setTokensReleased(true);
+          }, 10000); // 10 seconds wait in Kansas
+          return () => clearTimeout(timer);
+      } else {
+          setTokensReleased(true); // Default to free roaming for other stages if relevant, though Galactus overrides
+      }
+  }, [worldStage]);
 
   useEffect(() => {
     const loadData = async () => {
@@ -123,7 +140,6 @@ export const USAMap: React.FC<USAMapProps> = ({ language, missions, completedMis
     defs.append("clipPath").attr("id", "hulk-clip").append("circle").attr("cx", 0).attr("cy", 0).attr("r", 50); 
     defs.append("clipPath").attr("id", "bunker-clip").append("circle").attr("cx", 0).attr("cy", 0).attr("r", 12);
     defs.append("clipPath").attr("id", "mission-clip").append("circle").attr("cx", 0).attr("cy", 0).attr("r", 8);
-    // Surfer Clip
     defs.append("clipPath").attr("id", "surfer-clip").append("circle").attr("cx", 0).attr("cy", 0).attr("r", 15);
 
     const g = svg.append('g'); 
@@ -231,10 +247,28 @@ export const USAMap: React.FC<USAMapProps> = ({ language, missions, completedMis
     // --- HULK ROAMING TOKEN ---
     const hulkFeatures = states.features.filter((f: any) => factionStates.hulk.has(f.properties.name));
     if (hulkFeatures.length > 0) {
-        let currentHulkFeature = hulkFeatures[Math.floor(Math.random() * hulkFeatures.length)];
-        const startCentroid = path.centroid(currentHulkFeature);
         
-        if (startCentroid && !isNaN(startCentroid[0])) {
+        let startCentroid: [number, number] | null = null;
+        let isRoaming = true;
+
+        // CHOREOGRAPHY LOGIC
+        if (worldStage === 'SURFER' && !tokensReleased) {
+            // First 10 seconds: Force to Kansas to meet Surfer
+            const kansas = projection([-98.5, 38.5]);
+            if (kansas) {
+                startCentroid = kansas;
+                isRoaming = false;
+            }
+        } else {
+            // Default Roaming (including Surfer stage > 10s and Galactus stage)
+            let currentHulkFeature = hulkFeatures[Math.floor(Math.random() * hulkFeatures.length)];
+            const c = path.centroid(currentHulkFeature);
+            if (c && !isNaN(c[0])) {
+                startCentroid = c;
+            }
+        }
+        
+        if (startCentroid) {
             const hulkGroup = g.append('g').attr('id', 'hulk-token').attr('transform', `translate(${startCentroid[0]}, ${startCentroid[1]})`).attr('class', 'pointer-events-none'); 
             const jumpWrapper = hulkGroup.append('g').attr('class', 'hulk-jump-wrapper');
             const hulkOrb = jumpWrapper.append('g').attr('class', 'hulk-orb');
@@ -244,54 +278,80 @@ export const USAMap: React.FC<USAMapProps> = ({ language, missions, completedMis
 
             const hulkIcon = jumpWrapper.append('g').attr('class', 'hulk-icon').style('display', 'none').style('opacity', 0);
             
-            // Backlight for multiply effect
             hulkIcon.append('circle').attr('r', 40).attr('fill', '#a3e635').attr('cx', 0).attr('cy', 0); 
             
-            // Image with multiply blend
             hulkIcon.append('image')
                 .attr('href', 'https://i.pinimg.com/1200x/dd/fa/7b/ddfa7b9d3e2b76cbd33af6647308f3a7.jpg')
                 .attr('x', -40).attr('y', -40).attr('width', 80).attr('height', 80)
                 .attr('clip-path', 'url(#hulk-clip)')
                 .style('mix-blend-mode', 'multiply');
 
-            const moveHulk = () => {
-                const currentCentroid = path.centroid(currentHulkFeature);
-                const neighbors = hulkFeatures
-                    .filter((f: any) => f !== currentHulkFeature)
-                    .map((f: any) => {
-                        const c = path.centroid(f);
-                        if (!c || isNaN(c[0])) return { feature: f, dist: Infinity, centroid: [0,0] };
-                        const dist = Math.sqrt(Math.pow(c[0] - currentCentroid[0], 2) + Math.pow(c[1] - currentCentroid[1], 2));
-                        return { feature: f, dist, centroid: c };
-                    })
-                    .sort((a: any, b: any) => a.dist - b.dist)
-                    .slice(0, 4);
-                
-                const randomDelay = Math.floor(Math.random() * (180000 - 5000 + 1) + 5000);
+            if (isRoaming) {
+                let currentHulkFeature = hulkFeatures[Math.floor(Math.random() * hulkFeatures.length)];
+                const moveHulk = () => {
+                    const currentCentroid = path.centroid(currentHulkFeature);
+                    const neighbors = hulkFeatures
+                        .filter((f: any) => f !== currentHulkFeature)
+                        .map((f: any) => {
+                            const c = path.centroid(f);
+                            if (!c || isNaN(c[0])) return { feature: f, dist: Infinity, centroid: [0,0] };
+                            const dist = Math.sqrt(Math.pow(c[0] - currentCentroid[0], 2) + Math.pow(c[1] - currentCentroid[1], 2));
+                            return { feature: f, dist, centroid: c };
+                        })
+                        .sort((a: any, b: any) => a.dist - b.dist)
+                        .slice(0, 4);
+                    
+                    const randomDelay = Math.floor(Math.random() * (180000 - 5000 + 1) + 5000);
 
-                if (neighbors.length > 0) {
-                    const nextMove = neighbors[Math.floor(Math.random() * neighbors.length)];
-                    currentHulkFeature = nextMove.feature;
-                    const jumpDuration = 3000;
-                    d3.select('#hulk-token').transition().duration(jumpDuration).ease(d3.easeLinear).attr('transform', `translate(${nextMove.centroid[0]}, ${nextMove.centroid[1]})`);
-                    d3.select('.hulk-jump-wrapper').transition().duration(jumpDuration / 2).ease(d3.easeQuadOut).attr('transform', 'scale(1.5)').transition().duration(jumpDuration / 2).ease(d3.easeQuadIn).attr('transform', 'scale(1)').on('end', () => {
-                             hulkTimerRef.current = setTimeout(moveHulk, randomDelay);
-                        });
-                } else {
-                    hulkTimerRef.current = setTimeout(moveHulk, randomDelay);
-                }
-            };
-            hulkTimerRef.current = setTimeout(moveHulk, 3000);
+                    if (neighbors.length > 0) {
+                        const nextMove = neighbors[Math.floor(Math.random() * neighbors.length)];
+                        currentHulkFeature = nextMove.feature;
+                        const jumpDuration = 3000;
+                        d3.select('#hulk-token').transition().duration(jumpDuration).ease(d3.easeLinear).attr('transform', `translate(${nextMove.centroid[0]}, ${nextMove.centroid[1]})`);
+                        d3.select('.hulk-jump-wrapper').transition().duration(jumpDuration / 2).ease(d3.easeQuadOut).attr('transform', 'scale(1.5)').transition().duration(jumpDuration / 2).ease(d3.easeQuadIn).attr('transform', 'scale(1)').on('end', () => {
+                                 hulkTimerRef.current = setTimeout(moveHulk, randomDelay);
+                            });
+                    } else {
+                        hulkTimerRef.current = setTimeout(moveHulk, randomDelay);
+                    }
+                };
+                hulkTimerRef.current = setTimeout(moveHulk, 3000);
+            }
         }
     }
 
     // --- SILVER SURFER ZOMBIE TOKEN ---
+    // Surfer exists during SURFER stage (either locked or roaming)
+    // In GALACTUS stage, he is LOCKED guarding the boss
     if (worldStage === 'SURFER' || worldStage === 'GALACTUS') {
-        const allStates = states.features;
-        let currentSurferFeature = allStates[Math.floor(Math.random() * allStates.length)];
-        const startC = path.centroid(currentSurferFeature);
+        let startC: [number, number] | null = null;
+        let isRoaming = true;
 
-        if (startC && !isNaN(startC[0])) {
+        if (worldStage === 'SURFER') {
+             if (!tokensReleased) {
+                 // First 10s: Locked in Kansas
+                 const kansas = projection([-98.0, 38.5]); 
+                 if (kansas) {
+                     startC = kansas;
+                     isRoaming = false;
+                 }
+             } else {
+                // After 10s: Roaming Randomly
+                const allStates = states.features;
+                let currentSurferFeature = allStates[Math.floor(Math.random() * allStates.length)];
+                const c = path.centroid(currentSurferFeature);
+                if (c && !isNaN(c[0])) startC = c;
+             }
+        } else if (worldStage === 'GALACTUS') {
+             // Force to Kansas to Guard Galactus
+             const kansas = projection([-98.0, 38.0]); // Coordinates match Boss mission
+             if (kansas) {
+                 startC = kansas;
+                 isRoaming = false;
+             }
+        }
+
+        if (startC) {
             const surferGroup = g.append('g').attr('id', 'surfer-token').attr('transform', `translate(${startC[0]}, ${startC[1]})`).attr('class', 'pointer-events-none');
             
             surferGroup.append('circle')
@@ -322,23 +382,26 @@ export const USAMap: React.FC<USAMapProps> = ({ language, missions, completedMis
                 .attr('dur', '0.8s')
                 .attr('repeatCount', 'indefinite');
 
-            const moveSurfer = () => {
-                const randomState = allStates[Math.floor(Math.random() * allStates.length)];
-                const nextC = path.centroid(randomState);
-                if (nextC && !isNaN(nextC[0])) {
-                    d3.select('#surfer-token')
-                        .transition()
-                        .duration(800)
-                        .ease(d3.easeCubicInOut)
-                        .attr('transform', `translate(${nextC[0]}, ${nextC[1]})`)
-                        .on('end', () => {
-                            surferTimerRef.current = setTimeout(moveSurfer, 1500); 
-                        });
-                } else {
-                    surferTimerRef.current = setTimeout(moveSurfer, 1000);
-                }
-            };
-            surferTimerRef.current = setTimeout(moveSurfer, 1000);
+            if (isRoaming) {
+                const moveSurfer = () => {
+                    const allStates = states.features;
+                    const randomState = allStates[Math.floor(Math.random() * allStates.length)];
+                    const nextC = path.centroid(randomState);
+                    if (nextC && !isNaN(nextC[0])) {
+                        d3.select('#surfer-token')
+                            .transition()
+                            .duration(800)
+                            .ease(d3.easeCubicInOut)
+                            .attr('transform', `translate(${nextC[0]}, ${nextC[1]})`)
+                            .on('end', () => {
+                                surferTimerRef.current = setTimeout(moveSurfer, 1500); 
+                            });
+                    } else {
+                        surferTimerRef.current = setTimeout(moveSurfer, 1000);
+                    }
+                };
+                surferTimerRef.current = setTimeout(moveSurfer, 1000);
+            }
         }
     }
 
@@ -347,18 +410,16 @@ export const USAMap: React.FC<USAMapProps> = ({ language, missions, completedMis
         const galactusGroup = g.append('g').attr('class', 'pointer-events-none');
         
         galactusGroup.append('image')
-            .attr('href', 'https://i.pinimg.com/736x/b6/f6/48/b6f64882666f8e568a7274b4d03c31a4.jpg')
+            .attr('href', 'https://i.pinimg.com/736x/7d/99/05/7d9905d417620745edc2c724f94e56c8.jpg')
             .attr('x', 0)
             .attr('y', 0)
             .attr('width', svgWidth)
             .attr('height', svgHeight)
             .attr('preserveAspectRatio', 'xMidYMid slice') // Ensures full coverage
-            .style('mix-blend-mode', 'multiply')
-            .attr('opacity', 0.25); // Ghostly transparency
+            .attr('opacity', 0.4); 
     }
 
     // --- S.H.I.E.L.D. BUNKER (BASE) ---
-    // Update Bunker coordinates to Ohio (approx -82.9, 40.0)
     const bunkerCoords = projection([-82.9, 40.0]);
     if (bunkerCoords) {
         const bunkerGroup = g.append('g').attr('class', 'bunker cursor-pointer hover:opacity-100').attr('transform', `translate(${bunkerCoords[0]}, ${bunkerCoords[1]})`).on('click', (e) => { e.stopPropagation(); onBunkerClick(); });
@@ -427,7 +488,7 @@ export const USAMap: React.FC<USAMapProps> = ({ language, missions, completedMis
         }
     });
 
-  }, [usData, svgWidth, svgHeight, getFactionLabel, missions, factionStates, completedMissionIds, onMissionSelect, onBunkerClick, t, playerAlignment, worldStage]);
+  }, [usData, svgWidth, svgHeight, getFactionLabel, missions, factionStates, completedMissionIds, onMissionSelect, onBunkerClick, t, playerAlignment, worldStage, tokensReleased]);
 
   useEffect(() => {
     if (usData && svgWidth > 0 && svgHeight > 0) {

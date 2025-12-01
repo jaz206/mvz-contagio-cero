@@ -9,76 +9,32 @@ interface MissionEditorProps {
     onClose: () => void;
     onSave: (mission: Mission) => void;
     language: Language;
-    initialData?: Mission | null; // Optional: If provided, we are editing
+    initialData?: Mission | null;
 }
 
-const STATES_LIST = [
-    'Alabama', 'Alaska', 'Arizona', 'Arkansas', 'California', 'Colorado', 'Connecticut', 'Delaware', 'District of Columbia', 'Florida',
-    'Georgia', 'Hawaii', 'Idaho', 'Illinois', 'Indiana', 'Iowa', 'Kansas', 'Kentucky', 'Louisiana', 'Maine',
-    'Maryland', 'Massachusetts', 'Michigan', 'Minnesota', 'Mississippi', 'Missouri', 'Montana', 'Nebraska', 'Nevada', 'New Hampshire',
-    'New Jersey', 'New Mexico', 'New York', 'North Carolina', 'North Dakota', 'Ohio', 'Oklahoma', 'Oregon', 'Pennsylvania', 'Rhode Island',
-    'South Carolina', 'South Dakota', 'Tennessee', 'Texas', 'Utah', 'Vermont', 'Virginia', 'Washington', 'West Virginia', 'Wisconsin', 'Wyoming'
-];
-
-// Approximate center coordinates [Longitude, Latitude] for each state
+// Approximate center coordinates [Longitude, Latitude]
 const STATE_CENTERS: Record<string, [number, number]> = {
-    'Alabama': [-86.9, 32.8],
-    'Alaska': [-152.4, 61.3],
-    'Arizona': [-111.4, 34.0],
-    'Arkansas': [-92.3, 34.9],
-    'California': [-119.6, 36.1],
-    'Colorado': [-105.3, 39.0],
-    'Connecticut': [-72.7, 41.6],
-    'Delaware': [-75.5, 39.3],
-    'District of Columbia': [-77.0, 38.9],
-    'Florida': [-81.6, 27.7],
-    'Georgia': [-83.6, 33.0],
-    'Hawaii': [-157.5, 20.5],
-    'Idaho': [-114.4, 44.2],
-    'Illinois': [-89.0, 40.3],
-    'Indiana': [-86.1, 40.2],
-    'Iowa': [-93.2, 42.0],
-    'Kansas': [-96.7, 38.5], // Adjusted slightly East
-    'Kentucky': [-84.2, 37.6],
-    'Louisiana': [-91.8, 31.1],
-    'Maine': [-69.3, 45.3],
-    'Maryland': [-76.8, 39.0],
-    'Massachusetts': [-71.5, 42.2],
-    'Michigan': [-84.5, 43.3], // Lower peninsula center
-    'Minnesota': [-94.6, 45.6],
-    'Mississippi': [-89.6, 32.7],
-    'Missouri': [-92.2, 38.4],
-    'Montana': [-110.4, 46.9],
-    'Nebraska': [-99.9, 41.1],
-    'Nevada': [-117.0, 38.8],
-    'New Hampshire': [-71.5, 43.4],
-    'New Jersey': [-74.5, 40.2],
-    'New Mexico': [-106.2, 34.8],
-    'New York': [-74.9, 42.1], // Upstate/Central NY
-    'North Carolina': [-79.8, 35.6],
-    'North Dakota': [-99.9, 47.5],
-    'Ohio': [-82.7, 40.3],
-    'Oklahoma': [-96.9, 35.5],
-    'Oregon': [-120.6, 44.0],
-    'Pennsylvania': [-77.2, 40.5],
-    'Rhode Island': [-71.5, 41.6],
-    'South Carolina': [-80.9, 33.8],
-    'South Dakota': [-99.9, 44.2],
-    'Tennessee': [-86.3, 35.7],
-    'Texas': [-97.5, 31.0], // Central/East Texas
-    'Utah': [-111.8, 39.2],
-    'Vermont': [-72.7, 44.0],
-    'Virginia': [-78.1, 37.7],
-    'Washington': [-120.7, 47.4],
-    'West Virginia': [-80.9, 38.4],
-    'Wisconsin': [-89.6, 44.2],
-    'Wyoming': [-107.3, 42.7]
+    'Alabama': [-86.9, 32.8], 'Alaska': [-152.4, 61.3], 'Arizona': [-111.4, 34.0], 'Arkansas': [-92.3, 34.9],
+    'California': [-119.6, 36.1], 'Colorado': [-105.3, 39.0], 'Connecticut': [-72.7, 41.6], 'Delaware': [-75.5, 39.3],
+    'District of Columbia': [-77.0, 38.9], 'Florida': [-81.6, 27.7], 'Georgia': [-83.6, 33.0], 'Hawaii': [-157.5, 20.5],
+    'Idaho': [-114.4, 44.2], 'Illinois': [-89.0, 40.3], 'Indiana': [-86.1, 40.2], 'Iowa': [-93.2, 42.0],
+    'Kansas': [-96.7, 38.5], 'Kentucky': [-84.2, 37.6], 'Louisiana': [-91.8, 31.1], 'Maine': [-69.3, 45.3],
+    'Maryland': [-76.8, 39.0], 'Massachusetts': [-71.5, 42.2], 'Michigan': [-84.5, 43.3], 'Minnesota': [-94.6, 45.6],
+    'Mississippi': [-89.6, 32.7], 'Missouri': [-92.2, 38.4], 'Montana': [-110.4, 46.9], 'Nebraska': [-99.9, 41.1],
+    'Nevada': [-117.0, 38.8], 'New Hampshire': [-71.5, 43.4], 'New Jersey': [-74.5, 40.2], 'New Mexico': [-106.2, 34.8],
+    'New York': [-74.9, 42.1], 'North Carolina': [-79.8, 35.6], 'North Dakota': [-99.9, 47.5], 'Ohio': [-82.7, 40.3],
+    'Oklahoma': [-96.9, 35.5], 'Oregon': [-120.6, 44.0], 'Pennsylvania': [-77.2, 40.5], 'Rhode Island': [-71.5, 41.6],
+    'South Carolina': [-80.9, 33.8], 'South Dakota': [-99.9, 44.2], 'Tennessee': [-86.3, 35.7], 'Texas': [-97.5, 31.0],
+    'Utah': [-111.8, 39.2], 'Vermont': [-72.7, 44.0], 'Virginia': [-78.1, 37.7], 'Washington': [-120.7, 47.4],
+    'West Virginia': [-80.9, 38.4], 'Wisconsin': [-89.6, 44.2], 'Wyoming': [-107.3, 42.7]
 };
+
+// Generate list from keys to ensure consistency
+const STATES_LIST = Object.keys(STATE_CENTERS).sort();
 
 export const MissionEditor: React.FC<MissionEditorProps> = ({ isOpen, onClose, onSave, language, initialData }) => {
     const t = translations[language].missionEditor;
     
-    // State initialization
     const [title, setTitle] = useState('');
     const [description, setDescription] = useState('');
     const [locationState, setLocationState] = useState(STATES_LIST[0]);
@@ -88,7 +44,6 @@ export const MissionEditor: React.FC<MissionEditorProps> = ({ isOpen, onClose, o
     const [objectives, setObjectives] = useState<Objective[]>([{ title: '', desc: '' }]);
     const [saving, setSaving] = useState(false);
 
-    // Populate form when initialData changes
     useEffect(() => {
         if (initialData) {
             setTitle(initialData.title);
@@ -99,7 +54,6 @@ export const MissionEditor: React.FC<MissionEditorProps> = ({ isOpen, onClose, o
             setPdfUrl(initialData.pdfUrl || '');
             setObjectives(initialData.objectives.length > 0 ? initialData.objectives : [{ title: '', desc: '' }]);
         } else {
-            // Reset if creating new
             setTitle('');
             setDescription('');
             setLocationState(STATES_LIST[0]);
@@ -128,22 +82,19 @@ export const MissionEditor: React.FC<MissionEditorProps> = ({ isOpen, onClose, o
 
         let finalCoordinates: [number, number];
 
-        // LOGIC: Check if state changed or new mission
-        if (initialData && initialData.location.state === locationState) {
-            finalCoordinates = initialData.location.coordinates;
+        // CHECK: Did the user change the state? Or is it a new mission?
+        const stateChanged = !initialData || initialData.location.state !== locationState;
+
+        if (stateChanged) {
+            // FIX: Use specific state center, NOT defaultCenter
+            const center = STATE_CENTERS[locationState] || [-98.5, 39.8]; 
+            // Small Jitter ~ +/- 1.0 degree to keep it inside the state roughly
+            const jitterX = (Math.random() - 0.5) * 2.0; 
+            const jitterY = (Math.random() - 0.5) * 1.5;
+            finalCoordinates = [center[0] + jitterX, center[1] + jitterY];
         } else {
-            // Get center for selected state, fallback to Kansas if missing
-            const center = STATE_CENTERS[locationState] || [-98.5, 39.8];
-            
-            // Add slight randomness (jitter) to avoid stacking items in same state
-            // Approx +/- 0.5 to 1.0 degree variation
-            const jitterX = (Math.random() - 0.5) * 1.5; 
-            const jitterY = (Math.random() - 0.5) * 1.0;
-            
-            finalCoordinates = [
-                center[0] + jitterX,
-                center[1] + jitterY
-            ];
+            // Keep OLD coordinates if state didn't change
+            finalCoordinates = initialData.location.coordinates;
         }
 
         const baseMissionData = {
@@ -158,7 +109,6 @@ export const MissionEditor: React.FC<MissionEditorProps> = ({ isOpen, onClose, o
             objectives: objectives.filter(o => o.title && o.desc),
         };
 
-        // Only add pdfUrl if it has content
         const missionPayload: any = {
             ...baseMissionData,
             ...(pdfUrl.trim() ? { pdfUrl: pdfUrl.trim() } : {})
@@ -166,11 +116,9 @@ export const MissionEditor: React.FC<MissionEditorProps> = ({ isOpen, onClose, o
 
         try {
             if (initialData && initialData.id) {
-                // UPDATE EXISTING
                 await updateMissionInDB(initialData.id, missionPayload);
                 onSave({ ...missionPayload, id: initialData.id });
             } else {
-                // CREATE NEW
                 const id = await createMissionInDB(missionPayload);
                 onSave({ ...missionPayload, id });
             }
