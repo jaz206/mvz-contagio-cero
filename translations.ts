@@ -1,4 +1,5 @@
 
+
 // translations.ts
 
 export type Language = 'es' | 'en';
@@ -320,47 +321,6 @@ export const translations = {
             { text: "Dime, superviviente... en esta nueva era de monstruos y máquinas: ¿QUÉ ERES TÚ?", image: "https://i.pinimg.com/1200x/18/85/ee/1885ee42132b6976d36896a81f33ad8c.jpg" }
         ]
     },
-    tutorial: {
-        welcome: {
-            title: "BIENVENIDO A LA INTERFAZ TÁCTICA",
-            text: "Soy la I.A. central de S.H.I.E.L.D. Te guiaré a través de los sistemas básicos de supervivencia y mando."
-        },
-        map_zones: {
-            title: "MAPA DE TERRITORIOS",
-            text: "EE. UU. ha caído. ROJO: El Edén Roto (Magneto). MORADO: Imperio de la Carne (Kingpin). VERDE OSCURO: Doomsberg (Dr. Doom). VERDE CLARO: Tierra de Nadie (Hulk)."
-        },
-        hulk: {
-            title: "AMENAZA MÓVIL",
-            text: "El token verde brillante es HULK. Se mueve aleatoriamente por la Tierra de Nadie. Es indestructible. Si está en un estado, ninguna misión allí puede completarse."
-        },
-        missions: {
-            title: "OPERACIONES",
-            text: "AMARILLO: Misiones de Campaña. Al completar una, se desbloquearán otras. AZUL: Bases Ocultas de S.H.I.E.L.D. Recupéralas para obtener recursos."
-        },
-        bunker_entry: {
-            title: "ACCESO AL BÚNKER",
-            text: "Tu refugio seguro. Haz clic aquí para entrar, gestionar tu equipo y preparar la siguiente ofensiva."
-        },
-        roster: {
-            title: "LISTA DE ACTIVOS",
-            text: "Aquí ves a tus héroes disponibles. Controla su estado (Disponible, Desplegado, Herido) y selecciona uno para ver detalles."
-        },
-        file: {
-            title: "EXPEDIENTE TÁCTICO",
-            text: "Consulta la historia, biografía y escanea la ubicación. MARCA los Objetivos Prioritarios a medida que los completes en tu partida."
-        },
-        recruit: {
-            title: "RECLUTAMIENTO",
-            text: "¿Has encontrado nuevos aliados? Usa este botón para registrarlos en la base de datos y añadirlos a tu equipo."
-        },
-        finish: {
-            title: "SISTEMAS EN LÍNEA",
-            text: "El tutorial ha finalizado. La suerte está echada, Comandante. Salve lo que queda del mundo."
-        },
-        next: "ENTENDIDO // SIGUIENTE",
-        skip: "OMITIR TUTORIAL",
-        finishBtn: "INICIAR OPERACIONES"
-    },
     events: {
         anomaly: {
             title: "ANOMALÍA CÓSMICA DETECTADA",
@@ -377,6 +337,47 @@ export const translations = {
             desc: "EL DEVORADOR DE MUNDOS ESTÁ EN ÓRBITA. EL CIELO SE HA VUELTO PÚRPURA. NO VIENE A SALVARNOS. VIENE A COMER. LA ÚLTIMA BATALLA POR LA TIERRA HA COMENZADO.",
             ack: "PREPARARSE PARA EL JUICIO FINAL"
         }
+    },
+    tutorial: {
+        welcome: {
+            title: "BIENVENIDO A LA INTERFAZ TÁCTICA",
+            text: "Soy la IA central de S.H.I.E.L.D. Te guiaré a través de los sistemas básicos de supervivencia y mando."
+        },
+        map_zones: {
+            title: "MAPA TERRITORIAL",
+            text: "Estados Unidos ha caído. ROJO: El Edén Roto (Magneto). PÚRPURA: Imperio de la Carne (Kingpin). VERDE OSCURO: Doomsberg (Dr. Doom). VERDE CLARO: Tierra de Nadie (Hulk)."
+        },
+        hulk: {
+            title: "AMENAZA MÓVIL",
+            text: "La ficha verde brillante es HULK. Vaga aleatoriamente por Tierra de Nadie. Es indestructible. Si entra en un estado, no se puede completar ninguna misión allí."
+        },
+        missions: {
+            title: "OPERACIONES",
+            text: "AMARILLO: Misiones de Campaña. Completar una desbloquea otras. AZUL: Bases Ocultas de S.H.I.E.L.D. Recupéralas para obtener recursos."
+        },
+        bunker_entry: {
+            title: "ACCESO AL BÚNKER",
+            text: "Tu refugio seguro. Haz clic aquí para entrar, gestionar tu equipo y preparar la próxima ofensiva."
+        },
+        roster: {
+            title: "LISTA DE ACTIVOS",
+            text: "Visualiza tus héroes disponibles aquí. Monitoriza su estado (Disponible, Desplegado, Herido) y selecciona uno para más detalles."
+        },
+        file: {
+            title: "EXPEDIENTE TÁCTICO",
+            text: "Revisa historia, biografía y ubicación de escaneo. MARCA los Objetivos Prioritarios a medida que los completes en tu juego."
+        },
+        recruit: {
+            title: "RECLUTAMIENTO",
+            text: "¿Encontraste nuevos aliados? Usa este botón para registrarlos en la base de datos y añadirlos a tu equipo."
+        },
+        finish: {
+            title: "SISTEMAS EN LÍNEA",
+            text: "Tutorial completo. La suerte está echada, Comandante. Salva lo que queda del mundo."
+        },
+        next: "ENTENDIDO // SIGUIENTE",
+        skip: "OMITIR TUTORIAL",
+        finishBtn: "INICIAR OPERACIONES"
     }
   },
   en: {
@@ -572,76 +573,6 @@ export const translations = {
             ]
         }
     },
-    story: {
-        loading: {
-            line1: "ESTABLISHING SECURE CONNECTION...",
-            line2: "DECRYPTING FILE...",
-            line3: "ACCESSING DATABASE...",
-            line4: "ACCESS GRANTED"
-        },
-        skip: "SKIP INTRO",
-        prev: "PREV",
-        next: "NEXT",
-        choose: "CHOOSE YOUR PATH",
-        optionA: "THE LIVING HERO",
-        optionB: "THE ZOMBIE HERO",
-        slides: [
-            { text: "No trumpets sounded. No red skies or ancient prophecies fulfilled. The end of the world didn't come from outer space, or a dark dimension.", image: "https://i.pinimg.com/1200x/18/99/ec/1899ec756f8731e015eb941d7122fbec.jpg" },
-            { text: "We built it. Here. At home.\nOr rather, they built it.\nIt was in a sterile lab. Three men met there: Victor Von Doom, Magneto, and Wilson Fisk.\nThey decided humanity was too chaotic. Their solution was cold, hard science: the Nullifier Pulse.", image: "https://i.pinimg.com/1200x/71/06/7d/71067db72856dfd6ca03d0d51a679bd6.jpg" },
-            { text: "They needed bodies to refine the formula. Used Jamie Madrox to see how the infection multiplied. Used the Reavers to see if metal could get sick. And it worked. God, how it worked.", image: "https://i.pinimg.com/1200x/99/80/1e/99801e7603e4a770127ce29530f13f87.jpg" },
-            { text: "But arrogance is a loaded gun that always points backward.", image: "https://i.pinimg.com/1200x/19/26/53/1926533335a2b27c4a79c9d2632ec83d.jpg" },
-            { text: "They decided to test their masterpiece on Bruce Banner. They were looking for an infinite energy source...", image: "https://i.pinimg.com/1200x/b2/06/15/b20615925dfa53cdf9622fb596cdd5e3.jpg" },
-            { text: "...what they got was a biological bomb. When the virus touched the gamma blood, he didn't die. He got angry.", image: "https://i.pinimg.com/1200x/a8/e9/b7/a8e9b76d6a9a87de0cfba509d5fef534.jpg" },
-            { text: "The outbreak wasn't fire, it was contagion. Hulk roared, and in that roar traveled extinction.", image: "https://i.pinimg.com/1200x/eb/db/e8/ebdbe8d5738acd105654dc8ddad8216f.jpg" },
-            { text: "In a matter of hours, New York was a slaughterhouse. The Avengers fell first... The X-Men held out a bit longer, only to watch their school become an all-you-can-eat buffet.", image: "https://i.pinimg.com/1200x/b9/0a/18/b90a18369639b131f91273f019b699cd.jpg" },
-            { text: "And the Triad? Doom, Magneto, and Fisk were caught by their own creation. But fate has a cruel sense of humor. They didn't lose their minds.", image: "https://i.pinimg.com/1200x/e1/02/86/e102864e130bfa5b5f2ffc5a9d9ed9c0.jpg" },
-            { text: "Their bodies rotted... but their intellect remained intact, sharp, and hungry. Now, they sit on thrones of bone, ruling nightmare factions.", image: "https://i.pinimg.com/1200x/e2/5c/3a/e25c3ac26e5fc65f9119b6073912e856.jpg" },
-            { text: "But there is something else out there. Something worse than the dead. S.H.I.E.L.D. is still active.", image: "https://i.pinimg.com/1200x/39/c8/cd/39c8cde0a5b56acc78b41c4eecf91f0a.jpg" },
-            { text: "S.H.I.E.L.D. is no longer an agency; it's a ghost armed to the teeth. A blind, deaf, and paranoid artificial intelligence.", image: "https://i.pinimg.com/1200x/45/7d/c5/457dc515c61d470eb26cf1727ebd67ea.jpg" },
-            { text: "Tell me, survivor... in this new era of monsters and machines: WHAT ARE YOU?", image: "https://i.pinimg.com/1200x/18/85/ee/1885ee42132b6976d36896a81f33ad8c.jpg" }
-        ]
-    },
-    tutorial: {
-        welcome: {
-            title: "WELCOME TO THE TACTICAL INTERFACE",
-            text: "I am S.H.I.E.L.D.'s central AI. I will guide you through the basic survival and command systems."
-        },
-        map_zones: {
-            title: "TERRITORY MAP",
-            text: "The USA has fallen. RED: Broken Eden (Magneto). PURPLE: Empire of Flesh (Kingpin). DARK GREEN: Doomsberg (Dr. Doom). LIGHT GREEN: No Man's Land (Hulk)."
-        },
-        hulk: {
-            title: "MOBILE THREAT",
-            text: "The bright green token is HULK. He roams randomly across No Man's Land. He is indestructible. If he enters a state, no mission there can be completed."
-        },
-        missions: {
-            title: "OPERATIONS",
-            text: "YELLOW: Campaign Missions. Completing one unlocks others. BLUE: Hidden S.H.I.E.L.D. Bases. Reclaim them for resources."
-        },
-        bunker_entry: {
-            title: "BUNKER ACCESS",
-            text: "Your safe haven. Click here to enter, manage your team, and prepare the next offensive."
-        },
-        roster: {
-            title: "ASSET ROSTER",
-            text: "View your available heroes here. Monitor their status (Available, Deployed, Injured) and select one for details."
-        },
-        file: {
-            title: "TACTICAL FILE",
-            text: "Review history, biography, and scan location. MARK Priority Objectives as you complete them in your game."
-        },
-        recruit: {
-            title: "RECRUITMENT",
-            text: "Found new allies? Use this button to register them in the database and add them to your team."
-        },
-        finish: {
-            title: "SYSTEMS ONLINE",
-            text: "Tutorial complete. The die is cast, Commander. Save what remains of the world."
-        },
-        next: "ACKNOWLEDGED // NEXT",
-        skip: "SKIP TUTORIAL",
-        finishBtn: "COMMENCE OPERATIONS"
-    },
     missionEditor: {
         title: "TACTICAL MISSION CREATOR",
         missionTitle: "OPERATION TITLE",
@@ -686,6 +617,143 @@ export const translations = {
             desc: "THE DEVOURER OF WORLDS IS IN ORBIT. THE SKY HAS TURNED PURPLE. HE IS NOT HERE TO SAVE US. HE IS HERE TO EAT. THE FINAL BATTLE FOR EARTH HAS BEGUN.",
             ack: "PREPARE FOR JUDGMENT"
         }
+    },
+    tutorial: {
+        welcome: {
+            title: "WELCOME TO THE TACTICAL INTERFACE",
+            text: "I am S.H.I.E.L.D.'s central AI. I will guide you through the basic survival and command systems."
+        },
+        map_zones: {
+            title: "TERRITORY MAP",
+            text: "The USA has fallen. RED: Broken Eden (Magneto). PURPLE: Empire of Flesh (Kingpin). DARK GREEN: Doomsberg (Dr. Doom). LIGHT GREEN: No Man's Land (Hulk)."
+        },
+        hulk: {
+            title: "MOBILE THREAT",
+            text: "The bright green token is HULK. He roams randomly across No Man's Land. He is indestructible. If he enters a state, no mission there can be completed."
+        },
+        missions: {
+            title: "OPERATIONS",
+            text: "YELLOW: Campaign Missions. Completing one unlocks others. BLUE: Hidden S.H.I.E.L.D. Bases. Reclaim them for resources."
+        },
+        bunker_entry: {
+            title: "BUNKER ACCESS",
+            text: "Your safe haven. Click here to enter, manage your team, and prepare the next offensive."
+        },
+        roster: {
+            title: "ASSET ROSTER",
+            text: "View your available heroes here. Monitor their status (Available, Deployed, Injured) and select one for details."
+        },
+        file: {
+            title: "TACTICAL FILE",
+            text: "Review history, biography, and scan location. MARK Priority Objectives as you complete them in your game."
+        },
+        recruit: {
+            title: "RECRUITMENT",
+            text: "Found new allies? Use this button to register them in the database and add them to your team."
+        },
+        finish: {
+            title: "SYSTEMS ONLINE",
+            text: "Tutorial complete. The die is cast, Commander. Save what remains of the world."
+        },
+        next: "ACKNOWLEDGED // NEXT",
+        skip: "SKIP TUTORIAL",
+        finishBtn: "COMMENCE OPERATIONS"
+    },
+    // Adding placeholder heroes and story for EN since they were missing in file
+    heroes: {
+        spiderman: {
+            alias: "SPIDER-MAN",
+            bio: "Former Avenger. High agility and spider-sense make him an ideal scout for infected zones. Carries the guilt of survival."
+        },
+        blackwidow: {
+            alias: "BLACK WIDOW",
+            bio: "Expert spy and assassin. Her skills are crucial for infiltration missions in Fisk territory. Keeps the team focused on the objective."
+        },
+        scorpion: {
+            alias: "SCORPION",
+            bio: "Former villain turned desperate survivor. His suit protects him from bites. Unpredictable muscle, but necessary."
+        },
+        sabretooth: {
+            alias: "SABRETOOTH",
+            bio: "Driven by pure predatory instinct. S.H.I.E.L.D. keeps him on a short leash. He tracks the infected not to save them, but for sport."
+        },
+        reed: {
+            alias: "MR. FANTASTIC",
+            bio: "The smartest man alive, struggling to find a cure in a world that has rejected science. His intellect is humanity's last hope."
+        },
+        shehulk: {
+            alias: "SHE-HULK",
+            bio: "A lawyer who can lift a tank. Retains her intelligence while transformed, making her a lethal combination of brains and brawn on the battlefield."
+        },
+        hawkeye: {
+            alias: "HAWKEYE",
+            bio: "Unmatched marksman. His eyes see what satellites miss. Fights for those who cannot fight."
+        },
+        lukecage: {
+            alias: "LUKE CAGE",
+            bio: "Impenetrable skin, unbreakable will. A human tank capable of withstanding bites and explosions while protecting civilians."
+        },
+        daredevil: {
+            alias: "DAREDEVIL",
+            bio: "The Man Without Fear. His enhanced senses are the perfect radar in the darkness of the quarantine zone."
+        },
+        thor: {
+            alias: "THOR",
+            bio: "The God of Thunder. Though Asgard fell, his hammer still brings the storm to the dead."
+        },
+        storm: {
+            alias: "STORM",
+            bio: "Goddess of the weather. Can clear entire zones of zombies with a single tornado. The queen needs her kingdom back."
+        },
+        loki: {
+            alias: "LOKI",
+            bio: "God of Mischief. Exiled on Earth after the Bifrost closed. Driven by a twisted mix of arrogance, survival instinct, and grudge against Doom."
+        },
+        colonel: {
+            alias: "COLONEL AMERICA",
+            bio: "The former symbol of freedom, now with his skull exposed. Maintains his tactical skills, leading the horde with military precision. His shield no longer protects, it only beheads."
+        },
+        ironman_z: {
+            alias: "IRON MAN (Z)",
+            bio: "Stark technology powered by rotting flesh. His repulsors fail, but his teeth do not. Ceaselessly seeks energy to keep his suit running."
+        },
+        wolverine_z: {
+            alias: "WOLVERINE (Z)",
+            bio: "His healing factor battles the virus eternally, keeping him in a constant state of decay and regeneration. The infinite pain makes him unstoppable."
+        },
+        phoenix_z: {
+            alias: "DARK PHOENIX (Z)",
+            bio: "Cosmic power mixed with insatiable hunger. An Omega-level threat that wants not just to eat flesh, but to consume stars."
+        }
+    },
+    story: {
+        loading: {
+            line1: "ESTABLISHING SECURE CONNECTION...",
+            line2: "DECRYPTING FILE...",
+            line3: "ACCESSING DATABASE...",
+            line4: "ACCESS GRANTED"
+        },
+        skip: "SKIP INTRO",
+        prev: "PREVIOUS",
+        next: "NEXT",
+        choose: "WHICH PATH DO YOU CHOOSE?",
+        optionA: "THE LIVING HERO",
+        optionB: "THE ZOMBIE HERO",
+        slides: [
+            { text: "There were no trumpets. No red skies or ancient prophecies fulfilled. The end of the world didn't come from outer space, nor from a dark dimension.", image: "https://i.pinimg.com/1200x/18/99/ec/1899ec756f8731e015eb941d7122fbec.jpg" },
+            { text: "We built it. Here. At home.\nOr rather, they built it.\nIt was in a sterile lab. Three men gathered there: Victor Von Doom, Magneto, and Wilson Fisk.\nThey decided humanity was too chaotic. Their solution was cold, hard science: the Nullifier Pulse.", image: "https://i.pinimg.com/1200x/71/06/7d/71067db72856dfd6ca03d0d51a679bd6.jpg" },
+            { text: "They needed bodies to fine-tune the formula. They used Jamie Madrox to see how the infection multiplied. They used the Reavers to see if metal could sicken. And it worked. God, how it worked.", image: "https://i.pinimg.com/1200x/99/80/1e/99801e7603e4a770127ce29530f13f87.jpg" },
+            { text: "But arrogance is a loaded gun that always points backward.", image: "https://i.pinimg.com/1200x/19/26/53/1926533335a2b27c4a79c9d2632ec83d.jpg" },
+            { text: "They decided to test their masterpiece on Bruce Banner. They sought an infinite energy source...", image: "https://i.pinimg.com/1200x/b2/06/15/b20615925dfa53cdf9622fb596cdd5e3.jpg" },
+            { text: "...what they got was a biological bomb. When the virus touched the gamma blood, it didn't die. It raged.", image: "https://i.pinimg.com/1200x/a8/e9/b7/a8e9b76d6a9a87de0cfba509d5fef534.jpg" },
+            { text: "The blast wasn't fire, it was contagion. Hulk roared, and in that roar traveled extinction.", image: "https://i.pinimg.com/1200x/eb/db/e8/ebdbe8d5738acd105654dc8ddad8216f.jpg" },
+            { text: "In a matter of hours, New York was a slaughterhouse. The Avengers fell first... The X-Men held out a bit longer, only to watch their school become an all-you-can-eat buffet.", image: "https://i.pinimg.com/1200x/b9/0a/18/b90a18369639b131f91273f019b699cd.jpg" },
+            { text: "And the Triad? Doom, Magneto, and Fisk were caught by their own creation. But fate has a cruel sense of humor. They didn't lose their minds.", image: "https://i.pinimg.com/1200x/e1/02/86/e102864e130bfa5b5f2ffc5a9d9ed9c0.jpg" },
+            { text: "Their bodies rotted... but their intellect remained intact, sharp, and hungry. Now, they sit on thrones of bone, ruling nightmare factions.", image: "https://i.pinimg.com/1200x/e2/5c/3a/e25c3ac26e5fc65f9119b6073912e856.jpg" },
+            { text: "But there is something else out there. Something worse than the dead. S.H.I.E.L.D. is still active.", image: "https://i.pinimg.com/1200x/39/c8/cd/39c8cde0a5b56acc78b41c4eecf91f0a.jpg" },
+            { text: "S.H.I.E.L.D. is no longer an agency; it is a ghost armed to the teeth. A blind, deaf, paranoid artificial intelligence.", image: "https://i.pinimg.com/1200x/45/7d/c5/457dc515c61d470eb26cf1727ebd67ea.jpg" },
+            { text: "Tell me, survivor... in this new age of monsters and machines: WHAT ARE YOU?", image: "https://i.pinimg.com/1200x/18/85/ee/1885ee42132b6976d36896a81f33ad8c.jpg" }
+        ]
     }
   }
 };

@@ -1,5 +1,5 @@
 
-import { collection, getDocs, doc, writeBatch, getDoc, setDoc, addDoc, Timestamp } from 'firebase/firestore';
+import { collection, getDocs, doc, writeBatch, getDoc, setDoc, addDoc, updateDoc, Timestamp } from 'firebase/firestore';
 import { db } from '../firebaseConfig';
 import { HeroTemplate, HeroClass, Hero, Mission } from '../types';
 import { HERO_DATABASE } from '../data/heroDatabase';
@@ -94,6 +94,21 @@ export const seedHeroTemplates = async (): Promise<void> => {
   }
 };
 
+// Update an existing hero template in Firestore
+export const updateHeroTemplate = async (id: string, data: Partial<HeroTemplate>): Promise<void> => {
+    try {
+        const docRef = doc(db, COLLECTION_NAME, id);
+        // Map back to the fields likely used in your DB if you want consistency, 
+        // or just update the fields the app uses. 
+        // For simplicity, we update the fields the app reads.
+        await updateDoc(docRef, data);
+        console.log(`Hero ${id} updated successfully`);
+    } catch (error) {
+        console.error("Error updating hero:", error);
+        throw error;
+    }
+};
+
 // --- USER PROFILE (CLOUD SAVE) ---
 
 export interface UserProfileData {
@@ -175,6 +190,20 @@ export const createMissionInDB = async (missionData: Omit<Mission, 'id'>): Promi
         return docRef.id;
     } catch (error) {
         console.error("Error creating mission:", error);
+        throw error;
+    }
+};
+
+export const updateMissionInDB = async (id: string, missionData: Partial<Mission>): Promise<void> => {
+    try {
+        const docRef = doc(db, MISSIONS_COLLECTION, id);
+        // Remove id from data if present to avoid overwriting document ID with field
+        const { id: _, ...dataToUpdate } = missionData as any;
+        // Use setDoc with merge: true. This allows updating an existing doc OR creating it if it doesn't exist
+        // (which happens when editing a hardcoded mission that hasn't been saved to DB yet)
+        await setDoc(docRef, dataToUpdate, { merge: true });
+    } catch (error) {
+        console.error("Error updating mission:", error);
         throw error;
     }
 };

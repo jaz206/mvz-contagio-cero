@@ -18,7 +18,6 @@ import { MissionEditor } from './components/MissionEditor';
 
 import { Mission, Hero, WorldStage, GlobalEvent } from './types';
 
-// ... (Existing FACTION_STATES and INITIAL_HEROES constants remain unchanged)
 const FACTION_STATES = {
     magneto: new Set([
         'Washington', 'Oregon', 'California', 'Nevada', 'Idaho', 
@@ -171,6 +170,7 @@ const INITIAL_ZOMBIE_HEROES: Hero[] = [
 ];
 
 const App: React.FC = () => {
+    // ... states ...
     const [user, setUser] = useState<User | null>(null);
     const [loading, setLoading] = useState(true);
     const [loadingAuth, setLoadingAuth] = useState(true);
@@ -188,19 +188,18 @@ const App: React.FC = () => {
     
     // EDITOR MODE STATE
     const [isEditorMode, setIsEditorMode] = useState(false);
-    const [showMissionEditor, setShowMissionEditor] = useState(false); // NEW STATE FOR EDITOR
+    const [showMissionEditor, setShowMissionEditor] = useState(false); 
+    const [missionToEdit, setMissionToEdit] = useState<Mission | null>(null); // For Editing
     
-    // Custom Missions State
     const [customMissions, setCustomMissions] = useState<Mission[]>([]);
 
-    // UI State
     const [selectedMission, setSelectedMission] = useState<Mission | null>(null);
     const [showStory, setShowStory] = useState(false);
     const [showTutorial, setShowTutorial] = useState(false);
     
     const t = translations[lang];
 
-    // Auth Listener
+    // ... Auth Listener ...
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
             setUser(currentUser);
@@ -267,16 +266,14 @@ const App: React.FC = () => {
         });
     };
 
-    // Load Custom Missions
     useEffect(() => {
         const loadMissions = async () => {
             const loaded = await getCustomMissions();
             setCustomMissions(loaded);
         };
         loadMissions();
-    }, []);
+    }, [isEditorMode]);
 
-    // Load Profile
     useEffect(() => {
         const loadData = async () => {
             if (isEditorMode) return; 
@@ -314,7 +311,6 @@ const App: React.FC = () => {
         loadData();
     }, [user, isGuest, playerAlignment, isEditorMode]);
 
-    // Auto-Save
     useEffect(() => {
         if (isEditorMode || !user || !playerAlignment) return;
 
@@ -328,7 +324,6 @@ const App: React.FC = () => {
     }, [heroes, completedMissionIds, user, playerAlignment, isEditorMode]);
 
 
-    // Check Tutorial
     useEffect(() => {
         if (!playerAlignment) return;
         if (showStory) return;
@@ -402,7 +397,7 @@ const App: React.FC = () => {
     };
 
     const allMissions: Mission[] = useMemo(() => {
-        const missionList: Mission[] = [
+        const hardcodedMissions: Mission[] = [
             {
                 id: 'm_kraven',
                 title: t.missions.kraven.title,
@@ -430,8 +425,16 @@ const App: React.FC = () => {
              { id: 'base_zeta', title: t.missions.bases.zeta, description: [t.missions.bases.desc], objectives: [{ title: t.missions.bases.objSecure, desc: '' }, { title: t.missions.bases.objRetrieve, desc: '' }], location: { state: 'Pennsylvania', coordinates: [-78.0, 40.5] }, threatLevel: 'MEDIUM', type: 'SHIELD_BASE' }
         ];
 
-        // ADD CUSTOM MISSIONS FROM DB
-        missionList.push(...customMissions);
+        // Deduplicate missions: If a custom mission (from DB) has the same ID as a hardcoded one, use the custom one (the edited version)
+        const missionMap = new Map<string, Mission>();
+        
+        // Load hardcoded first
+        hardcodedMissions.forEach(m => missionMap.set(m.id, m));
+        
+        // Override with custom/DB missions
+        customMissions.forEach(m => missionMap.set(m.id, m));
+
+        const missionList = Array.from(missionMap.values());
 
         if (worldStage === 'GALACTUS' && playerAlignment === 'ALIVE') {
             missionList.push({
@@ -462,54 +465,59 @@ const App: React.FC = () => {
     return (
         <div className={`flex flex-col h-screen w-full bg-slate-950 text-cyan-400 font-mono overflow-hidden relative ${playerAlignment === 'ZOMBIE' ? 'hue-rotate-15 saturate-50' : ''}`}>
             
-            {/* EDITOR CONTROL PANEL */}
-            {isEditorMode && viewMode === 'map' && (
-                <div className="absolute bottom-4 left-4 z-[90] bg-slate-900/90 border border-cyan-500 p-4 shadow-lg backdrop-blur-sm">
-                    <h3 className="text-[10px] font-bold text-cyan-300 mb-2 border-b border-cyan-800 pb-1 tracking-widest">
-                        EDITOR CONTROL
-                    </h3>
-                    <div className="text-[9px] text-gray-400 mb-3 space-y-1">
-                        <div>COMPLETED: <span className="text-white">{completedMissionIds.size}</span></div>
-                        <div>STAGE: <span className="text-yellow-400">{worldStage}</span></div>
-                    </div>
-                    <div className="flex flex-col gap-2">
-                        <button onClick={() => setShowMissionEditor(true)} className="px-3 py-1 bg-blue-900/50 hover:bg-blue-800 text-blue-300 text-[9px] font-bold border border-blue-700 uppercase tracking-wider mb-2">CREATE MISSION</button>
-                        <button onClick={() => handleSimulateProgress(1)} className="px-3 py-1 bg-cyan-900/50 hover:bg-cyan-800 text-cyan-300 text-[9px] font-bold border border-cyan-700 uppercase tracking-wider">+1 MISSION</button>
-                        <button onClick={() => handleSimulateProgress(5)} className="px-3 py-1 bg-cyan-900/50 hover:bg-cyan-800 text-cyan-300 text-[9px] font-bold border border-cyan-700 uppercase tracking-wider">+5 MISSIONS</button>
-                        <button onClick={handleResetProgress} className="px-3 py-1 bg-red-900/50 hover:bg-red-800 text-red-300 text-[9px] font-bold border border-red-700 uppercase tracking-wider">RESET</button>
-                    </div>
-                </div>
-            )}
-
-            {/* MISSION EDITOR MODAL */}
             <MissionEditor 
                 isOpen={showMissionEditor}
-                onClose={() => setShowMissionEditor(false)}
-                onSave={(newMission) => setCustomMissions([...customMissions, newMission])}
+                onClose={() => { setShowMissionEditor(false); setMissionToEdit(null); }}
+                onSave={async (newMission) => {
+                    // Refresh missions list from DB
+                    const loaded = await getCustomMissions();
+                    setCustomMissions(loaded);
+                }}
                 language={lang}
+                initialData={missionToEdit}
             />
 
-            {/* ... Other modals (Event, Mission) ... */}
             {activeGlobalEvent && (
                 <EventModal event={activeGlobalEvent} isOpen={!!activeGlobalEvent} onAcknowledge={handleEventAcknowledge} language={lang} />
             )}
             {selectedMission && (
-                <MissionModal mission={selectedMission} isOpen={!!selectedMission} onClose={() => setSelectedMission(null)} onComplete={handleMissionComplete} onReactivate={handleMissionReactivate} language={lang} isCompleted={completedMissionIds.has(selectedMission.id)} />
+                <MissionModal 
+                    mission={selectedMission} 
+                    isOpen={!!selectedMission} 
+                    onClose={() => setSelectedMission(null)} 
+                    onComplete={handleMissionComplete} 
+                    onReactivate={handleMissionReactivate} 
+                    language={lang} 
+                    isCompleted={completedMissionIds.has(selectedMission.id)}
+                    isEditorMode={isEditorMode}
+                    onEdit={(m) => {
+                        setMissionToEdit(m);
+                        setShowMissionEditor(true);
+                        setSelectedMission(null);
+                    }}
+                />
             )}
 
-            {/* VIEWS */}
             {viewMode === 'login' && (
-                <LoginScreen onLogin={handleGuestLogin} onGoogleLogin={() => {}} onEditorLogin={handleEditorLogin} language={lang} setLanguage={setLang} />
+                <LoginScreen 
+                    onLogin={handleGuestLogin} 
+                    onGoogleLogin={() => {}} 
+                    onEditorLogin={handleEditorLogin} 
+                    language={lang}
+                    setLanguage={setLang}
+                />
             )}
 
             {viewMode === 'story' && (
-                <StoryMode language={lang} onComplete={(choice) => { setPlayerAlignment(choice); if(user) localStorage.setItem(`shield_intro_seen_${user.uid}`, 'true'); setViewMode('tutorial'); }} onSkip={() => { setPlayerAlignment('ALIVE'); setViewMode('map'); }} />
+                <StoryMode 
+                    language={lang} 
+                    onComplete={(choice) => { setPlayerAlignment(choice); if(user) localStorage.setItem(`shield_intro_seen_${user.uid}`, 'true'); setViewMode('tutorial'); }}
+                    onSkip={() => { setPlayerAlignment('ALIVE'); setViewMode('map'); }}
+                />
             )}
 
-            {/* MAIN APP LAYOUT (HEADER + SIDEBAR + CONTENT) */}
             {(viewMode === 'map' || viewMode === 'bunker' || viewMode === 'tutorial') && (
                 <>
-                    {/* HEADER */}
                     <header className="flex-none h-16 border-b border-cyan-900 bg-slate-900/90 flex items-center justify-between px-6 z-30 relative">
                         <div className="flex items-center gap-4">
                             <div className="w-10 h-10 border-2 border-cyan-500 rounded-full flex items-center justify-center overflow-hidden bg-slate-950 shadow-[0_0_10px_rgba(6,182,212,0.3)]">
@@ -538,9 +546,25 @@ const App: React.FC = () => {
                     </header>
 
                     <div className="flex-1 flex overflow-hidden relative">
-                        {/* SIDEBAR */}
                         <aside className="w-80 flex-none bg-slate-900 border-r border-cyan-900 flex flex-col z-20 shadow-xl overflow-hidden relative">
-                            {/* Threat Level */}
+                            {/* EDITOR PANEL - INTEGRATED INTO SIDEBAR */}
+                            {isEditorMode && (
+                                <div className="p-4 bg-slate-800 border-b border-cyan-500">
+                                    <h3 className="text-[10px] font-bold text-cyan-300 mb-2 tracking-widest border-b border-cyan-600 pb-1">EDITOR CONTROL</h3>
+                                    <div className="flex flex-col gap-2">
+                                        <button onClick={() => { setMissionToEdit(null); setShowMissionEditor(true); }} className="w-full py-2 bg-blue-600 hover:bg-blue-500 text-white text-[10px] font-bold uppercase tracking-wider">
+                                            CREATE MISSION
+                                        </button>
+                                        <div className="grid grid-cols-2 gap-2">
+                                            <button onClick={() => handleSimulateProgress(1)} className="py-1 bg-cyan-900 border border-cyan-600 text-[9px] hover:bg-cyan-800">+1 MISSION</button>
+                                            <button onClick={() => handleSimulateProgress(5)} className="py-1 bg-cyan-900 border border-cyan-600 text-[9px] hover:bg-cyan-800">+5 MISSIONS</button>
+                                        </div>
+                                        <button onClick={handleResetProgress} className="w-full py-1 bg-red-900/50 border border-red-600 text-red-300 text-[9px] hover:bg-red-900">RESET PROGRESS</button>
+                                        <div className="text-[9px] text-gray-400 text-center">COMPLETED: {completedMissionIds.size} | STAGE: {worldStage}</div>
+                                    </div>
+                                </div>
+                            )}
+
                             <div className="p-6 border-b border-cyan-900 bg-red-950/10">
                                 <div className="flex justify-between items-end mb-2">
                                     <h3 className="text-xs font-bold text-red-500 tracking-widest">{t.sidebar.threatLevelTitle}</h3>
@@ -550,20 +574,14 @@ const App: React.FC = () => {
                                 <div className="text-[9px] text-red-400 mt-1 text-right">{t.sidebar.infectionRate}</div>
                             </div>
 
-                            {/* BUNKER BUTTON */}
                             <div className="p-4 border-b border-cyan-900">
-                                <button 
-                                    id="tutorial-bunker-btn"
-                                    onClick={() => setViewMode('bunker')}
-                                    className={`w-full py-4 border-2 flex items-center justify-center gap-3 transition-all duration-300 group relative overflow-hidden ${playerAlignment === 'ZOMBIE' ? 'border-lime-600 bg-lime-900/10 hover:bg-lime-900/30 text-lime-400' : 'border-cyan-500 bg-cyan-900/10 hover:bg-cyan-900/30 text-cyan-300'}`}
-                                >
+                                <button id="tutorial-bunker-btn" onClick={() => setViewMode('bunker')} className={`w-full py-4 border-2 flex items-center justify-center gap-3 transition-all duration-300 group relative overflow-hidden ${playerAlignment === 'ZOMBIE' ? 'border-lime-600 bg-lime-900/10 hover:bg-lime-900/30 text-lime-400' : 'border-cyan-500 bg-cyan-900/10 hover:bg-cyan-900/30 text-cyan-300'}`}>
                                     <div className={`absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 ${playerAlignment === 'ZOMBIE' ? 'bg-[linear-gradient(45deg,transparent_25%,rgba(132,204,22,0.1)_50%,transparent_75%)]' : 'bg-[linear-gradient(45deg,transparent_25%,rgba(6,182,212,0.1)_50%,transparent_75%)]'} bg-[length:250%_250%] animate-[shimmer_2s_linear_infinite]`}></div>
                                     <span className="text-2xl group-hover:scale-110 transition-transform">{playerAlignment === 'ZOMBIE' ? '☣' : '🛡'}</span>
                                     <span className="font-bold tracking-widest text-xs">{playerAlignment === 'ZOMBIE' ? t.sidebar.hiveBtn : t.sidebar.bunkerBtn}</span>
                                 </button>
                             </div>
 
-                            {/* CAMPAIGN SWITCHER */}
                             <div className="p-4 border-b border-cyan-900">
                                 <h4 className="text-[10px] font-bold text-gray-500 uppercase mb-2 tracking-widest">{t.sidebar.campaignMode}</h4>
                                 <div className="flex flex-col gap-2">
@@ -578,7 +596,6 @@ const App: React.FC = () => {
                                 </div>
                             </div>
 
-                            {/* Missions List */}
                             <div id="tutorial-sidebar-missions" className="flex-1 overflow-y-auto p-4 scrollbar-thin scrollbar-thumb-cyan-900">
                                 <h4 className="text-[10px] font-bold text-cyan-600 uppercase mb-3 tracking-widest border-b border-cyan-900 pb-1">{t.sidebar.activeMissions}</h4>
                                 <div className="space-y-2">
@@ -617,7 +634,6 @@ const App: React.FC = () => {
                                 </div>
                             </div>
 
-                            {/* Replay Story */}
                             <div className="p-4 border-t border-cyan-900 bg-slate-900 text-center">
                                 <button onClick={() => setViewMode('story')} className="text-[9px] text-cyan-800 hover:text-cyan-500 uppercase tracking-widest transition-colors flex items-center justify-center gap-2 w-full">
                                     <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
@@ -626,14 +642,40 @@ const App: React.FC = () => {
                             </div>
                         </aside>
 
-                        {/* CONTENT */}
                         <main className="flex-1 relative bg-slate-950 overflow-hidden">
                             {viewMode === 'map' && (
                                 <USAMap language={lang} missions={visibleMissions} completedMissionIds={completedMissionIds} onMissionComplete={handleMissionComplete} onMissionSelect={setSelectedMission} onBunkerClick={() => setViewMode('bunker')} factionStates={FACTION_STATES} playerAlignment={playerAlignment} worldStage={worldStage} />
                             )}
                             
                             {viewMode === 'bunker' && (
-                                <BunkerInterior heroes={heroes} missions={visibleMissions.filter(m => !completedMissionIds.has(m.id))} onAssign={(heroId, missionId) => { const hIndex = heroes.findIndex(h => h.id === heroId); if(hIndex >= 0) { const newHeroes = [...heroes]; newHeroes[hIndex] = { ...newHeroes[hIndex], status: 'DEPLOYED', assignedMissionId: missionId }; setHeroes(newHeroes); return true; } return false; }} onUnassign={(heroId) => { const hIndex = heroes.findIndex(h => h.id === heroId); if(hIndex >= 0) { const newHeroes = [...heroes]; newHeroes[hIndex] = { ...newHeroes[hIndex], status: 'AVAILABLE', assignedMissionId: null }; setHeroes(newHeroes); } }} onAddHero={(hero) => setHeroes([...heroes, hero])} onToggleObjective={handleToggleHeroObjective} onBack={() => setViewMode('map')} language={lang} playerAlignment={playerAlignment} />
+                                <BunkerInterior 
+                                    heroes={heroes} 
+                                    missions={visibleMissions.filter(m => !completedMissionIds.has(m.id))} 
+                                    onAssign={(heroId, missionId) => { 
+                                        const hIndex = heroes.findIndex(h => h.id === heroId); 
+                                        if(hIndex >= 0) { 
+                                            const newHeroes = [...heroes]; 
+                                            newHeroes[hIndex] = { ...newHeroes[hIndex], status: 'DEPLOYED', assignedMissionId: missionId }; 
+                                            setHeroes(newHeroes); 
+                                            return true; 
+                                        } 
+                                        return false; 
+                                    }} 
+                                    onUnassign={(heroId) => { 
+                                        const hIndex = heroes.findIndex(h => h.id === heroId); 
+                                        if(hIndex >= 0) { 
+                                            const newHeroes = [...heroes]; 
+                                            newHeroes[hIndex] = { ...newHeroes[hIndex], status: 'AVAILABLE', assignedMissionId: null }; 
+                                            setHeroes(newHeroes); 
+                                        } 
+                                    }} 
+                                    onAddHero={(hero) => setHeroes([...heroes, hero])} 
+                                    onToggleObjective={handleToggleHeroObjective} 
+                                    onBack={() => setViewMode('map')} 
+                                    language={lang} 
+                                    playerAlignment={playerAlignment} 
+                                    isEditorMode={isEditorMode}
+                                />
                             )}
 
                             {viewMode === 'tutorial' && (

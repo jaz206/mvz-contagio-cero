@@ -9,11 +9,13 @@ interface MissionModalProps {
   onClose: () => void;
   onComplete: (missionId: string) => void;
   onReactivate?: (missionId: string) => void;
+  onEdit?: (mission: Mission) => void; // New Prop
   language: Language;
   isCompleted?: boolean;
+  isEditorMode?: boolean; // New Prop
 }
 
-export const MissionModal: React.FC<MissionModalProps> = ({ mission, isOpen, onClose, onComplete, onReactivate, language, isCompleted }) => {
+export const MissionModal: React.FC<MissionModalProps> = ({ mission, isOpen, onClose, onComplete, onReactivate, onEdit, language, isCompleted, isEditorMode }) => {
   const [reporting, setReporting] = useState(false);
   const [reportSuccess, setReportSuccess] = useState(false);
   const t = translations[language].missionModal;
@@ -64,8 +66,18 @@ export const MissionModal: React.FC<MissionModalProps> = ({ mission, isOpen, onC
             <h2 className={`text-xl md:text-2xl font-bold tracking-widest font-mono uppercase ${isCompleted || reportSuccess ? 'text-emerald-300' : 'text-cyan-300'}`}>
                 {isCompleted || reportSuccess ? 'MISSION COMPLETE' : t.title}
             </h2>
-            <div className={`font-bold border px-2 py-0.5 text-xs animate-pulse ${isCompleted || reportSuccess ? 'text-emerald-400 border-emerald-500' : 'text-red-500 border-red-500'}`}>
-                {isCompleted || reportSuccess ? 'ARCHIVED' : 'TOP SECRET'}
+            <div className="flex gap-2 items-center">
+                {isEditorMode && onEdit && (
+                    <button 
+                        onClick={() => onEdit(mission)}
+                        className="bg-blue-600 hover:bg-blue-500 text-white text-[10px] px-2 py-1 font-bold uppercase"
+                    >
+                        EDIT (DB)
+                    </button>
+                )}
+                <div className={`font-bold border px-2 py-0.5 text-xs animate-pulse ${isCompleted || reportSuccess ? 'text-emerald-400 border-emerald-500' : 'text-red-500 border-red-500'}`}>
+                    {isCompleted || reportSuccess ? 'ARCHIVED' : 'TOP SECRET'}
+                </div>
             </div>
         </div>
 

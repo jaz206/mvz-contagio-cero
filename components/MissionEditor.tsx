@@ -1,26 +1,84 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { translations, Language } from '../translations';
 import { Mission, Objective } from '../types';
-import { createMissionInDB } from '../services/dbService';
+import { createMissionInDB, updateMissionInDB } from '../services/dbService';
 
 interface MissionEditorProps {
     isOpen: boolean;
     onClose: () => void;
     onSave: (mission: Mission) => void;
     language: Language;
+    initialData?: Mission | null; // Optional: If provided, we are editing
 }
 
 const STATES_LIST = [
-    'Washington', 'Oregon', 'California', 'Nevada', 'Idaho', 'Montana', 'Wyoming', 'Utah', 'Arizona', 'Colorado', 'New Mexico',
-    'North Dakota', 'South Dakota', 'Nebraska', 'Kansas', 'Oklahoma', 'Texas', 'Minnesota', 'Iowa', 'Missouri', 'Arkansas', 'Louisiana',
-    'Wisconsin', 'Illinois', 'Mississippi', 'Michigan', 'Indiana', 'Ohio', 'Kentucky', 'Tennessee', 'Alabama', 'Florida',
-    'Georgia', 'South Carolina', 'North Carolina', 'Virginia', 'West Virginia', 'Maryland', 'Delaware', 'Pennsylvania', 'New Jersey',
-    'New York', 'Connecticut', 'Rhode Island', 'Massachusetts', 'Vermont', 'New Hampshire', 'Maine', 'Alaska', 'Hawaii', 'District of Columbia'
+    'Alabama', 'Alaska', 'Arizona', 'Arkansas', 'California', 'Colorado', 'Connecticut', 'Delaware', 'District of Columbia', 'Florida',
+    'Georgia', 'Hawaii', 'Idaho', 'Illinois', 'Indiana', 'Iowa', 'Kansas', 'Kentucky', 'Louisiana', 'Maine',
+    'Maryland', 'Massachusetts', 'Michigan', 'Minnesota', 'Mississippi', 'Missouri', 'Montana', 'Nebraska', 'Nevada', 'New Hampshire',
+    'New Jersey', 'New Mexico', 'New York', 'North Carolina', 'North Dakota', 'Ohio', 'Oklahoma', 'Oregon', 'Pennsylvania', 'Rhode Island',
+    'South Carolina', 'South Dakota', 'Tennessee', 'Texas', 'Utah', 'Vermont', 'Virginia', 'Washington', 'West Virginia', 'Wisconsin', 'Wyoming'
 ];
 
-export const MissionEditor: React.FC<MissionEditorProps> = ({ isOpen, onClose, onSave, language }) => {
+// Approximate center coordinates [Longitude, Latitude] for each state
+const STATE_CENTERS: Record<string, [number, number]> = {
+    'Alabama': [-86.9, 32.8],
+    'Alaska': [-152.4, 61.3],
+    'Arizona': [-111.4, 34.0],
+    'Arkansas': [-92.3, 34.9],
+    'California': [-119.6, 36.1],
+    'Colorado': [-105.3, 39.0],
+    'Connecticut': [-72.7, 41.6],
+    'Delaware': [-75.5, 39.3],
+    'District of Columbia': [-77.0, 38.9],
+    'Florida': [-81.6, 27.7],
+    'Georgia': [-83.6, 33.0],
+    'Hawaii': [-157.5, 20.5],
+    'Idaho': [-114.4, 44.2],
+    'Illinois': [-89.0, 40.3],
+    'Indiana': [-86.1, 40.2],
+    'Iowa': [-93.2, 42.0],
+    'Kansas': [-96.7, 38.5], // Adjusted slightly East
+    'Kentucky': [-84.2, 37.6],
+    'Louisiana': [-91.8, 31.1],
+    'Maine': [-69.3, 45.3],
+    'Maryland': [-76.8, 39.0],
+    'Massachusetts': [-71.5, 42.2],
+    'Michigan': [-84.5, 43.3], // Lower peninsula center
+    'Minnesota': [-94.6, 45.6],
+    'Mississippi': [-89.6, 32.7],
+    'Missouri': [-92.2, 38.4],
+    'Montana': [-110.4, 46.9],
+    'Nebraska': [-99.9, 41.1],
+    'Nevada': [-117.0, 38.8],
+    'New Hampshire': [-71.5, 43.4],
+    'New Jersey': [-74.5, 40.2],
+    'New Mexico': [-106.2, 34.8],
+    'New York': [-74.9, 42.1], // Upstate/Central NY
+    'North Carolina': [-79.8, 35.6],
+    'North Dakota': [-99.9, 47.5],
+    'Ohio': [-82.7, 40.3],
+    'Oklahoma': [-96.9, 35.5],
+    'Oregon': [-120.6, 44.0],
+    'Pennsylvania': [-77.2, 40.5],
+    'Rhode Island': [-71.5, 41.6],
+    'South Carolina': [-80.9, 33.8],
+    'South Dakota': [-99.9, 44.2],
+    'Tennessee': [-86.3, 35.7],
+    'Texas': [-97.5, 31.0], // Central/East Texas
+    'Utah': [-111.8, 39.2],
+    'Vermont': [-72.7, 44.0],
+    'Virginia': [-78.1, 37.7],
+    'Washington': [-120.7, 47.4],
+    'West Virginia': [-80.9, 38.4],
+    'Wisconsin': [-89.6, 44.2],
+    'Wyoming': [-107.3, 42.7]
+};
+
+export const MissionEditor: React.FC<MissionEditorProps> = ({ isOpen, onClose, onSave, language, initialData }) => {
     const t = translations[language].missionEditor;
+    
+    // State initialization
     const [title, setTitle] = useState('');
     const [description, setDescription] = useState('');
     const [locationState, setLocationState] = useState(STATES_LIST[0]);
@@ -29,6 +87,28 @@ export const MissionEditor: React.FC<MissionEditorProps> = ({ isOpen, onClose, o
     const [pdfUrl, setPdfUrl] = useState('');
     const [objectives, setObjectives] = useState<Objective[]>([{ title: '', desc: '' }]);
     const [saving, setSaving] = useState(false);
+
+    // Populate form when initialData changes
+    useEffect(() => {
+        if (initialData) {
+            setTitle(initialData.title);
+            setDescription(initialData.description.join('\n'));
+            setLocationState(initialData.location.state);
+            setThreatLevel(initialData.threatLevel);
+            setType(initialData.type || 'STANDARD');
+            setPdfUrl(initialData.pdfUrl || '');
+            setObjectives(initialData.objectives.length > 0 ? initialData.objectives : [{ title: '', desc: '' }]);
+        } else {
+            // Reset if creating new
+            setTitle('');
+            setDescription('');
+            setLocationState(STATES_LIST[0]);
+            setThreatLevel('HIGH');
+            setType('STANDARD');
+            setPdfUrl('');
+            setObjectives([{ title: '', desc: '' }]);
+        }
+    }, [initialData, isOpen]);
 
     if (!isOpen) return null;
 
@@ -46,18 +126,32 @@ export const MissionEditor: React.FC<MissionEditorProps> = ({ isOpen, onClose, o
         e.preventDefault();
         setSaving(true);
 
-        const coords = [-98.5, 39.8]; // Default center, real geocoding would be better but this works for now
+        let finalCoordinates: [number, number];
 
-        // Create base object without optional fields to avoid 'undefined' error in Firestore
+        // LOGIC: Check if state changed or new mission
+        if (initialData && initialData.location.state === locationState) {
+            finalCoordinates = initialData.location.coordinates;
+        } else {
+            // Get center for selected state, fallback to Kansas if missing
+            const center = STATE_CENTERS[locationState] || [-98.5, 39.8];
+            
+            // Add slight randomness (jitter) to avoid stacking items in same state
+            // Approx +/- 0.5 to 1.0 degree variation
+            const jitterX = (Math.random() - 0.5) * 1.5; 
+            const jitterY = (Math.random() - 0.5) * 1.0;
+            
+            finalCoordinates = [
+                center[0] + jitterX,
+                center[1] + jitterY
+            ];
+        }
+
         const baseMissionData = {
             title,
             description: description.split('\n').filter(p => p.trim() !== ''),
             location: {
                 state: locationState,
-                coordinates: [
-                    coords[0] + (Math.random() * 10 - 5), 
-                    coords[1] + (Math.random() * 5 - 2.5)
-                ] as [number, number] // Random jitter
+                coordinates: finalCoordinates
             },
             threatLevel,
             type,
@@ -65,14 +159,21 @@ export const MissionEditor: React.FC<MissionEditorProps> = ({ isOpen, onClose, o
         };
 
         // Only add pdfUrl if it has content
-        const newMissionData: Omit<Mission, 'id'> = {
+        const missionPayload: any = {
             ...baseMissionData,
             ...(pdfUrl.trim() ? { pdfUrl: pdfUrl.trim() } : {})
         };
 
         try {
-            const id = await createMissionInDB(newMissionData);
-            onSave({ ...newMissionData, id });
+            if (initialData && initialData.id) {
+                // UPDATE EXISTING
+                await updateMissionInDB(initialData.id, missionPayload);
+                onSave({ ...missionPayload, id: initialData.id });
+            } else {
+                // CREATE NEW
+                const id = await createMissionInDB(missionPayload);
+                onSave({ ...missionPayload, id });
+            }
             onClose();
         } catch (error) {
             console.error(error);
@@ -86,33 +187,31 @@ export const MissionEditor: React.FC<MissionEditorProps> = ({ isOpen, onClose, o
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/90 backdrop-blur-sm p-4">
             <div className="w-full max-w-3xl bg-slate-900 border-2 border-cyan-500 shadow-2xl flex flex-col max-h-[90vh]">
                 <div className="bg-cyan-900/40 p-4 border-b border-cyan-600 flex justify-between items-center">
-                    <h3 className="text-cyan-300 font-bold tracking-widest">{t.title}</h3>
+                    <h3 className="text-cyan-300 font-bold tracking-widest">
+                        {initialData ? `EDITING: ${initialData.title}` : t.title}
+                    </h3>
                     <button onClick={onClose} className="text-cyan-500 hover:text-white">✕</button>
                 </div>
 
                 <form onSubmit={handleSubmit} className="p-6 overflow-y-auto font-mono flex flex-col gap-4">
-                    {/* Title */}
                     <div>
                         <label className="text-[10px] text-cyan-600 font-bold block mb-1">{t.missionTitle}</label>
                         <input value={title} onChange={e => setTitle(e.target.value)} required className="w-full bg-slate-950 border border-cyan-800 p-2 text-cyan-200 focus:border-cyan-400 outline-none" />
                     </div>
 
                     <div className="grid grid-cols-2 gap-4">
-                        {/* State */}
                         <div>
                             <label className="text-[10px] text-cyan-600 font-bold block mb-1">{t.location}</label>
                             <select value={locationState} onChange={e => setLocationState(e.target.value)} className="w-full bg-slate-950 border border-cyan-800 p-2 text-cyan-200">
                                 {STATES_LIST.map(s => <option key={s} value={s}>{s}</option>)}
                             </select>
                         </div>
-                        {/* Threat */}
                         <div>
                             <label className="text-[10px] text-cyan-600 font-bold block mb-1">{t.threat}</label>
                             <input value={threatLevel} onChange={e => setThreatLevel(e.target.value)} className="w-full bg-slate-950 border border-cyan-800 p-2 text-cyan-200" />
                         </div>
                     </div>
 
-                    {/* Type & PDF */}
                     <div className="grid grid-cols-2 gap-4">
                         <div>
                             <label className="text-[10px] text-cyan-600 font-bold block mb-1">{t.type}</label>
@@ -128,13 +227,11 @@ export const MissionEditor: React.FC<MissionEditorProps> = ({ isOpen, onClose, o
                         </div>
                     </div>
 
-                    {/* Description */}
                     <div>
                         <label className="text-[10px] text-cyan-600 font-bold block mb-1">{t.description}</label>
                         <textarea value={description} onChange={e => setDescription(e.target.value)} rows={4} className="w-full bg-slate-950 border border-cyan-800 p-2 text-cyan-200" />
                     </div>
 
-                    {/* Objectives */}
                     <div className="bg-slate-950/50 p-4 border border-cyan-900/50">
                         <div className="flex justify-between mb-2">
                             <label className="text-[10px] text-cyan-600 font-bold">{t.objectives}</label>
