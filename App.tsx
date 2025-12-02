@@ -1,5 +1,4 @@
 
-// ... existing imports ...
 import React, { useState, useEffect, useMemo } from 'react';
 import { translations, Language } from './translations';
 import { User } from 'firebase/auth';
@@ -19,7 +18,6 @@ import { MissionEditor } from './components/MissionEditor';
 
 import { Mission, Hero, WorldStage, GlobalEvent } from './types';
 
-// ... constants FACTION_STATES, INITIAL_HEROES, INITIAL_ZOMBIE_HEROES ...
 const FACTION_STATES = {
     magneto: new Set([
         'Washington', 'Oregon', 'California', 'Nevada', 'Idaho', 
@@ -178,7 +176,6 @@ const App: React.FC = () => {
     const [lang, setLang] = useState<Language>('es');
     const [viewMode, setViewMode] = useState<'login' | 'story' | 'tutorial' | 'map' | 'bunker'>('login');
     
-    // UI Logic State
     const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
 
     const [playerAlignment, setPlayerAlignment] = useState<'ALIVE' | 'ZOMBIE' | null>(null);
@@ -438,12 +435,15 @@ const App: React.FC = () => {
         const missionList = Array.from(missionMap.values());
 
         if (worldStage === 'GALACTUS' && playerAlignment === 'ALIVE') {
+            // Safe access to galactus translation in case it is missing
+            const galactusData = t.missions?.galactus;
+            
             missionList.push({
                 id: 'boss-galactus',
                 type: 'BOSS',
-                title: t.missions.galactus.title,
-                description: t.missions.galactus.description,
-                objectives: t.missions.galactus.objectives,
+                title: galactusData?.title || "GALACTUS ARRIVES",
+                description: galactusData?.description || ["CRITICAL THREAT: GALACTUS"],
+                objectives: galactusData?.objectives || [{ title: "Defeat Galactus", desc: "Save the world" }],
                 location: { state: 'Kansas', coordinates: [-98.0, 38.0] },
                 threatLevel: 'OMEGA++'
             });
@@ -552,10 +552,8 @@ const App: React.FC = () => {
 
                     <div className="flex-1 flex overflow-hidden relative">
                         
-                        {/* COMPACT SIDEBAR */}
                         <aside className={`flex-none bg-slate-900 border-r border-cyan-900 flex flex-col z-20 shadow-xl overflow-hidden relative transition-all duration-300 ease-in-out ${isSidebarCollapsed ? 'w-16' : 'w-64'}`}>
                             
-                            {/* Collapse Toggle */}
                             <button 
                                 onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
                                 className="absolute top-1/2 -right-0 w-4 h-12 bg-cyan-900/80 hover:bg-cyan-600 rounded-l flex items-center justify-center cursor-pointer z-50 translate-x-0"
@@ -564,7 +562,6 @@ const App: React.FC = () => {
                                 <span className="text-[8px] text-white">{isSidebarCollapsed ? '»' : '«'}</span>
                             </button>
 
-                            {/* Threat Status - Compact */}
                             <div className={`p-2 border-b border-cyan-900 bg-red-950/10 flex flex-col justify-center ${isSidebarCollapsed ? 'items-center' : ''}`}>
                                 {isSidebarCollapsed ? (
                                     <div className="text-xs font-black text-red-600 animate-pulse">Ω</div>
@@ -579,7 +576,6 @@ const App: React.FC = () => {
                                 )}
                             </div>
 
-                            {/* Nav Buttons (Bunker / Campaign) - Grid */}
                             <div className={`grid ${isSidebarCollapsed ? 'grid-cols-1 gap-2 p-2' : 'grid-cols-2 gap-1 p-2'} border-b border-cyan-900`}>
                                 <button id="tutorial-bunker-btn" onClick={() => setViewMode('bunker')} className={`flex items-center justify-center p-2 border transition-all hover:scale-105 ${playerAlignment === 'ZOMBIE' ? 'border-lime-600 bg-lime-900/10 text-lime-400' : 'border-cyan-500 bg-cyan-900/10 text-cyan-300'}`} title="BUNKER">
                                     <span className="text-xl">{playerAlignment === 'ZOMBIE' ? '☣' : '🛡'}</span>
@@ -591,7 +587,6 @@ const App: React.FC = () => {
                                 </button>
                             </div>
 
-                            {/* Editor Panel - Integrated */}
                             {isEditorMode && !isSidebarCollapsed && (
                                 <div className="p-2 bg-slate-800 border-b border-cyan-500">
                                     <div className="flex gap-1 mb-1">
@@ -605,7 +600,6 @@ const App: React.FC = () => {
                                 </div>
                             )}
 
-                            {/* COMPACT MISSION LIST */}
                             <div id="tutorial-sidebar-missions" className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-cyan-900">
                                 {!isSidebarCollapsed && <h4 className="text-[9px] font-bold text-gray-500 uppercase px-2 py-1 bg-slate-950 tracking-widest sticky top-0">{t.sidebar.activeMissions}</h4>}
                                 
@@ -613,13 +607,12 @@ const App: React.FC = () => {
                                     {visibleMissions.length > 0 ? (
                                         visibleMissions.map(m => {
                                             const isCompleted = completedMissionIds.has(m.id);
-                                            if (isCompleted) return null; // Only active here
+                                            if (isCompleted) return null; 
                                             
                                             const isShield = m.type === 'SHIELD_BASE';
                                             const isStartMission = m.id === 'm_kraven' || m.title.includes("MH0") || m.title.toUpperCase().includes("CADENAS ROTAS");
                                             const isBoss = m.type === 'BOSS';
                                             
-                                            // Color Coding
                                             let barColor = 'bg-yellow-500';
                                             let textColor = 'text-yellow-100';
                                             if (isBoss) { barColor = 'bg-purple-500'; textColor = 'text-purple-200'; }
@@ -633,7 +626,6 @@ const App: React.FC = () => {
                                                     className={`group cursor-pointer border-b border-cyan-900/30 hover:bg-cyan-900/10 transition-colors relative ${isSidebarCollapsed ? 'h-10 flex items-center justify-center' : 'p-2 pl-3'}`}
                                                     title={m.title}
                                                 >
-                                                    {/* Status Bar */}
                                                     <div className={`absolute left-0 top-0 bottom-0 w-1 ${barColor} group-hover:w-1.5 transition-all`}></div>
                                                     
                                                     {isSidebarCollapsed ? (
@@ -654,7 +646,6 @@ const App: React.FC = () => {
                                         !isSidebarCollapsed && <div className="text-center text-[9px] text-gray-600 italic py-4">{t.sidebar.noMissions}</div>
                                     )}
                                     
-                                    {/* Completed Section (Compact) */}
                                     {Array.from(completedMissionIds).length > 0 && !isSidebarCollapsed && (
                                         <>
                                             <div className="text-[8px] font-bold text-gray-700 uppercase px-2 py-1 mt-2 bg-slate-950">COMPLETED</div>
@@ -673,7 +664,6 @@ const App: React.FC = () => {
                             </div>
                         </aside>
 
-                        {/* CONTENT AREA */}
                         <main className="flex-1 relative bg-slate-950 overflow-hidden">
                             {viewMode === 'map' && (
                                 <USAMap language={lang} missions={visibleMissions} completedMissionIds={completedMissionIds} onMissionComplete={handleMissionComplete} onMissionSelect={setSelectedMission} onBunkerClick={() => setViewMode('bunker')} factionStates={FACTION_STATES} playerAlignment={playerAlignment} worldStage={worldStage} />

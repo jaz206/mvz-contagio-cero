@@ -12,7 +12,7 @@ interface MissionEditorProps {
     initialData?: Mission | null;
 }
 
-// Approximate center coordinates [Longitude, Latitude]
+// Approximate center coordinates [Longitude, Latitude] for accurate placement
 const STATE_CENTERS: Record<string, [number, number]> = {
     'Alabama': [-86.9, 32.8], 'Alaska': [-152.4, 61.3], 'Arizona': [-111.4, 34.0], 'Arkansas': [-92.3, 34.9],
     'California': [-119.6, 36.1], 'Colorado': [-105.3, 39.0], 'Connecticut': [-72.7, 41.6], 'Delaware': [-75.5, 39.3],
@@ -29,7 +29,6 @@ const STATE_CENTERS: Record<string, [number, number]> = {
     'West Virginia': [-80.9, 38.4], 'Wisconsin': [-89.6, 44.2], 'Wyoming': [-107.3, 42.7]
 };
 
-// Generate list from keys to ensure consistency
 const STATES_LIST = Object.keys(STATE_CENTERS).sort();
 
 export const MissionEditor: React.FC<MissionEditorProps> = ({ isOpen, onClose, onSave, language, initialData }) => {
@@ -82,18 +81,16 @@ export const MissionEditor: React.FC<MissionEditorProps> = ({ isOpen, onClose, o
 
         let finalCoordinates: [number, number];
 
-        // CHECK: Did the user change the state? Or is it a new mission?
+        // CRITICAL FIX: Check if state changed during edit
         const stateChanged = !initialData || initialData.location.state !== locationState;
 
         if (stateChanged) {
-            // FIX: Use specific state center, NOT defaultCenter
             const center = STATE_CENTERS[locationState] || [-98.5, 39.8]; 
-            // Small Jitter ~ +/- 1.0 degree to keep it inside the state roughly
+            // Small Jitter to avoid stacking
             const jitterX = (Math.random() - 0.5) * 2.0; 
             const jitterY = (Math.random() - 0.5) * 1.5;
             finalCoordinates = [center[0] + jitterX, center[1] + jitterY];
         } else {
-            // Keep OLD coordinates if state didn't change
             finalCoordinates = initialData.location.coordinates;
         }
 
