@@ -304,7 +304,7 @@ export const translations = {
       name: "REAL NAME",
       adminSeed: "ADMIN: RESET DB",
       seedSuccess: "DB RESET",
-      submit: "RECLUTAR AGENTE"
+      submit: "RECRUIT AGENT"
     },
     missionEditor: {
       title: "MISSION EDITOR",
@@ -381,8 +381,8 @@ export const translations = {
         hawkeye: { alias: "HAWKEYE", bio: "Master archer and assassin. Never misses." },
         lukecage: { alias: "LUKE CAGE", bio: "Unbreakable skin and superhuman strength." },
         daredevil: { alias: "DAREDEVIL", bio: "The Man Without Fear. Heightened senses." },
-        thor: { alias: "THOR", bio: "God of Thunder. Wields the power of Mjolnir." },
-        storm: { alias: "STORM", bio: "Controls the weather. A goddess among mortals." }
+        thor: { alias: "THOR", bio: "Dios del Trueno. Posee el poder de Mjolnir." },
+        storm: { alias: "STORM", bio: "Controla el clima. Una diosa entre mortales." }
     },
     story: {
         loading: {

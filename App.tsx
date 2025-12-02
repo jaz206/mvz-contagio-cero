@@ -400,6 +400,14 @@ const App: React.FC = () => {
          }
     };
 
+    const getMissionFaction = (state: string) => {
+        if (FACTION_STATES.magneto.has(state)) return 'MAGNETO';
+        if (FACTION_STATES.kingpin.has(state)) return 'KINGPIN';
+        if (FACTION_STATES.hulk.has(state)) return 'HULK';
+        if (FACTION_STATES.doom.has(state)) return 'DOOM';
+        return 'NEUTRAL';
+    };
+
     const allMissions: Mission[] = useMemo(() => {
         const hardcodedMissions: Mission[] = [
             {
@@ -435,9 +443,7 @@ const App: React.FC = () => {
         const missionList = Array.from(missionMap.values());
 
         if (worldStage === 'GALACTUS' && playerAlignment === 'ALIVE') {
-            // Safe access to galactus translation in case it is missing
             const galactusData = t.missions?.galactus;
-            
             missionList.push({
                 id: 'boss-galactus',
                 type: 'BOSS',
@@ -454,17 +460,27 @@ const App: React.FC = () => {
 
     const visibleMissions = useMemo(() => {
         if (isEditorMode) return allMissions;
-        
         if (worldStage === 'GALACTUS') {
             return allMissions.filter(m => m.type === 'BOSS');
         }
-
         return allMissions.filter(m => {
             const isCompleted = completedMissionIds.has(m.id);
             const prereqMet = !m.prereq || completedMissionIds.has(m.prereq);
             return isCompleted || prereqMet;
         });
     }, [allMissions, completedMissionIds, isEditorMode, worldStage]);
+
+    // Group missions by faction
+    const factionOrder = ['MAGNETO', 'KINGPIN', 'HULK', 'DOOM', 'NEUTRAL'];
+    const missionsByFaction = useMemo(() => {
+        const groups: Record<string, Mission[]> = { MAGNETO: [], KINGPIN: [], HULK: [], DOOM: [], NEUTRAL: [] };
+        visibleMissions.forEach(m => {
+            const faction = getMissionFaction(m.location.state);
+            if (groups[faction]) groups[faction].push(m);
+            else groups.NEUTRAL.push(m);
+        });
+        return groups;
+    }, [visibleMissions]);
 
     if (loading || loadingAuth) return <div className="bg-slate-950 text-cyan-500 h-screen flex items-center justify-center font-mono">LOADING SHIELD OS...</div>;
 
@@ -524,6 +540,7 @@ const App: React.FC = () => {
             {(viewMode === 'map' || viewMode === 'bunker' || viewMode === 'tutorial') && (
                 <>
                     <header className="flex-none h-16 border-b border-cyan-900 bg-slate-900/90 flex items-center justify-between px-6 z-30 relative">
+                        {/* Header content ... */}
                         <div className="flex items-center gap-4">
                             <div className="w-10 h-10 border-2 border-cyan-500 rounded-full flex items-center justify-center overflow-hidden bg-slate-950 shadow-[0_0_10px_rgba(6,182,212,0.3)]">
                                 <img src="https://i.pinimg.com/736x/63/1e/3a/631e3a68228c97963e78381ad11bf3bb.jpg" alt="Logo" className="w-full h-full object-cover" />
@@ -589,13 +606,19 @@ const App: React.FC = () => {
 
                             {isEditorMode && !isSidebarCollapsed && (
                                 <div className="p-2 bg-slate-800 border-b border-cyan-500">
-                                    <div className="flex gap-1 mb-1">
-                                        <button onClick={() => { setMissionToEdit(null); setShowMissionEditor(true); }} className="flex-1 py-1 bg-blue-600 text-white text-[8px] font-bold uppercase">NEW MISSION</button>
-                                        <button onClick={handleResetProgress} className="px-2 py-1 bg-red-900/50 border border-red-600 text-red-300 text-[8px]">RST</button>
+                                    <div className="mb-2">
+                                        <div className="text-[8px] font-bold text-blue-400 uppercase border-b border-blue-900 mb-1">CONTENT MANAGEMENT</div>
+                                        <div className="flex gap-1">
+                                            <button onClick={() => { setMissionToEdit(null); setShowMissionEditor(true); }} className="w-full py-1 bg-blue-600 hover:bg-blue-500 text-white text-[8px] font-bold uppercase border border-blue-400">CREATE MISSION</button>
+                                        </div>
                                     </div>
-                                    <div className="flex gap-1">
-                                        <button onClick={() => handleSimulateProgress(1)} className="flex-1 py-1 border border-orange-500/50 text-orange-200 text-[8px] hover:bg-orange-900/20">+1</button>
-                                        <button onClick={() => handleSimulateProgress(5)} className="flex-1 py-1 border border-orange-500/50 text-orange-200 text-[8px] hover:bg-orange-900/20">+5</button>
+                                    <div>
+                                        <div className="text-[8px] font-bold text-orange-400 uppercase border-b border-orange-900 mb-1">EVENT SIMULATION</div>
+                                        <div className="flex gap-1 mb-1">
+                                            <button onClick={() => handleSimulateProgress(1)} className="flex-1 py-1 border border-orange-500/50 text-orange-200 text-[8px] hover:bg-orange-900/20">+1</button>
+                                            <button onClick={() => handleSimulateProgress(5)} className="flex-1 py-1 border border-orange-500/50 text-orange-200 text-[8px] hover:bg-orange-900/20">+5</button>
+                                        </div>
+                                        <button onClick={handleResetProgress} className="w-full py-1 bg-red-900/50 border border-red-600 text-red-300 text-[8px] hover:bg-red-800">RESET PROGRESS</button>
                                     </div>
                                 </div>
                             )}
@@ -603,64 +626,77 @@ const App: React.FC = () => {
                             <div id="tutorial-sidebar-missions" className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-cyan-900">
                                 {!isSidebarCollapsed && <h4 className="text-[9px] font-bold text-gray-500 uppercase px-2 py-1 bg-slate-950 tracking-widest sticky top-0">{t.sidebar.activeMissions}</h4>}
                                 
-                                <div className="flex flex-col">
-                                    {visibleMissions.length > 0 ? (
-                                        visibleMissions.map(m => {
-                                            const isCompleted = completedMissionIds.has(m.id);
-                                            if (isCompleted) return null; 
-                                            
-                                            const isShield = m.type === 'SHIELD_BASE';
-                                            const isStartMission = m.id === 'm_kraven' || m.title.includes("MH0") || m.title.toUpperCase().includes("CADENAS ROTAS");
-                                            const isBoss = m.type === 'BOSS';
-                                            
-                                            let barColor = 'bg-yellow-500';
-                                            let textColor = 'text-yellow-100';
-                                            if (isBoss) { barColor = 'bg-purple-500'; textColor = 'text-purple-200'; }
-                                            else if (isShield) { barColor = 'bg-cyan-500'; textColor = 'text-cyan-200'; }
-                                            else if (isStartMission) { barColor = 'bg-emerald-500'; textColor = 'text-emerald-200'; }
+                                {visibleMissions.length === 0 && !isSidebarCollapsed && (
+                                    <div className="text-center text-[9px] text-gray-600 italic py-4">{t.sidebar.noMissions}</div>
+                                )}
 
-                                            return (
-                                                <div 
-                                                    key={m.id} 
-                                                    onClick={() => setSelectedMission(m)} 
-                                                    className={`group cursor-pointer border-b border-cyan-900/30 hover:bg-cyan-900/10 transition-colors relative ${isSidebarCollapsed ? 'h-10 flex items-center justify-center' : 'p-2 pl-3'}`}
-                                                    title={m.title}
-                                                >
-                                                    <div className={`absolute left-0 top-0 bottom-0 w-1 ${barColor} group-hover:w-1.5 transition-all`}></div>
-                                                    
-                                                    {isSidebarCollapsed ? (
-                                                        <div className={`w-3 h-3 rounded-full ${barColor} animate-pulse`}></div>
-                                                    ) : (
-                                                        <div className="flex justify-between items-center w-full">
-                                                            <div className="flex-1 min-w-0 pr-2">
-                                                                <div className={`text-[10px] font-bold ${textColor} truncate uppercase`}>{m.title}</div>
-                                                                <div className="text-[8px] text-gray-500 truncate">{m.location.state}</div>
-                                                            </div>
-                                                            <div className="text-[8px] text-gray-600 border border-gray-800 px-1">{m.threatLevel.substring(0,3)}</div>
-                                                        </div>
-                                                    )}
-                                                </div>
-                                            );
-                                        })
-                                    ) : (
-                                        !isSidebarCollapsed && <div className="text-center text-[9px] text-gray-600 italic py-4">{t.sidebar.noMissions}</div>
-                                    )}
+                                {factionOrder.map(faction => {
+                                    const factionMissions = missionsByFaction[faction];
+                                    if (!factionMissions || factionMissions.length === 0) return null;
                                     
-                                    {Array.from(completedMissionIds).length > 0 && !isSidebarCollapsed && (
-                                        <>
-                                            <div className="text-[8px] font-bold text-gray-700 uppercase px-2 py-1 mt-2 bg-slate-950">COMPLETED</div>
-                                            {visibleMissions.filter(m => completedMissionIds.has(m.id)).map(m => (
-                                                <div key={m.id} onClick={() => setSelectedMission(m)} className="p-2 pl-3 border-b border-cyan-900/10 hover:bg-emerald-900/5 cursor-pointer opacity-60 hover:opacity-100 relative group">
-                                                    <div className="absolute left-0 top-0 bottom-0 w-1 bg-emerald-800"></div>
-                                                    <div className="flex justify-between items-center">
-                                                        <div className="text-[9px] text-emerald-500/70 line-through truncate">{m.title}</div>
-                                                        <div className="text-[8px] text-emerald-600">✓</div>
-                                                    </div>
+                                    // Faction Colors
+                                    let headerColor = 'text-gray-400 border-gray-700 bg-gray-900/50';
+                                    if (faction === 'MAGNETO') headerColor = 'text-red-400 border-red-900 bg-red-900/20';
+                                    if (faction === 'KINGPIN') headerColor = 'text-purple-400 border-purple-900 bg-purple-900/20';
+                                    if (faction === 'HULK') headerColor = 'text-lime-400 border-lime-900 bg-lime-900/20';
+                                    if (faction === 'DOOM') headerColor = 'text-emerald-600 border-emerald-900 bg-emerald-900/20';
+
+                                    return (
+                                        <div key={faction} className="mb-1">
+                                            {!isSidebarCollapsed && (
+                                                <div className={`text-[8px] font-bold px-2 py-1 border-y ${headerColor} uppercase tracking-wider sticky top-0`}>
+                                                    {faction} SECTOR
                                                 </div>
-                                            ))}
-                                        </>
-                                    )}
-                                </div>
+                                            )}
+                                            {factionMissions.map(m => {
+                                                const isCompleted = completedMissionIds.has(m.id);
+                                                const isShield = m.type === 'SHIELD_BASE';
+                                                const isStartMission = m.id === 'm_kraven' || m.title.includes("MH0") || m.title.toUpperCase().includes("CADENAS ROTAS");
+                                                const isBoss = m.type === 'BOSS';
+                                                
+                                                let barColor = 'bg-yellow-500';
+                                                let textColor = 'text-yellow-100';
+                                                let itemOpacity = isCompleted ? 'opacity-50 hover:opacity-80' : 'opacity-100';
+                                                
+                                                if (isCompleted) {
+                                                    textColor = 'text-emerald-500 line-through';
+                                                    barColor = 'bg-emerald-600';
+                                                } else {
+                                                    if (isBoss) { barColor = 'bg-purple-500'; textColor = 'text-purple-200'; }
+                                                    else if (isShield) { barColor = 'bg-cyan-500'; textColor = 'text-cyan-200'; }
+                                                    else if (isStartMission) { barColor = 'bg-emerald-500'; textColor = 'text-emerald-200'; }
+                                                }
+
+                                                return (
+                                                    <div 
+                                                        key={m.id} 
+                                                        onClick={() => setSelectedMission(m)} 
+                                                        className={`group cursor-pointer border-b border-cyan-900/30 hover:bg-cyan-900/10 transition-colors relative ${itemOpacity} ${isSidebarCollapsed ? 'h-8 flex items-center justify-center' : 'p-2 pl-3'}`}
+                                                        title={m.title}
+                                                    >
+                                                        <div className={`absolute left-0 top-0 bottom-0 w-1 ${barColor} group-hover:w-1.5 transition-all`}></div>
+                                                        
+                                                        {isSidebarCollapsed ? (
+                                                            <div className={`w-2 h-2 rounded-full ${barColor} ${!isCompleted ? 'animate-pulse' : ''}`}></div>
+                                                        ) : (
+                                                            <div className="flex justify-between items-center w-full">
+                                                                <div className="flex-1 min-w-0 pr-2">
+                                                                    <div className={`text-[9px] font-bold ${textColor} truncate uppercase`}>{m.title}</div>
+                                                                    <div className="text-[7px] text-gray-500 truncate">{m.location.state}</div>
+                                                                </div>
+                                                                {isCompleted ? (
+                                                                    <div className="text-[8px] text-emerald-600">✓</div>
+                                                                ) : (
+                                                                    <div className="text-[7px] text-gray-600 border border-gray-800 px-1">{m.threatLevel.substring(0,3)}</div>
+                                                                )}
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                    );
+                                })}
                             </div>
                         </aside>
 

@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useMemo } from 'react';
 import { translations, Language } from '../translations';
 import { Hero, Mission, HeroClass, HeroTemplate } from '../types';
@@ -80,8 +81,7 @@ const HeroToken: React.FC<{ hero: Hero; onClick: () => void }> = ({ hero, onClic
     return (
         <div 
             onClick={(e) => { 
-                e.stopPropagation(); // CRITICAL: Stop event from bubbling to map background
-                console.log("Token clicked:", hero.alias); 
+                e.stopPropagation(); 
                 onClick(); 
             }}
             className={`absolute w-8 h-8 rounded-full border-2 border-white cursor-pointer hover:scale-125 transition-all z-50 flex items-center justify-center shadow-[0_0_15px] ${colorClass} animate-bounce pointer-events-auto`}
@@ -99,7 +99,7 @@ const HeroToken: React.FC<{ hero: Hero; onClick: () => void }> = ({ hero, onClic
                 <span className="text-[8px] font-bold text-black pointer-events-none">{hero.alias.substring(0,2)}</span>
             )}
             
-            <div className="absolute -top-1 -right-1 w-3 h-3 rounded-full border border-black pointer-events-none ${hero.status === 'AVAILABLE' ? 'bg-emerald-500' : hero.status === 'INJURED' ? 'bg-red-600' : 'bg-yellow-400'}"></div>
+            <div className={`absolute -top-1 -right-1 w-3 h-3 rounded-full border border-black pointer-events-none ${hero.status === 'AVAILABLE' ? 'bg-emerald-500' : hero.status === 'INJURED' ? 'bg-red-600' : 'bg-yellow-400'}`}></div>
         </div>
     );
 };
@@ -260,9 +260,23 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({ heroes, missions
                 <path d="M 350 50 L 650 50 L 650 300 L 350 300 Z" fill="none" stroke="#06b6d4" strokeWidth="2" />
                 <text x="500" y="320" textAnchor="middle" fill="#06b6d4" fontSize="14" fontWeight="bold" letterSpacing="2">COMMAND</text>
                 <text x="500" y="340" textAnchor="middle" fill="#0e7490" fontSize="10">TACTICAL OPERATIONS</text>
-                <rect x="380" y="70" width="240" height="120" fill="#0f172a" stroke="#06b6d4" strokeWidth="2" className="cursor-pointer hover:stroke-white transition-colors" onClick={onBack} />
-                <text x="500" y="135" textAnchor="middle" fill="#06b6d4" fontSize="12" className="pointer-events-none" opacity="0.8">GLOBAL MAP VIEW</text>
-                <path d="M 350 175 L 300 175" stroke="#06b6d4" strokeWidth="2" strokeDasharray="5,5" /> 
+                
+                {/* GLOBAL MAP MINI-SCREEN */}
+                <g className="cursor-pointer hover:opacity-80 transition-opacity" onClick={onBack}>
+                    <rect x="380" y="70" width="240" height="120" fill="#0f172a" stroke="#06b6d4" strokeWidth="2" />
+                    {/* Simplified US Map Outline simulation */}
+                    <path d="M 390 100 L 410 90 L 450 90 L 470 100 L 580 100 L 600 80 L 610 90 L 600 130 L 580 150 L 550 160 L 530 150 L 500 170 L 480 160 L 450 160 L 430 140 L 400 140 L 390 120 Z" fill="none" stroke="#06b6d4" strokeWidth="1.5" opacity="0.7" />
+                    <circle cx="480" cy="120" r="2" fill="#ef4444" className="animate-pulse" />
+                    <circle cx="550" cy="110" r="2" fill="#eab308" />
+                    <circle cx="420" cy="130" r="2" fill="#06b6d4" />
+                    
+                    {/* Scan line effect */}
+                    <rect x="380" y="70" width="240" height="2" fill="#06b6d4" opacity="0.3">
+                        <animate attributeName="y" from="70" to="190" dur="3s" repeatCount="indefinite" />
+                    </rect>
+                </g>
+                <text x="500" y="210" textAnchor="middle" fill="#06b6d4" fontSize="10" className="pointer-events-none" opacity="0.8">GLOBAL STATUS: CRITICAL</text>
+                <path d="M 350 220 L 300 220" stroke="#06b6d4" strokeWidth="2" strokeDasharray="5,5" /> 
 
                 {/* ROOM: HANGAR (Right Top) */}
                 <path d="M 700 50 L 950 50 L 950 300 L 700 300 Z" fill="none" stroke="#eab308" strokeWidth="2" />
