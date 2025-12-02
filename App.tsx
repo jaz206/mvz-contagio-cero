@@ -178,6 +178,9 @@ const App: React.FC = () => {
     const [lang, setLang] = useState<Language>('es');
     const [viewMode, setViewMode] = useState<'login' | 'story' | 'tutorial' | 'map' | 'bunker'>('login');
     
+    // UI Logic State
+    const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+
     const [playerAlignment, setPlayerAlignment] = useState<'ALIVE' | 'ZOMBIE' | null>(null);
     const [heroes, setHeroes] = useState<Hero[]>([]);
     const [completedMissionIds, setCompletedMissionIds] = useState<Set<string>>(new Set());
@@ -369,9 +372,8 @@ const App: React.FC = () => {
         setCompletedMissionIds(newSet);
         setSelectedMission(null);
         
-        // SPECIAL BOSS LOGIC
         if (id === 'boss-galactus') {
-            setWorldStage('NORMAL'); // DEFEATED: Reset world stage to remove shadow and surfer
+            setWorldStage('NORMAL');
             setActiveGlobalEvent(null);
         } else {
             checkGlobalEvents(newSet.size);
@@ -453,7 +455,6 @@ const App: React.FC = () => {
     const visibleMissions = useMemo(() => {
         if (isEditorMode) return allMissions;
         
-        // GALACTUS EVENT: HIDE ALL STANDARD MISSIONS
         if (worldStage === 'GALACTUS') {
             return allMissions.filter(m => m.type === 'BOSS');
         }
@@ -528,7 +529,7 @@ const App: React.FC = () => {
                                 <img src="https://i.pinimg.com/736x/63/1e/3a/631e3a68228c97963e78381ad11bf3bb.jpg" alt="Logo" className="w-full h-full object-cover" />
                             </div>
                             <div>
-                                <h1 className="text-xl font-bold tracking-[0.2em] text-cyan-100 leading-none">{t.header.project}</h1>
+                                <h1 className="text-xl font-bold tracking-[0.2em] text-cyan-100 leading-none hidden md:block">{t.header.project}</h1>
                                 <div className="text-[10px] text-red-500 font-bold tracking-widest animate-pulse">{t.header.failure}</div>
                             </div>
                         </div>
@@ -550,126 +551,119 @@ const App: React.FC = () => {
                     </header>
 
                     <div className="flex-1 flex overflow-hidden relative">
-                        <aside className="w-80 flex-none bg-slate-900 border-r border-cyan-900 flex flex-col z-20 shadow-xl overflow-hidden relative">
+                        
+                        {/* COMPACT SIDEBAR */}
+                        <aside className={`flex-none bg-slate-900 border-r border-cyan-900 flex flex-col z-20 shadow-xl overflow-hidden relative transition-all duration-300 ease-in-out ${isSidebarCollapsed ? 'w-16' : 'w-64'}`}>
                             
-                            {isEditorMode && (
-                                <div className="p-4 bg-slate-800 border-b border-cyan-500 overflow-y-auto max-h-[50vh]">
-                                    <h3 className="text-[10px] font-bold text-cyan-300 mb-3 tracking-widest border-b border-cyan-600 pb-1">EDITOR CONTROL</h3>
-                                    
-                                    <div className="mb-3 p-2 border border-blue-600/50 bg-blue-900/10 rounded">
-                                        <div className="text-[8px] text-blue-400 font-bold mb-2 uppercase tracking-wider">CONTENT MANAGEMENT</div>
-                                        <button onClick={() => { setMissionToEdit(null); setShowMissionEditor(true); }} className="w-full py-2 bg-blue-600 hover:bg-blue-500 text-white text-[10px] font-bold uppercase tracking-wider shadow-sm transition-all hover:shadow-blue-500/20">
-                                            CREATE MISSION
-                                        </button>
-                                    </div>
+                            {/* Collapse Toggle */}
+                            <button 
+                                onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+                                className="absolute top-1/2 -right-0 w-4 h-12 bg-cyan-900/80 hover:bg-cyan-600 rounded-l flex items-center justify-center cursor-pointer z-50 translate-x-0"
+                                style={{ transform: 'translateY(-50%)' }}
+                            >
+                                <span className="text-[8px] text-white">{isSidebarCollapsed ? '»' : '«'}</span>
+                            </button>
 
-                                    <div className="p-2 border border-orange-600/50 bg-orange-900/10 rounded">
-                                        <div className="text-[8px] text-orange-400 font-bold mb-2 uppercase tracking-wider">EVENT SIMULATION</div>
-                                        <div className="text-[9px] text-gray-400 mb-2 flex justify-between">
-                                            <span>COMPLETED: <span className="text-white">{completedMissionIds.size}</span></span>
-                                            <span>STAGE: <span className="text-yellow-400">{worldStage}</span></span>
+                            {/* Threat Status - Compact */}
+                            <div className={`p-2 border-b border-cyan-900 bg-red-950/10 flex flex-col justify-center ${isSidebarCollapsed ? 'items-center' : ''}`}>
+                                {isSidebarCollapsed ? (
+                                    <div className="text-xs font-black text-red-600 animate-pulse">Ω</div>
+                                ) : (
+                                    <>
+                                        <div className="flex justify-between items-end">
+                                            <h3 className="text-[10px] font-bold text-red-500 tracking-widest">THREAT</h3>
+                                            <span className="text-xl font-black text-red-600 tracking-tighter">{t.sidebar.threatLevelValue}</span>
                                         </div>
-                                        <div className="grid grid-cols-2 gap-2 mb-2">
-                                            <button onClick={() => handleSimulateProgress(1)} className="py-1 bg-slate-700 border border-orange-500/50 text-orange-200 text-[9px] hover:bg-orange-900/50 hover:text-white transition-colors">+1 MISSION</button>
-                                            <button onClick={() => handleSimulateProgress(5)} className="py-1 bg-slate-700 border border-orange-500/50 text-orange-200 text-[9px] hover:bg-orange-900/50 hover:text-white transition-colors">+5 MISSIONS</button>
-                                        </div>
-                                        <button onClick={handleResetProgress} className="w-full py-1 bg-red-900/50 border border-red-600 text-red-300 text-[9px] hover:bg-red-900 hover:text-white transition-colors">RESET PROGRESS</button>
+                                        <div className="w-full bg-red-900/30 h-1 mt-1"><div className="h-full bg-red-600 w-[95%] animate-pulse"></div></div>
+                                    </>
+                                )}
+                            </div>
+
+                            {/* Nav Buttons (Bunker / Campaign) - Grid */}
+                            <div className={`grid ${isSidebarCollapsed ? 'grid-cols-1 gap-2 p-2' : 'grid-cols-2 gap-1 p-2'} border-b border-cyan-900`}>
+                                <button id="tutorial-bunker-btn" onClick={() => setViewMode('bunker')} className={`flex items-center justify-center p-2 border transition-all hover:scale-105 ${playerAlignment === 'ZOMBIE' ? 'border-lime-600 bg-lime-900/10 text-lime-400' : 'border-cyan-500 bg-cyan-900/10 text-cyan-300'}`} title="BUNKER">
+                                    <span className="text-xl">{playerAlignment === 'ZOMBIE' ? '☣' : '🛡'}</span>
+                                    {!isSidebarCollapsed && <span className="text-[9px] font-bold ml-1">{playerAlignment === 'ZOMBIE' ? 'HIVE' : 'BUNKER'}</span>}
+                                </button>
+                                
+                                <button onClick={() => setViewMode('story')} className="flex items-center justify-center p-2 border border-gray-700 bg-slate-800 text-gray-400 hover:text-white transition-all" title="REPLAY STORY">
+                                    <span className="text-lg">↺</span>
+                                </button>
+                            </div>
+
+                            {/* Editor Panel - Integrated */}
+                            {isEditorMode && !isSidebarCollapsed && (
+                                <div className="p-2 bg-slate-800 border-b border-cyan-500">
+                                    <div className="flex gap-1 mb-1">
+                                        <button onClick={() => { setMissionToEdit(null); setShowMissionEditor(true); }} className="flex-1 py-1 bg-blue-600 text-white text-[8px] font-bold uppercase">NEW MISSION</button>
+                                        <button onClick={handleResetProgress} className="px-2 py-1 bg-red-900/50 border border-red-600 text-red-300 text-[8px]">RST</button>
+                                    </div>
+                                    <div className="flex gap-1">
+                                        <button onClick={() => handleSimulateProgress(1)} className="flex-1 py-1 border border-orange-500/50 text-orange-200 text-[8px] hover:bg-orange-900/20">+1</button>
+                                        <button onClick={() => handleSimulateProgress(5)} className="flex-1 py-1 border border-orange-500/50 text-orange-200 text-[8px] hover:bg-orange-900/20">+5</button>
                                     </div>
                                 </div>
                             )}
 
-                            <div className="p-6 border-b border-cyan-900 bg-red-950/10">
-                                <div className="flex justify-between items-end mb-2">
-                                    <h3 className="text-xs font-bold text-red-500 tracking-widest">{t.sidebar.threatLevelTitle}</h3>
-                                    <span className="text-3xl font-black text-red-600 tracking-tighter drop-shadow-[0_0_10px_rgba(220,38,38,0.5)]">{t.sidebar.threatLevelValue}</span>
-                                </div>
-                                <div className="w-full bg-red-900/30 h-1 mt-1"><div className="h-full bg-red-600 w-[95%] animate-pulse"></div></div>
-                                <div className="text-[9px] text-red-400 mt-1 text-right">{t.sidebar.infectionRate}</div>
-                            </div>
-
-                            <div className="p-4 border-b border-cyan-900">
-                                <button id="tutorial-bunker-btn" onClick={() => setViewMode('bunker')} className={`w-full py-4 border-2 flex items-center justify-center gap-3 transition-all duration-300 group relative overflow-hidden ${playerAlignment === 'ZOMBIE' ? 'border-lime-600 bg-lime-900/10 hover:bg-lime-900/30 text-lime-400' : 'border-cyan-500 bg-cyan-900/10 hover:bg-cyan-900/30 text-cyan-300'}`}>
-                                    <div className={`absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 ${playerAlignment === 'ZOMBIE' ? 'bg-[linear-gradient(45deg,transparent_25%,rgba(132,204,22,0.1)_50%,transparent_75%)]' : 'bg-[linear-gradient(45deg,transparent_25%,rgba(6,182,212,0.1)_50%,transparent_75%)]'} bg-[length:250%_250%] animate-[shimmer_2s_linear_infinite]`}></div>
-                                    <span className="text-2xl group-hover:scale-110 transition-transform">{playerAlignment === 'ZOMBIE' ? '☣' : '🛡'}</span>
-                                    <span className="font-bold tracking-widest text-xs">{playerAlignment === 'ZOMBIE' ? t.sidebar.hiveBtn : t.sidebar.bunkerBtn}</span>
-                                </button>
-                            </div>
-
-                            <div className="p-4 border-b border-cyan-900">
-                                <h4 className="text-[10px] font-bold text-gray-500 uppercase mb-2 tracking-widest">{t.sidebar.campaignMode}</h4>
-                                <div className="flex flex-col gap-2">
-                                    <button disabled={playerAlignment === 'ALIVE'} onClick={() => { setPlayerAlignment('ALIVE'); setViewMode('map'); setHeroes([]); }} className={`w-full py-2 px-3 border text-[9px] font-bold tracking-wider flex justify-between items-center transition-all ${playerAlignment === 'ALIVE' ? 'bg-cyan-900/50 border-cyan-500 text-white' : 'border-gray-800 text-gray-500 hover:border-cyan-700 hover:text-cyan-400'}`}>
-                                        <span>PROTOCOL: LAZARUS</span>
-                                        {playerAlignment === 'ALIVE' && <span className="w-2 h-2 bg-cyan-400 rounded-full animate-pulse"></span>}
-                                    </button>
-                                    <button disabled={playerAlignment === 'ZOMBIE'} onClick={() => { setPlayerAlignment('ZOMBIE'); setViewMode('map'); setHeroes([]); }} className={`w-full py-2 px-3 border text-[9px] font-bold tracking-wider flex justify-between items-center transition-all ${playerAlignment === 'ZOMBIE' ? 'bg-lime-900/50 border-lime-500 text-white' : 'border-gray-800 text-gray-500 hover:border-lime-700 hover:text-lime-400'}`}>
-                                        <span>PROTOCOL: HUNGER</span>
-                                        {playerAlignment === 'ZOMBIE' && <span className="w-2 h-2 bg-lime-400 rounded-full animate-pulse"></span>}
-                                    </button>
-                                </div>
-                            </div>
-
-                            <div id="tutorial-sidebar-missions" className="flex-1 overflow-y-auto p-4 scrollbar-thin scrollbar-thumb-cyan-900">
-                                <h4 className="text-[10px] font-bold text-cyan-600 uppercase mb-3 tracking-widest border-b border-cyan-900 pb-1">{t.sidebar.activeMissions}</h4>
-                                <div className="space-y-2">
+                            {/* COMPACT MISSION LIST */}
+                            <div id="tutorial-sidebar-missions" className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-cyan-900">
+                                {!isSidebarCollapsed && <h4 className="text-[9px] font-bold text-gray-500 uppercase px-2 py-1 bg-slate-950 tracking-widest sticky top-0">{t.sidebar.activeMissions}</h4>}
+                                
+                                <div className="flex flex-col">
                                     {visibleMissions.length > 0 ? (
                                         visibleMissions.map(m => {
                                             const isCompleted = completedMissionIds.has(m.id);
-                                            if (isCompleted) return null;
+                                            if (isCompleted) return null; // Only active here
                                             
                                             const isShield = m.type === 'SHIELD_BASE';
                                             const isStartMission = m.id === 'm_kraven' || m.title.includes("MH0") || m.title.toUpperCase().includes("CADENAS ROTAS");
                                             const isBoss = m.type === 'BOSS';
                                             
-                                            let borderClass = 'border-yellow-500/30 bg-yellow-900/5 hover:bg-yellow-900/20';
-                                            let barClass = 'bg-yellow-500';
-                                            let textClass = 'text-yellow-200';
-                                            let subTextClass = 'text-yellow-500/70';
+                                            // Color Coding
+                                            let barColor = 'bg-yellow-500';
+                                            let textColor = 'text-yellow-100';
+                                            if (isBoss) { barColor = 'bg-purple-500'; textColor = 'text-purple-200'; }
+                                            else if (isShield) { barColor = 'bg-cyan-500'; textColor = 'text-cyan-200'; }
+                                            else if (isStartMission) { barColor = 'bg-emerald-500'; textColor = 'text-emerald-200'; }
 
-                                            if (isBoss) {
-                                                borderClass = 'border-purple-500/30 bg-purple-900/20 hover:bg-purple-900/40 animate-pulse';
-                                                barClass = 'bg-purple-500';
-                                                textClass = 'text-purple-200';
-                                                subTextClass = 'text-purple-500/70';
-                                            } else if (isShield) {
-                                                borderClass = 'border-cyan-500/30 bg-cyan-900/5 hover:bg-cyan-900/20';
-                                                barClass = 'bg-cyan-500';
-                                                textClass = 'text-cyan-200';
-                                                subTextClass = 'text-cyan-500/70';
-                                            } else if (isStartMission) {
-                                                borderClass = 'border-emerald-500/30 bg-emerald-900/5 hover:bg-emerald-900/20';
-                                                barClass = 'bg-emerald-500';
-                                                textClass = 'text-emerald-200';
-                                                subTextClass = 'text-emerald-500/70';
-                                            }
-                                            
                                             return (
                                                 <div 
                                                     key={m.id} 
                                                     onClick={() => setSelectedMission(m)} 
-                                                    className={`p-3 border cursor-pointer transition-all group relative overflow-hidden ${borderClass}`}
+                                                    className={`group cursor-pointer border-b border-cyan-900/30 hover:bg-cyan-900/10 transition-colors relative ${isSidebarCollapsed ? 'h-10 flex items-center justify-center' : 'p-2 pl-3'}`}
+                                                    title={m.title}
                                                 >
-                                                    <div className={`absolute left-0 top-0 bottom-0 w-1 ${barClass} group-hover:w-1.5 transition-all`}></div>
-                                                    <div className="flex justify-between items-start pl-2">
-                                                        <div className={`text-[10px] font-bold ${textClass} group-hover:text-white uppercase tracking-wider`}>{m.title}</div>
-                                                        <div className={`w-2 h-2 ${barClass} rounded-full animate-pulse shrink-0 mt-1`}></div>
-                                                    </div>
-                                                    <div className={`pl-2 mt-1 text-[9px] ${subTextClass}`}>LOC: {m.location.state}</div>
+                                                    {/* Status Bar */}
+                                                    <div className={`absolute left-0 top-0 bottom-0 w-1 ${barColor} group-hover:w-1.5 transition-all`}></div>
+                                                    
+                                                    {isSidebarCollapsed ? (
+                                                        <div className={`w-3 h-3 rounded-full ${barColor} animate-pulse`}></div>
+                                                    ) : (
+                                                        <div className="flex justify-between items-center w-full">
+                                                            <div className="flex-1 min-w-0 pr-2">
+                                                                <div className={`text-[10px] font-bold ${textColor} truncate uppercase`}>{m.title}</div>
+                                                                <div className="text-[8px] text-gray-500 truncate">{m.location.state}</div>
+                                                            </div>
+                                                            <div className="text-[8px] text-gray-600 border border-gray-800 px-1">{m.threatLevel.substring(0,3)}</div>
+                                                        </div>
+                                                    )}
                                                 </div>
                                             );
                                         })
                                     ) : (
-                                        <div className="text-center text-[10px] text-gray-600 italic py-4">{t.sidebar.noMissions}</div>
+                                        !isSidebarCollapsed && <div className="text-center text-[9px] text-gray-600 italic py-4">{t.sidebar.noMissions}</div>
                                     )}
                                     
-                                    {Array.from(completedMissionIds).length > 0 && (
+                                    {/* Completed Section (Compact) */}
+                                    {Array.from(completedMissionIds).length > 0 && !isSidebarCollapsed && (
                                         <>
-                                            <div className="my-4 border-t border-cyan-900/50"></div>
+                                            <div className="text-[8px] font-bold text-gray-700 uppercase px-2 py-1 mt-2 bg-slate-950">COMPLETED</div>
                                             {visibleMissions.filter(m => completedMissionIds.has(m.id)).map(m => (
-                                                <div key={m.id} onClick={() => setSelectedMission(m)} className="p-2 border border-emerald-900/30 bg-emerald-900/5 hover:bg-emerald-900/10 cursor-pointer opacity-70 hover:opacity-100 transition-all pl-3">
+                                                <div key={m.id} onClick={() => setSelectedMission(m)} className="p-2 pl-3 border-b border-cyan-900/10 hover:bg-emerald-900/5 cursor-pointer opacity-60 hover:opacity-100 relative group">
+                                                    <div className="absolute left-0 top-0 bottom-0 w-1 bg-emerald-800"></div>
                                                     <div className="flex justify-between items-center">
-                                                        <div className="text-[9px] font-bold text-emerald-400 line-through decoration-emerald-600">{m.title}</div>
-                                                        <div className="text-[10px] text-emerald-600">✓</div>
+                                                        <div className="text-[9px] text-emerald-500/70 line-through truncate">{m.title}</div>
+                                                        <div className="text-[8px] text-emerald-600">✓</div>
                                                     </div>
                                                 </div>
                                             ))}
@@ -677,15 +671,9 @@ const App: React.FC = () => {
                                     )}
                                 </div>
                             </div>
-
-                            <div className="p-4 border-t border-cyan-900 bg-slate-900 text-center">
-                                <button onClick={() => setViewMode('story')} className="text-[9px] text-cyan-800 hover:text-cyan-500 uppercase tracking-widest transition-colors flex items-center justify-center gap-2 w-full">
-                                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
-                                    {t.sidebar.replayStory}
-                                </button>
-                            </div>
                         </aside>
 
+                        {/* CONTENT AREA */}
                         <main className="flex-1 relative bg-slate-950 overflow-hidden">
                             {viewMode === 'map' && (
                                 <USAMap language={lang} missions={visibleMissions} completedMissionIds={completedMissionIds} onMissionComplete={handleMissionComplete} onMissionSelect={setSelectedMission} onBunkerClick={() => setViewMode('bunker')} factionStates={FACTION_STATES} playerAlignment={playerAlignment} worldStage={worldStage} />
