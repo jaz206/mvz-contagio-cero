@@ -43,23 +43,23 @@ const CerebroScanner = ({ status }: { status: 'SEARCHING' | 'LOCKED' }) => {
 };
 
 const HeroToken: React.FC<{ hero: Hero; onClick: () => void }> = ({ hero, onClick }) => {
-    // FIX: Initialize position at center to ensure visibility before effect runs
+    // Initialize centered to prevent off-screen rendering
     const [pos, setPos] = useState({ top: 50, left: 50 });
-    const [animationDuration] = useState(Math.random() * 2 + 2); // 2-4 seconds for each segment
-    const [idleDuration] = useState(Math.random() * 3 + 1); // 1-4 seconds idle
+    const [animationDuration] = useState(Math.random() * 2 + 2); 
+    const [idleDuration] = useState(Math.random() * 3 + 1); 
 
     useEffect(() => {
         let minX=0, maxX=100, minY=0, maxY=100;
         
         switch (hero.status) {
             case 'AVAILABLE':
-                minX = 10; maxX = 25; minY = 20; maxY = 80; // Barracks
+                minX = 10; maxX = 25; minY = 20; maxY = 80; 
                 break;
             case 'DEPLOYED':
-                minX = 75; maxX = 90; minY = 10; maxY = 40; // Hangar
+                minX = 75; maxX = 90; minY = 10; maxY = 40; 
                 break;
             case 'INJURED':
-                minX = 75; maxX = 90; minY = 60; maxY = 90; // Medbay
+                minX = 75; maxX = 90; minY = 60; maxY = 90; 
                 break;
             default: 
                 return; 
@@ -75,7 +75,7 @@ const HeroToken: React.FC<{ hero: Hero; onClick: () => void }> = ({ hero, onClic
 
         const initialTimer = setTimeout(() => {
             moveToken();
-        }, Math.random() * 1000); 
+        }, 100); // Trigger almost immediately
 
         const interval = setInterval(() => {
             moveToken();
@@ -99,25 +99,33 @@ const HeroToken: React.FC<{ hero: Hero; onClick: () => void }> = ({ hero, onClic
                 e.stopPropagation(); 
                 onClick(); 
             }}
-            className={`absolute w-12 h-12 rounded-full border-2 cursor-pointer hover:scale-110 transition-transform duration-300 z-50 flex items-center justify-center shadow-[0_0_15px] ${colorClass} pointer-events-auto bg-slate-800/80`}
+            className={`absolute w-14 h-14 rounded-full border-2 cursor-pointer hover:scale-110 transition-transform duration-300 z-50 flex items-center justify-center shadow-[0_0_15px] ${colorClass} pointer-events-auto bg-slate-900`}
             style={{ 
                 left: `${pos.left}%`, 
                 top: `${pos.top}%`,
                 transform: `translate(-50%, -50%)`, 
-                transition: `all ${animationDuration}s ease-in-out ${idleDuration}s`,
+                transition: `left ${animationDuration}s ease-in-out ${idleDuration}s, top ${animationDuration}s ease-in-out ${idleDuration}s`,
                 display: 'flex'
             }}
             title={`${hero.alias} [${hero.status}]`}
         >
-            {hero.imageUrl ? (
-                <img src={hero.imageUrl} alt={hero.alias} className="w-full h-full rounded-full object-cover pointer-events-none" onError={(e) => e.currentTarget.style.display = 'none'} />
-            ) : null}
-            
-            <span className={`text-[10px] font-bold text-white pointer-events-none absolute ${hero.imageUrl ? 'opacity-0' : 'opacity-100'}`}>
-                {hero.alias.substring(0,2)}
+            {/* 1. Initials Background Layer (Always visible fallback) */}
+            <span className="text-[10px] font-bold text-white pointer-events-none absolute z-0">
+                {hero.alias ? hero.alias.substring(0,2) : '??'}
             </span>
             
-            <div className={`absolute -top-1 -right-1 w-4 h-4 rounded-full border-2 border-black pointer-events-none ${hero.status === 'AVAILABLE' ? 'bg-emerald-500' : hero.status === 'INJURED' ? 'bg-red-600' : 'bg-yellow-400'}`}></div>
+            {/* 2. Image Layer (Covers initials if loaded) */}
+            {hero.imageUrl && (
+                <img 
+                    src={hero.imageUrl} 
+                    alt={hero.alias} 
+                    className="w-full h-full rounded-full object-cover pointer-events-none relative z-10" 
+                    onError={(e) => e.currentTarget.style.display = 'none'} 
+                />
+            )}
+            
+            {/* 3. Status Indicator Dot */}
+            <div className={`absolute -top-1 -right-1 w-4 h-4 rounded-full border-2 border-black pointer-events-none z-20 ${hero.status === 'AVAILABLE' ? 'bg-emerald-500' : hero.status === 'INJURED' ? 'bg-red-600' : 'bg-yellow-400'}`}></div>
         </div>
     );
 };
@@ -236,6 +244,7 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({ heroes, missions
   };
 
   const assignedMissionName = selectedHero?.assignedMissionId ? missions.find(m => m.id === selectedHero.assignedMissionId)?.title : null;
+  
   const availableTemplates = dbTemplates.filter(template => {
       if (!isEditingExisting) {
           const exists = heroes.some(h => h.templateId === template.id);
@@ -252,7 +261,7 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({ heroes, missions
     <div className="w-full h-full bg-slate-950 font-mono relative overflow-hidden select-none">
         
         {/* BUNKER BLUEPRINT SVG BACKGROUND */}
-        <div className="absolute inset-0 z-0">
+        <div className="absolute inset-0 z-0 pointer-events-auto">
             <svg width="100%" height="100%" viewBox="0 0 1000 600" preserveAspectRatio="xMidYMid slice" className="opacity-40">
                 <defs>
                     <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
@@ -386,7 +395,21 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({ heroes, missions
             </div>
         )}
 
-        {/* RECRUIT MODAL */}
+        {/* ASSIGN MODAL & RECRUIT MODAL ... */}
+        {/* ... (Keep existing modals unchanged) ... */}
+        {showAssignModal && (
+            <div className="absolute inset-0 z-[60] flex items-center justify-center bg-slate-950/90 backdrop-blur-sm p-4">
+                <div className="w-full max-w-lg bg-slate-900 border border-cyan-500 shadow-[0_0_50px_rgba(6,182,212,0.3)]">
+                    <div className="bg-cyan-900/30 p-4 border-b border-cyan-700 flex justify-between items-center"><h3 className="text-cyan-300 font-bold tracking-widest">{t.bunker.assignModalTitle}</h3><button onClick={() => setShowAssignModal(false)} className="text-cyan-500 hover:text-white">✕</button></div>
+                    <div className="p-4 max-h-[60vh] overflow-y-auto space-y-2">
+                        {assignError && <div className="bg-red-900/50 border border-red-500 text-red-300 text-xs p-2 text-center mb-2 font-bold animate-pulse">{assignError}</div>}
+                        {missions.length === 0 ? <div className="text-center text-gray-500 py-8 italic">{t.bunker.noMissions}</div> : missions.map(mission => <div key={mission.id} onClick={() => handleAssignClick(mission.id)} className="border border-cyan-900/50 bg-slate-950/50 hover:bg-cyan-900/20 hover:border-cyan-500 cursor-pointer p-3 group transition-all"><div className="flex justify-between items-center mb-1"><div className="font-bold text-cyan-200 group-hover:text-white text-sm">{mission.title}</div><div className="text-[10px] text-red-500 border border-red-900 px-1">{mission.threatLevel}</div></div><div className="text-[10px] text-gray-400">LOC: {mission.location.state}</div></div>)}
+                    </div>
+                    <div className="p-4 border-t border-cyan-900 bg-slate-900 flex justify-end"><button onClick={() => setShowAssignModal(false)} className="px-4 py-2 text-xs text-gray-400 hover:text-white">{t.bunker.cancel}</button></div>
+                </div>
+            </div>
+        )}
+
         {showRecruitModal && (
             <div className="absolute inset-0 z-[60] flex items-center justify-center bg-slate-950/95 backdrop-blur-sm p-4 overflow-y-auto">
                 <div className="w-full max-w-5xl bg-slate-900 border-2 border-cyan-500 shadow-[0_0_50px_rgba(6,182,212,0.3)] flex flex-col">

@@ -73,7 +73,7 @@ export const translations = {
       roster: "LISTA DE ACTIVOS",
       recruit: "RECLUTAR",
       currentStory: "SITUACIÓN ACTUAL",
-      objectives: "OBJETIVOS PRIORITARIOS",
+      objectives: "OBJETIVOS PERSONALES",
       status: "ESTADO OPERATIVO",
       unassign: "RETIRAR",
       assign: "ASIGNAR A MISIÓN",
