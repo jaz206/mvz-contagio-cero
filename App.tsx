@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useMemo } from 'react';
 import { translations, Language } from './translations';
 import { User } from 'firebase/auth';
@@ -40,7 +39,7 @@ const INITIAL_HEROES: Hero[] = [
             'Rastro Fantasma: Triangular la señal del reloj Stark en los túneles de la Zona Roja. Confirmar estado de MJ: Superviviente o Hostil.'
         ],
         completedObjectiveIndices: [],
-        imageUrl: 'https://i.pinimg.com/736x/97/f1/96/97f1965bf162c5eb2f7aa8cb4be4bf97.jpg',
+        imageUrl: 'https://i.pinimg.com/73x/97/f1/96/97f1965bf162c5eb2f7aa8cb4be4bf97.jpg',
         stats: { strength: 8, agility: 10, intellect: 9 },
         assignedMissionId: null
     },
@@ -58,7 +57,7 @@ const INITIAL_HEROES: Hero[] = [
             'Cosecha Sangrienta: Eliminar a los científicos responsables de la Tríada que experimentaron con él.'
         ],
         completedObjectiveIndices: [],
-        imageUrl: 'https://i.pinimg.com/736x/31/eb/4c/31eb4c0f0dba5c96c80da093a4d83a50.jpg',
+        imageUrl: 'https://i.pinimg.com/73x/31/eb/4c/31eb4c0f0dba5c96c80da093a4d83a50.jpg',
         stats: { strength: 9, agility: 7, intellect: 4 },
         assignedMissionId: 'm_kraven'
     },
@@ -76,7 +75,7 @@ const INITIAL_HEROES: Hero[] = [
             'Extracción Letal: Infiltrarse en la torre de Kingpin y extraer a Hawkeye, cueste lo que cueste.'
         ],
         completedObjectiveIndices: [],
-        imageUrl: 'https://i.pinimg.com/736x/a5/8f/e9/a58fe99516a31f494c1d4dcb22231c46.jpg',
+        imageUrl: 'https://i.pinimg.com/73x/a5/8f/e9/a58fe99516a31f494c1d4dcb22231c46.jpg',
         stats: { strength: 5, agility: 9, intellect: 8 },
         assignedMissionId: null
     },
@@ -94,7 +93,7 @@ const INITIAL_HEROES: Hero[] = [
             'Misericordia Fraternal: Localizar a Thor Zombi y concederle el descanso final.'
         ],
         completedObjectiveIndices: [],
-        imageUrl: 'https://i.pinimg.com/736x/98/50/d0/9850d063395efd498cce84be09da69fd.jpg',
+        imageUrl: 'https://i.pinimg.com/73x/98/50/d0/9850d063395efd498cce84be09da69fd.jpg',
         stats: { strength: 7, agility: 6, intellect: 10 },
         assignedMissionId: null
     },
@@ -112,7 +111,7 @@ const INITIAL_HEROES: Hero[] = [
             'Informe de Bajas: Localizar a Sue, Johnny y Ben. Confirmar estado: Supervivientes o Hostiles.'
         ],
         completedObjectiveIndices: [],
-        imageUrl: 'https://i.pinimg.com/736x/58/3c/d3/583cd39457c96e1858ecfbab1db06cce.jpg',
+        imageUrl: 'https://i.pinimg.com/73x/58/3c/d3/583cd39457c96e1858ecfbab1db06cce.jpg',
         stats: { strength: 5, agility: 6, intellect: 10 },
         assignedMissionId: null
     },
@@ -130,7 +129,7 @@ const INITIAL_HEROES: Hero[] = [
             'Paz Gamma: Localizar a Hulk y encontrar una forma de neutralizarlo o eliminarlo.'
         ],
         completedObjectiveIndices: [],
-        imageUrl: 'https://i.pinimg.com/736x/bb/2a/f6/bb2af63dbdbf782daf9af337915489c0.jpg',
+        imageUrl: 'https://i.pinimg.com/73x/bb/2a/f6/bb2af63dbdbf782daf9af337915489c0.jpg',
         stats: { strength: 10, agility: 5, intellect: 7 },
         assignedMissionId: null
     }
@@ -148,7 +147,7 @@ const INITIAL_ZOMBIE_HEROES: Hero[] = [
         currentStory: "CLASSIFIED",
         objectives: ["Consume Brains", "Lead the Horde"],
         completedObjectiveIndices: [],
-        imageUrl: 'https://i.pinimg.com/736x/1a/2b/3c/1a2b3c...jpg', // Placeholder
+        imageUrl: 'https://i.pinimg.com/73x/1a/2b/3c/1a2b3c...jpg', // Placeholder
         stats: { strength: 8, agility: 8, intellect: 8 },
         assignedMissionId: null
     },
@@ -220,16 +219,16 @@ const App: React.FC = () => {
 
     const handleGuestLogin = () => {
         setIsGuest(true);
-        setPlayerAlignment('ALIVE');
+        setPlayerAlignment('ALIVE'); // Se establece inmediatamente
         setShowStory(true);
         setViewMode('story');
     };
 
     const handleLogout = async () => {
-      await logout();
-      setIsGuest(false);
-      setIsEditorMode(false);
-      setViewMode('login');
+        await logout();
+        setIsGuest(false);
+        setIsEditorMode(false);
+        setViewMode('login');
     };
 
     const mergeWithLatestContent = (savedHeroes: Hero[], isZombie: boolean): Hero[] => {
@@ -260,10 +259,12 @@ const App: React.FC = () => {
         loadMissions();
     }, [isEditorMode]);
 
+    // 🌟 LÓGICA DE CARGA DE DATOS CORREGIDA 🌟
     useEffect(() => {
         const loadData = async () => {
             if (isEditorMode) return; 
 
+            // Solo procede si ya se estableció la alineación (terminado el story mode o editor login)
             if ((user || isGuest) && playerAlignment) {
                 let profileHeroes: Hero[] = [];
                 let profileMissions: string[] = [];
@@ -284,18 +285,27 @@ const App: React.FC = () => {
                     }
                 }
 
+                const initialHeroesList = playerAlignment === 'ZOMBIE' ? INITIAL_ZOMBIE_HEROES : INITIAL_HEROES;
+
+                // CORRECCIÓN CLAVE: Si no se cargó un perfil, inicializa con la lista de héroes por defecto.
                 if (profileHeroes.length > 0) {
                     setHeroes(profileHeroes);
-                    setCompletedMissionIds(new Set(profileMissions));
-                    checkGlobalEvents(profileMissions.length);
                 } else {
-                    setHeroes(playerAlignment === 'ZOMBIE' ? INITIAL_ZOMBIE_HEROES : INITIAL_HEROES);
-                    setCompletedMissionIds(new Set());
+                    // Si es la primera vez (no hay perfil guardado), usamos los héroes iniciales.
+                    setHeroes(initialHeroesList);
                 }
+
+                setCompletedMissionIds(new Set(profileMissions));
+                checkGlobalEvents(profileMissions.length);
             }
         };
-        loadData();
+
+        // Solo carga si se ha establecido la alineación.
+        if (playerAlignment) {
+            loadData();
+        }
     }, [user, isGuest, playerAlignment, isEditorMode]);
+
 
     useEffect(() => {
         if (isEditorMode || !user || !playerAlignment) return;
@@ -319,7 +329,7 @@ const App: React.FC = () => {
         const hasSeenTutorial = localStorage.getItem(tutorialKey);
 
         if (!hasSeenTutorial && viewMode === 'map') {
-             setTimeout(() => setShowTutorial(true), 500);
+            setTimeout(() => setShowTutorial(true), 500);
         }
     }, [playerAlignment, showStory, user, viewMode, isEditorMode]);
 
@@ -374,18 +384,18 @@ const App: React.FC = () => {
     const handleEventAcknowledge = () => setActiveGlobalEvent(null);
     
     const handleToggleHeroObjective = (heroId: string, idx: number) => {
-         const hIndex = heroes.findIndex(h => h.id === heroId);
-         if (hIndex >= 0) {
-             const newHeroes = [...heroes];
-             const h = newHeroes[hIndex];
-             const indices = h.completedObjectiveIndices ? [...h.completedObjectiveIndices] : [];
-             if (indices.includes(idx)) {
-                 newHeroes[hIndex] = { ...h, completedObjectiveIndices: indices.filter(i => i !== idx) };
-             } else {
-                 newHeroes[hIndex] = { ...h, completedObjectiveIndices: [...indices, idx] };
-             }
-             setHeroes(newHeroes);
-         }
+        const hIndex = heroes.findIndex(h => h.id === heroId);
+        if (hIndex >= 0) {
+            const newHeroes = [...heroes];
+            const h = newHeroes[hIndex];
+            const indices = h.completedObjectiveIndices ? [...h.completedObjectiveIndices] : [];
+            if (indices.includes(idx)) {
+                newHeroes[hIndex] = { ...h, completedObjectiveIndices: indices.filter(i => i !== idx) };
+            } else {
+                newHeroes[hIndex] = { ...h, completedObjectiveIndices: [...indices, idx] };
+            }
+            setHeroes(newHeroes);
+        }
     };
 
     const getMissionFaction = (state: string) => {
@@ -427,12 +437,12 @@ const App: React.FC = () => {
                 type: 'STANDARD',
                 prereq: 'm_kraven'
             },
-             { id: 'base_alpha', title: t.missions.bases.alpha, description: [t.missions.bases.desc], objectives: [{ title: t.missions.bases.objSecure, desc: '' }, { title: t.missions.bases.objRetrieve, desc: '' }], location: { state: 'Colorado', coordinates: [-105.7821, 39.5501] }, threatLevel: 'MEDIUM', type: 'SHIELD_BASE' },
-             { id: 'base_beta', title: t.missions.bases.beta, description: [t.missions.bases.desc], objectives: [{ title: t.missions.bases.objSecure, desc: '' }, { title: t.missions.bases.objRetrieve, desc: '' }], location: { state: 'New Jersey', coordinates: [-74.4, 40.0] }, threatLevel: 'MEDIUM', type: 'SHIELD_BASE' },
-             { id: 'base_gamma', title: t.missions.bases.gamma, description: [t.missions.bases.desc], objectives: [{ title: t.missions.bases.objSecure, desc: '' }, { title: t.missions.bases.objRetrieve, desc: '' }], location: { state: 'Massachusetts', coordinates: [-71.3, 42.4] }, threatLevel: 'MEDIUM', type: 'SHIELD_BASE' },
-             { id: 'base_delta', title: t.missions.bases.delta, description: [t.missions.bases.desc], objectives: [{ title: t.missions.bases.objSecure, desc: '' }, { title: t.missions.bases.objRetrieve, desc: '' }], location: { state: 'Maryland', coordinates: [-76.6, 39.0] }, threatLevel: 'MEDIUM', type: 'SHIELD_BASE' },
-             { id: 'base_epsilon', title: t.missions.bases.epsilon, description: [t.missions.bases.desc], objectives: [{ title: t.missions.bases.objSecure, desc: '' }, { title: t.missions.bases.objRetrieve, desc: '' }], location: { state: 'Connecticut', coordinates: [-72.7, 41.6] }, threatLevel: 'MEDIUM', type: 'SHIELD_BASE' },
-             { id: 'base_zeta', title: t.missions.bases.zeta, description: [t.missions.bases.desc], objectives: [{ title: t.missions.bases.objSecure, desc: '' }, { title: t.missions.bases.objRetrieve, desc: '' }], location: { state: 'Pennsylvania', coordinates: [-78.0, 40.5] }, threatLevel: 'MEDIUM', type: 'SHIELD_BASE' }
+            { id: 'base_alpha', title: t.missions.bases.alpha, description: [t.missions.bases.desc], objectives: [{ title: t.missions.bases.objSecure, desc: '' }, { title: t.missions.bases.objRetrieve, desc: '' }], location: { state: 'Colorado', coordinates: [-105.7821, 39.5501] }, threatLevel: 'MEDIUM', type: 'SHIELD_BASE' },
+            { id: 'base_beta', title: t.missions.bases.beta, description: [t.missions.bases.desc], objectives: [{ title: t.missions.bases.objSecure, desc: '' }, { title: t.missions.bases.objRetrieve, desc: '' }], location: { state: 'New Jersey', coordinates: [-74.4, 40.0] }, threatLevel: 'MEDIUM', type: 'SHIELD_BASE' },
+            { id: 'base_gamma', title: t.missions.bases.gamma, description: [t.missions.bases.desc], objectives: [{ title: t.missions.bases.objSecure, desc: '' }, { title: t.missions.bases.objRetrieve, desc: '' }], location: { state: 'Massachusetts', coordinates: [-71.3, 42.4] }, threatLevel: 'MEDIUM', type: 'SHIELD_BASE' },
+            { id: 'base_delta', title: t.missions.bases.delta, description: [t.missions.bases.desc], objectives: [{ title: t.missions.bases.objSecure, desc: '' }, { title: t.missions.bases.objRetrieve, desc: '' }], location: { state: 'Maryland', coordinates: [-76.6, 39.0] }, threatLevel: 'MEDIUM', type: 'SHIELD_BASE' },
+            { id: 'base_epsilon', title: t.missions.bases.epsilon, description: [t.missions.bases.desc], objectives: [{ title: t.missions.bases.objSecure, desc: '' }, { title: t.missions.bases.objRetrieve, desc: '' }], location: { state: 'Connecticut', coordinates: [-72.7, 41.6] }, threatLevel: 'MEDIUM', type: 'SHIELD_BASE' },
+            { id: 'base_zeta', title: t.missions.bases.zeta, description: [t.missions.bases.desc], objectives: [{ title: t.missions.bases.objSecure, desc: '' }, { title: t.missions.bases.objRetrieve, desc: '' }], location: { state: 'Pennsylvania', coordinates: [-78.0, 40.5] }, threatLevel: 'MEDIUM', type: 'SHIELD_BASE' }
         ];
 
         const missionMap = new Map<string, Mission>();
@@ -440,7 +450,6 @@ const App: React.FC = () => {
         customMissions.forEach(m => missionMap.set(m.id, m));
         const missionList = Array.from(missionMap.values());
 
-        // SAFETY CHECK FOR GALACTUS with Optional Chaining
         if (worldStage === 'GALACTUS' && playerAlignment === 'ALIVE') {
             const galactusData = t.missions?.galactus; 
             missionList.push({
@@ -551,7 +560,7 @@ const App: React.FC = () => {
                     <header className="flex-none h-16 border-b border-cyan-900 bg-slate-900/90 flex items-center justify-between px-6 z-30 relative">
                         <div className="flex items-center gap-4">
                             <div className="w-10 h-10 border-2 border-cyan-500 rounded-full flex items-center justify-center overflow-hidden bg-slate-950 shadow-[0_0_10px_rgba(6,182,212,0.3)]">
-                                <img src="https://i.pinimg.com/736x/63/1e/3a/631e3a68228c97963e78381ad11bf3bb.jpg" alt="Logo" className="w-full h-full object-cover" />
+                                <img src="https://i.pinimg.com/73x/63/1e/3a/631e3a68228c97963e78381ad11bf3bb.jpg" alt="Logo" className="w-full h-full object-cover" />
                             </div>
                             <div>
                                 <h1 className="text-xl font-bold tracking-[0.2em] text-cyan-100 leading-none hidden md:block">{t.header.project}</h1>
@@ -642,7 +651,6 @@ const App: React.FC = () => {
                                     const factionMissions = missionsByFaction[faction];
                                     if (!factionMissions || factionMissions.length === 0) return null;
                                     
-                                    // Faction Colors
                                     let headerColor = 'text-gray-400 border-gray-700 bg-gray-900/50';
                                     let textColor = 'text-gray-400';
                                     let barColor = 'bg-gray-700';
@@ -657,7 +665,6 @@ const App: React.FC = () => {
                                     return (
                                         <div key={faction} className="mb-1">
                                             {!isSidebarCollapsed ? (
-                                                // EXPANDED SIDEBAR HEADER
                                                 <div 
                                                     onClick={() => toggleGroup(faction)}
                                                     className={`flex justify-between items-center px-2 py-1 cursor-pointer hover:brightness-125 transition-all select-none border-l-4 ${headerColor}`}
@@ -672,7 +679,6 @@ const App: React.FC = () => {
                                                     </div>
                                                 </div>
                                             ) : (
-                                                // COLLAPSED SIDEBAR ICON (Tooltip only)
                                                 <div className="flex justify-center py-2 relative group" onClick={() => toggleGroup(faction)}>
                                                     <div className={`w-2 h-2 rounded-full ${barColor} ${activeCount > 0 ? 'animate-pulse' : ''}`}></div>
                                                     <div className="absolute left-full top-0 ml-2 bg-slate-900 border border-cyan-500 text-xs px-2 py-1 whitespace-nowrap hidden group-hover:block z-50">
@@ -681,7 +687,6 @@ const App: React.FC = () => {
                                                 </div>
                                             )}
 
-                                            {/* MISSION LIST (Only if not collapsed group AND sidebar is open) */}
                                             {!collapsedGroups.has(faction) && !isSidebarCollapsed && (
                                                 <div className="bg-slate-900/50 animate-fade-in origin-top">
                                                     {factionMissions.map(m => {
@@ -708,12 +713,10 @@ const App: React.FC = () => {
                                                                 key={m.id} 
                                                                 onClick={() => setSelectedMission(m)} 
                                                                 className={`group cursor-pointer border-b border-cyan-900/10 hover:bg-cyan-900/10 transition-colors relative ${itemOpacity} p-2 pl-3`}
-                                                                title={`${m.title} (${m.location.state})`} // Tooltip for collapsed view
+                                                                title={`${m.title} (${m.location.state})`}
                                                             >
-                                                                {/* Status Line */}
                                                                 <div className={`absolute left-0 top-0 bottom-0 w-[3px] ${itemBarColor} group-hover:w-1 transition-all`}></div>
                                                                 
-                                                                {/* Icon based on type */}
                                                                 <div className="shrink-0 text-[10px] opacity-70">
                                                                     {isShield ? '📡' : isBoss ? '💀' : isStartMission ? '★' : '⚔'}
                                                                 </div>
