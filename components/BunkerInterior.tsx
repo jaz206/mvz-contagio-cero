@@ -412,7 +412,7 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
             {/* Header Modal */}
             <div className="p-4 border-b border-cyan-800 bg-cyan-900/20 flex justify-between items-center">
               <h2 className="text-xl font-bold tracking-[0.2em] text-cyan-200 uppercase">
-                {t.file.title} // {selectedHero.alias}
+                {t.tutorial.file.title} // {selectedHero.alias}
               </h2>
               <button onClick={() => setSelectedHeroId(null)} className="text-cyan-500 hover:text-white px-2">✕</button>
             </div>

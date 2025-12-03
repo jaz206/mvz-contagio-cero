@@ -430,9 +430,10 @@ export const USAMap: React.FC<USAMapProps> = ({ language, missions, completedMis
     }
 
     // --- MISSION LINES ---
-    g.selectAll('path.mission-line').data(missions.filter(m => m.prereq)).join('path').attr('class', 'mission-line')
+    g.selectAll('path.mission-line').data(missions.filter(m => m && m.prereq)).join('path').attr('class', 'mission-line')
       .attr('d', (d) => {
-          const startMission = missions.find(m => m.id === d.prereq);
+          if (!d) return null;
+          const startMission = missions.find(m => m && m.id === d.prereq);
           if (!startMission) return null;
           const startCoords = projection(startMission.location.coordinates);
           const endCoords = projection(d.location.coordinates);
@@ -445,12 +446,15 @@ export const USAMap: React.FC<USAMapProps> = ({ language, missions, completedMis
       .attr('fill', 'none').attr('stroke', '#eab308').attr('stroke-width', 1.5).attr('stroke-dasharray', '4,4').attr('opacity', 0.6).append('animate').attr('attributeName', 'stroke-dashoffset').attr('from', '0').attr('to', '-8').attr('dur', '1s').attr('repeatCount', 'indefinite');
 
     // --- MISSION TOKENS ---
-    const missionGroups = g.selectAll('g.mission').data(missions).join('g').attr('class', 'mission cursor-pointer hover:opacity-100').attr('transform', (d) => {
+    const validMissions = missions.filter(m => m && m.id && m.location && m.location.coordinates);
+
+    const missionGroups = g.selectAll('g.mission').data(validMissions).join('g').attr('class', 'mission cursor-pointer hover:opacity-100').attr('transform', (d) => {
+        if (!d) return 'translate(-100,-100)';
         const coords = projection(d.location.coordinates);
         return coords ? `translate(${coords[0]}, ${coords[1]})` : 'translate(-100,-100)';
       }).on('click', (e, d) => { e.stopPropagation(); onMissionSelect(d); });
     
-    missionGroups.append('title').text(d => d.title);
+    missionGroups.append('title').text(d => d ? d.title : 'Mission');
     missionGroups.append('circle').attr('class', 'mission-dot').attr('r', (d) => completedMissionIds.has(d.id) ? 6 : 4.5).attr('fill', (d) => {
           if (completedMissionIds.has(d.id)) return '#10b981'; 
           if (d.type === 'SHIELD_BASE') return '#06b6d4'; 
@@ -475,6 +479,7 @@ export const USAMap: React.FC<USAMapProps> = ({ language, missions, completedMis
       }).attr('stroke-width', 1);
 
     iconGroup.each(function(d) {
+        if (!d) return;
         const sel = d3.select(this);
         const isCompleted = completedMissionIds.has(d.id);
         if (isCompleted) {

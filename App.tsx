@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useMemo } from 'react';
 import { translations, Language } from './translations';
 import { User } from 'firebase/auth';
@@ -52,7 +53,7 @@ const INITIAL_HEROES: Hero[] = [
         currentStory: "Peter no hace chistes. La máscara está sucia y huele a sangre seca. El día del brote, Peter tuvo que tomar una decisión en fracciones de segundo: detener un camión cisterna fuera de control o llegar a casa de Tía May. Salvó el camión. Cuando llegó a Queens, la casa estaba en silencio. Encontró a May sentada en su sillón, ya transformada, con la boca manchada de sangre. Peter no pudo matarla; la envolvió en una crisálida de telaraña reforzada y selló la puerta con tablas. Ella sigue allí, siseando en la oscuridad. De MJ solo tiene un rastro digital. Le regaló un reloj con rastreador de Stark Industries. La señal sigue activa. Se mueve por los túneles del metro y las azoteas de la Zona Roja. Peter no sabe si persigue a su esposa viva huyendo, a una MJ zombie vagando sin rumbo, o a una Abominación que se tragó el reloj. Cada noche, Peter sale a cazar esa señal, aterrorizado de alcanzarla y descubrir la verdad.",
         objectives: [
             'El Fantasma de Queens: Peter debe volver a su casa. Debe entrar, enfrentarse a lo que queda de Tía May, matarla definitivamente para darle descanso y recuperar el álbum de fotos familiar que ella protegía.',
-            'Rastro Fantasma: Triangular la señal del reloj Stark en los túneles de la Zona Roja. Confirmar estado de MJ: Superviviente o Hostil.'
+            'Rastro Fantasma: Triangular la señal del reloj Stark en los túneles del metro de la Zona Roja. Confirmar estado de MJ: Superviviente o Hostil.'
         ],
         completedObjectiveIndices: [],
         imageUrl: 'https://i.pinimg.com/736x/97/f1/96/97f1965bf162c5eb2f7aa8cb4be4bf97.jpg',
@@ -440,7 +441,10 @@ const App: React.FC = () => {
 
         const missionMap = new Map<string, Mission>();
         hardcodedMissions.forEach(m => missionMap.set(m.id, m));
-        customMissions.forEach(m => missionMap.set(m.id, m));
+        // Safe guard against potential undefined missions from DB
+        customMissions.forEach(m => {
+            if (m && m.id) missionMap.set(m.id, m);
+        });
         const missionList = Array.from(missionMap.values());
 
         if (worldStage === 'GALACTUS' && playerAlignment === 'ALIVE') {
@@ -467,6 +471,7 @@ const App: React.FC = () => {
         }
 
         return allMissions.filter(m => {
+            if (!m) return false;
             const isCompleted = completedMissionIds.has(m.id);
             const prereqMet = !m.prereq || completedMissionIds.has(m.prereq);
             return isCompleted || prereqMet;
@@ -622,11 +627,12 @@ const App: React.FC = () => {
                                 <div className="space-y-2">
                                     {visibleMissions.length > 0 ? (
                                         visibleMissions.map(m => {
+                                            if (!m) return null;
                                             const isCompleted = completedMissionIds.has(m.id);
                                             if (isCompleted) return null;
                                             
                                             const isShield = m.type === 'SHIELD_BASE';
-                                            const isStartMission = m.id === 'm_kraven' || m.title.includes("MH0") || m.title.toUpperCase().includes("CADENAS ROTAS");
+                                            const isStartMission = m.id === 'm_kraven' || (m.title && m.title.includes("MH0")) || (m.title && m.title.toUpperCase().includes("CADENAS ROTAS"));
                                             const isBoss = m.type === 'BOSS';
                                             
                                             let borderClass = 'border-yellow-500/30 bg-yellow-900/5 hover:bg-yellow-900/20';
@@ -659,10 +665,10 @@ const App: React.FC = () => {
                                                 >
                                                     <div className={`absolute left-0 top-0 bottom-0 w-1 ${barClass} group-hover:w-1.5 transition-all`}></div>
                                                     <div className="flex justify-between items-start pl-2">
-                                                        <div className={`text-[10px] font-bold ${textClass} group-hover:text-white uppercase tracking-wider`}>{m.title}</div>
+                                                        <div className={`text-[10px] font-bold ${textClass} group-hover:text-white uppercase tracking-wider`}>{m.title || 'UNKNOWN MISSION'}</div>
                                                         <div className={`w-2 h-2 ${barClass} rounded-full animate-pulse shrink-0 mt-1`}></div>
                                                     </div>
-                                                    <div className={`pl-2 mt-1 text-[9px] ${subTextClass}`}>LOC: {m.location.state}</div>
+                                                    <div className={`pl-2 mt-1 text-[9px] ${subTextClass}`}>LOC: {m.location?.state || 'UNKNOWN'}</div>
                                                 </div>
                                             );
                                         })
@@ -673,10 +679,10 @@ const App: React.FC = () => {
                                     {Array.from(completedMissionIds).length > 0 && (
                                         <>
                                             <div className="my-4 border-t border-cyan-900/50"></div>
-                                            {visibleMissions.filter(m => completedMissionIds.has(m.id)).map(m => (
+                                            {visibleMissions.filter(m => m && completedMissionIds.has(m.id)).map(m => (
                                                 <div key={m.id} onClick={() => setSelectedMission(m)} className="p-2 border border-emerald-900/30 bg-emerald-900/5 hover:bg-emerald-900/10 cursor-pointer opacity-70 hover:opacity-100 transition-all pl-3">
                                                     <div className="flex justify-between items-center">
-                                                        <div className="text-[9px] font-bold text-emerald-400 line-through decoration-emerald-600">{m.title}</div>
+                                                        <div className="text-[9px] font-bold text-emerald-400 line-through decoration-emerald-600">{m.title || 'COMPLETED MISSION'}</div>
                                                         <div className="text-[10px] text-emerald-600">✓</div>
                                                     </div>
                                                 </div>
@@ -702,7 +708,7 @@ const App: React.FC = () => {
                             {viewMode === 'bunker' && (
                                 <BunkerInterior 
                                     heroes={heroes} 
-                                    missions={visibleMissions.filter(m => !completedMissionIds.has(m.id))} 
+                                    missions={visibleMissions.filter(m => m && !completedMissionIds.has(m.id))} 
                                     onAssign={(heroId, missionId) => { 
                                         const hIndex = heroes.findIndex(h => h.id === heroId); 
                                         if(hIndex >= 0) { 

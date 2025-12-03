@@ -33,12 +33,22 @@ export const TutorialOverlay: React.FC<TutorialOverlayProps> = ({ language, onCo
     ];
 
     const currentStep = steps[stepIndex];
-    // Helper to get text safe from key
-    const stepText = t[currentStep.translationKey as keyof typeof t] as { title: string, text: string };
+    
+    // Helper to get text safe from key with safeguards
+    const getStepText = () => {
+        if (!currentStep) return { title: '', text: '' };
+        const data = t[currentStep.translationKey as keyof typeof t];
+        if (data && typeof data === 'object' && 'title' in data) {
+            return data as { title: string, text: string };
+        }
+        return { title: 'TUTORIAL', text: '' };
+    };
+
+    const stepText = getStepText();
 
     useEffect(() => {
         const updateRect = () => {
-            if (currentStep.targetId) {
+            if (currentStep && currentStep.targetId) {
                 const element = document.getElementById(currentStep.targetId);
                 if (element) {
                     setTargetRect(element.getBoundingClientRect());
@@ -70,7 +80,7 @@ export const TutorialOverlay: React.FC<TutorialOverlayProps> = ({ language, onCo
     // Advanced Positioning Logic
     const getBoxStyle = (): React.CSSProperties => {
         // 1. Center Position (Default or Forced)
-        if (!targetRect || !currentStep.targetId || currentStep.position === 'center') {
+        if (!targetRect || !currentStep?.targetId || currentStep.position === 'center') {
             return {
                 top: '50%',
                 left: '50%',
@@ -113,6 +123,8 @@ export const TutorialOverlay: React.FC<TutorialOverlayProps> = ({ language, onCo
         };
     };
 
+    if (!stepText.title) return null;
+
     return (
         <div className={`fixed inset-0 z-[100] transition-all duration-500 ${targetRect ? 'bg-transparent' : 'bg-slate-950/80 backdrop-blur-sm'}`}>
             
@@ -136,7 +148,7 @@ export const TutorialOverlay: React.FC<TutorialOverlayProps> = ({ language, onCo
                     <div className="absolute bottom-0 right-0 w-2 h-2 bg-cyan-400"></div>
                     
                     {/* Connector Line */}
-                    <div className={`absolute top-1/2 w-10 h-[1px] bg-cyan-500 hidden md:block ${currentStep.position === 'left' ? '-right-10' : '-left-10'}`}></div>
+                    <div className={`absolute top-1/2 w-10 h-[1px] bg-cyan-500 hidden md:block ${currentStep?.position === 'left' ? '-right-10' : '-left-10'}`}></div>
                 </div>
             )}
 
