@@ -3,7 +3,7 @@ import { translations, Language } from './translations';
 import { User } from 'firebase/auth';
 import { auth } from './firebaseConfig';
 import { onAuthStateChanged } from 'firebase/auth';
-import { getUserProfile, saveUserProfile, getCustomMissions, getHeroTemplates } from './services/dbService'; // AÑADIDO getHeroTemplates
+import { getUserProfile, saveUserProfile, getCustomMissions, getHeroTemplates } from './services/dbService';
 import { logout } from './services/authService';
 
 import { LoginScreen } from './components/LoginScreen';
@@ -64,6 +64,8 @@ const INITIAL_HEROES: Hero[] = [
         ],
         completedObjectiveIndices: [],
         imageUrl: 'https://i.pinimg.com/736x/97/f1/96/97f1965bf162c5eb2f7aa8cb4be4bf97.jpg',
+        // AÑADIDO: Ficha de juego solicitada
+        characterSheetUrl: 'https://i.pinimg.com/736x/c2/61/0a/c2610afec3022fc70a882e1452e167b8.jpg',
         stats: { strength: 8, agility: 10, intellect: 9 },
         assignedMissionId: null
     },
@@ -82,6 +84,8 @@ const INITIAL_HEROES: Hero[] = [
         ],
         completedObjectiveIndices: [],
         imageUrl: 'https://i.pinimg.com/736x/31/eb/4c/31eb4c0f0dba5c96c80da093a4d83a50.jpg',
+        // AÑADIDO: Ficha de juego solicitada
+        characterSheetUrl: 'https://i.pinimg.com/736x/c3/07/13/c307131f0f570d9768fd017eae400a39.jpg',
         stats: { strength: 9, agility: 7, intellect: 4 },
         assignedMissionId: null
     },
@@ -100,6 +104,8 @@ const INITIAL_HEROES: Hero[] = [
         ],
         completedObjectiveIndices: [],
         imageUrl: 'https://i.pinimg.com/736x/a5/8f/e9/a58fe99516a31f494c1d4dcb22231c46.jpg',
+        // AÑADIDO: Ficha de juego solicitada
+        characterSheetUrl: 'https://i.pinimg.com/736x/13/4c/e4/134ce4e1ef6112ad48a0883e1c5e4f23.jpg',
         stats: { strength: 5, agility: 9, intellect: 8 },
         assignedMissionId: null
     },
@@ -136,6 +142,8 @@ const INITIAL_HEROES: Hero[] = [
         ],
         completedObjectiveIndices: [],
         imageUrl: 'https://i.pinimg.com/736x/58/3c/d3/583cd39457c96e1858ecfbab1db06cce.jpg',
+        // AÑADIDO: Ficha de juego solicitada
+        characterSheetUrl: 'https://i.pinimg.com/736x/b8/33/d5/b833d599d8b2049ff72014182c1d98ea.jpg',
         stats: { strength: 5, agility: 6, intellect: 10 },
         assignedMissionId: null
     },
@@ -154,6 +162,8 @@ const INITIAL_HEROES: Hero[] = [
         ],
         completedObjectiveIndices: [],
         imageUrl: 'https://i.pinimg.com/736x/bb/2a/f6/bb2af63dbdbf782daf9af337915489c0.jpg',
+        // AÑADIDO: Ficha de juego solicitada
+        characterSheetUrl: 'https://i.pinimg.com/736x/c4/e0/c2/c4e0c25246a050d9cd276228ccb3f8ba.jpg',
         stats: { strength: 10, agility: 5, intellect: 7 },
         assignedMissionId: null
     }
@@ -192,7 +202,6 @@ const App: React.FC = () => {
     const [isGuest, setIsGuest] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
     
-    // FIX: Use Ref to track if data is truly loaded to avoid race conditions in useEffect
     const isDataLoadedRef = useRef(false);
     
     const [isEditorMode, setIsEditorMode] = useState(false);
@@ -200,7 +209,7 @@ const App: React.FC = () => {
     const [missionToEdit, setMissionToEdit] = useState<Mission | null>(null); 
     
     const [customMissions, setCustomMissions] = useState<Mission[]>([]);
-    const [dbTemplates, setDbTemplates] = useState<HeroTemplate[]>([]); // NEW: Store templates for merging
+    const [dbTemplates, setDbTemplates] = useState<HeroTemplate[]>([]);
 
     const [selectedMission, setSelectedMission] = useState<Mission | null>(null);
     const [showStory, setShowStory] = useState(false);
@@ -240,7 +249,7 @@ const App: React.FC = () => {
         setHeroes(INITIAL_HEROES);
         setCompletedMissionIds(new Set());
         setWorldStage('NORMAL');
-        isDataLoadedRef.current = true; // Editor mode assumes data is "loaded" (default state)
+        isDataLoadedRef.current = true;
     };
 
     const handleGuestLogin = () => {
@@ -259,7 +268,6 @@ const App: React.FC = () => {
       setViewMode('login');
     };
 
-    // UPDATED MERGE FUNCTION: Now accepts dbTemplates to merge custom heroes too
     const mergeWithLatestContent = (savedHeroes: Hero[], isZombie: boolean, templates: HeroTemplate[]): Hero[] => {
         const baseList = isZombie ? INITIAL_ZOMBIE_HEROES : INITIAL_HEROES;
         
@@ -277,11 +285,11 @@ const App: React.FC = () => {
                     objectives: codeHero.objectives,
                     bio: codeHero.bio,
                     imageUrl: codeHero.imageUrl,
-                    characterSheetUrl: codeHero.characterSheetUrl // Ensure this is copied
+                    characterSheetUrl: codeHero.characterSheetUrl
                 };
             }
 
-            // 2. Check DB templates (for custom recruited heroes like Colossus)
+            // 2. Check DB templates
             if (savedHero.templateId) {
                 const dbTemplate = templates.find(t => t.id === savedHero.templateId);
                 if (dbTemplate) {
@@ -291,7 +299,7 @@ const App: React.FC = () => {
                         objectives: dbTemplate.objectives || savedHero.objectives,
                         bio: dbTemplate.bio || savedHero.bio,
                         imageUrl: dbTemplate.imageUrl || savedHero.imageUrl,
-                        characterSheetUrl: dbTemplate.characterSheetUrl || savedHero.characterSheetUrl // CRITICAL FIX
+                        characterSheetUrl: dbTemplate.characterSheetUrl || savedHero.characterSheetUrl
                     };
                 }
             }
@@ -313,7 +321,6 @@ const App: React.FC = () => {
         const loadData = async () => {
             if (isEditorMode) return; 
             
-            // Reset flag when switching context
             isDataLoadedRef.current = false;
 
             if ((user || isGuest) && playerAlignment) {
@@ -322,7 +329,6 @@ const App: React.FC = () => {
                 let dataFound = false;
 
                 try {
-                    // Fetch templates first to ensure we can merge latest data
                     const templates = await getHeroTemplates();
                     setDbTemplates(templates);
 
@@ -349,16 +355,13 @@ const App: React.FC = () => {
                         setCompletedMissionIds(new Set(profileMissions));
                         checkGlobalEvents(profileMissions.length);
                     } else {
-                        // Initialize new game state
                         setHeroes(playerAlignment === 'ZOMBIE' ? INITIAL_ZOMBIE_HEROES : INITIAL_HEROES);
                         setCompletedMissionIds(new Set());
                     }
                 } catch (e) {
                     console.error("Error loading data:", e);
-                    // Fallback to initial state on error to prevent UI crash
                     setHeroes(playerAlignment === 'ZOMBIE' ? INITIAL_ZOMBIE_HEROES : INITIAL_HEROES);
                 } finally {
-                    // Mark data as loaded ONLY after everything is set
                     isDataLoadedRef.current = true;
                 }
             }
@@ -368,10 +371,8 @@ const App: React.FC = () => {
 
     // AUTO-SAVE EFFECT
     useEffect(() => {
-        // CRITICAL FIX: Strictly check ref to prevent overwriting cloud data with empty state
         if (isEditorMode || !user || !playerAlignment || !isDataLoadedRef.current) return;
         
-        // Don't save if heroes array is empty (sanity check)
         if (heroes.length === 0) return;
 
         const timeout = setTimeout(async () => {
@@ -552,7 +553,6 @@ const App: React.FC = () => {
         };
         
         activeMissions.forEach(m => {
-            // LÓGICA AÑADIDA: Forzar "Cadenas Rotas" a ser Neutral/Shield
             const isMainMission = m.title && m.title.toUpperCase().includes("CADENAS ROTAS");
 
             if (isMainMission) {

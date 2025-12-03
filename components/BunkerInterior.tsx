@@ -134,6 +134,9 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
   const [showRecruitModal, setShowRecruitModal] = useState(false);
   const [assignError, setAssignError] = useState<string | null>(null);
   const [zoomedImage, setZoomedImage] = useState<string | null>(null);
+  
+  // NUEVO ESTADO: Para controlar el popup de la ficha de juego
+  const [viewingSheetUrl, setViewingSheetUrl] = useState<string | null>(null);
 
   const [dbTemplates, setDbTemplates] = useState<HeroTemplate[]>([]);
   const [isLoadingDb, setIsLoadingDb] = useState(false);
@@ -478,12 +481,10 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
                   </div>
                   <CerebroScanner status="LOCKED" />
                   
-                  {/* --- BOTÓN INFO SECRET / GAME DATA --- */}
+                  {/* --- BOTÓN INFO SECRET / GAME DATA (MODIFICADO PARA POPUP) --- */}
                   {selectedHero.characterSheetUrl && (
-                      <a
-                          href={selectedHero.characterSheetUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
+                      <button
+                          onClick={() => setViewingSheetUrl(selectedHero.characterSheetUrl || null)}
                           className="mt-2 w-full py-3 border-2 border-red-600/50 bg-red-950/20 hover:bg-red-900/40 hover:border-red-500 transition-all group relative overflow-hidden flex items-center justify-center gap-2"
                       >
                           {/* Fondo rayado animado */}
@@ -493,7 +494,7 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
                           <span className="text-red-400 font-bold tracking-[0.2em] text-[10px] uppercase group-hover:text-red-200 relative z-10">
                               INFO SECRET // GAME DATA
                           </span>
-                      </a>
+                      </button>
                   )}
 
                   {isEditorMode && selectedHero.templateId && (
@@ -847,6 +848,24 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
           </div>
         </div>
       )}
+
+      {/* --- NUEVO POPUP PARA LA FICHA DE JUEGO (TOP SECRET) --- */}
+      {viewingSheetUrl && (
+        <div className="fixed inset-0 z-[110] bg-black/95 backdrop-blur-md flex items-center justify-center p-4">
+            <div className="relative w-full max-w-5xl h-[90vh] flex flex-col bg-slate-900 border-2 border-red-600 shadow-[0_0_50px_rgba(220,38,38,0.5)]">
+                {/* Header */}
+                <div className="flex justify-between items-center p-4 bg-red-950/30 border-b border-red-800 shrink-0">
+                    <h3 className="text-red-500 font-bold tracking-[0.3em] animate-pulse">TOP SECRET // EYES ONLY</h3>
+                    <button onClick={() => setViewingSheetUrl(null)} className="text-red-500 hover:text-white text-xl font-bold">✕</button>
+                </div>
+                {/* Image Container */}
+                <div className="flex-1 overflow-auto p-4 flex justify-center bg-slate-950 scrollbar-thin scrollbar-thumb-red-900">
+                    <img src={viewingSheetUrl} className="max-w-full h-auto object-contain" alt="Game Sheet" />
+                </div>
+            </div>
+        </div>
+      )}
+
     </div>
   );
 };
