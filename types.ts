@@ -58,6 +58,8 @@ export interface Mission {
     type?: 'STANDARD' | 'SHIELD_BASE' | 'BOSS';
     prereq?: string;
     pdfUrl?: string;
+    // NUEVO CAMPO: Define si la misión es para Humanos, Zombies o Ambos
+    alignment?: 'ALIVE' | 'ZOMBIE' | 'BOTH'; 
 }
 
 export interface GlobalEvent {

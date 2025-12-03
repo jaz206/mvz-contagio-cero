@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { translations, Language } from '../translations';
 import { Mission, Objective } from '../types';
@@ -30,7 +29,6 @@ const STATE_CENTERS: Record<string, [number, number]> = {
     'West Virginia': [-80.9, 38.4], 'Wisconsin': [-89.6, 44.2], 'Wyoming': [-107.3, 42.7]
 };
 
-// Generate list from keys to ensure consistency
 const STATES_LIST = Object.keys(STATE_CENTERS).sort();
 
 export const MissionEditor: React.FC<MissionEditorProps> = ({ isOpen, onClose, onSave, language, initialData, existingMissions = [] }) => {
@@ -41,6 +39,9 @@ export const MissionEditor: React.FC<MissionEditorProps> = ({ isOpen, onClose, o
     const [locationState, setLocationState] = useState(STATES_LIST[0]);
     const [threatLevel, setThreatLevel] = useState('HIGH');
     const [type, setType] = useState<'STANDARD' | 'SHIELD_BASE' | 'BOSS'>('STANDARD');
+    // NUEVO ESTADO: ALINEAMIENTO
+    const [alignment, setAlignment] = useState<'ALIVE' | 'ZOMBIE' | 'BOTH'>('BOTH');
+    
     const [pdfUrl, setPdfUrl] = useState('');
     const [prereq, setPrereq] = useState('');
     const [objectives, setObjectives] = useState<Objective[]>([{ title: '', desc: '' }]);
@@ -53,6 +54,8 @@ export const MissionEditor: React.FC<MissionEditorProps> = ({ isOpen, onClose, o
             setLocationState(initialData.location.state);
             setThreatLevel(initialData.threatLevel);
             setType(initialData.type || 'STANDARD');
+            // Cargar alineamiento existente o default a BOTH
+            setAlignment(initialData.alignment || 'BOTH');
             setPdfUrl(initialData.pdfUrl || '');
             setPrereq(initialData.prereq || '');
             setObjectives(initialData.objectives.length > 0 ? initialData.objectives : [{ title: '', desc: '' }]);
@@ -62,6 +65,7 @@ export const MissionEditor: React.FC<MissionEditorProps> = ({ isOpen, onClose, o
             setLocationState(STATES_LIST[0]);
             setThreatLevel('HIGH');
             setType('STANDARD');
+            setAlignment('BOTH');
             setPdfUrl('');
             setPrereq('');
             setObjectives([{ title: '', desc: '' }]);
@@ -86,22 +90,19 @@ export const MissionEditor: React.FC<MissionEditorProps> = ({ isOpen, onClose, o
 
         let finalCoordinates: [number, number];
 
-        // CHECK: Did the user change the state? Or is it a new mission?
         const stateChanged = !initialData || initialData.location.state !== locationState;
 
         if (stateChanged) {
-            // FIX: Use specific state center, NOT defaultCenter
             const center = STATE_CENTERS[locationState] || [-98.5, 39.8]; 
-            // Small Jitter ~ +/- 1.0 degree to keep it inside the state roughly
             const jitterX = (Math.random() - 0.5) * 2.0; 
             const jitterY = (Math.random() - 0.5) * 1.5;
             finalCoordinates = [center[0] + jitterX, center[1] + jitterY];
         } else {
-            // Keep OLD coordinates if state didn't change
             finalCoordinates = initialData.location.coordinates;
         }
 
-        const baseMissionData = {
+        // CONSTRUCCIÓN DEL OBJETO DE MISIÓN
+        const missionPayload: any = {
             title,
             description: description.split('\n').filter(p => p.trim() !== ''),
             location: {
@@ -110,12 +111,10 @@ export const MissionEditor: React.FC<MissionEditorProps> = ({ isOpen, onClose, o
             },
             threatLevel,
             type,
+            alignment, // Guardamos el alineamiento
             objectives: objectives.filter(o => o.title && o.desc),
-            prereq: prereq || undefined,
-        };
-
-        const missionPayload: any = {
-            ...baseMissionData,
+            // CORRECCIÓN CRÍTICA: Usar null en lugar de undefined
+            prereq: prereq || null, 
             ...(pdfUrl.trim() ? { pdfUrl: pdfUrl.trim() } : {})
         };
 
@@ -130,7 +129,7 @@ export const MissionEditor: React.FC<MissionEditorProps> = ({ isOpen, onClose, o
             onClose();
         } catch (error) {
             console.error(error);
-            alert("Failed to save mission");
+            alert("Failed to save mission: " + (error as any).message);
         } finally {
             setSaving(false);
         }
@@ -150,6 +149,24 @@ export const MissionEditor: React.FC<MissionEditorProps> = ({ isOpen, onClose, o
                     <div>
                         <label className="text-[10px] text-cyan-600 font-bold block mb-1">{t.missionTitle}</label>
                         <input value={title} onChange={e => setTitle(e.target.value)} required className="w-full bg-slate-950 border border-cyan-800 p-2 text-cyan-200 focus:border-cyan-400 outline-none" />
+                    </div>
+
+                    {/* NUEVO SELECTOR DE ALINEAMIENTO */}
+                    <div>
+                        <label className="text-[10px] text-cyan-600 font-bold block mb-1">BANDO / ALINEAMIENTO</label>
+                        <select 
+                            value={alignment} 
+                            onChange={e => setAlignment(e.target.value as any)} 
+                            className={`w-full bg-slate-950 border p-2 font-bold ${
+                                alignment === 'ALIVE' ? 'text-cyan-400 border-cyan-600' : 
+                                alignment === 'ZOMBIE' ? 'text-lime-400 border-lime-600' : 
+                                'text-white border-gray-600'
+                            }`}
+                        >
+                            <option value="ALIVE">🛡️ HÉROES (ALIVE)</option>
+                            <option value="ZOMBIE">🧟 ZOMBIES (UNDEAD)</option>
+                            <option value="BOTH">⚖️ AMBOS (GLOBAL)</option>
+                        </select>
                     </div>
 
                     <div className="grid grid-cols-2 gap-4">

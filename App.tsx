@@ -64,7 +64,6 @@ const INITIAL_HEROES: Hero[] = [
         ],
         completedObjectiveIndices: [],
         imageUrl: 'https://i.pinimg.com/736x/97/f1/96/97f1965bf162c5eb2f7aa8cb4be4bf97.jpg',
-        // AÑADIDO: Ficha de juego solicitada
         characterSheetUrl: 'https://i.pinimg.com/736x/c2/61/0a/c2610afec3022fc70a882e1452e167b8.jpg',
         stats: { strength: 8, agility: 10, intellect: 9 },
         assignedMissionId: null
@@ -84,7 +83,6 @@ const INITIAL_HEROES: Hero[] = [
         ],
         completedObjectiveIndices: [],
         imageUrl: 'https://i.pinimg.com/736x/31/eb/4c/31eb4c0f0dba5c96c80da093a4d83a50.jpg',
-        // AÑADIDO: Ficha de juego solicitada
         characterSheetUrl: 'https://i.pinimg.com/736x/c3/07/13/c307131f0f570d9768fd017eae400a39.jpg',
         stats: { strength: 9, agility: 7, intellect: 4 },
         assignedMissionId: null
@@ -104,27 +102,27 @@ const INITIAL_HEROES: Hero[] = [
         ],
         completedObjectiveIndices: [],
         imageUrl: 'https://i.pinimg.com/736x/a5/8f/e9/a58fe99516a31f494c1d4dcb22231c46.jpg',
-        // AÑADIDO: Ficha de juego solicitada
         characterSheetUrl: 'https://i.pinimg.com/736x/13/4c/e4/134ce4e1ef6112ad48a0883e1c5e4f23.jpg',
         stats: { strength: 5, agility: 9, intellect: 8 },
         assignedMissionId: null
     },
     {
         id: 'h4',
-        templateId: 'loki',
-        name: 'Loki Laufeyson',
-        alias: 'LOKI',
+        templateId: 'emmafrost',
+        name: 'Emma Frost',
+        alias: 'WHITE QUEEN',
         status: 'AVAILABLE',
         class: 'TACTICIAN',
-        bio: 'Former villain turned desperate survivor. His illusions hide him from the horde. Unpredictable, but necessary magic support.',
-        currentStory: "Loki estaba en la Tierra para conquistar, como siempre. Cuando Thor cayó infectado en la primera oleada, Loki se rio. Pensó que era el final perfecto para su arrogante hermano: convertido en un animal babeante. Se acercó para burlarse de él... y Thor, con la mente podrida, lo miró y lloró sangre. En ese momento, Loki se dio cuenta de que sin Thor, él no es nada. Intentó usar su magia para curarlo, pero el virus de la Tríada (Ciencia + Magia de Doom) rechazó sus hechizos. Loki tuvo que huir de su propio hermano. Asgard cerró el Bifrost, dejándolo exiliado en este infierno. Ahora, Loki camina entre los muertos usando ilusiones para parecer uno de ellos. Se ha unido a la Iniciativa Lázaro por puro rencor: Doom usó magia asgardiana robada para crear el virus. Loki va a recuperar esa magia, va a despellejar a Doom y luego va a buscar a Thor para concederle la misericordia que le negó el primer día.",
+        bio: 'Telépata de clase Omega. Su piel de diamante la hace inmune a las mordeduras, pero su mente no puede bloquear el horror de los gritos psíquicos de los moribundos.',
+        currentStory: "Emma estaba dando clase cuando la infección brotó en los dormitorios. No fueron extraños. Fueron sus 'Cucos', las Stepford Cuckoos. La mente colmena de las niñas se infectó al unísono, amplificando el Hambre mil veces. Rodearon a Emma en el pasillo, con sus uniformes escolares manchados de vísceras. Emma tuvo que adoptar su forma de diamante un segundo antes de que los dientes de Sophie rompieran su garganta. Eran inmunes a su telepatía en ese estado de frenesí, pero Emma podía *sentir* su hambre. Tuvo que romperles el cuello, una a una, mientras sus mentes moribundas le transmitían telepáticamente la imagen de cómo sabría el cerebro de su propia 'madre'. Emma no ha vuelto a su forma humana desde entonces. Dice que es por seguridad táctica, pero la verdad es que si deja de ser diamante, el trauma de haber asesinado a sus propias alumnas con sus manos desnudas la destrozará.",
         objectives: [
-            'Robo Arcano: Recuperar el libro de hechizos asgardianos de la fortaleza de Doom.',
-            'Misericordia Fraternal: Localizar a Thor Zombi y concederle el descanso final.'
+            'Santuario de Cristal: Establecer un perímetro psíquico seguro en Genosha para los pocos mutantes jóvenes que quedan.',
+            'El Destino de Scott: Localizar a Cyclops. Si está vivo, salvarlo. Si es uno de ellos, vaporizarlo antes de que ella lea su mente podrida.'
         ],
         completedObjectiveIndices: [],
-        imageUrl: 'https://i.pinimg.com/736x/98/50/d0/9850d063395efd498cce84be09da69fd.jpg',
-        stats: { strength: 7, agility: 6, intellect: 10 },
+        imageUrl: 'https://i.pinimg.com/736x/ea/5c/07/ea5c075678330756a1b63702131fa429.jpg',
+        characterSheetUrl: 'https://i.pinimg.com/736x/8d/60/a3/8d60a340788644365735165842813583.jpg',
+        stats: { strength: 4, agility: 5, intellect: 10 },
         assignedMissionId: null
     },
     {
@@ -142,7 +140,6 @@ const INITIAL_HEROES: Hero[] = [
         ],
         completedObjectiveIndices: [],
         imageUrl: 'https://i.pinimg.com/736x/58/3c/d3/583cd39457c96e1858ecfbab1db06cce.jpg',
-        // AÑADIDO: Ficha de juego solicitada
         characterSheetUrl: 'https://i.pinimg.com/736x/b8/33/d5/b833d599d8b2049ff72014182c1d98ea.jpg',
         stats: { strength: 5, agility: 6, intellect: 10 },
         assignedMissionId: null
@@ -162,7 +159,6 @@ const INITIAL_HEROES: Hero[] = [
         ],
         completedObjectiveIndices: [],
         imageUrl: 'https://i.pinimg.com/736x/bb/2a/f6/bb2af63dbdbf782daf9af337915489c0.jpg',
-        // AÑADIDO: Ficha de juego solicitada
         characterSheetUrl: 'https://i.pinimg.com/736x/c4/e0/c2/c4e0c25246a050d9cd276228ccb3f8ba.jpg',
         stats: { strength: 10, agility: 5, intellect: 7 },
         assignedMissionId: null
@@ -181,7 +177,7 @@ const INITIAL_ZOMBIE_HEROES: Hero[] = [
         currentStory: "CLASSIFIED",
         objectives: ["Consume Brains", "Lead the Horde"],
         completedObjectiveIndices: [],
-        imageUrl: 'https://i.pinimg.com/736x/1a/2b/3c/1a2b3c...jpg', // Placeholder
+        imageUrl: 'https://i.pinimg.com/736x/1a/2b/3c/1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d.jpg', // Placeholder
         stats: { strength: 8, agility: 8, intellect: 8 },
         assignedMissionId: null
     },
@@ -268,11 +264,19 @@ const App: React.FC = () => {
       setViewMode('login');
     };
 
+    // --- NUEVA FUNCIÓN: CAMBIAR DIMENSIÓN ---
+    const toggleDimension = () => {
+        // Al cambiar el alineamiento, el useEffect de carga de datos se disparará automáticamente
+        // porque 'playerAlignment' está en su array de dependencias.
+        setPlayerAlignment(prev => prev === 'ALIVE' ? 'ZOMBIE' : 'ALIVE');
+        // Reseteamos la vista al mapa para evitar inconsistencias visuales en el búnker
+        setViewMode('map');
+    };
+
     const mergeWithLatestContent = (savedHeroes: Hero[], isZombie: boolean, templates: HeroTemplate[]): Hero[] => {
         const baseList = isZombie ? INITIAL_ZOMBIE_HEROES : INITIAL_HEROES;
         
         return savedHeroes.map(savedHero => {
-            // 1. Check hardcoded heroes
             const codeHero = baseList.find(h => 
                 (h.templateId && h.templateId === savedHero.templateId) || 
                 (h.alias === savedHero.alias)
@@ -289,7 +293,6 @@ const App: React.FC = () => {
                 };
             }
 
-            // 2. Check DB templates
             if (savedHero.templateId) {
                 const dbTemplate = templates.find(t => t.id === savedHero.templateId);
                 if (dbTemplate) {
@@ -431,11 +434,22 @@ const App: React.FC = () => {
         setActiveGlobalEvent(null);
     };
 
-    const handleMissionComplete = (id: string) => {
+    const handleMissionComplete = async (id: string) => {
         const newSet = new Set(completedMissionIds);
         newSet.add(id);
         setCompletedMissionIds(newSet);
         setSelectedMission(null);
+        
+        if (user && playerAlignment) {
+            setIsSaving(true);
+            try {
+                await saveUserProfile(user.uid, playerAlignment, heroes, Array.from(newSet));
+            } catch (e) {
+                console.error("Error saving mission progress immediately:", e);
+            } finally {
+                setTimeout(() => setIsSaving(false), 500);
+            }
+        }
         
         if (id === 'boss-galactus') {
             setWorldStage('NORMAL');
@@ -476,42 +490,17 @@ const App: React.FC = () => {
     };
 
     const allMissions: Mission[] = useMemo(() => {
-        const hardcodedMissions: Mission[] = [
-            {
-                id: 'm_kraven',
-                title: t.missions.kraven.title,
-                description: t.missions.kraven.description,
-                objectives: t.missions.kraven.objectives,
-                location: { state: 'New York', coordinates: [-74.006, 40.7128] },
-                threatLevel: 'HIGH',
-                type: 'STANDARD'
-            },
-            {
-                id: 'm_prison',
-                title: t.missions.fleshSleeps.title,
-                description: t.missions.fleshSleeps.description,
-                objectives: t.missions.fleshSleeps.objectives,
-                location: { state: 'Pennsylvania', coordinates: [-77.1945, 41.2033] },
-                threatLevel: 'EXTREME',
-                type: 'STANDARD',
-                prereq: 'm_kraven'
-            },
-             { id: 'base_alpha', title: t.missions.bases.alpha, description: [t.missions.bases.desc], objectives: [{ title: t.missions.bases.objSecure, desc: '' }, { title: t.missions.bases.objRetrieve, desc: '' }], location: { state: 'Colorado', coordinates: [-105.7821, 39.5501] }, threatLevel: 'MEDIUM', type: 'SHIELD_BASE' },
-             { id: 'base_beta', title: t.missions.bases.beta, description: [t.missions.bases.desc], objectives: [{ title: t.missions.bases.objSecure, desc: '' }, { title: t.missions.bases.objRetrieve, desc: '' }], location: { state: 'New Jersey', coordinates: [-74.4, 40.0] }, threatLevel: 'MEDIUM', type: 'SHIELD_BASE' },
-             { id: 'base_gamma', title: t.missions.bases.gamma, description: [t.missions.bases.desc], objectives: [{ title: t.missions.bases.objSecure, desc: '' }, { title: t.missions.bases.objRetrieve, desc: '' }], location: { state: 'Massachusetts', coordinates: [-71.3, 42.4] }, threatLevel: 'MEDIUM', type: 'SHIELD_BASE' },
-             { id: 'base_delta', title: t.missions.bases.delta, description: [t.missions.bases.desc], objectives: [{ title: t.missions.bases.objSecure, desc: '' }, { title: t.missions.bases.objRetrieve, desc: '' }], location: { state: 'Maryland', coordinates: [-76.6, 39.0] }, threatLevel: 'MEDIUM', type: 'SHIELD_BASE' },
-             { id: 'base_epsilon', title: t.missions.bases.epsilon, description: [t.missions.bases.desc], objectives: [{ title: t.missions.bases.objSecure, desc: '' }, { title: t.missions.bases.objRetrieve, desc: '' }], location: { state: 'Connecticut', coordinates: [-72.7, 41.6] }, threatLevel: 'MEDIUM', type: 'SHIELD_BASE' },
-             { id: 'base_zeta', title: t.missions.bases.zeta, description: [t.missions.bases.desc], objectives: [{ title: t.missions.bases.objSecure, desc: '' }, { title: t.missions.bases.objRetrieve, desc: '' }], location: { state: 'Pennsylvania', coordinates: [-78.0, 40.5] }, threatLevel: 'MEDIUM', type: 'SHIELD_BASE' }
-        ];
-
         const missionMap = new Map<string, Mission>();
-        hardcodedMissions.forEach(m => missionMap.set(m.id, m));
+        
+        // 1. Cargar SOLO las misiones que vienen de la base de datos (customMissions)
         customMissions.forEach(m => {
             if (m && m.id) missionMap.set(m.id, m);
         });
+        
         const missionList = Array.from(missionMap.values());
 
-        if (worldStage === 'GALACTUS' && playerAlignment === 'ALIVE') {
+        // 2. Mantener la lógica del Jefe Final (Galactus) ya que es un evento global del código
+        if (worldStage === 'GALACTUS') {
             missionList.push({
                 id: 'boss-galactus',
                 type: 'BOSS',
@@ -519,7 +508,8 @@ const App: React.FC = () => {
                 description: t.missions.galactus.description,
                 objectives: t.missions.galactus.objectives,
                 location: { state: 'Kansas', coordinates: [-98.0, 38.0] },
-                threatLevel: 'OMEGA++'
+                threatLevel: 'OMEGA++',
+                alignment: 'BOTH'
             });
         }
         
@@ -529,17 +519,27 @@ const App: React.FC = () => {
     const visibleMissions = useMemo(() => {
         if (isEditorMode) return allMissions;
         
+        // 1. Filtrar por Etapa del Mundo
+        let stageFiltered = allMissions;
         if (worldStage === 'GALACTUS') {
-            return allMissions.filter(m => m.type === 'BOSS');
+            stageFiltered = allMissions.filter(m => m.type === 'BOSS');
         }
 
-        return allMissions.filter(m => {
+        // 2. Filtrar por Alineamiento (ALIVE vs ZOMBIE)
+        // Si m.alignment es undefined, asumimos que es para ambos o legacy
+        const alignmentFiltered = stageFiltered.filter(m => {
+            if (!m.alignment || m.alignment === 'BOTH') return true;
+            return m.alignment === playerAlignment;
+        });
+
+        // 3. Filtrar por Prerrequisitos
+        return alignmentFiltered.filter(m => {
             if (!m) return false;
             const isCompleted = completedMissionIds.has(m.id);
             const prereqMet = !m.prereq || completedMissionIds.has(m.prereq);
             return isCompleted || prereqMet;
         });
-    }, [allMissions, completedMissionIds, isEditorMode, worldStage]);
+    }, [allMissions, completedMissionIds, isEditorMode, worldStage, playerAlignment]);
 
     // Group missions for sidebar
     const groupedMissions = useMemo(() => {
@@ -639,7 +639,19 @@ const App: React.FC = () => {
                         </div>
 
                         <div className="flex items-center gap-6">
-                            <div className="text-right hidden md:block">
+                            {/* BOTÓN DE CAMBIO DE DIMENSIÓN */}
+                            <button 
+                                onClick={toggleDimension}
+                                className={`hidden md:flex items-center gap-2 px-3 py-1 border rounded transition-all duration-500 ${playerAlignment === 'ZOMBIE' ? 'border-lime-600 bg-lime-900/20 text-lime-400 hover:bg-lime-900/40' : 'border-cyan-500 bg-cyan-900/20 text-cyan-300 hover:bg-cyan-900/40'}`}
+                            >
+                                <span className="text-lg">{playerAlignment === 'ZOMBIE' ? '🧟' : '🛡️'}</span>
+                                <div className="flex flex-col items-start leading-none">
+                                    <span className="text-[8px] font-bold tracking-widest opacity-70">DIMENSION</span>
+                                    <span className="text-[10px] font-bold">{playerAlignment === 'ZOMBIE' ? 'EARTH-Z' : 'EARTH-616'}</span>
+                                </div>
+                            </button>
+
+                            <div className="text-right hidden lg:block">
                                 <div className="text-[10px] text-cyan-600 font-bold">{t.header.biohazard}</div>
                                 <div className="text-xs text-cyan-300 tracking-widest">{t.header.clearance}</div>
                             </div>
@@ -657,6 +669,7 @@ const App: React.FC = () => {
                     <div className="flex-1 flex overflow-hidden relative">
                         <aside className="w-80 flex-none bg-slate-900 border-r border-cyan-900 flex flex-col z-20 shadow-xl overflow-hidden relative">
                             
+                            {/* ... (Resto del Sidebar igual) ... */}
                             {isEditorMode && (
                                 <div className="p-4 bg-slate-800 border-b border-cyan-500 overflow-y-auto max-h-[50vh]">
                                     <h3 className="text-[10px] font-bold text-cyan-300 mb-3 tracking-widest border-b border-cyan-600 pb-1">EDITOR CONTROL</h3>
