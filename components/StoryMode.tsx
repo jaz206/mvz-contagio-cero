@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { translations, Language } from '../translations';
 
@@ -42,7 +41,8 @@ export const StoryMode: React.FC<StoryModeProps> = ({ language, onComplete, onSk
     
     const intervalId = setInterval(() => {
       if (charIndex < currentSlide.text.length) {
-        setDisplayText(prev => prev + currentSlide.text[charIndex]);
+        // Use charAt to handle potential out-of-bounds gracefully instead of undefined
+        setDisplayText(prev => prev + currentSlide.text.charAt(charIndex));
         charIndex++;
       } else {
         clearInterval(intervalId);
