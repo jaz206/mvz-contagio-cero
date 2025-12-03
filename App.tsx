@@ -1,4 +1,3 @@
-
 // ... existing imports ...
 import React, { useState, useEffect, useMemo } from 'react';
 import { translations, Language } from './translations';
@@ -296,7 +295,8 @@ const App: React.FC = () => {
                     }
                 }
 
-                if (profileHeroes.length > 0) {
+                // FIX: Ensure we fall back to initial heroes if profile is empty OR has 0 heroes
+                if (profileHeroes && profileHeroes.length > 0) {
                     setHeroes(profileHeroes);
                     setCompletedMissionIds(new Set(profileMissions));
                     checkGlobalEvents(profileMissions.length);
@@ -311,6 +311,9 @@ const App: React.FC = () => {
 
     useEffect(() => {
         if (isEditorMode || !user || !playerAlignment) return;
+        
+        // FIX: Prevent saving empty hero lists to avoid corrupting the save file
+        if (heroes.length === 0) return;
 
         const timeout = setTimeout(async () => {
             setIsSaving(true);
@@ -598,11 +601,13 @@ const App: React.FC = () => {
                             <div className="p-4 border-b border-cyan-900">
                                 <h4 className="text-[10px] font-bold text-gray-500 uppercase mb-2 tracking-widest">{t.sidebar.campaignMode}</h4>
                                 <div className="flex flex-col gap-2">
-                                    <button disabled={playerAlignment === 'ALIVE'} onClick={() => { setPlayerAlignment('ALIVE'); setViewMode('map'); setHeroes([]); }} className={`w-full py-2 px-3 border text-[9px] font-bold tracking-wider flex justify-between items-center transition-all ${playerAlignment === 'ALIVE' ? 'bg-cyan-900/50 border-cyan-500 text-white' : 'border-gray-800 text-gray-500 hover:border-cyan-700 hover:text-cyan-400'}`}>
+                                    {/* FIX: Removed setHeroes([]) to prevent empty state flash and data corruption */}
+                                    <button disabled={playerAlignment === 'ALIVE'} onClick={() => { setPlayerAlignment('ALIVE'); setViewMode('map'); }} className={`w-full py-2 px-3 border text-[9px] font-bold tracking-wider flex justify-between items-center transition-all ${playerAlignment === 'ALIVE' ? 'bg-cyan-900/50 border-cyan-500 text-white' : 'border-gray-800 text-gray-500 hover:border-cyan-700 hover:text-cyan-400'}`}>
                                         <span>PROTOCOL: LAZARUS</span>
                                         {playerAlignment === 'ALIVE' && <span className="w-2 h-2 bg-cyan-400 rounded-full animate-pulse"></span>}
                                     </button>
-                                    <button disabled={playerAlignment === 'ZOMBIE'} onClick={() => { setPlayerAlignment('ZOMBIE'); setViewMode('map'); setHeroes([]); }} className={`w-full py-2 px-3 border text-[9px] font-bold tracking-wider flex justify-between items-center transition-all ${playerAlignment === 'ZOMBIE' ? 'bg-lime-900/50 border-lime-500 text-white' : 'border-gray-800 text-gray-500 hover:border-lime-700 hover:text-lime-400'}`}>
+                                    {/* FIX: Removed setHeroes([]) to prevent empty state flash and data corruption */}
+                                    <button disabled={playerAlignment === 'ZOMBIE'} onClick={() => { setPlayerAlignment('ZOMBIE'); setViewMode('map'); }} className={`w-full py-2 px-3 border text-[9px] font-bold tracking-wider flex justify-between items-center transition-all ${playerAlignment === 'ZOMBIE' ? 'bg-lime-900/50 border-lime-500 text-white' : 'border-gray-800 text-gray-500 hover:border-lime-700 hover:text-lime-400'}`}>
                                         <span>PROTOCOL: HUNGER</span>
                                         {playerAlignment === 'ZOMBIE' && <span className="w-2 h-2 bg-lime-400 rounded-full animate-pulse"></span>}
                                     </button>
