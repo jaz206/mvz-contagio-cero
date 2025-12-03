@@ -131,8 +131,7 @@ export const StoryMode: React.FC<StoryModeProps> = ({ language, onComplete, onSk
                                       c-1.3,2.6-5.3,3.6-8.3,2c-4.3-2.3-9.2,1.3-8.9,6.3c0.3,3.6,4,6.3,7.6,5.3c4.6-1.3,8.9,2.3,8.3,6.9c-0.3,3.3-4,5.6-7.3,4.6
                                       c-4.6-1.3-8.9,2.6-7.9,7.3c0.7,3.3,4.6,5.3,7.9,4c4.3-1.6,8.9,1.6,8.9,6.3c0,3.3-3.3,6.3-6.6,5.6c-4.6-0.7-8.3,3.6-6.6,7.9
                                       c1.3,3.3,5.6,4.3,8.6,2.3c3.6-2.3,8.3,0.3,8.3,4.6c0,3.3-3.3,6.3-6.6,5.6c-4.6-0.7-8.3,3.6-6.6,7.9c1.3,3.3,5.6,4.3,8.6,2.3
-                                      c3.6-2.3,8.3,0.3,8.3,4.6c0,3.3-3.3,6.3-6.6,5.6c-4.6-0.7-8.3,3.6-6.6,7.9c1.3,3.3,5.6,4.3,8.6,2.3c3.6-2.3,8.3,0.3,8.3,4.6
-                                      c0,3.3-3.3,6.3-6.6,5.6c-4.6-0.7-8.3,3.6-6.6,7.9c1.6,4,6.9,4.6,9.9,1.3c2.6-3,7.6-2.3,9.6,1.3c1.6,3,6.3,3.6,9.2,1.3
+                                      c3.6-2.3,8.3,0.3,8.3,4.6c0,3.3-3.3,6.3-6.6,5.6c-4.6-0.7-8.3,3.6-6.6,7.9c1.6,4,6.9,4.6,9.9,1.3c2.6-3,7.6-2.3,9.6,1.3c1.6,3,6.3,3.6,9.2,1.3
                                       c3.6-3,9.2-0.7,9.9,4c0.7,3.6,5.3,5.6,8.9,3.6c4-2.3,8.9,0.7,8.9,5.3c0,3.6,4,6.3,7.6,5.3c4.6-1.3,8.9,2.3,8.3,6.9
                                       c-0.3,3.3,3.3,6.3,6.6,5.3c4.3-1.3,8.3,2.3,7.3,6.6c-0.7,3.3,2.3,6.6,5.6,5.9c4.3-0.7,7.9,3,6.6,7.3c-1.3,4.3,2.3,8.3,6.6,7.3
                                       c4.3-1,7.9,2.6,6.6,6.9c-1.3,4.3,2.3,8.3,6.6,7.3c4.3-1,7.9,2.6,6.6,6.9c-1.3,4.3,2.3,8.3,6.6,7.3c4.3-1,7.9,2.6,6.6,6.9
@@ -189,6 +188,7 @@ export const StoryMode: React.FC<StoryModeProps> = ({ language, onComplete, onSk
 
               {/* DERECHA: TEXTO DEL INFORME (45%) */}
               <div className="w-full md:w-[45%] h-1/2 md:h-full p-6 md:p-10 flex flex-col bg-[#f8f9fa] relative">
+                  {/* Marca de agua de fondo */}
                   <div className="absolute inset-0 flex items-center justify-center opacity-[0.03] pointer-events-none">
                       <img src="https://upload.wikimedia.org/wikipedia/commons/b/b9/Marvel_Logo.svg" className="w-3/4 rotate-[-30deg]" />
                   </div>
@@ -245,11 +245,12 @@ export const StoryMode: React.FC<StoryModeProps> = ({ language, onComplete, onSk
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_#1e293b_0%,_#020617_100%)]"></div>
       <div className="absolute inset-0 opacity-20" style={{backgroundImage: 'linear-gradient(#334155 1px, transparent 1px), linear-gradient(90deg, #334155 1px, transparent 1px)', backgroundSize: '40px 40px'}}></div>
 
+      {/* CORRECCIÓN: Usar &gt;&gt; en lugar de >> */}
       <button 
         onClick={onSkip} 
         className="absolute top-8 right-8 z-50 text-cyan-500 text-xs font-bold tracking-[0.2em] hover:text-white transition-colors border border-cyan-900 px-4 py-2 bg-slate-900/80 backdrop-blur"
       >
-        SKIP INTRO >>
+        SKIP INTRO &gt;&gt;
       </button>
 
       <div 
