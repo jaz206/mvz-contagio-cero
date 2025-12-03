@@ -523,6 +523,7 @@ const App: React.FC = () => {
                 }}
                 language={lang}
                 initialData={missionToEdit}
+                existingMissions={allMissions}
             />
 
             {activeGlobalEvent && (

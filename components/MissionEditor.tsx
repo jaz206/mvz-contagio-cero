@@ -10,6 +10,7 @@ interface MissionEditorProps {
     onSave: (mission: Mission) => void;
     language: Language;
     initialData?: Mission | null;
+    existingMissions?: Mission[];
 }
 
 // Approximate center coordinates [Longitude, Latitude]
@@ -32,7 +33,7 @@ const STATE_CENTERS: Record<string, [number, number]> = {
 // Generate list from keys to ensure consistency
 const STATES_LIST = Object.keys(STATE_CENTERS).sort();
 
-export const MissionEditor: React.FC<MissionEditorProps> = ({ isOpen, onClose, onSave, language, initialData }) => {
+export const MissionEditor: React.FC<MissionEditorProps> = ({ isOpen, onClose, onSave, language, initialData, existingMissions = [] }) => {
     const t = translations[language].missionEditor;
     
     const [title, setTitle] = useState('');
@@ -41,6 +42,7 @@ export const MissionEditor: React.FC<MissionEditorProps> = ({ isOpen, onClose, o
     const [threatLevel, setThreatLevel] = useState('HIGH');
     const [type, setType] = useState<'STANDARD' | 'SHIELD_BASE' | 'BOSS'>('STANDARD');
     const [pdfUrl, setPdfUrl] = useState('');
+    const [prereq, setPrereq] = useState('');
     const [objectives, setObjectives] = useState<Objective[]>([{ title: '', desc: '' }]);
     const [saving, setSaving] = useState(false);
 
@@ -52,6 +54,7 @@ export const MissionEditor: React.FC<MissionEditorProps> = ({ isOpen, onClose, o
             setThreatLevel(initialData.threatLevel);
             setType(initialData.type || 'STANDARD');
             setPdfUrl(initialData.pdfUrl || '');
+            setPrereq(initialData.prereq || '');
             setObjectives(initialData.objectives.length > 0 ? initialData.objectives : [{ title: '', desc: '' }]);
         } else {
             setTitle('');
@@ -60,6 +63,7 @@ export const MissionEditor: React.FC<MissionEditorProps> = ({ isOpen, onClose, o
             setThreatLevel('HIGH');
             setType('STANDARD');
             setPdfUrl('');
+            setPrereq('');
             setObjectives([{ title: '', desc: '' }]);
         }
     }, [initialData, isOpen]);
@@ -107,6 +111,7 @@ export const MissionEditor: React.FC<MissionEditorProps> = ({ isOpen, onClose, o
             threatLevel,
             type,
             objectives: objectives.filter(o => o.title && o.desc),
+            prereq: prereq || undefined,
         };
 
         const missionPayload: any = {
@@ -169,6 +174,23 @@ export const MissionEditor: React.FC<MissionEditorProps> = ({ isOpen, onClose, o
                                 <option value="BOSS">BOSS</option>
                             </select>
                         </div>
+                        <div>
+                            <label className="text-[10px] text-cyan-600 font-bold block mb-1">{t.prereq}</label>
+                            <select value={prereq} onChange={e => setPrereq(e.target.value)} className="w-full bg-slate-950 border border-cyan-800 p-2 text-cyan-200">
+                                <option value="">-- NONE --</option>
+                                {existingMissions
+                                    .filter(m => !initialData || m.id !== initialData.id)
+                                    .map(m => (
+                                        <option key={m.id} value={m.id}>
+                                            {m.title}
+                                        </option>
+                                    ))
+                                }
+                            </select>
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 gap-4">
                         <div>
                             <label className="text-[10px] text-cyan-600 font-bold block mb-1">{t.pdfUrl}</label>
                             <input value={pdfUrl} onChange={e => setPdfUrl(e.target.value)} placeholder="https://..." className="w-full bg-slate-950 border border-cyan-800 p-2 text-cyan-200" />
