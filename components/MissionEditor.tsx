@@ -12,7 +12,7 @@ interface MissionEditorProps {
     initialData?: Mission | null;
 }
 
-// Approximate center coordinates [Longitude, Latitude] for accurate placement
+// Approximate center coordinates [Longitude, Latitude]
 const STATE_CENTERS: Record<string, [number, number]> = {
     'Alabama': [-86.9, 32.8], 'Alaska': [-152.4, 61.3], 'Arizona': [-111.4, 34.0], 'Arkansas': [-92.3, 34.9],
     'California': [-119.6, 36.1], 'Colorado': [-105.3, 39.0], 'Connecticut': [-72.7, 41.6], 'Delaware': [-75.5, 39.3],
@@ -29,6 +29,7 @@ const STATE_CENTERS: Record<string, [number, number]> = {
     'West Virginia': [-80.9, 38.4], 'Wisconsin': [-89.6, 44.2], 'Wyoming': [-107.3, 42.7]
 };
 
+// Generate list from keys to ensure consistency
 const STATES_LIST = Object.keys(STATE_CENTERS).sort();
 
 export const MissionEditor: React.FC<MissionEditorProps> = ({ isOpen, onClose, onSave, language, initialData }) => {
@@ -81,7 +82,7 @@ export const MissionEditor: React.FC<MissionEditorProps> = ({ isOpen, onClose, o
 
         let finalCoordinates: [number, number];
 
-        // CRITICAL FIX: Check if state changed during edit
+        // CHECK: Did the user change the state? Or is it a new mission?
         const stateChanged = !initialData || initialData.location.state !== locationState;
 
         if (stateChanged) {
