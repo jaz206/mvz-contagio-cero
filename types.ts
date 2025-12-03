@@ -1,3 +1,71 @@
+export type HeroClass = 'SCOUT' | 'BRAWLER' | 'TACTICIAN' | 'BLASTER';
+export type HeroStatus = 'AVAILABLE' | 'DEPLOYED' | 'INJURED';
+export type WorldStage = 'NORMAL' | 'ANOMALY' | 'SURFER' | 'GALACTUS';
+
+export interface HeroStats {
+    strength: number;
+    agility: number;
+    intellect: number;
+}
+
+export interface Hero {
+    id: string;
+    templateId?: string;
+    name: string;
+    alias: string;
+    status: HeroStatus;
+    class: HeroClass;
+    bio: string;
+    currentStory?: string;
+    objectives?: string[];
+    completedObjectiveIndices?: number[];
+    imageUrl?: string;
+    characterSheetUrl?: string;
+    stats: HeroStats;
+    assignedMissionId: string | null;
+}
+
+export interface HeroTemplate {
+    id: string;
+    defaultName: string;
+    defaultClass: HeroClass;
+    defaultStats: HeroStats;
+    imageUrl: string;
+    bio?: string;
+    alias?: string;
+    currentStory?: string;
+    objectives?: string[];
+    characterSheetUrl?: string;
+}
+
+export interface Location {
+    state: string;
+    coordinates: [number, number]; // [Longitude, Latitude]
+}
+
+export interface Objective {
+    title: string;
+    desc: string;
+}
+
+export interface Mission {
+    id: string;
+    title: string;
+    description: string[];
+    objectives: Objective[];
+    location: Location;
+    threatLevel: string;
+    type?: 'STANDARD' | 'SHIELD_BASE' | 'BOSS';
+    prereq?: string;
+    pdfUrl?: string;
+}
+
+export interface GlobalEvent {
+    stage: WorldStage;
+    title: string;
+    description: string;
+    image?: string;
+}
 
 export interface USATopoJSON {
   type: "Topology";
@@ -8,98 +76,19 @@ export interface USATopoJSON {
         type: "Polygon" | "MultiPolygon";
         properties: {
           name: string;
-          // Add other properties if available in your TopoJSON, e.g., id: number;
         };
+        id?: string | number;
         arcs: number[][];
       }>;
     };
-    counties: { // Add counties to the type, as us-atlas also contains them
+    counties?: {
       type: "GeometryCollection";
-      geometries: Array<{
-        type: "Polygon" | "MultiPolygon";
-        properties: {
-          name: string;
-          // Add other properties if available in your TopoJSON, e.g., id: number;
-        };
-        arcs: number[][];
-      }>;
+      geometries: Array<any>;
     };
   };
   arcs: number[][][];
-  transform: {
+  transform?: {
     scale: number[];
     translate: number[];
   };
-}
-
-export interface Objective {
-  title: string;
-  desc: string;
-}
-
-export interface Mission {
-  id: string;
-  type?: 'STANDARD' | 'SHIELD_BASE' | 'BOSS'; // Distinguish between standard missions, hidden bases, and boss events
-  prereq?: string; // ID of the mission that must be completed before this one appears
-  title: string;
-  description: string[]; // Array of paragraphs
-  objectives: Objective[];
-  location: {
-    state: string;
-    coordinates: [number, number]; // [Longitude, Latitude]
-  };
-  threatLevel: string;
-  pdfUrl?: string; // Optional URL for full tactical report
-}
-
-export type HeroStatus = 'AVAILABLE' | 'DEPLOYED' | 'INJURED' | 'MIA';
-export type HeroClass = 'BRAWLER' | 'TACTICIAN' | 'SCOUT' | 'BLASTER';
-
-export interface Hero {
-  id: string;
-  templateId?: string; // Key to look up translations (if a preset hero)
-  name: string;
-  alias: string;
-  status: HeroStatus;
-  class: HeroClass;
-  bio: string;
-  // Nuevos campos
-  currentStory?: string; // historia_actual
-  objectives?: string[]; // array de objetivos personales
-  completedObjectiveIndices?: number[]; // Índices de los objetivos cumplidos
-  imageUrl?: string; // Optional URL for hero portrait
-  characterSheetUrl?: string; // URL to external PDF/Image file (Ficha)
-  stats: {
-    strength: number;
-    agility: number;
-    intellect: number;
-  };
-  assignedMissionId?: string | null;
-}
-
-export interface HeroTemplate {
-  id: string; // Matches translation key
-  defaultName: string;
-  defaultClass: HeroClass;
-  defaultStats: {
-    strength: number;
-    agility: number;
-    intellect: number;
-  };
-  imageUrl: string;
-  // Optional fields for dynamic data from DB (if no translation exists)
-  bio?: string;
-  alias?: string;
-  currentStory?: string;
-  objectives?: string[];
-  characterSheetUrl?: string;
-}
-
-export type WorldStage = 'NORMAL' | 'ANOMALY' | 'SURFER' | 'GALACTUS';
-
-export interface GlobalEvent {
-    stage: WorldStage;
-    title: string;
-    description: string;
-    image?: string;
 }

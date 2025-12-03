@@ -1,68 +1,73 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>S.H.I.E.L.D. Tactical Map</title>
+    <!-- NOTA: Para producción, se recomienda instalar Tailwind vía npm/postcss en lugar de CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
       tailwind.config = {
         theme: {
           extend: {
             colors: {
-              shield: {
-                dark: '#0f172a',
-                panel: '#1e293b',
-                cyan: '#06b6d4',
-                alert: '#ef4444'
-              }
+              shield: { dark: '#0f172a', panel: '#1e293b', cyan: '#06b6d4', alert: '#ef4444' }
             },
             fontFamily: {
               mono: ['ui-monospace', 'SFMono-Regular', 'Menlo', 'Monaco', 'Consolas', "Liberation Mono", "Courier New", 'monospace'],
+            },
+            animation: {
+              'scanline': 'scanline 8s linear infinite',
+              'fade-in': 'fadeIn 0.5s ease-out',
+              'pulse-fast': 'pulse 1s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+            },
+            keyframes: {
+              scanline: {
+                '0%': { bottom: '100%' },
+                '100%': { bottom: '-100px' },
+              },
+              fadeIn: {
+                '0%': { opacity: '0' },
+                '100%': { opacity: '1' },
+              }
             }
           }
         }
       }
     </script>
+    <style>
+      body { background-color: #0f172a; color: #06b6d4; }
+      .scanline {
+        width: 100%; height: 100px; z-index: 10;
+        background: linear-gradient(0deg, rgba(6,182,212,0) 0%, rgba(6,182,212,0.1) 50%, rgba(6,182,212,0) 100%);
+        opacity: 0.1; position: absolute; bottom: 100%;
+        animation: scanline 8s linear infinite; pointer-events: none;
+      }
+      /* Custom Scrollbar */
+      ::-webkit-scrollbar { width: 8px; }
+      ::-webkit-scrollbar-track { background: #0f172a; }
+      ::-webkit-scrollbar-thumb { background: #1e293b; border: 1px solid #06b6d4; }
+      ::-webkit-scrollbar-thumb:hover { background: #06b6d4; }
+    </style>
 <script type="importmap">
 {
   "imports": {
-    "react/": "https://aistudiocdn.com/react@^19.2.0/",
     "react": "https://aistudiocdn.com/react@^19.2.0",
     "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/",
+    "react/": "https://aistudiocdn.com/react@^19.2.0/",
+    "firebase/": "https://aistudiocdn.com/firebase@^12.6.0/",
     "d3": "https://aistudiocdn.com/d3@^7.9.0",
     "topojson-client": "https://aistudiocdn.com/topojson-client@^3.1.0",
-    "firebase/app": "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js",
-    "firebase/auth": "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js",
-    "firebase/firestore": "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js",
-    "@vitejs/plugin-react": "https://aistudiocdn.com/@vitejs/plugin-react@^5.1.1",
-    "vite": "https://aistudiocdn.com/vite@^7.2.4",
-    "firebase/": "https://aistudiocdn.com/firebase@^12.6.0/"
+    "vite": "https://aistudiocdn.com/vite@^7.2.6",
+    "@vitejs/plugin-react": "https://aistudiocdn.com/@vitejs/plugin-react@^5.1.1"
   }
 }
 </script>
-<style>
-  body { background-color: #0f172a; }
-  .scanline {
-    width: 100%;
-    height: 100px;
-    z-index: 10;
-    background: linear-gradient(0deg, rgba(6,182,212,0) 0%, rgba(6,182,212,0.1) 50%, rgba(6,182,212,0) 100%);
-    opacity: 0.1;
-    position: absolute;
-    bottom: 100%;
-    animation: scanline 8s linear infinite;
-    pointer-events: none;
-  }
-  @keyframes scanline {
-    0% { bottom: 100%; }
-    100% { bottom: -100px; }
-  }
-</style>
 </head>
 <body class="bg-slate-900 text-cyan-400 font-mono flex items-center justify-center min-h-screen p-0 m-0 overflow-hidden">
     <div id="root" class="w-full h-full flex flex-col"></div>
+    
+    <!-- Vite Entry Point -->
     <script type="module" src="/index.tsx"></script>
 </body>
 </html>

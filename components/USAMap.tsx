@@ -1,7 +1,5 @@
 import React, { useRef, useEffect, useState, useCallback } from 'react';
 import * as d3 from 'd3';
-// FIX: Import feature specifically or use * as topojson depending on build system. 
-// Standard safe way for client-side libs:
 import * as topojson from 'topojson-client'; 
 import { fetchUSATopoJSON } from '../services/topojsonService';
 import { USATopoJSON, Mission, WorldStage } from '../types';
@@ -18,41 +16,52 @@ interface USAMapProps {
       magneto: Set<string>;
       kingpin: Set<string>;
       hulk: Set<string>;
+      doom: Set<string>;
   };
   playerAlignment?: 'ALIVE' | 'ZOMBIE' | null;
   worldStage: WorldStage;
 }
 
-export const USAMap: React.FC<USAMapProps> = ({ language, missions, completedMissionIds, onMissionSelect, onBunkerClick, factionStates, playerAlignment, worldStage }) => {
+export const USAMap: React.FC<USAMapProps> = ({ 
+    language, 
+    missions, 
+    completedMissionIds, 
+    onMissionSelect, 
+    onBunkerClick, 
+    factionStates, 
+    playerAlignment, 
+    worldStage 
+}) => {
   const svgRef = useRef<SVGSVGElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const gRef = useRef<d3.Selection<SVGGElement, unknown, null, undefined> | null>(null);
+  
   const [usData, setUsData] = useState<USATopoJSON | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [svgWidth, setSvgWidth] = useState(0);
-  const [svgHeight, setSvgHeight] = useState(0);
+  const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
   
-  // State for Event Choreography
   const [tokensReleased, setTokensReleased] = useState(false);
   
-  const hulkTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const surferTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const hulkTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const surferTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const t = translations[language];
 
-  // Token Release Timer Logic (10 seconds after Surfer arrives)
+  // Timer para liberar tokens
   useEffect(() => {
       if (worldStage === 'SURFER') {
           setTokensReleased(false);
           const timer = setTimeout(() => {
               setTokensReleased(true);
-          }, 10000); // 10 seconds wait in Kansas
+          }, 5000);
           return () => clearTimeout(timer);
       } else {
-          setTokensReleased(true); // Default to free roaming for other stages if relevant, though Galactus overrides
+          setTokensReleased(true);
       }
   }, [worldStage]);
 
+  // Carga de datos
   useEffect(() => {
     const loadData = async () => {
       try {
@@ -69,450 +78,336 @@ export const USAMap: React.FC<USAMapProps> = ({ language, missions, completedMis
     loadData();
   }, []);
 
+  // Resize Observer
   useEffect(() => {
     if (!containerRef.current) return;
-
     const observer = new ResizeObserver(entries => {
       for (let entry of entries) {
-        if (entry.contentBoxSize) {
-          const contentBoxSize = Array.isArray(entry.contentBoxSize) ? entry.contentBoxSize[0] : entry.contentBoxSize;
-          setSvgWidth(contentBoxSize.inlineSize);
-          setSvgHeight(contentBoxSize.blockSize);
-        } else {
-          setSvgWidth(entry.contentRect.width);
-          setSvgHeight(entry.contentRect.height);
+        const { width, height } = entry.contentRect;
+        if (width > 0 && height > 0) {
+            setDimensions({ width, height });
         }
       }
     });
-
     observer.observe(containerRef.current);
-
-    return () => {
-      observer.disconnect();
-    };
+    return () => observer.disconnect();
   }, []);
 
-  const getFactionStyle = (stateName: string) => {
-    if (factionStates.magneto.has(stateName)) {
-      return 'fill-red-900/60 stroke-red-500 stroke-[1px] hover:fill-red-700 hover:stroke-red-300 hover:stroke-[2px]';
-    } else if (factionStates.kingpin.has(stateName)) {
-      return 'fill-purple-900/60 stroke-purple-500 stroke-[1px] hover:fill-purple-700 hover:stroke-purple-300 hover:stroke-[2px]';
-    } else if (factionStates.hulk.has(stateName)) {
-      return 'fill-lime-900/40 stroke-lime-700 stroke-[1px] hover:fill-lime-900/70 hover:stroke-lime-400 hover:stroke-[2px]';
-    } else {
-      return 'fill-emerald-900/60 stroke-emerald-600 stroke-[1px] hover:fill-emerald-800 hover:stroke-emerald-300 hover:stroke-[2px]';
-    }
-  };
+  const getFactionStyle = useCallback((stateName: string) => {
+    if (factionStates.magneto.has(stateName)) return 'fill-red-900/60 stroke-red-500 stroke-[1px] hover:fill-red-700 hover:stroke-red-300 hover:stroke-[2px]';
+    if (factionStates.kingpin.has(stateName)) return 'fill-purple-900/60 stroke-purple-500 stroke-[1px] hover:fill-purple-700 hover:stroke-purple-300 hover:stroke-[2px]';
+    if (factionStates.hulk.has(stateName)) return 'fill-lime-900/40 stroke-lime-700 stroke-[1px] hover:fill-lime-900/70 hover:stroke-lime-400 hover:stroke-[2px]';
+    return 'fill-emerald-900/60 stroke-emerald-600 stroke-[1px] hover:fill-emerald-800 hover:stroke-emerald-300 hover:stroke-[2px]';
+  }, [factionStates]);
 
-  const getFactionLabel = useCallback((stateName: string) => {
-    const sectorPrefix = t.map.sector;
-    if (factionStates.magneto.has(stateName)) return `${sectorPrefix}: ${t.factions.magneto.name.toUpperCase()}`;
-    if (factionStates.kingpin.has(stateName)) return `${sectorPrefix}: ${t.factions.kingpin.name.toUpperCase()}`;
-    if (factionStates.hulk.has(stateName)) return `${sectorPrefix}: ${t.factions.hulk.name.toUpperCase()}`;
-    return `${sectorPrefix}: ${t.factions.doom.name.toUpperCase()}`;
-  }, [language, t, factionStates]);
-
-  const renderMap = useCallback(() => {
-    if (!usData || !svgRef.current || svgWidth === 0 || svgHeight === 0) {
-      return;
-    }
-    
-    // CLEANUP TIMERS BEFORE RE-RENDER
-    if (hulkTimerRef.current) clearTimeout(hulkTimerRef.current);
-    if (surferTimerRef.current) clearTimeout(surferTimerRef.current);
+  // 1. INICIALIZACIÓN DEL MAPA
+  useEffect(() => {
+    if (!usData || !svgRef.current || dimensions.width === 0 || dimensions.height === 0) return;
 
     const svg = d3.select(svgRef.current);
-    svg.selectAll('*').remove(); // CLEAR SVG
+    svg.selectAll('*').remove();
 
-    // --- DEFS ---
+    // Filtros y Clips
     const defs = svg.append("defs");
-    
-    // Patterns and Filters
-    const pattern = defs.append("pattern").attr("id", "grid-pattern").attr("width", 40).attr("height", 40).attr("patternUnits", "userSpaceOnUse");
-    pattern.append("path").attr("d", "M 40 0 L 0 0 0 40").attr("fill", "none").attr("stroke", "#0e7490").attr("stroke-width", 0.5).attr("opacity", 0.3);
-    
     const filter = defs.append("filter").attr("id", "glow").attr("x", "-50%").attr("y", "-50%").attr("width", "200%").attr("height", "200%");
     filter.append("feGaussianBlur").attr("stdDeviation", "2.5").attr("result", "coloredBlur");
     const feMerge = filter.append("feMerge");
     feMerge.append("feMergeNode").attr("in", "coloredBlur");
     feMerge.append("feMergeNode").attr("in", "SourceGraphic");
 
-    // Clip Paths
-    defs.append("clipPath").attr("id", "hulk-clip").append("circle").attr("cx", 0).attr("cy", 0).attr("r", 50); 
     defs.append("clipPath").attr("id", "bunker-clip").append("circle").attr("cx", 0).attr("cy", 0).attr("r", 12);
     defs.append("clipPath").attr("id", "mission-clip").append("circle").attr("cx", 0).attr("cy", 0).attr("r", 8);
-    defs.append("clipPath").attr("id", "surfer-clip").append("circle").attr("cx", 0).attr("cy", 0).attr("r", 15);
-
-    const g = svg.append('g'); 
-
-    const projection = d3.geoAlbersUsa();
-    const path = d3.geoPath();
-    const states = topojson.feature(usData as any, usData.objects.states as any) as any;
     
-    projection.fitSize([svgWidth, svgHeight], states);
-    path.projection(projection);
+    const g = svg.append('g');
+    gRef.current = g;
 
+    // FIX: Ensure usData.objects.states exists before accessing
+    if (!usData.objects || !usData.objects.states) {
+        console.error("Invalid TopoJSON structure");
+        return;
+    }
+
+    const statesFeatureCollection = topojson.feature(usData as any, usData.objects.states as any) as any;
+    const projection = d3.geoAlbersUsa().fitSize([dimensions.width, dimensions.height], statesFeatureCollection);
+    const path = d3.geoPath().projection(projection);
+
+    // Zoom
     const zoom = d3.zoom<SVGSVGElement, unknown>()
       .scaleExtent([1, 8])
       .on('zoom', (event) => {
-        const { k } = event.transform;
         g.attr('transform', event.transform.toString());
+        const k = event.transform.k;
         
+        // Semantic Zoom
         g.selectAll('.bunker').attr('transform', function() {
-            if (bunkerCoords) {
-                return `translate(${bunkerCoords[0]},${bunkerCoords[1]}) scale(${1/k})`;
-            }
-            return null;
+             const coords = d3.select(this).attr('data-coords')?.split(',').map(Number) || [0,0];
+             return `translate(${coords[0]},${coords[1]}) scale(${1/k})`;
         });
-        
-        // HULK SCALING
-        const hulkGroup = g.select('#hulk-token');
-        if (!hulkGroup.empty()) {
-            if (k >= 2.5) {
-                hulkGroup.select('.hulk-orb').style('display', 'none').style('opacity', 0);
-                hulkGroup.select('.hulk-icon').style('display', 'block').style('opacity', 1).attr('transform', `scale(${1/k * 2.5})`); 
-            } else {
-                hulkGroup.select('.hulk-icon').style('display', 'none').style('opacity', 0);
-                hulkGroup.select('.hulk-orb').style('display', 'block').style('opacity', 1).attr('transform', `scale(${1/Math.sqrt(k)})`);
-            }
-        }
 
-        // SURFER SCALING
-        const surferGroup = g.select('#surfer-token');
-        if (!surferGroup.empty()) {
-             surferGroup.attr('transform', function() {
-                 const currentTransform = d3.select(this).attr('transform');
-                 const translateMatch = /translate\(([^)]+)\)/.exec(currentTransform || '');
-                 const translate = translateMatch ? translateMatch[0] : '';
-                 return `${translate} scale(${1/Math.sqrt(k)})`;
-             });
-        }
-
-        // MISSION SCALING
         if (k >= 2.5) {
-            g.selectAll('.mission-dot').style('opacity', 0).style('display', 'none');
-            g.selectAll('.mission-icon').style('display', 'block').style('opacity', 1).attr('transform', `scale(${1/k * 2})`); 
+            g.selectAll('.mission-dot').style('display', 'none');
+            g.selectAll('.mission-icon').style('display', 'block').attr('transform', `scale(${1/k * 2})`);
         } else {
-            g.selectAll('.mission-icon').style('opacity', 0).style('display', 'none');
-            g.selectAll('.mission-dot').style('display', 'block').style('opacity', 1).attr('transform', `scale(${1/Math.sqrt(k)})`);
+            g.selectAll('.mission-icon').style('display', 'none');
+            g.selectAll('.mission-dot').style('display', 'block').attr('transform', `scale(${1/Math.sqrt(k)})`);
         }
+        
+        g.selectAll('.token-group').attr('transform', function() {
+            const currentTransform = d3.select(this).attr('transform');
+            const translateMatch = /translate\(([^)]+)\)/.exec(currentTransform);
+            const translate = translateMatch ? translateMatch[0] : 'translate(0,0)';
+            return `${translate} scale(${1/k})`;
+        });
       });
 
     svg.call(zoom);
 
-    const handleStateClick = (event: any, d: any) => {
-        event.stopPropagation();
-        const bounds = path.bounds(d);
-        const dx = bounds[1][0] - bounds[0][0];
-        const dy = bounds[1][1] - bounds[0][1];
-        const x = (bounds[0][0] + bounds[1][0]) / 2;
-        const y = (bounds[0][1] + bounds[1][1]) / 2;
-        const scale = Math.max(1, Math.min(8, 0.9 / Math.max(dx / svgWidth, dy / svgHeight)));
-        const translate = [svgWidth / 2 - scale * x, svgHeight / 2 - scale * y];
-        svg.transition().duration(750).call(zoom.transform, d3.zoomIdentity.translate(translate[0], translate[1]).scale(scale));
-    };
-
-    svg.on('click', () => {
-        svg.transition().duration(750).call(zoom.transform, d3.zoomIdentity);
-    });
-
-    // Draw States
+    const statesFeatures = statesFeatureCollection.features;
+    
     g.selectAll('path.state')
-      .data(states.features)
+      .data(statesFeatures)
       .join('path')
       .attr('class', 'state')
-      .attr('d', path as d3.GeoPath<any, d3.GeoGeometryObjects>)
+      .attr('d', path as any)
       .attr('class', (d: any) => `${getFactionStyle(d.properties.name)} transition-all duration-200 cursor-crosshair`)
-      .on('click', handleStateClick)
+      .on('click', (event, d: any) => {
+          event.stopPropagation();
+          const bounds = path.bounds(d);
+          const dx = bounds[1][0] - bounds[0][0];
+          const dy = bounds[1][1] - bounds[0][1];
+          const x = (bounds[0][0] + bounds[1][0]) / 2;
+          const y = (bounds[0][1] + bounds[1][1]) / 2;
+          const scale = Math.max(1, Math.min(8, 0.9 / Math.max(dx / dimensions.width, dy / dimensions.height)));
+          const translate = [dimensions.width / 2 - scale * x, dimensions.height / 2 - scale * y];
+          svg.transition().duration(750).call(zoom.transform, d3.zoomIdentity.translate(translate[0], translate[1]).scale(scale));
+      })
       .append('title')
-      .text((d: any) => `${d.properties.name.toUpperCase()}\n${getFactionLabel(d.properties.name)}`);
+      .text((d: any) => `${d.properties.name.toUpperCase()}`);
 
-    // Draw Labels
     g.selectAll('text.label')
-      .data(states.features)
+      .data(statesFeatures)
       .join('text')
       .attr('class', 'label')
       .attr('transform', (d: any) => {
           const centroid = path.centroid(d);
-          if (!centroid || isNaN(centroid[0]) || isNaN(centroid[1])) return 'translate(0,0)';
-          return `translate(${centroid[0]},${centroid[1]})`;
+          return (centroid && !isNaN(centroid[0])) ? `translate(${centroid[0]},${centroid[1]})` : 'translate(0,0)';
       })
       .attr('text-anchor', 'middle')
       .attr('dominant-baseline', 'central')
-      .attr('class', (d: any) => {
-         return 'pointer-events-none text-[8px] sm:text-[10px] font-mono fill-white/50 select-none tracking-wider font-bold';
-      })
+      .attr('class', 'pointer-events-none text-[8px] sm:text-[10px] font-mono fill-white/50 select-none tracking-wider font-bold')
       .text((d: any) => d.properties.name.toUpperCase());
 
-
-    // --- HULK ROAMING TOKEN ---
-    const hulkFeatures = states.features.filter((f: any) => factionStates.hulk.has(f.properties.name));
-    if (hulkFeatures.length > 0) {
-        
-        let startCentroid: [number, number] | null = null;
-        let isRoaming = true;
-
-        // CHOREOGRAPHY LOGIC
-        if (worldStage === 'SURFER' && !tokensReleased) {
-            // First 10 seconds: Force to Kansas to meet Surfer
-            const kansas = projection([-98.5, 38.5]);
-            if (kansas) {
-                startCentroid = kansas;
-                isRoaming = false;
-            }
-        } else {
-            // Default Roaming (including Surfer stage > 10s and Galactus stage)
-            let currentHulkFeature = hulkFeatures[Math.floor(Math.random() * hulkFeatures.length)];
-            const c = path.centroid(currentHulkFeature);
-            if (c && !isNaN(c[0])) {
-                startCentroid = c;
-            }
-        }
-        
-        if (startCentroid) {
-            const hulkGroup = g.append('g').attr('id', 'hulk-token').attr('transform', `translate(${startCentroid[0]}, ${startCentroid[1]})`).attr('class', 'pointer-events-none'); 
-            const jumpWrapper = hulkGroup.append('g').attr('class', 'hulk-jump-wrapper');
-            const hulkOrb = jumpWrapper.append('g').attr('class', 'hulk-orb');
-            hulkOrb.append('circle').attr('r', 12).attr('fill', '#84cc16').attr('opacity', 0.4).append('animate').attr('attributeName', 'r').attr('values', '12;20;12').attr('dur', '2s').attr('repeatCount', 'indefinite');
-            hulkOrb.append('circle').attr('r', 5).attr('fill', '#bef264').attr('stroke', '#365314').attr('stroke-width', 1);
-            hulkOrb.append('text').attr('y', -15).attr('text-anchor', 'middle').attr('class', 'text-[6px] font-bold fill-lime-400').text('HULK');
-
-            const hulkIcon = jumpWrapper.append('g').attr('class', 'hulk-icon').style('display', 'none').style('opacity', 0);
-            
-            hulkIcon.append('circle').attr('r', 40).attr('fill', '#a3e635').attr('cx', 0).attr('cy', 0); 
-            
-            hulkIcon.append('image')
-                .attr('href', 'https://i.pinimg.com/1200x/dd/fa/7b/ddfa7b9d3e2b76cbd33af6647308f3a7.jpg')
-                .attr('x', -40).attr('y', -40).attr('width', 80).attr('height', 80)
-                .attr('clip-path', 'url(#hulk-clip)')
-                .style('mix-blend-mode', 'multiply');
-
-            if (isRoaming) {
-                let currentHulkFeature = hulkFeatures[Math.floor(Math.random() * hulkFeatures.length)];
-                const moveHulk = () => {
-                    const currentCentroid = path.centroid(currentHulkFeature);
-                    const neighbors = hulkFeatures
-                        .filter((f: any) => f !== currentHulkFeature)
-                        .map((f: any) => {
-                            const c = path.centroid(f);
-                            if (!c || isNaN(c[0])) return { feature: f, dist: Infinity, centroid: [0,0] };
-                            const dist = Math.sqrt(Math.pow(c[0] - currentCentroid[0], 2) + Math.pow(c[1] - currentCentroid[1], 2));
-                            return { feature: f, dist, centroid: c };
-                        })
-                        .sort((a: any, b: any) => a.dist - b.dist)
-                        .slice(0, 4);
-                    
-                    const randomDelay = Math.floor(Math.random() * (180000 - 5000 + 1) + 5000);
-
-                    if (neighbors.length > 0) {
-                        const nextMove = neighbors[Math.floor(Math.random() * neighbors.length)];
-                        currentHulkFeature = nextMove.feature;
-                        const jumpDuration = 3000;
-                        d3.select('#hulk-token').transition().duration(jumpDuration).ease(d3.easeLinear).attr('transform', `translate(${nextMove.centroid[0]}, ${nextMove.centroid[1]})`);
-                        d3.select('.hulk-jump-wrapper').transition().duration(jumpDuration / 2).ease(d3.easeQuadOut).attr('transform', 'scale(1.5)').transition().duration(jumpDuration / 2).ease(d3.easeQuadIn).attr('transform', 'scale(1)').on('end', () => {
-                                 hulkTimerRef.current = setTimeout(moveHulk, randomDelay);
-                            });
-                    } else {
-                        hulkTimerRef.current = setTimeout(moveHulk, randomDelay);
-                    }
-                };
-                hulkTimerRef.current = setTimeout(moveHulk, 3000);
-            }
-        }
-    }
-
-    // --- SILVER SURFER ZOMBIE TOKEN ---
-    // Surfer exists during SURFER stage (either locked or roaming)
-    // In GALACTUS stage, he is LOCKED guarding the boss
-    if (worldStage === 'SURFER' || worldStage === 'GALACTUS') {
-        let startC: [number, number] | null = null;
-        let isRoaming = true;
-
-        if (worldStage === 'SURFER') {
-             if (!tokensReleased) {
-                 // First 10s: Locked in Kansas
-                 const kansas = projection([-98.0, 38.5]); 
-                 if (kansas) {
-                     startC = kansas;
-                     isRoaming = false;
-                 }
-             } else {
-                // After 10s: Roaming Randomly
-                const allStates = states.features;
-                let currentSurferFeature = allStates[Math.floor(Math.random() * allStates.length)];
-                const c = path.centroid(currentSurferFeature);
-                if (c && !isNaN(c[0])) startC = c;
-             }
-        } else if (worldStage === 'GALACTUS') {
-             // Force to Kansas to Guard Galactus
-             const kansas = projection([-98.0, 38.0]); // Coordinates match Boss mission
-             if (kansas) {
-                 startC = kansas;
-                 isRoaming = false;
-             }
-        }
-
-        if (startC) {
-            const surferGroup = g.append('g').attr('id', 'surfer-token').attr('transform', `translate(${startC[0]}, ${startC[1]})`).attr('class', 'pointer-events-none');
-            
-            surferGroup.append('circle')
-                .attr('r', 6)
-                .attr('fill', '#ffffff')
-                .attr('stroke', '#cbd5e1')
-                .attr('stroke-width', 1.5)
-                .style('filter', 'url(#glow)');
-
-            surferGroup.append('circle')
-                .attr('r', 6)
-                .attr('fill', 'none')
-                .attr('stroke', '#e2e8f0')
-                .attr('stroke-width', 1)
-                .attr('opacity', 0.8)
-                .append('animate')
-                .attr('attributeName', 'r')
-                .attr('from', '6')
-                .attr('to', '20')
-                .attr('dur', '0.8s')
-                .attr('repeatCount', 'indefinite');
-            
-            surferGroup.select('circle:last-child')
-                .append('animate')
-                .attr('attributeName', 'opacity')
-                .attr('from', '0.8')
-                .attr('to', '0')
-                .attr('dur', '0.8s')
-                .attr('repeatCount', 'indefinite');
-
-            if (isRoaming) {
-                const moveSurfer = () => {
-                    const allStates = states.features;
-                    const randomState = allStates[Math.floor(Math.random() * allStates.length)];
-                    const nextC = path.centroid(randomState);
-                    if (nextC && !isNaN(nextC[0])) {
-                        d3.select('#surfer-token')
-                            .transition()
-                            .duration(800)
-                            .ease(d3.easeCubicInOut)
-                            .attr('transform', `translate(${nextC[0]}, ${nextC[1]})`)
-                            .on('end', () => {
-                                surferTimerRef.current = setTimeout(moveSurfer, 1500); 
-                            });
-                    } else {
-                        surferTimerRef.current = setTimeout(moveSurfer, 1000);
-                    }
-                };
-                surferTimerRef.current = setTimeout(moveSurfer, 1000);
-            }
-        }
-    }
-
-    // --- GALACTUS OVERLAY (FULL MAP) ---
-    if (worldStage === 'GALACTUS') {
-        const galactusGroup = g.append('g').attr('class', 'pointer-events-none');
-        
-        galactusGroup.append('image')
-            .attr('href', 'https://i.pinimg.com/736x/7d/99/05/7d9905d417620745edc2c724f94e56c8.jpg')
-            .attr('x', 0)
-            .attr('y', 0)
-            .attr('width', svgWidth)
-            .attr('height', svgHeight)
-            .attr('preserveAspectRatio', 'xMidYMid slice') // Ensures full coverage
-            .attr('opacity', 0.4); 
-    }
-
-    // --- S.H.I.E.L.D. BUNKER (BASE) ---
     const bunkerCoords = projection([-82.9, 40.0]);
     if (bunkerCoords) {
-        const bunkerGroup = g.append('g').attr('class', 'bunker cursor-pointer hover:opacity-100').attr('transform', `translate(${bunkerCoords[0]}, ${bunkerCoords[1]})`).on('click', (e) => { e.stopPropagation(); onBunkerClick(); });
-        bunkerGroup.append('circle').attr('r', 12).attr('fill', 'none').attr('stroke', '#06b6d4').attr('stroke-width', 1).append('animate').attr('attributeName', 'r').attr('from', '12').attr('to', '25').attr('dur', '2s').attr('repeatCount', 'indefinite');
-        bunkerGroup.append('image').attr('href', 'https://i.pinimg.com/736x/63/1e/3a/631e3a68228c97963e78381ad11bf3bb.jpg').attr('x', -12).attr('y', -12).attr('width', 24).attr('height', 24).attr('clip-path', 'url(#bunker-clip)');
-        const bunkerLabel = playerAlignment === 'ZOMBIE' ? t.map.hive : t.map.bunker;
-        bunkerGroup.append('text').attr('y', 25).attr('text-anchor', 'middle').attr('class', 'font-mono font-bold fill-cyan-400 text-[8px] tracking-widest').style('text-shadow', '0 0 5px black').text(`[ ${bunkerLabel} ]`);
+        const bunkerGroup = g.append('g')
+            .attr('class', 'bunker cursor-pointer hover:opacity-100')
+            .attr('transform', `translate(${bunkerCoords[0]}, ${bunkerCoords[1]})`)
+            .attr('data-coords', `${bunkerCoords[0]},${bunkerCoords[1]}`)
+            .on('click', (e) => { e.stopPropagation(); onBunkerClick(); });
+            
+        bunkerGroup.append('circle').attr('r', 12).attr('fill', 'none').attr('stroke', '#06b6d4').attr('stroke-width', 1)
+            .append('animate').attr('attributeName', 'r').attr('from', '12').attr('to', '25').attr('dur', '2s').attr('repeatCount', 'indefinite');
+        bunkerGroup.append('image').attr('href', 'https://i.pinimg.com/736x/63/1e/3a/631e3a68228c97963e78381ad11bf3bb.jpg')
+            .attr('x', -12).attr('y', -12).attr('width', 24).attr('height', 24).attr('clip-path', 'url(#bunker-clip)');
     }
 
-    // --- MISSION LINES ---
-    g.selectAll('path.mission-line').data(missions.filter(m => m && m.prereq)).join('path').attr('class', 'mission-line')
-      .attr('d', (d) => {
-          if (!d) return null;
-          const startMission = missions.find(m => m && m.id === d.prereq);
-          if (!startMission) return null;
-          const startCoords = projection(startMission.location.coordinates);
-          const endCoords = projection(d.location.coordinates);
-          if (!startCoords || !endCoords) return null;
-          const dx = endCoords[0] - startCoords[0];
-          const dy = endCoords[1] - startCoords[1];
-          const dr = Math.sqrt(dx * dx + dy * dy);
-          return `M${startCoords[0]},${startCoords[1]}A${dr},${dr} 0 0,1 ${endCoords[0]},${endCoords[1]}`;
-      })
-      .attr('fill', 'none').attr('stroke', '#eab308').attr('stroke-width', 1.5).attr('stroke-dasharray', '4,4').attr('opacity', 0.6).append('animate').attr('attributeName', 'stroke-dashoffset').attr('from', '0').attr('to', '-8').attr('dur', '1s').attr('repeatCount', 'indefinite');
+  }, [usData, dimensions, getFactionStyle]); 
 
-    // --- MISSION TOKENS ---
-    const validMissions = missions.filter(m => m && m.id && m.location && m.location.coordinates);
-
-    const missionGroups = g.selectAll('g.mission').data(validMissions).join('g').attr('class', 'mission cursor-pointer hover:opacity-100').attr('transform', (d) => {
-        if (!d) return 'translate(-100,-100)';
-        const coords = projection(d.location.coordinates);
-        return coords ? `translate(${coords[0]}, ${coords[1]})` : 'translate(-100,-100)';
-      }).on('click', (e, d) => { e.stopPropagation(); onMissionSelect(d); });
-    
-    missionGroups.append('title').text(d => d ? d.title : 'Mission');
-    missionGroups.append('circle').attr('class', 'mission-dot').attr('r', (d) => completedMissionIds.has(d.id) ? 6 : 4.5).attr('fill', (d) => {
-          if (completedMissionIds.has(d.id)) return '#10b981'; 
-          if (d.type === 'SHIELD_BASE') return '#06b6d4'; 
-          if (d.type === 'BOSS') return '#9333ea'; 
-          return '#eab308';
-      }).attr('stroke', 'white').attr('stroke-width', 0.5).style('filter', 'url(#glow)');
-    
-    const activeMissionCircles = missionGroups.filter((d) => !completedMissionIds.has(d.id)).append('circle').attr('r', 4.5).attr('fill', 'none').attr('stroke', (d) => {
-        if(d.type === 'SHIELD_BASE') return '#06b6d4';
-        if(d.type === 'BOSS') return '#9333ea';
-        return '#eab308';
-    }).attr('stroke-width', 0.5);
-    activeMissionCircles.append('animate').attr('attributeName', 'r').attr('from', '4.5').attr('to', '15').attr('dur', '1.5s').attr('repeatCount', 'indefinite');
-    activeMissionCircles.append('animate').attr('attributeName', 'opacity').attr('from', '1').attr('to', '0').attr('dur', '1.5s').attr('repeatCount', 'indefinite');
-
-    const iconGroup = missionGroups.append('g').attr('class', 'mission-icon').style('opacity', 0).style('display', 'none');
-    iconGroup.append('circle').attr('r', 8).attr('fill', '#0f172a').attr('stroke', (d) => {
-          if (completedMissionIds.has(d.id)) return '#10b981';
-          if (d.type === 'SHIELD_BASE') return '#06b6d4';
-          if (d.type === 'BOSS') return '#9333ea';
-          return '#eab308';
-      }).attr('stroke-width', 1);
-
-    iconGroup.each(function(d) {
-        if (!d) return;
-        const sel = d3.select(this);
-        const isCompleted = completedMissionIds.has(d.id);
-        if (isCompleted) {
-            sel.append('path').attr('d', "M-3,0 L0,3 L5,-4").attr('stroke', '#10b981').attr('stroke-width', 2).attr('fill', 'none');
-        } else if (d.type === 'SHIELD_BASE') {
-             sel.append('image').attr('href', 'https://i.pinimg.com/736x/63/1e/3a/631e3a68228c97963e78381ad11bf3bb.jpg').attr('x', -8).attr('y', -8).attr('width', 16).attr('height', 16).attr('clip-path', 'url(#mission-clip)');
-        } else if (d.type === 'BOSS') {
-             sel.append('text').attr('dy', 4).attr('text-anchor', 'middle').attr('font-size', '10px').text('💀').attr('fill', '#9333ea');
-        } else {
-             sel.append('path').attr('d', "M-4,-4 L4,4 M-4,4 L4,-4 M0,-6 L0,-3 M0,6 L0,3 M-6,0 L-3,0 M6,0 L3,0").attr('stroke', '#eab308').attr('stroke-width', 1.5).attr('fill', 'none');
-        }
-    });
-
-  }, [usData, svgWidth, svgHeight, getFactionLabel, missions, factionStates, completedMissionIds, onMissionSelect, onBunkerClick, t, playerAlignment, worldStage, tokensReleased]);
-
+  // 2. ACTUALIZACIÓN DINÁMICA
   useEffect(() => {
-    if (usData && svgWidth > 0 && svgHeight > 0) {
-      renderMap();
-    }
-    return () => {
-        if (hulkTimerRef.current) clearTimeout(hulkTimerRef.current);
-        if (surferTimerRef.current) clearTimeout(surferTimerRef.current);
-    };
-  }, [usData, svgWidth, svgHeight, renderMap]);
+      if (!usData || !gRef.current || dimensions.width === 0) return;
+      const g = gRef.current;
+      
+      if (!usData.objects || !usData.objects.states) return;
+      const statesFeatureCollection = topojson.feature(usData as any, usData.objects.states as any) as any;
+      const projection = d3.geoAlbersUsa().fitSize([dimensions.width, dimensions.height], statesFeatureCollection);
+      
+      const currentZoom = d3.zoomTransform(svgRef.current!).k || 1;
 
-  if (loading) return <div ref={containerRef} className="flex flex-col items-center justify-center w-full h-full text-cyan-500 font-mono"><div className="w-16 h-16 border-4 border-t-cyan-400 border-r-transparent border-b-cyan-400 border-l-transparent rounded-full animate-spin mb-4"></div><div className="animate-pulse">{t.map.loading}</div></div>;
-  if (error) return <div ref={containerRef} className="flex flex-col items-center justify-center w-full h-full text-red-500 font-mono border border-red-900 bg-red-900/20 p-4"><div className="text-4xl mb-2">⚠</div><p className="tracking-widest font-bold">{t.map.error}</p></div>;
+      const validMissions = missions.filter(m => m && m.id && m.location && m.location.coordinates);
+      
+      g.selectAll('path.mission-line')
+        .data(validMissions.filter(m => m.prereq))
+        .join('path')
+        .attr('class', 'mission-line')
+        .attr('d', (d) => {
+            const startMission = missions.find(m => m.id === d.prereq);
+            if (!startMission) return null;
+            const start = projection(startMission.location.coordinates);
+            const end = projection(d.location.coordinates);
+            if (!start || !end) return null;
+            const dr = Math.sqrt(Math.pow(end[0]-start[0], 2) + Math.pow(end[1]-start[1], 2));
+            return `M${start[0]},${start[1]}A${dr},${dr} 0 0,1 ${end[0]},${end[1]}`;
+        })
+        .attr('fill', 'none').attr('stroke', '#eab308').attr('stroke-width', 1.5).attr('stroke-dasharray', '4,4').attr('opacity', 0.6);
+
+      const missionGroups = g.selectAll('g.mission')
+        .data(validMissions, (d: any) => d.id) 
+        .join(
+            enter => {
+                const grp = enter.append('g').attr('class', 'mission cursor-pointer hover:opacity-100');
+                grp.append('circle').attr('class', 'mission-dot');
+                grp.append('g').attr('class', 'mission-icon');
+                return grp;
+            }
+        )
+        .attr('transform', (d) => {
+            const coords = projection(d.location.coordinates);
+            return coords ? `translate(${coords[0]}, ${coords[1]})` : 'translate(-100,-100)';
+        })
+        .on('click', (e, d) => { e.stopPropagation(); onMissionSelect(d); });
+
+      missionGroups.select('.mission-dot')
+        .attr('r', (d) => completedMissionIds.has(d.id) ? 6 : 4.5)
+        .attr('fill', (d) => {
+            if (completedMissionIds.has(d.id)) return '#10b981'; 
+            if (d.type === 'SHIELD_BASE') return '#06b6d4'; 
+            if (d.type === 'BOSS') return '#9333ea'; 
+            return '#eab308';
+        })
+        .attr('stroke', 'white').attr('stroke-width', 0.5).style('filter', 'url(#glow)')
+        .style('display', currentZoom >= 2.5 ? 'none' : 'block')
+        .attr('transform', `scale(${1/Math.sqrt(currentZoom)})`);
+
+      missionGroups.select('.mission-icon')
+        .each(function(d) {
+          const sel = d3.select(this);
+          sel.selectAll('*').remove(); 
+          
+          if (d.type === 'SHIELD_BASE' && !completedMissionIds.has(d.id)) {
+             sel.append('circle').attr('r', 9).attr('fill', '#0f172a').attr('stroke', '#06b6d4').attr('stroke-width', 1);
+             sel.append('image')
+                .attr('href', 'https://i.pinimg.com/736x/63/1e/3a/631e3a68228c97963e78381ad11bf3bb.jpg')
+                .attr('x', -8).attr('y', -8)
+                .attr('width', 16).attr('height', 16)
+                .attr('clip-path', 'url(#mission-clip)');
+          } else {
+              sel.append('circle').attr('r', 8).attr('fill', '#0f172a').attr('stroke', completedMissionIds.has(d.id) ? '#10b981' : '#eab308');
+              
+              if (completedMissionIds.has(d.id)) {
+                  sel.append('path').attr('d', "M-3,0 L0,3 L5,-4").attr('stroke', '#10b981').attr('stroke-width', 2).attr('fill', 'none');
+              } else if (d.type === 'BOSS') {
+                  sel.append('text').attr('dy', 4).attr('text-anchor', 'middle').attr('font-size', '10px').text('💀').attr('fill', '#9333ea');
+              } else {
+                  sel.append('path').attr('d', "M-4,-4 L4,4 M-4,4 L4,-4").attr('stroke', '#eab308').attr('stroke-width', 1.5);
+              }
+          }
+        })
+        .style('display', currentZoom < 2.5 ? 'none' : 'block')
+        .attr('transform', `scale(${1/currentZoom * 2})`);
+
+      g.selectAll('.galactus-overlay').remove();
+      if (worldStage === 'GALACTUS') {
+          g.append('image')
+            .attr('class', 'galactus-overlay pointer-events-none')
+            .attr('href', 'https://i.pinimg.com/736x/7d/99/05/7d9905d417620745edc2c724f94e56c8.jpg')
+            .attr('width', dimensions.width).attr('height', dimensions.height)
+            .attr('preserveAspectRatio', 'xMidYMid slice').attr('opacity', 0.4);
+      }
+
+      const moveHulk = (selection: d3.Selection<any, any, any, any>, currentCoords: [number, number]) => {
+          const states = (topojson.feature(usData as any, usData.objects.states as any) as any).features;
+          const hulkStates = states.filter((s: any) => factionStates.hulk.has(s.properties.name));
+
+          const candidates = hulkStates.map((s: any) => {
+              const centroid = d3.geoPath().projection(projection).centroid(s);
+              if (!centroid || isNaN(centroid[0])) return null;
+              
+              const dist = Math.sqrt(Math.pow(centroid[0] - currentCoords[0], 2) + Math.pow(centroid[1] - currentCoords[1], 2));
+              return { centroid, dist, name: s.properties.name };
+          }).filter((c: any) => c !== null && c.dist > 10); 
+
+          candidates.sort((a: any, b: any) => a.dist - b.dist);
+          const neighbors = candidates.slice(0, 3);
+
+          if (neighbors.length === 0) return; 
+
+          const target = neighbors[Math.floor(Math.random() * neighbors.length)];
+
+          selection.transition()
+              .duration(2000) 
+              .ease(d3.easeQuadInOut)
+              .attrTween("transform", function() {
+                  const i = d3.interpolate(currentCoords, target.centroid);
+                  return function(t) {
+                      const pos = i(t);
+                      const scale = 1 + Math.sin(t * Math.PI) * 0.5; 
+                      const currentZoom = d3.zoomTransform(svgRef.current!).k;
+                      return `translate(${pos[0]},${pos[1]}) scale(${scale / currentZoom})`;
+                  };
+              })
+              .on('end', () => {
+                  hulkTimeoutRef.current = setTimeout(() => {
+                      moveHulk(selection, target.centroid);
+                  }, 3000);
+              });
+      };
+
+      g.selectAll('.hulk-token').remove();
+      if (tokensReleased) {
+          const startStateName = 'North Dakota'; 
+          const states = (topojson.feature(usData as any, usData.objects.states as any) as any).features;
+          const startFeature = states.find((s: any) => s.properties.name === startStateName);
+          const startCoords = startFeature ? d3.geoPath().projection(projection).centroid(startFeature) : projection([-100, 47]);
+
+          if (startCoords) {
+              const hulkGroup = g.append('g')
+                  .attr('class', 'token-group hulk-token cursor-pointer')
+                  .attr('id', 'hulk-token')
+                  .attr('transform', `translate(${startCoords[0]}, ${startCoords[1]})`);
+              
+              hulkGroup.append('circle').attr('r', 15).attr('fill', '#65a30d').attr('stroke', '#365314').attr('stroke-width', 2).style('filter', 'url(#glow)');
+              hulkGroup.append('text').text('HULK').attr('dy', 4).attr('text-anchor', 'middle').attr('font-size', '8px').attr('font-weight', 'bold').attr('fill', 'white');
+              
+              moveHulk(hulkGroup, startCoords as [number, number]);
+          }
+      }
+
+      const moveSurfer = (selection: d3.Selection<any, any, any, any>) => {
+          const states = (topojson.feature(usData as any, usData.objects.states as any) as any).features;
+          const randomState = states[Math.floor(Math.random() * states.length)];
+          const centroid = d3.geoPath().projection(projection).centroid(randomState);
+
+          if (centroid && !isNaN(centroid[0])) {
+              selection.transition()
+                  .duration(4000) 
+                  .ease(d3.easeLinear)
+                  .attr('transform', function() {
+                      const currentZoom = d3.zoomTransform(svgRef.current!).k;
+                      return `translate(${centroid[0]}, ${centroid[1]}) scale(${1/currentZoom})`;
+                  })
+                  .on('end', () => moveSurfer(selection));
+          }
+      };
+
+      g.selectAll('.surfer-token').remove();
+      if (worldStage === 'SURFER' && tokensReleased) {
+          const surferStart = projection([-120, 35]) || [0,0];
+          const surferGroup = g.append('g')
+              .attr('class', 'token-group surfer-token cursor-pointer')
+              .attr('transform', `translate(${surferStart[0]}, ${surferStart[1]})`);
+          
+          surferGroup.append('circle').attr('r', 12).attr('fill', '#94a3b8').attr('stroke', 'white').attr('stroke-width', 2).style('filter', 'url(#glow)');
+          surferGroup.append('text').text('🏄').attr('dy', 4).attr('text-anchor', 'middle').attr('font-size', '12px');
+          
+          moveSurfer(surferGroup);
+      }
+
+      return () => {
+          if (hulkTimeoutRef.current) clearTimeout(hulkTimeoutRef.current);
+          if (surferTimeoutRef.current) clearTimeout(surferTimeoutRef.current);
+          g.selectAll('.token-group').interrupt(); 
+      };
+
+  }, [missions, completedMissionIds, worldStage, tokensReleased, usData, dimensions]);
+
+  if (loading) return <div ref={containerRef} className="flex flex-col items-center justify-center w-full h-full text-cyan-500 font-mono"><div className="animate-spin text-4xl">✇</div><div>{t.map.loading}</div></div>;
+  if (error) return <div ref={containerRef} className="flex flex-col items-center justify-center w-full h-full text-red-500 font-mono border border-red-900 bg-red-900/20 p-4">⚠ {t.map.error}</div>;
 
   return (
     <div ref={containerRef} className="w-full h-full relative bg-transparent overflow-hidden">
         <div className="absolute inset-0 z-0 pointer-events-none" style={{backgroundImage: 'radial-gradient(circle, #0e7490 1px, transparent 1px)', backgroundSize: '20px 20px', opacity: 0.2}}></div>
-        <svg ref={svgRef} className="w-full h-full relative z-10" viewBox={`0 0 ${svgWidth} ${svgHeight}`} preserveAspectRatio="xMidYMid meet"></svg>
+        <svg ref={svgRef} className="w-full h-full relative z-10"></svg>
     </div>
   );
 };

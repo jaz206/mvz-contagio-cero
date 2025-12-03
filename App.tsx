@@ -1,9 +1,9 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { translations, Language } from './translations';
 import { User } from 'firebase/auth';
 import { auth } from './firebaseConfig';
 import { onAuthStateChanged } from 'firebase/auth';
-import { getUserProfile, saveUserProfile, getCustomMissions } from './services/dbService';
+import { getUserProfile, saveUserProfile, getCustomMissions, getHeroTemplates } from './services/dbService'; // AÑADIDO getHeroTemplates
 import { logout } from './services/authService';
 
 import { LoginScreen } from './components/LoginScreen';
@@ -15,7 +15,7 @@ import { MissionModal } from './components/MissionModal';
 import { EventModal } from './components/EventModal';
 import { MissionEditor } from './components/MissionEditor';
 
-import { Mission, Hero, WorldStage, GlobalEvent } from './types';
+import { Mission, Hero, WorldStage, GlobalEvent, HeroTemplate } from './types';
 
 // ... constants FACTION_STATES ...
 const FACTION_STATES = {
@@ -192,14 +192,15 @@ const App: React.FC = () => {
     const [isGuest, setIsGuest] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
     
-    // CRITICAL FIX: Track if data has been initially loaded to prevent overwriting cloud data with empty state
-    const [isDataLoaded, setIsDataLoaded] = useState(false);
+    // FIX: Use Ref to track if data is truly loaded to avoid race conditions in useEffect
+    const isDataLoadedRef = useRef(false);
     
     const [isEditorMode, setIsEditorMode] = useState(false);
     const [showMissionEditor, setShowMissionEditor] = useState(false); 
     const [missionToEdit, setMissionToEdit] = useState<Mission | null>(null); 
     
     const [customMissions, setCustomMissions] = useState<Mission[]>([]);
+    const [dbTemplates, setDbTemplates] = useState<HeroTemplate[]>([]); // NEW: Store templates for merging
 
     const [selectedMission, setSelectedMission] = useState<Mission | null>(null);
     const [showStory, setShowStory] = useState(false);
@@ -239,7 +240,7 @@ const App: React.FC = () => {
         setHeroes(INITIAL_HEROES);
         setCompletedMissionIds(new Set());
         setWorldStage('NORMAL');
-        setIsDataLoaded(true); // Editor mode doesn't load from DB profile
+        isDataLoadedRef.current = true; // Editor mode assumes data is "loaded" (default state)
     };
 
     const handleGuestLogin = () => {
@@ -253,26 +254,48 @@ const App: React.FC = () => {
       await logout();
       setIsGuest(false);
       setIsEditorMode(false);
-      setIsDataLoaded(false);
+      isDataLoadedRef.current = false;
+      setPlayerAlignment(null);
       setViewMode('login');
     };
 
-    const mergeWithLatestContent = (savedHeroes: Hero[], isZombie: boolean): Hero[] => {
+    // UPDATED MERGE FUNCTION: Now accepts dbTemplates to merge custom heroes too
+    const mergeWithLatestContent = (savedHeroes: Hero[], isZombie: boolean, templates: HeroTemplate[]): Hero[] => {
         const baseList = isZombie ? INITIAL_ZOMBIE_HEROES : INITIAL_HEROES;
+        
         return savedHeroes.map(savedHero => {
+            // 1. Check hardcoded heroes
             const codeHero = baseList.find(h => 
                 (h.templateId && h.templateId === savedHero.templateId) || 
                 (h.alias === savedHero.alias)
             );
+            
             if (codeHero) {
                 return {
                     ...savedHero,
                     currentStory: codeHero.currentStory,
                     objectives: codeHero.objectives,
                     bio: codeHero.bio,
-                    imageUrl: codeHero.imageUrl
+                    imageUrl: codeHero.imageUrl,
+                    characterSheetUrl: codeHero.characterSheetUrl // Ensure this is copied
                 };
             }
+
+            // 2. Check DB templates (for custom recruited heroes like Colossus)
+            if (savedHero.templateId) {
+                const dbTemplate = templates.find(t => t.id === savedHero.templateId);
+                if (dbTemplate) {
+                    return {
+                        ...savedHero,
+                        currentStory: dbTemplate.currentStory || savedHero.currentStory,
+                        objectives: dbTemplate.objectives || savedHero.objectives,
+                        bio: dbTemplate.bio || savedHero.bio,
+                        imageUrl: dbTemplate.imageUrl || savedHero.imageUrl,
+                        characterSheetUrl: dbTemplate.characterSheetUrl || savedHero.characterSheetUrl // CRITICAL FIX
+                    };
+                }
+            }
+
             return savedHero;
         });
     };
@@ -285,66 +308,85 @@ const App: React.FC = () => {
         loadMissions();
     }, [isEditorMode]);
 
+    // DATA LOADING EFFECT
     useEffect(() => {
         const loadData = async () => {
             if (isEditorMode) return; 
             
-            // Reset data loaded flag when switching users or alignment
-            setIsDataLoaded(false);
+            // Reset flag when switching context
+            isDataLoadedRef.current = false;
 
             if ((user || isGuest) && playerAlignment) {
                 let profileHeroes: Hero[] = [];
                 let profileMissions: string[] = [];
                 let dataFound = false;
 
-                if (user) {
-                    const profile = await getUserProfile(user.uid, playerAlignment);
-                    if (profile) {
-                        profileHeroes = mergeWithLatestContent(profile.heroes, playerAlignment === 'ZOMBIE');
-                        profileMissions = profile.completedMissionIds;
-                        dataFound = true;
-                    }
-                } else {
-                    const storageKey = `shield_heroes_${isGuest ? 'guest' : user?.uid}_${playerAlignment}`;
-                    const saved = localStorage.getItem(storageKey);
-                    if (saved) {
-                        const parsed = JSON.parse(saved);
-                        profileHeroes = mergeWithLatestContent(parsed.heroes, playerAlignment === 'ZOMBIE');
-                        profileMissions = parsed.completedMissionIds || [];
-                        dataFound = true;
-                    }
-                }
+                try {
+                    // Fetch templates first to ensure we can merge latest data
+                    const templates = await getHeroTemplates();
+                    setDbTemplates(templates);
 
-                if (dataFound && profileHeroes.length > 0) {
-                    setHeroes(profileHeroes);
-                    setCompletedMissionIds(new Set(profileMissions));
-                    checkGlobalEvents(profileMissions.length);
-                } else {
+                    if (user) {
+                        const profile = await getUserProfile(user.uid, playerAlignment);
+                        if (profile) {
+                            profileHeroes = mergeWithLatestContent(profile.heroes, playerAlignment === 'ZOMBIE', templates);
+                            profileMissions = profile.completedMissionIds;
+                            dataFound = true;
+                        }
+                    } else {
+                        const storageKey = `shield_heroes_${isGuest ? 'guest' : user?.uid}_${playerAlignment}`;
+                        const saved = localStorage.getItem(storageKey);
+                        if (saved) {
+                            const parsed = JSON.parse(saved);
+                            profileHeroes = mergeWithLatestContent(parsed.heroes, playerAlignment === 'ZOMBIE', templates);
+                            profileMissions = parsed.completedMissionIds || [];
+                            dataFound = true;
+                        }
+                    }
+
+                    if (dataFound && profileHeroes.length > 0) {
+                        setHeroes(profileHeroes);
+                        setCompletedMissionIds(new Set(profileMissions));
+                        checkGlobalEvents(profileMissions.length);
+                    } else {
+                        // Initialize new game state
+                        setHeroes(playerAlignment === 'ZOMBIE' ? INITIAL_ZOMBIE_HEROES : INITIAL_HEROES);
+                        setCompletedMissionIds(new Set());
+                    }
+                } catch (e) {
+                    console.error("Error loading data:", e);
+                    // Fallback to initial state on error to prevent UI crash
                     setHeroes(playerAlignment === 'ZOMBIE' ? INITIAL_ZOMBIE_HEROES : INITIAL_HEROES);
-                    setCompletedMissionIds(new Set());
+                } finally {
+                    // Mark data as loaded ONLY after everything is set
+                    isDataLoadedRef.current = true;
                 }
-                
-                // Mark data as loaded so saving can be enabled
-                setIsDataLoaded(true);
             }
         };
         loadData();
     }, [user, isGuest, playerAlignment, isEditorMode]);
 
+    // AUTO-SAVE EFFECT
     useEffect(() => {
-        // CRITICAL FIX: Prevent saving if data hasn't been loaded yet or if we are in editor mode
-        if (isEditorMode || !user || !playerAlignment || !isDataLoaded) return;
+        // CRITICAL FIX: Strictly check ref to prevent overwriting cloud data with empty state
+        if (isEditorMode || !user || !playerAlignment || !isDataLoadedRef.current) return;
         
+        // Don't save if heroes array is empty (sanity check)
         if (heroes.length === 0) return;
 
         const timeout = setTimeout(async () => {
             setIsSaving(true);
-            await saveUserProfile(user.uid, playerAlignment, heroes, Array.from(completedMissionIds));
-            setTimeout(() => setIsSaving(false), 1000);
+            try {
+                await saveUserProfile(user.uid, playerAlignment, heroes, Array.from(completedMissionIds));
+            } catch (e) {
+                console.error("Auto-save failed", e);
+            } finally {
+                setTimeout(() => setIsSaving(false), 1000);
+            }
         }, 2000);
 
         return () => clearTimeout(timeout);
-    }, [heroes, completedMissionIds, user, playerAlignment, isEditorMode, isDataLoaded]);
+    }, [heroes, completedMissionIds, user, playerAlignment, isEditorMode]);
 
 
     useEffect(() => {
@@ -510,11 +552,18 @@ const App: React.FC = () => {
         };
         
         activeMissions.forEach(m => {
-            const faction = getFactionForState(m.location.state);
-            if (groups[faction]) {
-                groups[faction].push(m);
-            } else {
+            // LÓGICA AÑADIDA: Forzar "Cadenas Rotas" a ser Neutral/Shield
+            const isMainMission = m.title && m.title.toUpperCase().includes("CADENAS ROTAS");
+
+            if (isMainMission) {
                 groups.neutral.push(m);
+            } else {
+                const faction = getFactionForState(m.location.state);
+                if (groups[faction]) {
+                    groups[faction].push(m);
+                } else {
+                    groups.neutral.push(m);
+                }
             }
         });
         return groups;
@@ -649,20 +698,6 @@ const App: React.FC = () => {
                                     <span className="text-2xl group-hover:scale-110 transition-transform">{playerAlignment === 'ZOMBIE' ? '☣' : '🛡'}</span>
                                     <span className="font-bold tracking-widest text-xs">{playerAlignment === 'ZOMBIE' ? t.sidebar.hiveBtn : t.sidebar.bunkerBtn}</span>
                                 </button>
-                            </div>
-
-                            <div className="p-4 border-b border-cyan-900">
-                                <h4 className="text-[10px] font-bold text-gray-500 uppercase mb-2 tracking-widest">{t.sidebar.campaignMode}</h4>
-                                <div className="flex flex-col gap-2">
-                                    <button disabled={playerAlignment === 'ALIVE'} onClick={() => { setPlayerAlignment('ALIVE'); setViewMode('map'); }} className={`w-full py-2 px-3 border text-[9px] font-bold tracking-wider flex justify-between items-center transition-all ${playerAlignment === 'ALIVE' ? 'bg-cyan-900/50 border-cyan-500 text-white' : 'border-gray-800 text-gray-500 hover:border-cyan-700 hover:text-cyan-400'}`}>
-                                        <span>PROTOCOL: LAZARUS</span>
-                                        {playerAlignment === 'ALIVE' && <span className="w-2 h-2 bg-cyan-400 rounded-full animate-pulse"></span>}
-                                    </button>
-                                    <button disabled={playerAlignment === 'ZOMBIE'} onClick={() => { setPlayerAlignment('ZOMBIE'); setViewMode('map'); }} className={`w-full py-2 px-3 border text-[9px] font-bold tracking-wider flex justify-between items-center transition-all ${playerAlignment === 'ZOMBIE' ? 'bg-lime-900/50 border-lime-500 text-white' : 'border-gray-800 text-gray-500 hover:border-lime-700 hover:text-lime-400'}`}>
-                                        <span>PROTOCOL: HUNGER</span>
-                                        {playerAlignment === 'ZOMBIE' && <span className="w-2 h-2 bg-lime-400 rounded-full animate-pulse"></span>}
-                                    </button>
-                                </div>
                             </div>
 
                             <div id="tutorial-sidebar-missions" className="flex-1 overflow-y-auto p-4 scrollbar-thin scrollbar-thumb-cyan-900">
