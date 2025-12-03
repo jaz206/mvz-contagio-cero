@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useMemo } from 'react';
 import { translations, Language } from '../translations';
 import { Hero, Mission, HeroClass, HeroTemplate } from '../types';
@@ -17,6 +16,7 @@ interface BunkerInteriorProps {
   isEditorMode?: boolean;
 }
 
+// ... CerebroScanner ...
 const CerebroScanner = ({ status }: { status: 'SEARCHING' | 'LOCKED' }) => {
     return (
         <div className={`w-full h-24 bg-slate-950 border relative overflow-hidden flex items-center justify-center p-2 transition-all duration-500 ${status === 'LOCKED' ? 'border-emerald-600 shadow-[inset_0_0_20px_rgba(16,185,129,0.2)]' : 'border-cyan-900'}`}>
@@ -42,8 +42,9 @@ const CerebroScanner = ({ status }: { status: 'SEARCHING' | 'LOCKED' }) => {
     );
 };
 
+// Hero Token on the Map
 const HeroToken: React.FC<{ hero: Hero; onClick: () => void }> = ({ hero, onClick }) => {
-    // Initialize centered to prevent off-screen rendering
+    // FIX: Initialize position at center to ensure visibility before effect runs
     const [pos, setPos] = useState({ top: 50, left: 50 });
     const [animationDuration] = useState(Math.random() * 2 + 2); 
     const [idleDuration] = useState(Math.random() * 3 + 1); 
@@ -75,7 +76,7 @@ const HeroToken: React.FC<{ hero: Hero; onClick: () => void }> = ({ hero, onClic
 
         const initialTimer = setTimeout(() => {
             moveToken();
-        }, 100); // Trigger almost immediately
+        }, 100); 
 
         const interval = setInterval(() => {
             moveToken();
@@ -99,22 +100,20 @@ const HeroToken: React.FC<{ hero: Hero; onClick: () => void }> = ({ hero, onClic
                 e.stopPropagation(); 
                 onClick(); 
             }}
-            className={`absolute w-14 h-14 rounded-full border-2 cursor-pointer hover:scale-110 transition-transform duration-300 z-50 flex items-center justify-center shadow-[0_0_15px] ${colorClass} pointer-events-auto bg-slate-900`}
+            className={`absolute w-12 h-12 rounded-full border-2 cursor-pointer hover:scale-110 transition-transform duration-300 z-50 flex items-center justify-center shadow-[0_0_15px] ${colorClass} pointer-events-auto bg-slate-900`}
             style={{ 
                 left: `${pos.left}%`, 
                 top: `${pos.top}%`,
                 transform: `translate(-50%, -50%)`, 
-                transition: `left ${animationDuration}s ease-in-out ${idleDuration}s, top ${animationDuration}s ease-in-out ${idleDuration}s`,
+                transition: `all ${animationDuration}s ease-in-out ${idleDuration}s`,
                 display: 'flex'
             }}
             title={`${hero.alias} [${hero.status}]`}
         >
-            {/* 1. Initials Background Layer (Always visible fallback) */}
             <span className="text-[10px] font-bold text-white pointer-events-none absolute z-0">
                 {hero.alias ? hero.alias.substring(0,2) : '??'}
             </span>
             
-            {/* 2. Image Layer (Covers initials if loaded) */}
             {hero.imageUrl && (
                 <img 
                     src={hero.imageUrl} 
@@ -124,13 +123,13 @@ const HeroToken: React.FC<{ hero: Hero; onClick: () => void }> = ({ hero, onClic
                 />
             )}
             
-            {/* 3. Status Indicator Dot */}
             <div className={`absolute -top-1 -right-1 w-4 h-4 rounded-full border-2 border-black pointer-events-none z-20 ${hero.status === 'AVAILABLE' ? 'bg-emerald-500' : hero.status === 'INJURED' ? 'bg-red-600' : 'bg-yellow-400'}`}></div>
         </div>
     );
 };
 
 export const BunkerInterior: React.FC<BunkerInteriorProps> = ({ heroes, missions, onAssign, onUnassign, onAddHero, onToggleObjective, onBack, language, playerAlignment, isEditorMode }) => {
+  // ... (State declarations same as before) ...
   const [selectedHeroId, setSelectedHeroId] = useState<string | null>(null);
   const [showAssignModal, setShowAssignModal] = useState(false);
   const [showRecruitModal, setShowRecruitModal] = useState(false);
@@ -244,7 +243,6 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({ heroes, missions
   };
 
   const assignedMissionName = selectedHero?.assignedMissionId ? missions.find(m => m.id === selectedHero.assignedMissionId)?.title : null;
-  
   const availableTemplates = dbTemplates.filter(template => {
       if (!isEditingExisting) {
           const exists = heroes.some(h => h.templateId === template.id);
