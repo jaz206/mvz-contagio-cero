@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useMemo } from 'react';
 import { translations, Language } from './translations';
 import { User } from 'firebase/auth';
@@ -193,6 +192,9 @@ const App: React.FC = () => {
     const [isGuest, setIsGuest] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
     
+    // CRITICAL FIX: Track if data has been initially loaded to prevent overwriting cloud data with empty state
+    const [isDataLoaded, setIsDataLoaded] = useState(false);
+    
     const [isEditorMode, setIsEditorMode] = useState(false);
     const [showMissionEditor, setShowMissionEditor] = useState(false); 
     const [missionToEdit, setMissionToEdit] = useState<Mission | null>(null); 
@@ -237,6 +239,7 @@ const App: React.FC = () => {
         setHeroes(INITIAL_HEROES);
         setCompletedMissionIds(new Set());
         setWorldStage('NORMAL');
+        setIsDataLoaded(true); // Editor mode doesn't load from DB profile
     };
 
     const handleGuestLogin = () => {
@@ -250,6 +253,7 @@ const App: React.FC = () => {
       await logout();
       setIsGuest(false);
       setIsEditorMode(false);
+      setIsDataLoaded(false);
       setViewMode('login');
     };
 
@@ -284,6 +288,9 @@ const App: React.FC = () => {
     useEffect(() => {
         const loadData = async () => {
             if (isEditorMode) return; 
+            
+            // Reset data loaded flag when switching users or alignment
+            setIsDataLoaded(false);
 
             if ((user || isGuest) && playerAlignment) {
                 let profileHeroes: Hero[] = [];
@@ -316,13 +323,17 @@ const App: React.FC = () => {
                     setHeroes(playerAlignment === 'ZOMBIE' ? INITIAL_ZOMBIE_HEROES : INITIAL_HEROES);
                     setCompletedMissionIds(new Set());
                 }
+                
+                // Mark data as loaded so saving can be enabled
+                setIsDataLoaded(true);
             }
         };
         loadData();
     }, [user, isGuest, playerAlignment, isEditorMode]);
 
     useEffect(() => {
-        if (isEditorMode || !user || !playerAlignment) return;
+        // CRITICAL FIX: Prevent saving if data hasn't been loaded yet or if we are in editor mode
+        if (isEditorMode || !user || !playerAlignment || !isDataLoaded) return;
         
         if (heroes.length === 0) return;
 
@@ -333,7 +344,7 @@ const App: React.FC = () => {
         }, 2000);
 
         return () => clearTimeout(timeout);
-    }, [heroes, completedMissionIds, user, playerAlignment, isEditorMode]);
+    }, [heroes, completedMissionIds, user, playerAlignment, isEditorMode, isDataLoaded]);
 
 
     useEffect(() => {

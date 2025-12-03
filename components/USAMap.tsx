@@ -1,8 +1,8 @@
-
-// ... existing imports ...
 import React, { useRef, useEffect, useState, useCallback } from 'react';
 import * as d3 from 'd3';
-import * as topojson from 'topojson-client';
+// FIX: Import feature specifically or use * as topojson depending on build system. 
+// Standard safe way for client-side libs:
+import * as topojson from 'topojson-client'; 
 import { fetchUSATopoJSON } from '../services/topojsonService';
 import { USATopoJSON, Mission, WorldStage } from '../types';
 import { translations, Language } from '../translations';
@@ -117,11 +117,12 @@ export const USAMap: React.FC<USAMapProps> = ({ language, missions, completedMis
       return;
     }
     
+    // CLEANUP TIMERS BEFORE RE-RENDER
     if (hulkTimerRef.current) clearTimeout(hulkTimerRef.current);
     if (surferTimerRef.current) clearTimeout(surferTimerRef.current);
 
     const svg = d3.select(svgRef.current);
-    svg.selectAll('*').remove();
+    svg.selectAll('*').remove(); // CLEAR SVG
 
     // --- DEFS ---
     const defs = svg.append("defs");
