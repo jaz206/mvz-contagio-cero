@@ -1,4 +1,3 @@
-// ... existing imports ...
 import React, { useState, useEffect, useMemo } from 'react';
 import { translations, Language } from './translations';
 import { User } from 'firebase/auth';
@@ -18,7 +17,7 @@ import { MissionEditor } from './components/MissionEditor';
 
 import { Mission, Hero, WorldStage, GlobalEvent } from './types';
 
-// ... constants FACTION_STATES, INITIAL_HEROES, INITIAL_ZOMBIE_HEROES ...
+// ... constants FACTION_STATES ...
 const FACTION_STATES = {
     magneto: new Set([
         'Washington', 'Oregon', 'California', 'Nevada', 'Idaho', 
@@ -271,6 +270,7 @@ const App: React.FC = () => {
         loadMissions();
     }, [isEditorMode]);
 
+    // --- LOGIC FIX: LOAD DATA WITH EMPTY CHECK ---
     useEffect(() => {
         const loadData = async () => {
             if (isEditorMode) return; 
@@ -278,12 +278,14 @@ const App: React.FC = () => {
             if ((user || isGuest) && playerAlignment) {
                 let profileHeroes: Hero[] = [];
                 let profileMissions: string[] = [];
+                let dataFound = false;
 
                 if (user) {
                     const profile = await getUserProfile(user.uid, playerAlignment);
                     if (profile) {
                         profileHeroes = mergeWithLatestContent(profile.heroes, playerAlignment === 'ZOMBIE');
                         profileMissions = profile.completedMissionIds;
+                        dataFound = true;
                     }
                 } else {
                     const storageKey = `shield_heroes_${isGuest ? 'guest' : user?.uid}_${playerAlignment}`;
@@ -292,15 +294,17 @@ const App: React.FC = () => {
                         const parsed = JSON.parse(saved);
                         profileHeroes = mergeWithLatestContent(parsed.heroes, playerAlignment === 'ZOMBIE');
                         profileMissions = parsed.completedMissionIds || [];
+                        dataFound = true;
                     }
                 }
 
-                // FIX: Ensure we fall back to initial heroes if profile is empty OR has 0 heroes
-                if (profileHeroes && profileHeroes.length > 0) {
+                // FIX: If data exists BUT heroes array is empty (corrupt state), force defaults
+                if (dataFound && profileHeroes.length > 0) {
                     setHeroes(profileHeroes);
                     setCompletedMissionIds(new Set(profileMissions));
                     checkGlobalEvents(profileMissions.length);
                 } else {
+                    // Fallback to initial heroes if no data or empty data
                     setHeroes(playerAlignment === 'ZOMBIE' ? INITIAL_ZOMBIE_HEROES : INITIAL_HEROES);
                     setCompletedMissionIds(new Set());
                 }
@@ -309,10 +313,11 @@ const App: React.FC = () => {
         loadData();
     }, [user, isGuest, playerAlignment, isEditorMode]);
 
+    // --- LOGIC FIX: PREVENT SAVING EMPTY HEROES ---
     useEffect(() => {
         if (isEditorMode || !user || !playerAlignment) return;
         
-        // FIX: Prevent saving empty hero lists to avoid corrupting the save file
+        // CRITICAL: Do not save if heroes list is empty to prevent corruption
         if (heroes.length === 0) return;
 
         const timeout = setTimeout(async () => {
@@ -601,12 +606,10 @@ const App: React.FC = () => {
                             <div className="p-4 border-b border-cyan-900">
                                 <h4 className="text-[10px] font-bold text-gray-500 uppercase mb-2 tracking-widest">{t.sidebar.campaignMode}</h4>
                                 <div className="flex flex-col gap-2">
-                                    {/* FIX: Removed setHeroes([]) to prevent empty state flash and data corruption */}
                                     <button disabled={playerAlignment === 'ALIVE'} onClick={() => { setPlayerAlignment('ALIVE'); setViewMode('map'); }} className={`w-full py-2 px-3 border text-[9px] font-bold tracking-wider flex justify-between items-center transition-all ${playerAlignment === 'ALIVE' ? 'bg-cyan-900/50 border-cyan-500 text-white' : 'border-gray-800 text-gray-500 hover:border-cyan-700 hover:text-cyan-400'}`}>
                                         <span>PROTOCOL: LAZARUS</span>
                                         {playerAlignment === 'ALIVE' && <span className="w-2 h-2 bg-cyan-400 rounded-full animate-pulse"></span>}
                                     </button>
-                                    {/* FIX: Removed setHeroes([]) to prevent empty state flash and data corruption */}
                                     <button disabled={playerAlignment === 'ZOMBIE'} onClick={() => { setPlayerAlignment('ZOMBIE'); setViewMode('map'); }} className={`w-full py-2 px-3 border text-[9px] font-bold tracking-wider flex justify-between items-center transition-all ${playerAlignment === 'ZOMBIE' ? 'bg-lime-900/50 border-lime-500 text-white' : 'border-gray-800 text-gray-500 hover:border-lime-700 hover:text-lime-400'}`}>
                                         <span>PROTOCOL: HUNGER</span>
                                         {playerAlignment === 'ZOMBIE' && <span className="w-2 h-2 bg-lime-400 rounded-full animate-pulse"></span>}
