@@ -1,4 +1,4 @@
-
+// translations.ts
 export type Language = 'es' | 'en';
 
 export const translations = {
@@ -30,14 +30,11 @@ export const translations = {
       hive: "COLMENA",
       bunker: "BÚNKER"
     },
-    file: {
-      title: "EXPEDIENTE TÁCTICO"
-    },
     factions: {
-      magneto: { name: "IMPERIO DE MAGNETO" },
-      kingpin: { name: "TERRITORIO DE KINGPIN" },
-      hulk: { name: "TIERRAS BALDÍAS DE HULK" },
-      doom: { name: "LATVERIA (DR. DOOM)" }
+      magneto: { name: "Imperio de Magneto" },
+      kingpin: { name: "Territorio de Kingpin" },
+      hulk: { name: "Tierras Baldías de Hulk" },
+      doom: { name: "Latveria (Doom)" }
     },
     login: {
       title: "SHIELD OS",
@@ -48,8 +45,8 @@ export const translations = {
       granted: "ACCESO CONCEDIDO",
       scanBtn: "INICIAR ESCANEO DE RETINA",
       googleBtn: "ACCESO OFICIAL DE SHIELD (GOOGLE)",
-      editorBtn: "ACCESO DE EDITOR (NIVEL 10)",
-      editorPass: "CÓDIGO DE ACCESO MAESTRO",
+      editorBtn: "ACCESO DE EDITOR",
+      editorPass: "CONTRASEÑA DE MANDO",
       error: "ERROR DE AUTENTICACIÓN",
       passError: "CONTRASEÑA INCORRECTA"
     },
@@ -59,22 +56,22 @@ export const translations = {
       briefing: "INFORME DE MISIÓN",
       objectives: "OBJETIVOS PRIMARIOS",
       downloadPdf: "DESCARGAR INFORME TÁCTICO COMPLETO",
-      cancel: "CERRAR",
+      cancel: "CANCELAR",
       reactivate: "REACTIVAR",
       sending: "ENVIANDO...",
-      sent: "REPORTE ENVIADO",
+      sent: "INFORME ENVIADO",
       complete: "REPORTAR ÉXITO",
       accept: "ACEPTAR MISIÓN"
     },
     bunker: {
       title: "PUESTO DE MANDO AVANZADO",
       hiveTitle: "NEXO DE LA COLMENA",
-      return: "VOLVER AL MAPA TÁCTICO",
+      return: "VOLVER AL MAPA",
       roster: "LISTA DE ACTIVOS",
       recruit: "RECLUTAR",
-      currentStory: "SITUACIÓN ACTUAL",
+      currentStory: "ESTADO ACTUAL",
       objectives: "OBJETIVOS PERSONALES",
-      status: "ESTADO OPERATIVO",
+      status: "ESTADO",
       unassign: "RETIRAR",
       assign: "ASIGNAR A MISIÓN",
       assignModalTitle: "SELECCIONAR MISIÓN",
@@ -83,14 +80,14 @@ export const translations = {
       maxHeroes: "CAPACIDAD MÁXIMA ALCANZADA"
     },
     recruit: {
-      title: "RECLUTAMIENTO DE ACTIVO",
-      selectDb: "SELECCIONAR DE LA BASE DE DATOS (NUBE)",
+      title: "RECLUTAMIENTO DE HÉROES",
+      selectDb: "BASE DE DATOS DE S.H.I.E.L.D.",
       loadingDb: "ACCEDIENDO A ARCHIVOS...",
-      alias: "ALIAS / NOMBRE EN CLAVE",
+      alias: "NOMBRE EN CLAVE",
       name: "NOMBRE REAL",
-      adminSeed: "ADMIN: SUBIR DATOS INICIALES",
-      seedSuccess: "DB SEMBRADA CON ÉXITO",
-      submit: "REGISTRAR EN LA BASE DE DATOS"
+      adminSeed: "ADMIN: REINICIAR DB",
+      seedSuccess: "DB REINICIADA",
+      submit: "RECLUTAR AGENTE"
     },
     missionEditor: {
       title: "EDITOR DE MISIONES",
@@ -98,7 +95,7 @@ export const translations = {
       location: "UBICACIÓN (ESTADO)",
       threat: "NIVEL DE AMENAZA",
       type: "TIPO DE MISIÓN",
-      pdfUrl: "URL DEL INFORME (OPCIONAL)",
+      pdfUrl: "URL DEL PDF (OPCIONAL)",
       description: "DESCRIPCIÓN",
       objectives: "OBJETIVOS",
       addObjective: "AÑADIR OBJETIVO",
@@ -161,30 +158,6 @@ export const translations = {
                 { title: "Atacar a Galactus", desc: "Coordinar un ataque masivo." },
                 { title: "Salvar la Tierra", desc: "Evitar la destrucción total." }
             ]
-        },
-        freshMeat: {
-            title: "CARNE FRESCA",
-            description: [
-                "El Hambre quema. Olemos sangre caliente al sur. Un convoy de refugiados intenta cruzar la frontera del estado.",
-                "Son lentos. Son débiles. Son comida.",
-                "No dejes que ninguno escape. La Colmena necesita crecer."
-            ],
-            objectives: [
-                { title: "Banquete", desc: "Devora a 15 civiles antes de que alcancen el refugio." },
-                { title: "Sin Testigos", desc: "Destruye el vehículo de escolta blindado." }
-            ]
-        },
-        breakSiege: {
-            title: "ROMPER EL ASEDIO",
-            description: [
-                "La resistencia se ha hecho fuerte en una base militar de la costa. Creen que sus muros los protegerán.",
-                "Ilusos. No saben que no necesitamos puertas.",
-                "Lidera la horda. Trepad los muros. Inundad sus pasillos con dientes y garras."
-            ],
-            objectives: [
-                { title: "Marea Muerta", desc: "Supera las defensas perimetrales y abre la puerta principal." },
-                { title: "Asimilación", desc: "Infecta al Comandante de la base." }
-            ]
         }
     },
     heroes: {
@@ -225,14 +198,14 @@ export const translations = {
         next: "SIGUIENTE"
     },
     tutorial: {
-        welcome: { title: "BIENVENIDO A S.H.I.E.L.D.", text: "El mundo ha caído, pero la resistencia continúa. Esta es tu interfaz de mando." },
+        welcome: { title: "BIENVENIDO A SHIELD", text: "El mundo ha caído, pero la resistencia continúa. Esta es tu interfaz de mando." },
         map_zones: { title: "ZONAS DE CONTROL", text: "El mapa muestra los territorios controlados por las facciones. Ten cuidado al desplegar tus agentes." },
         hulk: { title: "AMENAZA MÓVIL", text: "Hulk Zombie vaga por el mapa. Evita el contacto directo a menos que estés preparado." },
         missions: { title: "MISIONES ACTIVAS", text: "Aquí aparecerán las misiones disponibles. Complétalas para obtener recursos y avanzar en la historia." },
         bunker_entry: { title: "ACCESO AL BÚNKER", text: "Gestiona tu equipo, recluta nuevos héroes y revisa el estado de tus agentes aquí." },
         roster: { title: "LISTA DE AGENTES", text: "Tus héroes disponibles. Haz clic para ver detalles y asignar misiones." },
         file: { title: "EXPEDIENTE", text: "Información detallada del agente. Aquí puedes ver su historia y objetivos personales." },
-        recruit: { title: "RECLUTAMIENTO", text: "Busca y recluta nuevos héroes de la base de datos de S.H.I.E.L.D." },
+        recruit: { title: "RECLUTAMIENTO", text: "Busca y recluta nuevos héroes de la base de datos de SHIELD." },
         finish: { title: "LISTO PARA EL COMBATE", text: "Buena suerte, Comandante. La humanidad depende de ti." },
         finishBtn: "FINALIZAR",
         skip: "OMITIR",
@@ -267,14 +240,11 @@ export const translations = {
       hive: "HIVE",
       bunker: "BUNKER"
     },
-    file: {
-      title: "TACTICAL DOSSIER"
-    },
     factions: {
-      magneto: { name: "MAGNETO'S EMPIRE" },
-      kingpin: { name: "KINGPIN'S TERRITORY" },
-      hulk: { name: "HULK'S WASTELAND" },
-      doom: { name: "LATVERIA (DR. DOOM)" }
+      magneto: { name: "Magneto's Empire" },
+      kingpin: { name: "Kingpin's Territory" },
+      hulk: { name: "Hulk's Wasteland" },
+      doom: { name: "Latveria (Doom)" }
     },
     login: {
       title: "SHIELD OS",
@@ -306,12 +276,12 @@ export const translations = {
     bunker: {
       title: "FORWARD COMMAND POST",
       hiveTitle: "HIVE NEXUS",
-      return: "RETURN TO TACTICAL MAP",
+      return: "RETURN TO MAP",
       roster: "ASSET LIST",
       recruit: "RECRUIT",
       currentStory: "CURRENT STATUS",
       objectives: "PERSONAL OBJECTIVES",
-      status: "OPERATIONAL STATUS",
+      status: "STATUS",
       unassign: "WITHDRAW",
       assign: "ASSIGN TO MISSION",
       assignModalTitle: "SELECT MISSION",
@@ -320,14 +290,14 @@ export const translations = {
       maxHeroes: "MAXIMUM CAPACITY REACHED"
     },
     recruit: {
-      title: "ASSET RECRUITMENT",
-      selectDb: "SELECT FROM S.H.I.E.L.D. DATABASE (CLOUD)",
+      title: "HERO RECRUITMENT",
+      selectDb: "S.H.I.E.L.D. DATABASE",
       loadingDb: "ACCESSING FILES...",
       alias: "CODENAME",
       name: "REAL NAME",
-      adminSeed: "ADMIN: SEED DB",
-      seedSuccess: "DB SEEDED SUCCESSFULLY",
-      submit: "REGISTER TO DATABASE"
+      adminSeed: "ADMIN: RESET DB",
+      seedSuccess: "DB RESET",
+      submit: "RECRUIT AGENT"
     },
     missionEditor: {
       title: "MISSION EDITOR",
@@ -398,30 +368,6 @@ export const translations = {
                 { title: "Attack Galactus", desc: "Coordinate a massive attack." },
                 { title: "Save Earth", desc: "Prevent total destruction." }
             ]
-        },
-        freshMeat: {
-            title: "FRESH MEAT",
-            description: [
-                "The Hunger burns. We smell warm blood south. A refugee convoy is trying to cross the state line.",
-                "They are slow. They are weak. They are food.",
-                "Let none escape. The Hive must grow."
-            ],
-            objectives: [
-                { title: "Feast", desc: "Devour 15 civilians before they reach the shelter." },
-                { title: "No Witnesses", desc: "Destroy the armored escort vehicle." }
-            ]
-        },
-        breakSiege: {
-            title: "BREAK THE SIEGE",
-            description: [
-                "The resistance has fortified a coastal military base. They think walls will save them.",
-                "Fools. We do not need doors.",
-                "Lead the horde. Climb the walls. Flood their halls with teeth and claws."
-            ],
-            objectives: [
-                { title: "Dead Tide", desc: "Breach perimeter defenses and open the main gate." },
-                { title: "Assimilation", desc: "Infect the Base Commander." }
-            ]
         }
     },
     heroes: {
@@ -439,7 +385,9 @@ export const translations = {
             line4: "SYSTEM READY"
         },
         slides: [
-            { text: "There were no trumpets. No red skies. The end of the world didn't come from outer space.", image: "https://i.pinimg.com/1200x/18/99/ec/1899ec756f8731e015eb941d7122fbec.jpg" },
+            { text: "The world ended yesterday.", image: "https://i.pinimg.com/736x/8a/9b/8c/8a9b8c9d7e6f5a4b3c2d1e0f9a8b7c6d.jpg" },
+            { text: "There were no nuclear explosions. No alien invasion.", image: "https://i.pinimg.com/736x/1a/2b/3c/1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d.jpg" },
+            { text: "There was only... hunger.", image: "https://i.pinimg.com/736x/0f/1e/2d/0f1e2d3c4b5a69788910111213141516.jpg" },
             { text: "We built it ourselves. Here. At home.\nOr rather, they built it.", image: "https://i.pinimg.com/1200x/71/06/7d/71067db72856dfd6ca03d0d51a679bd6.jpg" },
             { text: "It was in a sterile lab. Three men met there: Doom, Magneto, and Fisk.\nThey decided humanity was too chaotic. Their solution was cold science: The Nullifier Pulse.", image: "https://i.pinimg.com/1200x/71/06/7d/71067db72856dfd6ca03d0d51a679bd6.jpg" },
             { text: "They needed bodies to fine-tune the formula. They used Jamie Madrox. They used the Reavers. And it worked.", image: "https://i.pinimg.com/1200x/99/80/1e/99801e7603e4a770127ce29530f13f87.jpg" },

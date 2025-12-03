@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { translations, Language } from '../translations';
 
@@ -37,21 +36,18 @@ export const StoryMode: React.FC<StoryModeProps> = ({ language, onComplete, onSk
   useEffect(() => {
     if (introStep < 4 || !currentSlide) return;
     
-    // Reset text immediately
-    setDisplayText(''); 
-    
     let charIndex = 0;
-    const fullText = currentSlide.text;
+    setDisplayText('');
     
     const intervalId = setInterval(() => {
-      // Use substring to ensure we get exactly from 0 to charIndex
-      if (charIndex <= fullText.length) {
-        setDisplayText(fullText.substring(0, charIndex));
+      if (charIndex < currentSlide.text.length) {
+        // Use charAt to handle potential out-of-bounds gracefully instead of undefined
+        setDisplayText(prev => prev + currentSlide.text.charAt(charIndex));
         charIndex++;
       } else {
         clearInterval(intervalId);
       }
-    }, 25); // Slightly faster typing
+    }, 30); // Speed of typing
 
     return () => clearInterval(intervalId);
   }, [currentIndex, currentSlide, introStep]);
@@ -162,10 +158,9 @@ export const StoryMode: React.FC<StoryModeProps> = ({ language, onComplete, onSk
                     <div className="absolute inset-0 bg-gradient-to-b from-transparent via-cyan-500/5 to-transparent h-full w-full animate-scanline pointer-events-none z-10"></div>
                 </div>
 
-                {/* Text Area - Added non-breaking space logic implicitly by ensuring container has height */}
-                <div className="min-h-[150px] bg-slate-900/80 p-6 border-l-4 border-cyan-500 shadow-lg flex items-start">
-                    <p className="text-lg md:text-xl leading-relaxed whitespace-pre-wrap drop-shadow-[0_0_5px_rgba(6,182,212,0.5)]">
-                        {/* Rendering logic: The text builds up. If empty, the div height keeps layout stable. */}
+                {/* Text Area */}
+                <div className="min-h-[150px] bg-slate-900/80 p-6 border-l-4 border-cyan-500 shadow-lg">
+                    <p className="text-lg md:text-xl leading-relaxed whitespace-pre-line drop-shadow-[0_0_5px_rgba(6,182,212,0.5)]">
                         {displayText}<span className="animate-pulse">_</span>
                     </p>
                 </div>
