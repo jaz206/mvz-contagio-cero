@@ -161,6 +161,30 @@ export const translations = {
                 { title: "Atacar a Galactus", desc: "Coordinar un ataque masivo." },
                 { title: "Salvar la Tierra", desc: "Evitar la destrucción total." }
             ]
+        },
+        freshMeat: {
+            title: "CARNE FRESCA",
+            description: [
+                "El Hambre quema. Olemos sangre caliente al sur. Un convoy de refugiados intenta cruzar la frontera del estado.",
+                "Son lentos. Son débiles. Son comida.",
+                "No dejes que ninguno escape. La Colmena necesita crecer."
+            ],
+            objectives: [
+                { title: "Banquete", desc: "Devora a 15 civiles antes de que alcancen el refugio." },
+                { title: "Sin Testigos", desc: "Destruye el vehículo de escolta blindado." }
+            ]
+        },
+        breakSiege: {
+            title: "ROMPER EL ASEDIO",
+            description: [
+                "La resistencia se ha hecho fuerte en una base militar de la costa. Creen que sus muros los protegerán.",
+                "Ilusos. No saben que no necesitamos puertas.",
+                "Lidera la horda. Trepad los muros. Inundad sus pasillos con dientes y garras."
+            ],
+            objectives: [
+                { title: "Marea Muerta", desc: "Supera las defensas perimetrales y abre la puerta principal." },
+                { title: "Asimilación", desc: "Infecta al Comandante de la base." }
+            ]
         }
     },
     heroes: {
@@ -373,6 +397,30 @@ export const translations = {
             objectives: [
                 { title: "Attack Galactus", desc: "Coordinate a massive attack." },
                 { title: "Save Earth", desc: "Prevent total destruction." }
+            ]
+        },
+        freshMeat: {
+            title: "FRESH MEAT",
+            description: [
+                "The Hunger burns. We smell warm blood south. A refugee convoy is trying to cross the state line.",
+                "They are slow. They are weak. They are food.",
+                "Let none escape. The Hive must grow."
+            ],
+            objectives: [
+                { title: "Feast", desc: "Devour 15 civilians before they reach the shelter." },
+                { title: "No Witnesses", desc: "Destroy the armored escort vehicle." }
+            ]
+        },
+        breakSiege: {
+            title: "BREAK THE SIEGE",
+            description: [
+                "The resistance has fortified a coastal military base. They think walls will save them.",
+                "Fools. We do not need doors.",
+                "Lead the horde. Climb the walls. Flood their halls with teeth and claws."
+            ],
+            objectives: [
+                { title: "Dead Tide", desc: "Breach perimeter defenses and open the main gate." },
+                { title: "Assimilation", desc: "Infect the Base Commander." }
             ]
         }
     },

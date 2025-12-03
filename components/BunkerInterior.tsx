@@ -46,37 +46,57 @@ const CerebroScanner = ({ status }: { status: 'SEARCHING' | 'LOCKED' }) => {
 
 // Hero Token on the Map
 const HeroToken: React.FC<{ hero: Hero; onClick: () => void }> = ({ hero, onClick }) => {
+    // FIX: Initialize position at center to ensure visibility before effect runs
     const [pos, setPos] = useState({ top: 50, left: 50 });
-    const [animationDelay] = useState(Math.random() * 5);
+    const [animationDuration] = useState(Math.random() * 2 + 2); // 2-4 seconds for each segment
+    const [idleDuration] = useState(Math.random() * 3 + 1); // 1-4 seconds idle
 
     useEffect(() => {
         let minX=0, maxX=100, minY=0, maxY=100;
         
         switch (hero.status) {
             case 'AVAILABLE':
-                minX = 5; maxX = 25; minY = 25; maxY = 75;
+                minX = 10; maxX = 25; minY = 20; maxY = 80; // Barracks area in SVG coords
                 break;
             case 'DEPLOYED':
-                minX = 75; maxX = 90; minY = 15; maxY = 35;
+                minX = 75; maxX = 90; minY = 10; maxY = 40; // Hangar area in SVG coords
                 break;
             case 'INJURED':
-                minX = 75; maxX = 90; minY = 65; maxY = 85;
+                minX = 75; maxX = 90; minY = 60; maxY = 90; // Medbay area in SVG coords
                 break;
             default: 
-                return; 
+                return; // MIA heroes don't render tokens
         }
 
-        setPos({
-            left: Math.random() * (maxX - minX) + minX,
-            top: Math.random() * (maxY - minY) + minY
-        });
-    }, [hero.status]);
+        const moveToken = () => {
+            const nextPos = {
+                left: Math.random() * (maxX - minX) + minX,
+                top: Math.random() * (maxY - minY) + minY
+            };
+            setPos(nextPos);
+        };
+
+        // Initial random position after a short delay
+        const initialTimer = setTimeout(() => {
+            moveToken();
+        }, Math.random() * 1000); // Stagger initial movement
+
+        // Start continuous movement
+        const interval = setInterval(() => {
+            moveToken();
+        }, (animationDuration + idleDuration) * 1000); // Interval includes move + idle time
+
+        return () => {
+            clearTimeout(initialTimer);
+            clearInterval(interval);
+        };
+    }, [hero.status, animationDuration, idleDuration]);
 
     if (hero.status === 'MIA') return null;
 
-    let colorClass = 'bg-cyan-500 shadow-cyan-500/50';
-    if (hero.status === 'INJURED') colorClass = 'bg-red-500 shadow-red-500/50';
-    if (hero.status === 'DEPLOYED') colorClass = 'bg-yellow-500 shadow-yellow-500/50';
+    let colorClass = 'border-cyan-500 shadow-cyan-500/50';
+    if (hero.status === 'INJURED') colorClass = 'border-red-500 shadow-red-500/50';
+    if (hero.status === 'DEPLOYED') colorClass = 'border-yellow-500 shadow-yellow-500/50';
 
     return (
         <div 
@@ -84,22 +104,26 @@ const HeroToken: React.FC<{ hero: Hero; onClick: () => void }> = ({ hero, onClic
                 e.stopPropagation(); 
                 onClick(); 
             }}
-            className={`absolute w-8 h-8 rounded-full border-2 border-white cursor-pointer hover:scale-125 transition-all z-50 flex items-center justify-center shadow-[0_0_15px] ${colorClass} animate-bounce pointer-events-auto`}
+            // Explicitly set z-index high (z-50) and ensure pointer-events are auto
+            className={`absolute w-12 h-12 rounded-full border-2 cursor-pointer hover:scale-110 transition-transform duration-300 z-50 flex items-center justify-center shadow-[0_0_15px] ${colorClass} pointer-events-auto bg-slate-800/80`}
             style={{ 
                 left: `${pos.left}%`, 
                 top: `${pos.top}%`,
-                animationDelay: `${animationDelay}s`,
-                animationDuration: '3s'
+                transform: `translate(-50%, -50%)`, // Center the token on its calculated position
+                transition: `all ${animationDuration}s ease-in-out ${idleDuration}s` // Smooth transition + idle time
             }}
             title={`${hero.alias} [${hero.status}]`}
         >
             {hero.imageUrl ? (
-                <img src={hero.imageUrl} alt={hero.alias} className="w-full h-full rounded-full object-cover pointer-events-none" />
-            ) : (
-                <span className="text-[8px] font-bold text-black pointer-events-none">{hero.alias.substring(0,2)}</span>
-            )}
+                <img src={hero.imageUrl} alt={hero.alias} className="w-full h-full rounded-full object-cover pointer-events-none" onError={(e) => e.currentTarget.style.display = 'none'} />
+            ) : null}
             
-            <div className={`absolute -top-1 -right-1 w-3 h-3 rounded-full border border-black pointer-events-none ${hero.status === 'AVAILABLE' ? 'bg-emerald-500' : hero.status === 'INJURED' ? 'bg-red-600' : 'bg-yellow-400'}`}></div>
+            {/* Fallback Initials if no image or error */}
+            <span className={`text-[10px] font-bold text-white pointer-events-none absolute ${hero.imageUrl ? 'opacity-0' : 'opacity-100'}`}>
+                {hero.alias.substring(0,2)}
+            </span>
+            
+            <div className={`absolute -top-1 -right-1 w-4 h-4 rounded-full border-2 border-black pointer-events-none ${hero.status === 'AVAILABLE' ? 'bg-emerald-500' : hero.status === 'INJURED' ? 'bg-red-600' : 'bg-yellow-400'}`}></div>
         </div>
     );
 };
@@ -305,8 +329,8 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({ heroes, missions
             </svg>
         </div>
 
-        {/* HERO TOKENS LAYER */}
-        <div className="absolute inset-0 z-10 pointer-events-none">
+        {/* HERO TOKENS LAYER - Ensure High Z-Index */}
+        <div className="absolute inset-0 z-50 pointer-events-none">
             <div className="w-full h-full relative pointer-events-none"> {/* Keep container non-blocking */}
                 {heroes.map(hero => (
                     <HeroToken key={hero.id} hero={hero} onClick={() => setSelectedHeroId(hero.id)} />
@@ -316,7 +340,7 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({ heroes, missions
 
         {/* HERO DETAIL MODAL (Overlay) */}
         {selectedHeroId && selectedHero && (
-            <div className="absolute inset-0 z-30 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4 md:p-12 animate-fade-in" onClick={() => setSelectedHeroId(null)}>
+            <div className="absolute inset-0 z-[60] bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4 md:p-12 animate-fade-in" onClick={() => setSelectedHeroId(null)}>
                 <div className="w-full max-w-4xl bg-slate-900 border-2 border-cyan-500 shadow-[0_0_50px_rgba(6,182,212,0.2)] flex flex-col max-h-full overflow-hidden" onClick={e => e.stopPropagation()}>
                     <div className="p-4 border-b border-cyan-800 bg-cyan-900/20 flex justify-between items-center">
                         <h2 className="text-xl font-bold tracking-[0.2em] text-cyan-200 uppercase">{t.file.title} // {selectedHero.alias}</h2>

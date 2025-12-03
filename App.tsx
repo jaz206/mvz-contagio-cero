@@ -708,17 +708,17 @@ const App: React.FC = () => {
                                                         const isStartMission = m.id === 'm_kraven' || m.title.includes("MH0") || m.title.toUpperCase().includes("CADENAS ROTAS");
                                                         const isBoss = m.type === 'BOSS';
                                                         
-                                                        let barColor = 'bg-yellow-500';
-                                                        let textColor = 'text-yellow-100';
+                                                        let itemBarColor = 'bg-yellow-500';
+                                                        let itemTextColor = 'text-yellow-100';
                                                         let itemOpacity = isCompleted ? 'opacity-50 hover:opacity-80' : 'opacity-100';
                                                         
                                                         if (isCompleted) {
-                                                            textColor = 'text-emerald-500 line-through decoration-emerald-700';
-                                                            barColor = 'bg-emerald-600';
+                                                            itemTextColor = 'text-emerald-500 line-through decoration-emerald-700';
+                                                            itemBarColor = 'bg-emerald-600';
                                                         } else {
-                                                            if (isBoss) { barColor = 'bg-purple-500'; textColor = 'text-purple-200'; }
-                                                            else if (isShield) { barColor = 'bg-cyan-500'; textColor = 'text-cyan-200'; }
-                                                            else if (isStartMission) { barColor = 'bg-emerald-500'; textColor = 'text-emerald-200'; }
+                                                            if (isBoss) { itemBarColor = 'bg-purple-500'; itemTextColor = 'text-purple-200'; }
+                                                            else if (isShield) { itemBarColor = 'bg-cyan-500'; itemTextColor = 'text-cyan-200'; }
+                                                            else if (isStartMission) { itemBarColor = 'bg-emerald-500'; itemTextColor = 'text-emerald-200'; }
                                                         }
 
                                                         return (
@@ -729,7 +729,7 @@ const App: React.FC = () => {
                                                                 title={m.title}
                                                             >
                                                                 {/* Status Line */}
-                                                                <div className={`absolute left-0 top-0 bottom-0 w-[3px] ${barColor} group-hover:w-1 transition-all`}></div>
+                                                                <div className={`absolute left-0 top-0 bottom-0 w-[3px] ${itemBarColor} group-hover:w-1 transition-all`}></div>
                                                                 
                                                                 {/* Icon based on type */}
                                                                 <div className="shrink-0 text-[10px] opacity-70">
@@ -737,7 +737,7 @@ const App: React.FC = () => {
                                                                 </div>
 
                                                                 <div className="flex-1 min-w-0">
-                                                                    <div className={`text-[9px] font-bold ${textColor} truncate uppercase leading-tight`}>{m.title}</div>
+                                                                    <div className={`text-[9px] font-bold ${itemTextColor} truncate uppercase leading-tight`}>{m.title}</div>
                                                                     <div className="text-[7px] text-gray-500 truncate flex justify-between mt-0.5">
                                                                         <span>{m.location.state}</span>
                                                                         {!isCompleted && <span className="text-red-900/70 font-bold">{m.threatLevel.substring(0,3)}</span>}
