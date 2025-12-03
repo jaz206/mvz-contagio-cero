@@ -17,8 +17,6 @@ interface BunkerInteriorProps {
   isEditorMode?: boolean;
 }
 
-// --- SUB-COMPONENTS ---
-
 const CerebroScanner = ({ status }: { status: 'SEARCHING' | 'LOCKED' }) => {
     return (
         <div className={`w-full h-24 bg-slate-950 border relative overflow-hidden flex items-center justify-center p-2 transition-all duration-500 ${status === 'LOCKED' ? 'border-emerald-600 shadow-[inset_0_0_20px_rgba(16,185,129,0.2)]' : 'border-cyan-900'}`}>
@@ -44,7 +42,6 @@ const CerebroScanner = ({ status }: { status: 'SEARCHING' | 'LOCKED' }) => {
     );
 };
 
-// Hero Token on the Map
 const HeroToken: React.FC<{ hero: Hero; onClick: () => void }> = ({ hero, onClick }) => {
     // FIX: Initialize position at center to ensure visibility before effect runs
     const [pos, setPos] = useState({ top: 50, left: 50 });
@@ -56,16 +53,16 @@ const HeroToken: React.FC<{ hero: Hero; onClick: () => void }> = ({ hero, onClic
         
         switch (hero.status) {
             case 'AVAILABLE':
-                minX = 10; maxX = 25; minY = 20; maxY = 80; // Barracks area in SVG coords
+                minX = 10; maxX = 25; minY = 20; maxY = 80; // Barracks
                 break;
             case 'DEPLOYED':
-                minX = 75; maxX = 90; minY = 10; maxY = 40; // Hangar area in SVG coords
+                minX = 75; maxX = 90; minY = 10; maxY = 40; // Hangar
                 break;
             case 'INJURED':
-                minX = 75; maxX = 90; minY = 60; maxY = 90; // Medbay area in SVG coords
+                minX = 75; maxX = 90; minY = 60; maxY = 90; // Medbay
                 break;
             default: 
-                return; // MIA heroes don't render tokens
+                return; 
         }
 
         const moveToken = () => {
@@ -76,15 +73,13 @@ const HeroToken: React.FC<{ hero: Hero; onClick: () => void }> = ({ hero, onClic
             setPos(nextPos);
         };
 
-        // Initial random position after a short delay
         const initialTimer = setTimeout(() => {
             moveToken();
-        }, Math.random() * 1000); // Stagger initial movement
+        }, Math.random() * 1000); 
 
-        // Start continuous movement
         const interval = setInterval(() => {
             moveToken();
-        }, (animationDuration + idleDuration) * 1000); // Interval includes move + idle time
+        }, (animationDuration + idleDuration) * 1000); 
 
         return () => {
             clearTimeout(initialTimer);
@@ -104,13 +99,13 @@ const HeroToken: React.FC<{ hero: Hero; onClick: () => void }> = ({ hero, onClic
                 e.stopPropagation(); 
                 onClick(); 
             }}
-            // Explicitly set z-index high (z-50) and ensure pointer-events are auto
             className={`absolute w-12 h-12 rounded-full border-2 cursor-pointer hover:scale-110 transition-transform duration-300 z-50 flex items-center justify-center shadow-[0_0_15px] ${colorClass} pointer-events-auto bg-slate-800/80`}
             style={{ 
                 left: `${pos.left}%`, 
                 top: `${pos.top}%`,
-                transform: `translate(-50%, -50%)`, // Center the token on its calculated position
-                transition: `all ${animationDuration}s ease-in-out ${idleDuration}s` // Smooth transition + idle time
+                transform: `translate(-50%, -50%)`, 
+                transition: `all ${animationDuration}s ease-in-out ${idleDuration}s`,
+                display: 'flex'
             }}
             title={`${hero.alias} [${hero.status}]`}
         >
@@ -118,7 +113,6 @@ const HeroToken: React.FC<{ hero: Hero; onClick: () => void }> = ({ hero, onClic
                 <img src={hero.imageUrl} alt={hero.alias} className="w-full h-full rounded-full object-cover pointer-events-none" onError={(e) => e.currentTarget.style.display = 'none'} />
             ) : null}
             
-            {/* Fallback Initials if no image or error */}
             <span className={`text-[10px] font-bold text-white pointer-events-none absolute ${hero.imageUrl ? 'opacity-0' : 'opacity-100'}`}>
                 {hero.alias.substring(0,2)}
             </span>
@@ -135,14 +129,12 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({ heroes, missions
   const [assignError, setAssignError] = useState<string | null>(null);
   const [zoomedImage, setZoomedImage] = useState<string | null>(null);
 
-  // DB States
   const [dbTemplates, setDbTemplates] = useState<HeroTemplate[]>([]);
   const [isLoadingDb, setIsLoadingDb] = useState(false);
   const [seedStatus, setSeedStatus] = useState<'idle' | 'success' | 'error'>('idle');
   const [isEditingExisting, setIsEditingExisting] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
 
-  // Form State
   const [recruitForm, setRecruitForm] = useState({
       templateId: '', name: '', alias: '', class: 'BRAWLER' as HeroClass, bio: '', currentStory: '', objectives: [] as string[], imageUrl: '', str: 5, agi: 5, int: 5
   });
@@ -269,69 +261,34 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({ heroes, missions
                 </defs>
                 <rect width="100%" height="100%" fill="url(#grid)" />
                 
-                {/* ROOM: BARRACKS (Left) */}
+                {/* ROOMS... */}
                 <path d="M 50 100 L 300 100 L 300 500 L 50 500 Z" fill="none" stroke="#06b6d4" strokeWidth="2" />
                 <text x="175" y="530" textAnchor="middle" fill="#06b6d4" fontSize="14" fontWeight="bold" letterSpacing="2">BARRACKS</text>
-                <text x="175" y="550" textAnchor="middle" fill="#0e7490" fontSize="10">PERSONNEL QUARTERS</text>
-                {[120, 180, 240, 300, 360, 420].map(y => (
-                    <rect key={y} x="70" y={y} width="40" height="20" fill="none" stroke="#0e7490" strokeWidth="1" opacity="0.5" />
-                ))}
-                {[120, 180, 240, 300, 360, 420].map(y => (
-                    <rect key={y} x="240" y={y} width="40" height="20" fill="none" stroke="#0e7490" strokeWidth="1" opacity="0.5" />
-                ))}
-
-                {/* ROOM: COMMAND CENTER (Center Top) */}
+                
                 <path d="M 350 50 L 650 50 L 650 300 L 350 300 Z" fill="none" stroke="#06b6d4" strokeWidth="2" />
                 <text x="500" y="320" textAnchor="middle" fill="#06b6d4" fontSize="14" fontWeight="bold" letterSpacing="2">COMMAND</text>
-                <text x="500" y="340" textAnchor="middle" fill="#0e7490" fontSize="10">TACTICAL OPERATIONS</text>
                 
-                {/* GLOBAL MAP MINI-SCREEN */}
                 <g className="cursor-pointer hover:opacity-80 transition-opacity" onClick={onBack}>
                     <rect x="380" y="70" width="240" height="120" fill="#0f172a" stroke="#06b6d4" strokeWidth="2" />
-                    {/* Simplified US Map Outline simulation */}
                     <path d="M 390 100 L 410 90 L 450 90 L 470 100 L 580 100 L 600 80 L 610 90 L 600 130 L 580 150 L 550 160 L 530 150 L 500 170 L 480 160 L 450 160 L 430 140 L 400 140 L 390 120 Z" fill="none" stroke="#06b6d4" strokeWidth="1.5" opacity="0.7" />
-                    <circle cx="480" cy="120" r="2" fill="#ef4444" className="animate-pulse" />
-                    <circle cx="550" cy="110" r="2" fill="#eab308" />
-                    <circle cx="420" cy="130" r="2" fill="#06b6d4" />
-                    
-                    {/* Scan line effect */}
-                    <rect x="380" y="70" width="240" height="2" fill="#06b6d4" opacity="0.3">
-                        <animate attributeName="y" from="70" to="190" dur="3s" repeatCount="indefinite" />
-                    </rect>
                 </g>
-                <text x="500" y="210" textAnchor="middle" fill="#06b6d4" fontSize="10" className="pointer-events-none" opacity="0.8">GLOBAL STATUS: CRITICAL</text>
-                <path d="M 350 220 L 300 220" stroke="#06b6d4" strokeWidth="2" strokeDasharray="5,5" /> 
 
-                {/* ROOM: HANGAR (Right Top) */}
                 <path d="M 700 50 L 950 50 L 950 300 L 700 300 Z" fill="none" stroke="#eab308" strokeWidth="2" />
                 <text x="825" y="320" textAnchor="middle" fill="#eab308" fontSize="14" fontWeight="bold" letterSpacing="2">HANGAR</text>
-                <text x="825" y="340" textAnchor="middle" fill="#854d0e" fontSize="10">DEPLOYMENT ZONE</text>
-                <circle cx="825" cy="175" r="50" fill="none" stroke="#eab308" strokeWidth="2" strokeDasharray="10,5" opacity="0.5" />
-                <text x="825" y="180" textAnchor="middle" fill="#eab308" fontSize="24" opacity="0.5">H</text>
 
-                {/* ROOM: MEDBAY (Right Bottom) */}
                 <path d="M 700 350 L 950 350 L 950 550 L 700 550 Z" fill="none" stroke="#ef4444" strokeWidth="2" />
                 <text x="825" y="570" textAnchor="middle" fill="#ef4444" fontSize="14" fontWeight="bold" letterSpacing="2">MEDBAY</text>
-                <text x="825" y="590" textAnchor="middle" fill="#7f1d1d" fontSize="10">CRITICAL CARE</text>
-                <rect x="815" y="440" width="20" height="60" fill="#ef4444" opacity="0.2" />
-                <rect x="795" y="460" width="60" height="20" fill="#ef4444" opacity="0.2" />
 
-                {/* OBJECT: DATABASE TERMINAL */}
                 <g className="cursor-pointer hover:opacity-80" onClick={() => { setIsEditingExisting(false); setShowRecruitModal(true); }}>
                     <rect x="450" y="450" width="100" height="60" fill="#0f172a" stroke="#06b6d4" strokeWidth="2" />
                     <text x="500" y="485" textAnchor="middle" fill="#06b6d4" fontSize="10" fontWeight="bold">DATABASE</text>
-                    <circle cx="500" cy="450" r="5" fill="#06b6d4">
-                        <animate attributeName="opacity" values="1;0;1" dur="2s" repeatCount="indefinite" />
-                    </circle>
                 </g>
-                <line x1="500" y1="300" x2="500" y2="450" stroke="#06b6d4" strokeWidth="1" strokeDasharray="5,5" opacity="0.5" />
-
             </svg>
         </div>
 
-        {/* HERO TOKENS LAYER - Ensure High Z-Index */}
+        {/* HERO TOKENS LAYER - Ensure High Z-Index and explicit placement */}
         <div className="absolute inset-0 z-50 pointer-events-none">
-            <div className="w-full h-full relative pointer-events-none"> {/* Keep container non-blocking */}
+            <div className="w-full h-full relative pointer-events-none">
                 {heroes.map(hero => (
                     <HeroToken key={hero.id} hero={hero} onClick={() => setSelectedHeroId(hero.id)} />
                 ))}
@@ -356,9 +313,6 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({ heroes, missions
                                     ) : (
                                         <div className="w-full h-full flex items-center justify-center text-cyan-900">NO IMAGE</div>
                                     )}
-                                    <div className="absolute bottom-0 left-0 right-0 bg-slate-900/80 p-1 text-center text-[10px] border-t border-cyan-900">
-                                        CLASS: <span className="text-white font-bold">{selectedHero.class}</span>
-                                    </div>
                                 </div>
                                 <CerebroScanner status="LOCKED" />
                                 {isEditorMode && selectedHero.templateId && (
@@ -432,21 +386,7 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({ heroes, missions
             </div>
         )}
 
-        {/* ASSIGN MODAL & RECRUIT MODAL SAME AS BEFORE... */}
-        {showAssignModal && (
-            <div className="absolute inset-0 z-[60] flex items-center justify-center bg-slate-950/90 backdrop-blur-sm p-4">
-                <div className="w-full max-w-lg bg-slate-900 border border-cyan-500 shadow-[0_0_50px_rgba(6,182,212,0.3)]">
-                    <div className="bg-cyan-900/30 p-4 border-b border-cyan-700 flex justify-between items-center"><h3 className="text-cyan-300 font-bold tracking-widest">{t.bunker.assignModalTitle}</h3><button onClick={() => setShowAssignModal(false)} className="text-cyan-500 hover:text-white">✕</button></div>
-                    <div className="p-4 max-h-[60vh] overflow-y-auto space-y-2">
-                        {assignError && <div className="bg-red-900/50 border border-red-500 text-red-300 text-xs p-2 text-center mb-2 font-bold animate-pulse">{assignError}</div>}
-                        {missions.length === 0 ? <div className="text-center text-gray-500 py-8 italic">{t.bunker.noMissions}</div> : missions.map(mission => <div key={mission.id} onClick={() => handleAssignClick(mission.id)} className="border border-cyan-900/50 bg-slate-950/50 hover:bg-cyan-900/20 hover:border-cyan-500 cursor-pointer p-3 group transition-all"><div className="flex justify-between items-center mb-1"><div className="font-bold text-cyan-200 group-hover:text-white text-sm">{mission.title}</div><div className="text-[10px] text-red-500 border border-red-900 px-1">{mission.threatLevel}</div></div><div className="text-[10px] text-gray-400">LOC: {mission.location.state}</div></div>)}
-                    </div>
-                    <div className="p-4 border-t border-cyan-900 bg-slate-900 flex justify-end"><button onClick={() => setShowAssignModal(false)} className="px-4 py-2 text-xs text-gray-400 hover:text-white">{t.bunker.cancel}</button></div>
-                </div>
-            </div>
-        )}
-
-        {/* RECRUIT/EDIT MODAL - Include SEARCH fix here */}
+        {/* RECRUIT MODAL */}
         {showRecruitModal && (
             <div className="absolute inset-0 z-[60] flex items-center justify-center bg-slate-950/95 backdrop-blur-sm p-4 overflow-y-auto">
                 <div className="w-full max-w-5xl bg-slate-900 border-2 border-cyan-500 shadow-[0_0_50px_rgba(6,182,212,0.3)] flex flex-col">

@@ -85,14 +85,12 @@ export const MissionEditor: React.FC<MissionEditorProps> = ({ isOpen, onClose, o
         const stateChanged = !initialData || initialData.location.state !== locationState;
 
         if (stateChanged) {
-            // FIX: Use specific state center, NOT defaultCenter
             const center = STATE_CENTERS[locationState] || [-98.5, 39.8]; 
             // Small Jitter to avoid stacking
             const jitterX = (Math.random() - 0.5) * 2.0; 
             const jitterY = (Math.random() - 0.5) * 1.5;
             finalCoordinates = [center[0] + jitterX, center[1] + jitterY];
         } else {
-            // Keep OLD coordinates if state didn't change
             finalCoordinates = initialData.location.coordinates;
         }
 

@@ -456,7 +456,7 @@ const App: React.FC = () => {
         const missionList = Array.from(missionMap.values());
 
         if (worldStage === 'GALACTUS' && playerAlignment === 'ALIVE') {
-            const galactusData = t.missions?.galactus; // Use optional chaining for safety
+            const galactusData = t.missions?.galactus; 
             missionList.push({
                 id: 'boss-galactus',
                 type: 'BOSS',
@@ -483,7 +483,6 @@ const App: React.FC = () => {
         });
     }, [allMissions, completedMissionIds, isEditorMode, worldStage]);
 
-    // Group missions by faction
     const factionOrder = ['MAGNETO', 'KINGPIN', 'HULK', 'DOOM', 'NEUTRAL'];
     const missionsByFaction = useMemo(() => {
         const groups: Record<string, Mission[]> = { MAGNETO: [], KINGPIN: [], HULK: [], DOOM: [], NEUTRAL: [] };
@@ -493,7 +492,6 @@ const App: React.FC = () => {
             else groups.NEUTRAL.push(m);
         });
         
-        // Sort missions within each faction
         Object.values(groups).forEach(missionArray => {
             missionArray.sort((a, b) => {
                 const aCompleted = completedMissionIds.has(a.id);
@@ -565,7 +563,6 @@ const App: React.FC = () => {
             {(viewMode === 'map' || viewMode === 'bunker' || viewMode === 'tutorial') && (
                 <>
                     <header className="flex-none h-16 border-b border-cyan-900 bg-slate-900/90 flex items-center justify-between px-6 z-30 relative">
-                        {/* Header content ... */}
                         <div className="flex items-center gap-4">
                             <div className="w-10 h-10 border-2 border-cyan-500 rounded-full flex items-center justify-center overflow-hidden bg-slate-950 shadow-[0_0_10px_rgba(6,182,212,0.3)]">
                                 <img src="https://i.pinimg.com/736x/63/1e/3a/631e3a68228c97963e78381ad11bf3bb.jpg" alt="Logo" className="w-full h-full object-cover" />
@@ -662,7 +659,6 @@ const App: React.FC = () => {
                                     const isCollapsed = collapsedGroups.has(faction);
                                     const missionCount = factionMissions.length;
 
-                                    // Faction Colors & Styles
                                     let headerBg = 'bg-gray-900/80';
                                     let headerText = 'text-gray-400';
                                     let borderColor = 'border-gray-700';
@@ -675,14 +671,13 @@ const App: React.FC = () => {
                                     return (
                                         <div key={faction} className="mb-1 border-b border-cyan-900/20">
                                             {!isSidebarCollapsed ? (
-                                                // EXPANDED SIDEBAR HEADER (Accordion)
                                                 <div 
                                                     onClick={() => toggleGroup(faction)}
                                                     className={`flex justify-between items-center px-3 py-2 cursor-pointer hover:brightness-125 transition-all select-none border-l-4 ${headerBg} ${borderColor}`}
                                                     style={{ borderLeftColor: faction === 'NEUTRAL' ? '#64748b' : undefined }}
                                                 >
                                                     <div className={`text-[9px] font-bold uppercase tracking-wider flex items-center gap-2 ${headerText}`}>
-                                                        <span className="text-[8px] opacity-70 transform transition-transform duration-200" style={{ transform: isCollapsed ? 'rotate(-90deg)' : 'rotate(0deg)' }}>▼</span>
+                                                        <span className="text-[8px] opacity-70">{isCollapsed ? '►' : '▼'}</span>
                                                         {faction} SECTOR
                                                     </div>
                                                     <div className="text-[9px] font-mono font-bold bg-slate-950/50 px-1.5 rounded text-cyan-500 border border-cyan-900/30">
@@ -690,7 +685,6 @@ const App: React.FC = () => {
                                                     </div>
                                                 </div>
                                             ) : (
-                                                // COLLAPSED SIDEBAR ICON (Tooltip only)
                                                 <div className="flex justify-center py-2 relative group">
                                                     <div className={`w-2 h-2 rounded-full ${headerText.replace('text-', 'bg-')}`}></div>
                                                     <div className="absolute left-full top-0 ml-2 bg-slate-900 border border-cyan-500 text-xs px-2 py-1 whitespace-nowrap hidden group-hover:block z-50">
@@ -699,7 +693,6 @@ const App: React.FC = () => {
                                                 </div>
                                             )}
 
-                                            {/* MISSION LIST (Collapsible) */}
                                             {!isCollapsed && !isSidebarCollapsed && (
                                                 <div className="bg-slate-900/50 animate-fade-in origin-top">
                                                     {factionMissions.map(m => {
@@ -708,17 +701,17 @@ const App: React.FC = () => {
                                                         const isStartMission = m.id === 'm_kraven' || m.title.includes("MH0") || m.title.toUpperCase().includes("CADENAS ROTAS");
                                                         const isBoss = m.type === 'BOSS';
                                                         
-                                                        let itemBarColor = 'bg-yellow-500';
-                                                        let itemTextColor = 'text-yellow-100';
+                                                        let barColor = 'bg-yellow-500';
+                                                        let textColor = 'text-yellow-100';
                                                         let itemOpacity = isCompleted ? 'opacity-50 hover:opacity-80' : 'opacity-100';
                                                         
                                                         if (isCompleted) {
-                                                            itemTextColor = 'text-emerald-500 line-through decoration-emerald-700';
-                                                            itemBarColor = 'bg-emerald-600';
+                                                            textColor = 'text-emerald-500 line-through decoration-emerald-700';
+                                                            barColor = 'bg-emerald-600';
                                                         } else {
-                                                            if (isBoss) { itemBarColor = 'bg-purple-500'; itemTextColor = 'text-purple-200'; }
-                                                            else if (isShield) { itemBarColor = 'bg-cyan-500'; itemTextColor = 'text-cyan-200'; }
-                                                            else if (isStartMission) { itemBarColor = 'bg-emerald-500'; itemTextColor = 'text-emerald-200'; }
+                                                            if (isBoss) { barColor = 'bg-purple-500'; textColor = 'text-purple-200'; }
+                                                            else if (isShield) { barColor = 'bg-cyan-500'; textColor = 'text-cyan-200'; }
+                                                            else if (isStartMission) { barColor = 'bg-emerald-500'; textColor = 'text-emerald-200'; }
                                                         }
 
                                                         return (
@@ -728,22 +721,17 @@ const App: React.FC = () => {
                                                                 className={`group cursor-pointer border-b border-cyan-900/10 hover:bg-white/5 transition-colors relative pl-4 pr-2 py-2 flex items-center gap-3 ${itemOpacity}`}
                                                                 title={m.title}
                                                             >
-                                                                {/* Status Line */}
-                                                                <div className={`absolute left-0 top-0 bottom-0 w-[3px] ${itemBarColor} group-hover:w-1 transition-all`}></div>
-                                                                
-                                                                {/* Icon based on type */}
+                                                                <div className={`absolute left-0 top-0 bottom-0 w-[3px] ${barColor} group-hover:w-1 transition-all`}></div>
                                                                 <div className="shrink-0 text-[10px] opacity-70">
                                                                     {isShield ? '📡' : isBoss ? '💀' : isStartMission ? '★' : '⚔'}
                                                                 </div>
-
                                                                 <div className="flex-1 min-w-0">
-                                                                    <div className={`text-[9px] font-bold ${itemTextColor} truncate uppercase leading-tight`}>{m.title}</div>
+                                                                    <div className={`text-[9px] font-bold ${textColor} truncate uppercase leading-tight`}>{m.title}</div>
                                                                     <div className="text-[7px] text-gray-500 truncate flex justify-between mt-0.5">
                                                                         <span>{m.location.state}</span>
                                                                         {!isCompleted && <span className="text-red-900/70 font-bold">{m.threatLevel.substring(0,3)}</span>}
                                                                     </div>
                                                                 </div>
-                                                                
                                                                 {isCompleted && <div className="text-[10px] text-emerald-600">✓</div>}
                                                             </div>
                                                         );
