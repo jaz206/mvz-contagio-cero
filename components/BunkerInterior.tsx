@@ -1,29 +1,25 @@
-"use client"
-
-import type React from "react"
-import { useState, useEffect } from "react"
-// Asegúrate de que estas rutas sean correctas en tu proyecto
-import { translations, type Language } from "../translations"
-import type { Hero, Mission, HeroClass, HeroTemplate } from "../types"
-import { getHeroTemplates, seedHeroTemplates, updateHeroTemplate } from "../services/dbService"
+import React, { useState, useEffect } from "react";
+import { translations, Language } from "../translations";
+import { Hero, Mission, HeroClass, HeroTemplate } from "../types";
+import { getHeroTemplates, seedHeroTemplates, updateHeroTemplate } from "../services/dbService";
 
 // --- TYPES ---
 interface BunkerInteriorProps {
-  heroes: Hero[]
-  missions: Mission[]
-  onAssign: (heroId: string, missionId: string) => boolean
-  onUnassign: (heroId: string) => void
-  onAddHero: (hero: Hero) => void
-  onToggleObjective: (heroId: string, objectiveIndex: number) => void
-  onBack: () => void
-  language: Language
-  playerAlignment?: "ALIVE" | "ZOMBIE" | null
-  isEditorMode?: boolean
+  heroes: Hero[];
+  missions: Mission[];
+  onAssign: (heroId: string, missionId: string) => boolean;
+  onUnassign: (heroId: string) => void;
+  onAddHero: (hero: Hero) => void;
+  onToggleObjective: (heroId: string, objectiveIndex: number) => void;
+  onBack: () => void;
+  language: Language;
+  playerAlignment?: "ALIVE" | "ZOMBIE" | null;
+  isEditorMode?: boolean;
 }
 
 // --- SUB-COMPONENT: DECORATIVE SCANNER ---
 const CerebroScanner = ({ status }: { status: "SEARCHING" | "LOCKED" }) => {
-  const isLocked = status === "LOCKED"
+  const isLocked = status === "LOCKED";
   return (
     <div className={`w-full h-24 bg-slate-950 border relative overflow-hidden flex items-center justify-center p-2 transition-all duration-500 ${isLocked ? "border-emerald-600 shadow-[inset_0_0_20px_rgba(16,185,129,0.2)]" : "border-cyan-900"}`}>
       <div className={`absolute inset-0 border rounded-full m-1 opacity-30 ${isLocked ? "border-emerald-500" : "border-cyan-900"}`} />
@@ -48,109 +44,107 @@ const CerebroScanner = ({ status }: { status: "SEARCHING" | "LOCKED" }) => {
       
       <div className="absolute inset-0 pointer-events-none opacity-20" style={{ backgroundImage: `radial-gradient(circle, ${isLocked ? "#10b981" : "#06b6d4"} 1px, transparent 1px)`, backgroundSize: "10px 10px" }} />
     </div>
-  )
-}
+  );
+};
 
-// --- SUB-COMPONENT: HERO TOKEN ---
+// --- SUB-COMPONENT: HERO TOKEN (CORREGIDO) ---
 const HeroToken: React.FC<{ hero: Hero; onClick: () => void }> = ({ hero, onClick }) => {
   // Posición inicial segura (centro)
-  const [pos, setPos] = useState({ top: 50, left: 50 })
-  const [imageLoaded, setImageLoaded] = useState(false)
-  const [imageError, setImageError] = useState(false)
+  const [pos, setPos] = useState({ top: 50, left: 50 });
+  const [imageError, setImageError] = useState(false);
   
-  // Tiempos aleatorios para evitar movimiento robótico sincronizado
-  const [animationDuration] = useState(Math.random() * 2 + 2)
-  const [idleDuration] = useState(Math.random() * 3 + 1)
+  // Duración de animación fija para evitar retrasos iniciales
+  const [animationDuration] = useState(Math.random() * 2 + 3); // Entre 3 y 5 segundos
 
   useEffect(() => {
-    let isMounted = true
-    let minX = 0, maxX = 100, minY = 0, maxY = 100
+    let isMounted = true;
+    let minX = 0, maxX = 100, minY = 0, maxY = 100;
 
     // Definir zonas según estado (Coordenadas % del mapa)
     switch (hero.status) {
       case "AVAILABLE": // Area Barracks (Izquierda Abajo)
-        minX = 10; maxX = 25; minY = 20; maxY = 80; break
+        minX = 10; maxX = 25; minY = 20; maxY = 80; break;
       case "DEPLOYED": // Area Command (Centro Arriba)
-        minX = 40; maxX = 60; minY = 10; maxY = 40; break
+        minX = 40; maxX = 60; minY = 10; maxY = 40; break;
       case "INJURED": // Area Medbay (Derecha Abajo)
-        minX = 75; maxX = 90; minY = 60; maxY = 90; break
+        minX = 75; maxX = 90; minY = 60; maxY = 90; break;
       default: // Default center
-        minX = 45; maxX = 55; minY = 45; maxY = 55; break
+        minX = 45; maxX = 55; minY = 45; maxY = 55; break;
     }
 
     const moveToken = () => {
-      if (!isMounted) return
+      if (!isMounted) return;
       const nextPos = {
         left: Math.random() * (maxX - minX) + minX,
         top: Math.random() * (maxY - minY) + minY,
-      }
-      setPos(nextPos)
-    }
+      };
+      setPos(nextPos);
+    };
 
-    // Moverse poco después de montar
-    const initialTimer = setTimeout(moveToken, 100)
+    // Moverse INMEDIATAMENTE al montar
+    moveToken();
+    
     // Bucle de movimiento
-    const interval = setInterval(moveToken, (animationDuration + idleDuration) * 1000)
+    const interval = setInterval(moveToken, animationDuration * 1000);
 
     return () => {
-      isMounted = false
-      clearTimeout(initialTimer)
-      clearInterval(interval)
-    }
-  }, [hero.status, animationDuration, idleDuration])
+      isMounted = false;
+      clearInterval(interval);
+    };
+  }, [hero.status, animationDuration]);
 
-  if (hero.status === "MIA") return null
+  if (hero.status === "MIA") return null;
 
   // Colores según estado
-  let statusColor = "border-cyan-500 shadow-cyan-500/50"
-  let statusDot = "bg-emerald-500"
+  let statusColor = "border-cyan-500 shadow-[0_0_15px_rgba(6,182,212,0.6)]";
+  let statusDot = "bg-emerald-500";
   
   if (hero.status === "INJURED") {
-    statusColor = "border-red-500 shadow-red-500/50"
-    statusDot = "bg-red-600"
+    statusColor = "border-red-500 shadow-[0_0_15px_rgba(239,68,68,0.6)]";
+    statusDot = "bg-red-600";
   } else if (hero.status === "DEPLOYED") {
-    statusColor = "border-yellow-500 shadow-yellow-500/50"
-    statusDot = "bg-yellow-400"
+    statusColor = "border-yellow-500 shadow-[0_0_15px_rgba(234,179,8,0.6)]";
+    statusDot = "bg-yellow-400";
   }
 
   return (
     <div
       onClick={(e) => {
-        e.stopPropagation() // Vital para que no clickee el mapa debajo
-        onClick()
+        e.stopPropagation();
+        onClick();
       }}
-      className={`absolute w-12 h-12 rounded-full border-2 cursor-pointer hover:scale-110 transition-transform duration-300 z-50 flex items-center justify-center shadow-[0_0_15px] ${statusColor} pointer-events-auto bg-slate-900`}
+      className={`absolute w-12 h-12 rounded-full border-2 cursor-pointer hover:scale-110 z-50 flex items-center justify-center ${statusColor} pointer-events-auto bg-slate-900 transition-all ease-in-out`}
       style={{
         left: `${pos.left}%`,
         top: `${pos.top}%`,
         transform: `translate(-50%, -50%)`,
-        transition: `all ${animationDuration}s ease-in-out ${idleDuration}s`,
+        transitionDuration: `${animationDuration}s`,
       }}
       title={`${hero.alias} [${hero.status}]`}
     >
+      {/* Imagen: Si falla o no existe, se oculta y se ve el texto de fondo */}
       {hero.imageUrl && !imageError ? (
         <img
-          src={hero.imageUrl || "/placeholder.svg"}
+          src={hero.imageUrl}
           alt={hero.alias}
-          className={`w-full h-full rounded-full object-cover pointer-events-none relative z-10 transition-opacity duration-300 ${imageLoaded ? "opacity-100" : "opacity-0"}`}
-          onLoad={() => setImageLoaded(true)}
+          className="w-full h-full rounded-full object-cover pointer-events-none relative z-10"
           onError={(e) => {
-            setImageError(true)
-            e.currentTarget.style.display = "none"
+            setImageError(true);
+            e.currentTarget.style.display = "none";
           }}
         />
       ) : null}
 
-      {/* Fallback texto si no hay imagen o carga */}
-      <span className={`text-[10px] font-bold text-white pointer-events-none z-0 absolute`}>
+      {/* Texto de respaldo: Siempre renderizado, visible si no hay imagen */}
+      <span className="text-[10px] font-bold text-white pointer-events-none absolute z-0 font-mono">
         {hero.alias ? hero.alias.substring(0, 2).toUpperCase() : "??"}
       </span>
 
       {/* Indicador de estado */}
-      <div className={`absolute -top-1 -right-1 w-4 h-4 rounded-full border-2 border-black pointer-events-none z-20 ${statusDot}`} />
+      <div className={`absolute -top-1 -right-1 w-3 h-3 rounded-full border border-black pointer-events-none z-20 ${statusDot}`} />
     </div>
-  )
-}
+  );
+};
 
 // --- SUB-COMPONENT: MAP SVG ---
 const BunkerMapSVG: React.FC<{ onBack: () => void; onOpenDatabase: () => void }> = ({ onBack, onOpenDatabase }) => (
@@ -190,7 +184,7 @@ const BunkerMapSVG: React.FC<{ onBack: () => void; onOpenDatabase: () => void }>
       <text x="500" y="485" textAnchor="middle" fill="#06b6d4" fontSize="10" fontWeight="bold">DATABASE</text>
     </g>
   </svg>
-)
+);
 
 // --- MAIN COMPONENT ---
 export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
@@ -206,18 +200,18 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
   isEditorMode,
 }) => {
   // --- STATE ---
-  const [selectedHeroId, setSelectedHeroId] = useState<string | null>(null)
-  const [showAssignModal, setShowAssignModal] = useState(false)
-  const [showRecruitModal, setShowRecruitModal] = useState(false)
-  const [assignError, setAssignError] = useState<string | null>(null)
-  const [zoomedImage, setZoomedImage] = useState<string | null>(null)
+  const [selectedHeroId, setSelectedHeroId] = useState<string | null>(null);
+  const [showAssignModal, setShowAssignModal] = useState(false);
+  const [showRecruitModal, setShowRecruitModal] = useState(false);
+  const [assignError, setAssignError] = useState<string | null>(null);
+  const [zoomedImage, setZoomedImage] = useState<string | null>(null);
 
   // Database State
-  const [dbTemplates, setDbTemplates] = useState<HeroTemplate[]>([])
-  const [isLoadingDb, setIsLoadingDb] = useState(false)
-  const [seedStatus, setSeedStatus] = useState<"idle" | "success" | "error">("idle")
-  const [isEditingExisting, setIsEditingExisting] = useState(false)
-  const [searchTerm, setSearchTerm] = useState("")
+  const [dbTemplates, setDbTemplates] = useState<HeroTemplate[]>([]);
+  const [isLoadingDb, setIsLoadingDb] = useState(false);
+  const [seedStatus, setSeedStatus] = useState<"idle" | "success" | "error">("idle");
+  const [isEditingExisting, setIsEditingExisting] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
 
   const [recruitForm, setRecruitForm] = useState({
     templateId: "",
@@ -231,37 +225,32 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
     str: 5,
     agi: 5,
     int: 5,
-  })
+  });
 
-  const t = translations[language]
-  const selectedHero = heroes.find((h) => h.id === selectedHeroId)
-
-  // Debugging para ver si llegan héroes
-  useEffect(() => {
-    console.log("[BUNKER] Heroes recibidos:", heroes);
-  }, [heroes]);
+  const t = translations[language];
+  const selectedHero = heroes.find((h) => h.id === selectedHeroId);
 
   // Fetch Templates
   useEffect(() => {
     const fetchTemplates = async () => {
-      setIsLoadingDb(true)
+      setIsLoadingDb(true);
       try {
-        const templates = await getHeroTemplates()
-        setDbTemplates(templates)
+        const templates = await getHeroTemplates();
+        setDbTemplates(templates);
       } catch (err) {
-        console.error("Error fetching templates", err)
+        console.error("Error fetching templates", err);
       } finally {
-        setIsLoadingDb(false)
+        setIsLoadingDb(false);
       }
-    }
-    fetchTemplates()
-  }, [])
+    };
+    fetchTemplates();
+  }, []);
 
   // --- HANDLERS ---
   const handleSelectTemplate = (templateId: string) => {
-    const template = dbTemplates.find((h) => h.id === templateId)
+    const template = dbTemplates.find((h) => h.id === templateId);
     if (template) {
-      const tHero = t.heroes[templateId as keyof typeof t.heroes]
+      const tHero = t.heroes[templateId as keyof typeof t.heroes];
       setRecruitForm({
         templateId: templateId,
         name: template.defaultName,
@@ -274,12 +263,12 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
         str: template.defaultStats.strength,
         agi: template.defaultStats.agility,
         int: template.defaultStats.intellect,
-      })
+      });
     }
-  }
+  };
 
   const handleEditClick = () => {
-    if (!selectedHero) return
+    if (!selectedHero) return;
     setRecruitForm({
       templateId: selectedHero.templateId || "",
       name: selectedHero.name,
@@ -292,14 +281,14 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
       str: selectedHero.stats.strength,
       agi: selectedHero.stats.agility,
       int: selectedHero.stats.intellect,
-    })
-    setIsEditingExisting(true)
-    setShowRecruitModal(true)
-    setSelectedHeroId(null)
-  }
+    });
+    setIsEditingExisting(true);
+    setShowRecruitModal(true);
+    setSelectedHeroId(null);
+  };
 
   const handleRecruitSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
+    e.preventDefault();
     if (isEditingExisting && recruitForm.templateId) {
       const updateData: Partial<HeroTemplate> = {
         defaultName: recruitForm.name,
@@ -310,12 +299,12 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
         objectives: recruitForm.objectives,
         imageUrl: recruitForm.imageUrl,
         defaultStats: { strength: recruitForm.str, agility: recruitForm.agi, intellect: recruitForm.int },
-      }
-      await updateHeroTemplate(recruitForm.templateId, updateData)
-      alert("DATABASE UPDATED.")
+      };
+      await updateHeroTemplate(recruitForm.templateId, updateData);
+      alert("DATABASE UPDATED.");
       // Refresh
-      const temps = await getHeroTemplates()
-      setDbTemplates(temps)
+      const temps = await getHeroTemplates();
+      setDbTemplates(temps);
     } else {
       const newHero: Hero = {
         id: `custom_${Date.now()}`,
@@ -331,49 +320,49 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
         status: "AVAILABLE",
         stats: { strength: recruitForm.str, agility: recruitForm.agi, intellect: recruitForm.int },
         assignedMissionId: null,
-      }
-      onAddHero(newHero)
+      };
+      onAddHero(newHero);
     }
-    setShowRecruitModal(false)
-    setIsEditingExisting(false)
-    setSearchTerm("")
-  }
+    setShowRecruitModal(false);
+    setIsEditingExisting(false);
+    setSearchTerm("");
+  };
 
   const handleSeedDatabase = async () => {
     try {
-      setSeedStatus("idle")
-      await seedHeroTemplates()
-      setSeedStatus("success")
-      const templates = await getHeroTemplates()
-      setDbTemplates(templates)
+      setSeedStatus("idle");
+      await seedHeroTemplates();
+      setSeedStatus("success");
+      const templates = await getHeroTemplates();
+      setDbTemplates(templates);
     } catch (e) {
-      console.error(e)
-      setSeedStatus("error")
+      console.error(e);
+      setSeedStatus("error");
     }
-  }
+  };
 
   const handleAssignClick = (missionId: string) => {
-    if (!selectedHero) return
-    const success = onAssign(selectedHero.id, missionId)
+    if (!selectedHero) return;
+    const success = onAssign(selectedHero.id, missionId);
     if (success) {
-      setShowAssignModal(false)
-      setAssignError(null)
+      setShowAssignModal(false);
+      setAssignError(null);
     } else {
-      setAssignError(t.bunker.maxHeroes)
+      setAssignError(t.bunker.maxHeroes);
     }
-  }
+  };
 
   const availableTemplates = dbTemplates.filter((template) => {
     if (!isEditingExisting) {
-      const exists = heroes.some((h) => h.templateId === template.id)
-      if (exists) return false
+      const exists = heroes.some((h) => h.templateId === template.id);
+      if (exists) return false;
     }
     if (searchTerm) {
-      const term = searchTerm.toLowerCase()
-      return (template.alias || template.defaultName).toLowerCase().includes(term)
+      const term = searchTerm.toLowerCase();
+      return (template.alias || template.defaultName).toLowerCase().includes(term);
     }
-    return true
-  })
+    return true;
+  });
 
   // --- RENDER ---
   return (
@@ -384,15 +373,13 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
         <BunkerMapSVG 
           onBack={onBack} 
           onOpenDatabase={() => {
-            setIsEditingExisting(false)
-            setShowRecruitModal(true)
+            setIsEditingExisting(false);
+            setShowRecruitModal(true);
           }} 
         />
       </div>
 
       {/* CAPA 2: HERO TOKENS (z-10) */}
-      {/* pointer-events-none en el contenedor permite clicks en el mapa, 
-          pero los tokens tienen pointer-events-auto dentro */}
       <div className="absolute inset-0 z-10 pointer-events-none">
         {heroes && heroes.length > 0 ? (
           heroes.map((hero) => (
@@ -404,7 +391,11 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
           ))
         ) : (
           /* Debug visual si no hay héroes */
-          <div className="absolute bottom-4 right-4 text-xs text-red-500 font-bold opacity-50">NO HEROES DETECTED</div>
+          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+             <div className="bg-red-900/80 border border-red-500 text-white px-4 py-2 font-bold animate-pulse shadow-[0_0_20px_rgba(239,68,68,0.5)]">
+                ⚠ NO HEROES DETECTED
+             </div>
+          </div>
         )}
       </div>
 
@@ -520,8 +511,8 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
                     <button
                       disabled={selectedHero.status === "INJURED"}
                       onClick={() => {
-                        setAssignError(null)
-                        setShowAssignModal(true)
+                        setAssignError(null);
+                        setShowAssignModal(true);
                       }}
                       className={`px-6 py-2 font-bold text-xs tracking-widest border transition-all ${
                         selectedHero.status === "INJURED"
@@ -727,5 +718,5 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
         </div>
       )}
     </div>
-  )
-}
+  );
+};
