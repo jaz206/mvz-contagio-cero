@@ -554,7 +554,7 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
             </div>
           </div>
         </div>
-      )}
+      )
 
       {/* ASSIGN MODAL & RECRUIT MODAL ... */}
       {/* ... (Keep existing modals unchanged) ... */}
@@ -780,5 +780,5 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
         </div>
       )}
     </div>
-  )\
+  )
 }
