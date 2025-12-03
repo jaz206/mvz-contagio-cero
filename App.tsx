@@ -41,6 +41,14 @@ const FACTION_STATES = {
     ])
 };
 
+const getFactionForState = (state: string) => {
+    if (FACTION_STATES.magneto.has(state)) return 'magneto';
+    if (FACTION_STATES.kingpin.has(state)) return 'kingpin';
+    if (FACTION_STATES.hulk.has(state)) return 'hulk';
+    if (FACTION_STATES.doom.has(state)) return 'doom';
+    return 'neutral';
+};
+
 const INITIAL_HEROES: Hero[] = [
     {
         id: 'h1',
@@ -195,6 +203,8 @@ const App: React.FC = () => {
     const [showStory, setShowStory] = useState(false);
     const [showTutorial, setShowTutorial] = useState(false);
     
+    const [expandedZones, setExpandedZones] = useState<Set<string>>(new Set(['kingpin', 'magneto', 'hulk', 'doom', 'neutral']));
+
     const t = translations[lang];
 
     useEffect(() => {
@@ -271,7 +281,6 @@ const App: React.FC = () => {
         loadMissions();
     }, [isEditorMode]);
 
-    // --- LOGIC FIX: LOAD DATA WITH EMPTY CHECK ---
     useEffect(() => {
         const loadData = async () => {
             if (isEditorMode) return; 
@@ -299,13 +308,11 @@ const App: React.FC = () => {
                     }
                 }
 
-                // FIX: If data exists BUT heroes array is empty (corrupt state), force defaults
                 if (dataFound && profileHeroes.length > 0) {
                     setHeroes(profileHeroes);
                     setCompletedMissionIds(new Set(profileMissions));
                     checkGlobalEvents(profileMissions.length);
                 } else {
-                    // Fallback to initial heroes if no data or empty data
                     setHeroes(playerAlignment === 'ZOMBIE' ? INITIAL_ZOMBIE_HEROES : INITIAL_HEROES);
                     setCompletedMissionIds(new Set());
                 }
@@ -314,11 +321,9 @@ const App: React.FC = () => {
         loadData();
     }, [user, isGuest, playerAlignment, isEditorMode]);
 
-    // --- LOGIC FIX: PREVENT SAVING EMPTY HEROES ---
     useEffect(() => {
         if (isEditorMode || !user || !playerAlignment) return;
         
-        // CRITICAL: Do not save if heroes list is empty to prevent corruption
         if (heroes.length === 0) return;
 
         const timeout = setTimeout(async () => {
@@ -378,9 +383,8 @@ const App: React.FC = () => {
         setCompletedMissionIds(newSet);
         setSelectedMission(null);
         
-        // SPECIAL BOSS LOGIC
         if (id === 'boss-galactus') {
-            setWorldStage('NORMAL'); // DEFEATED: Reset world stage to remove shadow and surfer
+            setWorldStage('NORMAL');
             setActiveGlobalEvent(null);
         } else {
             checkGlobalEvents(newSet.size);
@@ -408,6 +412,13 @@ const App: React.FC = () => {
              }
              setHeroes(newHeroes);
          }
+    };
+
+    const toggleZone = (zone: string) => {
+        const newSet = new Set(expandedZones);
+        if (newSet.has(zone)) newSet.delete(zone);
+        else newSet.add(zone);
+        setExpandedZones(newSet);
     };
 
     const allMissions: Mission[] = useMemo(() => {
@@ -441,7 +452,6 @@ const App: React.FC = () => {
 
         const missionMap = new Map<string, Mission>();
         hardcodedMissions.forEach(m => missionMap.set(m.id, m));
-        // Safe guard against potential undefined missions from DB
         customMissions.forEach(m => {
             if (m && m.id) missionMap.set(m.id, m);
         });
@@ -465,7 +475,6 @@ const App: React.FC = () => {
     const visibleMissions = useMemo(() => {
         if (isEditorMode) return allMissions;
         
-        // GALACTUS EVENT: HIDE ALL STANDARD MISSIONS
         if (worldStage === 'GALACTUS') {
             return allMissions.filter(m => m.type === 'BOSS');
         }
@@ -477,6 +486,28 @@ const App: React.FC = () => {
             return isCompleted || prereqMet;
         });
     }, [allMissions, completedMissionIds, isEditorMode, worldStage]);
+
+    // Group missions for sidebar
+    const groupedMissions = useMemo(() => {
+        const activeMissions = visibleMissions.filter(m => m && !completedMissionIds.has(m.id));
+        const groups: Record<string, Mission[]> = {
+            kingpin: [],
+            magneto: [],
+            hulk: [],
+            doom: [],
+            neutral: []
+        };
+        
+        activeMissions.forEach(m => {
+            const faction = getFactionForState(m.location.state);
+            if (groups[faction]) {
+                groups[faction].push(m);
+            } else {
+                groups.neutral.push(m);
+            }
+        });
+        return groups;
+    }, [visibleMissions, completedMissionIds]);
 
     if (loading || loadingAuth) return <div className="bg-slate-950 text-cyan-500 h-screen flex items-center justify-center font-mono">LOADING SHIELD OS...</div>;
 
@@ -625,64 +656,86 @@ const App: React.FC = () => {
                             <div id="tutorial-sidebar-missions" className="flex-1 overflow-y-auto p-4 scrollbar-thin scrollbar-thumb-cyan-900">
                                 <h4 className="text-[10px] font-bold text-cyan-600 uppercase mb-3 tracking-widest border-b border-cyan-900 pb-1">{t.sidebar.activeMissions}</h4>
                                 <div className="space-y-2">
-                                    {visibleMissions.length > 0 ? (
-                                        visibleMissions.map(m => {
-                                            if (!m) return null;
-                                            const isCompleted = completedMissionIds.has(m.id);
-                                            if (isCompleted) return null;
-                                            
-                                            const isShield = m.type === 'SHIELD_BASE';
-                                            const isStartMission = m.id === 'm_kraven' || (m.title && m.title.includes("MH0")) || (m.title && m.title.toUpperCase().includes("CADENAS ROTAS"));
-                                            const isBoss = m.type === 'BOSS';
-                                            
-                                            let borderClass = 'border-yellow-500/30 bg-yellow-900/5 hover:bg-yellow-900/20';
-                                            let barClass = 'bg-yellow-500';
-                                            let textClass = 'text-yellow-200';
-                                            let subTextClass = 'text-yellow-500/70';
+                                    {Object.entries(groupedMissions).map(([zoneKey, missions]) => {
+                                        if (missions.length === 0) return null;
+                                        const isExpanded = expandedZones.has(zoneKey);
+                                        const factionLabel = t.factions[zoneKey as keyof typeof t.factions]?.name || zoneKey.toUpperCase();
 
-                                            if (isBoss) {
-                                                borderClass = 'border-purple-500/30 bg-purple-900/20 hover:bg-purple-900/40 animate-pulse';
-                                                barClass = 'bg-purple-500';
-                                                textClass = 'text-purple-200';
-                                                subTextClass = 'text-purple-500/70';
-                                            } else if (isShield) {
-                                                borderClass = 'border-cyan-500/30 bg-cyan-900/5 hover:bg-cyan-900/20';
-                                                barClass = 'bg-cyan-500';
-                                                textClass = 'text-cyan-200';
-                                                subTextClass = 'text-cyan-500/70';
-                                            } else if (isStartMission) {
-                                                borderClass = 'border-emerald-500/30 bg-emerald-900/5 hover:bg-emerald-900/20';
-                                                barClass = 'bg-emerald-500';
-                                                textClass = 'text-emerald-200';
-                                                subTextClass = 'text-emerald-500/70';
-                                            }
-                                            
-                                            return (
-                                                <div 
-                                                    key={m.id} 
-                                                    onClick={() => setSelectedMission(m)} 
-                                                    className={`p-3 border cursor-pointer transition-all group relative overflow-hidden ${borderClass}`}
+                                        return (
+                                            <div key={zoneKey} className="mb-2 border border-cyan-900/30 bg-slate-900/30">
+                                                <button 
+                                                    onClick={() => toggleZone(zoneKey)} 
+                                                    className="w-full flex justify-between items-center p-2 bg-slate-800/80 hover:bg-cyan-900/30 transition-colors border-b border-cyan-900/30"
                                                 >
-                                                    <div className={`absolute left-0 top-0 bottom-0 w-1 ${barClass} group-hover:w-1.5 transition-all`}></div>
-                                                    <div className="flex justify-between items-start pl-2">
-                                                        <div className={`text-[10px] font-bold ${textClass} group-hover:text-white uppercase tracking-wider`}>{m.title || 'UNKNOWN MISSION'}</div>
-                                                        <div className={`w-2 h-2 ${barClass} rounded-full animate-pulse shrink-0 mt-1`}></div>
+                                                    <span className="text-[9px] font-bold text-cyan-400 uppercase tracking-widest truncate max-w-[160px]">{factionLabel}</span>
+                                                    <div className="flex items-center gap-2">
+                                                        <span className="text-[9px] bg-cyan-900/50 text-cyan-200 px-1.5 py-0.5 rounded font-mono border border-cyan-700">{missions.length}</span>
+                                                        <span className={`text-[10px] text-cyan-500 transform transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`}>▼</span>
                                                     </div>
-                                                    <div className={`pl-2 mt-1 text-[9px] ${subTextClass}`}>LOC: {m.location?.state || 'UNKNOWN'}</div>
-                                                </div>
-                                            );
-                                        })
-                                    ) : (
+                                                </button>
+                                                
+                                                {isExpanded && (
+                                                    <div className="p-2 space-y-2 animate-fade-in bg-slate-950/20">
+                                                        {missions.map(m => {
+                                                            const isShield = m.type === 'SHIELD_BASE';
+                                                            const isStartMission = m.id === 'm_kraven' || (m.title && m.title.includes("MH0")) || (m.title && m.title.toUpperCase().includes("CADENAS ROTAS"));
+                                                            const isBoss = m.type === 'BOSS';
+                                                            
+                                                            let borderClass = 'border-yellow-500/30 bg-yellow-900/5 hover:bg-yellow-900/20';
+                                                            let barClass = 'bg-yellow-500';
+                                                            let textClass = 'text-yellow-200';
+                                                            let subTextClass = 'text-yellow-500/70';
+
+                                                            if (isBoss) {
+                                                                borderClass = 'border-purple-500/30 bg-purple-900/20 hover:bg-purple-900/40 animate-pulse';
+                                                                barClass = 'bg-purple-500';
+                                                                textClass = 'text-purple-200';
+                                                                subTextClass = 'text-purple-500/70';
+                                                            } else if (isShield) {
+                                                                borderClass = 'border-cyan-500/30 bg-cyan-900/5 hover:bg-cyan-900/20';
+                                                                barClass = 'bg-cyan-500';
+                                                                textClass = 'text-cyan-200';
+                                                                subTextClass = 'text-cyan-500/70';
+                                                            } else if (isStartMission) {
+                                                                borderClass = 'border-emerald-500/30 bg-emerald-900/5 hover:bg-emerald-900/20';
+                                                                barClass = 'bg-emerald-500';
+                                                                textClass = 'text-emerald-200';
+                                                                subTextClass = 'text-emerald-500/70';
+                                                            }
+                                                            
+                                                            return (
+                                                                <div 
+                                                                    key={m.id} 
+                                                                    onClick={() => setSelectedMission(m)} 
+                                                                    className={`p-2 border cursor-pointer transition-all group relative overflow-hidden ${borderClass}`}
+                                                                >
+                                                                    <div className={`absolute left-0 top-0 bottom-0 w-1 ${barClass} group-hover:w-1.5 transition-all`}></div>
+                                                                    <div className="flex justify-between items-start pl-2">
+                                                                        <div className={`text-[9px] font-bold ${textClass} group-hover:text-white uppercase tracking-wider leading-tight`}>{m.title || 'UNKNOWN MISSION'}</div>
+                                                                    </div>
+                                                                    <div className={`pl-2 mt-0.5 text-[8px] ${subTextClass}`}>LOC: {m.location?.state || 'UNKNOWN'}</div>
+                                                                </div>
+                                                            );
+                                                        })}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        );
+                                    })}
+
+                                    {Object.values(groupedMissions).every(g => g.length === 0) && (
                                         <div className="text-center text-[10px] text-gray-600 italic py-4">{t.sidebar.noMissions}</div>
                                     )}
                                     
                                     {Array.from(completedMissionIds).length > 0 && (
                                         <>
-                                            <div className="my-4 border-t border-cyan-900/50"></div>
+                                            <div className="my-4 border-t border-cyan-900/50 pt-2">
+                                                <h5 className="text-[9px] font-bold text-emerald-700/70 mb-2 uppercase tracking-widest pl-1">COMPLETED ARCHIVES</h5>
+                                            </div>
                                             {visibleMissions.filter(m => m && completedMissionIds.has(m.id)).map(m => (
-                                                <div key={m.id} onClick={() => setSelectedMission(m)} className="p-2 border border-emerald-900/30 bg-emerald-900/5 hover:bg-emerald-900/10 cursor-pointer opacity-70 hover:opacity-100 transition-all pl-3">
+                                                <div key={m.id} onClick={() => setSelectedMission(m)} className="p-2 border border-emerald-900/30 bg-emerald-900/5 hover:bg-emerald-900/10 cursor-pointer opacity-70 hover:opacity-100 transition-all pl-3 mb-1">
                                                     <div className="flex justify-between items-center">
-                                                        <div className="text-[9px] font-bold text-emerald-400 line-through decoration-emerald-600">{m.title || 'COMPLETED MISSION'}</div>
+                                                        <div className="text-[9px] font-bold text-emerald-400 line-through decoration-emerald-600 truncate">{m.title || 'COMPLETED MISSION'}</div>
                                                         <div className="text-[10px] text-emerald-600">✓</div>
                                                     </div>
                                                 </div>

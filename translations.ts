@@ -1,3 +1,4 @@
+
 // translations.ts
 export type Language = 'es' | 'en';
 
@@ -34,7 +35,8 @@ export const translations = {
       magneto: { name: "Imperio de Magneto" },
       kingpin: { name: "Territorio de Kingpin" },
       hulk: { name: "Tierras Baldías de Hulk" },
-      doom: { name: "Latveria (Doom)" }
+      doom: { name: "Latveria (Doom)" },
+      neutral: { name: "Zona Neutral / S.H.I.E.L.D." }
     },
     login: {
       title: "SHIELD OS",
@@ -244,7 +246,8 @@ export const translations = {
       magneto: { name: "Magneto's Empire" },
       kingpin: { name: "Kingpin's Territory" },
       hulk: { name: "Hulk's Wasteland" },
-      doom: { name: "Latveria (Doom)" }
+      doom: { name: "Latveria (Doom)" },
+      neutral: { name: "Neutral Zone / S.H.I.E.L.D." }
     },
     login: {
       title: "SHIELD OS",
