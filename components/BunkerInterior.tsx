@@ -1,7 +1,8 @@
 "use client"
 
 import type React from "react"
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect } from "react"
+// Asegúrate de que estas rutas sean correctas en tu proyecto
 import { translations, type Language } from "../translations"
 import type { Hero, Mission, HeroClass, HeroTemplate } from "../types"
 import { getHeroTemplates, seedHeroTemplates, updateHeroTemplate } from "../services/dbService"
@@ -20,19 +21,11 @@ interface BunkerInteriorProps {
   isEditorMode?: boolean
 }
 
-// --- SUB-COMPONENTS ---
-
-/**
- * Escáner visual decorativo
- */
+// --- SUB-COMPONENT: DECORATIVE SCANNER ---
 const CerebroScanner = ({ status }: { status: "SEARCHING" | "LOCKED" }) => {
   const isLocked = status === "LOCKED"
   return (
-    <div
-      className={`w-full h-24 bg-slate-950 border relative overflow-hidden flex items-center justify-center p-2 transition-all duration-500 ${
-        isLocked ? "border-emerald-600 shadow-[inset_0_0_20px_rgba(16,185,129,0.2)]" : "border-cyan-900"
-      }`}
-    >
+    <div className={`w-full h-24 bg-slate-950 border relative overflow-hidden flex items-center justify-center p-2 transition-all duration-500 ${isLocked ? "border-emerald-600 shadow-[inset_0_0_20px_rgba(16,185,129,0.2)]" : "border-cyan-900"}`}>
       <div className={`absolute inset-0 border rounded-full m-1 opacity-30 ${isLocked ? "border-emerald-500" : "border-cyan-900"}`} />
       <div className={`absolute inset-0 border rounded-full m-6 opacity-20 ${isLocked ? "border-emerald-500" : "border-cyan-800"}`} />
       
@@ -53,26 +46,19 @@ const CerebroScanner = ({ status }: { status: "SEARCHING" | "LOCKED" }) => {
         </div>
       </div>
       
-      <div
-        className="absolute inset-0 pointer-events-none opacity-20"
-        style={{
-          backgroundImage: `radial-gradient(circle, ${isLocked ? "#10b981" : "#06b6d4"} 1px, transparent 1px)`,
-          backgroundSize: "10px 10px",
-        }}
-      />
+      <div className="absolute inset-0 pointer-events-none opacity-20" style={{ backgroundImage: `radial-gradient(circle, ${isLocked ? "#10b981" : "#06b6d4"} 1px, transparent 1px)`, backgroundSize: "10px 10px" }} />
     </div>
   )
 }
 
-/**
- * Token del Héroe en el mapa (Maneja su propio movimiento)
- */
+// --- SUB-COMPONENT: HERO TOKEN ---
 const HeroToken: React.FC<{ hero: Hero; onClick: () => void }> = ({ hero, onClick }) => {
+  // Posición inicial segura (centro)
   const [pos, setPos] = useState({ top: 50, left: 50 })
   const [imageLoaded, setImageLoaded] = useState(false)
   const [imageError, setImageError] = useState(false)
   
-  // Randomize movement timing per instance to avoid synchronized robotic movement
+  // Tiempos aleatorios para evitar movimiento robótico sincronizado
   const [animationDuration] = useState(Math.random() * 2 + 2)
   const [idleDuration] = useState(Math.random() * 3 + 1)
 
@@ -80,15 +66,16 @@ const HeroToken: React.FC<{ hero: Hero; onClick: () => void }> = ({ hero, onClic
     let isMounted = true
     let minX = 0, maxX = 100, minY = 0, maxY = 100
 
-    // Define zonas según estado
+    // Definir zonas según estado (Coordenadas % del mapa)
     switch (hero.status) {
-      case "AVAILABLE": // Barracks area
+      case "AVAILABLE": // Area Barracks (Izquierda Abajo)
         minX = 10; maxX = 25; minY = 20; maxY = 80; break
-      case "DEPLOYED": // Command area
-        minX = 75; maxX = 90; minY = 10; maxY = 40; break
-      case "INJURED": // Medbay area
+      case "DEPLOYED": // Area Command (Centro Arriba)
+        minX = 40; maxX = 60; minY = 10; maxY = 40; break
+      case "INJURED": // Area Medbay (Derecha Abajo)
         minX = 75; maxX = 90; minY = 60; maxY = 90; break
-      default: return
+      default: // Default center
+        minX = 45; maxX = 55; minY = 45; maxY = 55; break
     }
 
     const moveToken = () => {
@@ -100,10 +87,9 @@ const HeroToken: React.FC<{ hero: Hero; onClick: () => void }> = ({ hero, onClic
       setPos(nextPos)
     }
 
-    // Initial move slightly delayed
+    // Moverse poco después de montar
     const initialTimer = setTimeout(moveToken, 100)
-
-    // Continuous movement loop
+    // Bucle de movimiento
     const interval = setInterval(moveToken, (animationDuration + idleDuration) * 1000)
 
     return () => {
@@ -115,7 +101,7 @@ const HeroToken: React.FC<{ hero: Hero; onClick: () => void }> = ({ hero, onClic
 
   if (hero.status === "MIA") return null
 
-  // Determine styling based on status
+  // Colores según estado
   let statusColor = "border-cyan-500 shadow-cyan-500/50"
   let statusDot = "bg-emerald-500"
   
@@ -128,12 +114,12 @@ const HeroToken: React.FC<{ hero: Hero; onClick: () => void }> = ({ hero, onClic
   }
 
   return (
-    <button
+    <div
       onClick={(e) => {
-        e.stopPropagation()
+        e.stopPropagation() // Vital para que no clickee el mapa debajo
         onClick()
       }}
-      className={`absolute w-12 h-12 rounded-full border-2 cursor-pointer hover:scale-110 transition-transform duration-300 z-50 flex items-center justify-center shadow-[0_0_15px] ${statusColor} pointer-events-auto bg-slate-900 focus:outline-none focus:ring-2 focus:ring-white`}
+      className={`absolute w-12 h-12 rounded-full border-2 cursor-pointer hover:scale-110 transition-transform duration-300 z-50 flex items-center justify-center shadow-[0_0_15px] ${statusColor} pointer-events-auto bg-slate-900`}
       style={{
         left: `${pos.left}%`,
         top: `${pos.top}%`,
@@ -141,12 +127,11 @@ const HeroToken: React.FC<{ hero: Hero; onClick: () => void }> = ({ hero, onClic
         transition: `all ${animationDuration}s ease-in-out ${idleDuration}s`,
       }}
       title={`${hero.alias} [${hero.status}]`}
-      aria-label={`Select ${hero.alias}`}
     >
-      {hero.imageUrl && !imageError && (
+      {hero.imageUrl && !imageError ? (
         <img
           src={hero.imageUrl || "/placeholder.svg"}
-          alt=""
+          alt={hero.alias}
           className={`w-full h-full rounded-full object-cover pointer-events-none relative z-10 transition-opacity duration-300 ${imageLoaded ? "opacity-100" : "opacity-0"}`}
           onLoad={() => setImageLoaded(true)}
           onError={(e) => {
@@ -154,20 +139,20 @@ const HeroToken: React.FC<{ hero: Hero; onClick: () => void }> = ({ hero, onClic
             e.currentTarget.style.display = "none"
           }}
         />
-      )}
+      ) : null}
 
-      <span className={`text-[10px] font-bold text-white pointer-events-none z-0 transition-opacity duration-300 ${imageLoaded ? "opacity-0" : "opacity-100"}`}>
-        {hero.alias ? hero.alias.substring(0, 2) : "??"}
+      {/* Fallback texto si no hay imagen o carga */}
+      <span className={`text-[10px] font-bold text-white pointer-events-none z-0 absolute`}>
+        {hero.alias ? hero.alias.substring(0, 2).toUpperCase() : "??"}
       </span>
 
+      {/* Indicador de estado */}
       <div className={`absolute -top-1 -right-1 w-4 h-4 rounded-full border-2 border-black pointer-events-none z-20 ${statusDot}`} />
-    </button>
+    </div>
   )
 }
 
-/**
- * El mapa SVG extraído para limpiar el componente principal
- */
+// --- SUB-COMPONENT: MAP SVG ---
 const BunkerMapSVG: React.FC<{ onBack: () => void; onOpenDatabase: () => void }> = ({ onBack, onOpenDatabase }) => (
   <svg width="100%" height="100%" viewBox="0 0 1000 600" preserveAspectRatio="xMidYMid slice" className="opacity-40">
     <defs>
@@ -185,19 +170,10 @@ const BunkerMapSVG: React.FC<{ onBack: () => void; onOpenDatabase: () => void }>
     <path d="M 350 50 L 650 50 L 650 300 L 350 300 Z" fill="none" stroke="#06b6d4" strokeWidth="2" />
     <text x="500" y="320" textAnchor="middle" fill="#06b6d4" fontSize="14" fontWeight="bold" letterSpacing="2">COMMAND</text>
 
-    {/* BACK BUTTON (EXIT) */}
-    <g 
-      className="cursor-pointer hover:opacity-80 transition-opacity focus:outline-none" 
-      onClick={onBack}
-      role="button"
-      tabIndex={0}
-      onKeyDown={(e) => e.key === 'Enter' && onBack()}
-    >
+    {/* BACK BUTTON (SALIDA) */}
+    <g className="cursor-pointer hover:opacity-80 transition-opacity" onClick={onBack} role="button">
       <rect x="380" y="70" width="240" height="120" fill="#0f172a" stroke="#06b6d4" strokeWidth="2" />
-      <path
-        d="M 390 100 L 410 90 L 450 90 L 470 100 L 580 100 L 600 80 L 610 90 L 600 130 L 580 150 L 550 160 L 530 150 L 500 170 L 480 160 L 450 160 L 430 140 L 400 140 L 390 120 Z"
-        fill="none" stroke="#06b6d4" strokeWidth="1.5" opacity="0.7"
-      />
+      <path d="M 390 100 L 410 90 L 450 90 L 470 100 L 580 100 L 600 80 L 610 90 L 600 130 L 580 150 L 550 160 L 530 150 L 500 170 L 480 160 L 450 160 L 430 140 L 400 140 L 390 120 Z" fill="none" stroke="#06b6d4" strokeWidth="1.5" opacity="0.7" />
     </g>
 
     {/* HANGAR */}
@@ -208,14 +184,8 @@ const BunkerMapSVG: React.FC<{ onBack: () => void; onOpenDatabase: () => void }>
     <path d="M 700 350 L 950 350 L 950 550 L 700 550 Z" fill="none" stroke="#ef4444" strokeWidth="2" />
     <text x="825" y="570" textAnchor="middle" fill="#ef4444" fontSize="14" fontWeight="bold" letterSpacing="2">MEDBAY</text>
 
-    {/* DATABASE TERMINAL */}
-    <g
-      className="cursor-pointer hover:opacity-80 focus:outline-none"
-      onClick={onOpenDatabase}
-      role="button"
-      tabIndex={0}
-      onKeyDown={(e) => e.key === 'Enter' && onOpenDatabase()}
-    >
+    {/* DATABASE BUTTON */}
+    <g className="cursor-pointer hover:opacity-80" onClick={onOpenDatabase} role="button">
       <rect x="450" y="450" width="100" height="60" fill="#0f172a" stroke="#06b6d4" strokeWidth="2" />
       <text x="500" y="485" textAnchor="middle" fill="#06b6d4" fontSize="10" fontWeight="bold">DATABASE</text>
     </g>
@@ -223,7 +193,6 @@ const BunkerMapSVG: React.FC<{ onBack: () => void; onOpenDatabase: () => void }>
 )
 
 // --- MAIN COMPONENT ---
-
 export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
   heroes,
   missions,
@@ -236,14 +205,14 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
   playerAlignment,
   isEditorMode,
 }) => {
-  // State
+  // --- STATE ---
   const [selectedHeroId, setSelectedHeroId] = useState<string | null>(null)
   const [showAssignModal, setShowAssignModal] = useState(false)
   const [showRecruitModal, setShowRecruitModal] = useState(false)
   const [assignError, setAssignError] = useState<string | null>(null)
   const [zoomedImage, setZoomedImage] = useState<string | null>(null)
 
-  // Database / Recruit State
+  // Database State
   const [dbTemplates, setDbTemplates] = useState<HeroTemplate[]>([])
   const [isLoadingDb, setIsLoadingDb] = useState(false)
   const [seedStatus, setSeedStatus] = useState<"idle" | "success" | "error">("idle")
@@ -267,6 +236,11 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
   const t = translations[language]
   const selectedHero = heroes.find((h) => h.id === selectedHeroId)
 
+  // Debugging para ver si llegan héroes
+  useEffect(() => {
+    console.log("[BUNKER] Heroes recibidos:", heroes);
+  }, [heroes]);
+
   // Fetch Templates
   useEffect(() => {
     const fetchTemplates = async () => {
@@ -274,8 +248,8 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
       try {
         const templates = await getHeroTemplates()
         setDbTemplates(templates)
-      } catch (error) {
-        console.error("Failed to load hero templates", error)
+      } catch (err) {
+        console.error("Error fetching templates", err)
       } finally {
         setIsLoadingDb(false)
       }
@@ -283,7 +257,7 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
     fetchTemplates()
   }, [])
 
-  // Handlers
+  // --- HANDLERS ---
   const handleSelectTemplate = (templateId: string) => {
     const template = dbTemplates.find((h) => h.id === templateId)
     if (template) {
@@ -326,7 +300,6 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
 
   const handleRecruitSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    
     if (isEditingExisting && recruitForm.templateId) {
       const updateData: Partial<HeroTemplate> = {
         defaultName: recruitForm.name,
@@ -340,9 +313,9 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
       }
       await updateHeroTemplate(recruitForm.templateId, updateData)
       alert("DATABASE UPDATED.")
-      // Refresh local templates
-      const updatedTemplates = await getHeroTemplates()
-      setDbTemplates(updatedTemplates)
+      // Refresh
+      const temps = await getHeroTemplates()
+      setDbTemplates(temps)
     } else {
       const newHero: Hero = {
         id: `custom_${Date.now()}`,
@@ -361,7 +334,6 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
       }
       onAddHero(newHero)
     }
-    
     setShowRecruitModal(false)
     setIsEditingExisting(false)
     setSearchTerm("")
@@ -391,10 +363,8 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
     }
   }
 
-  // Derived state for filtering
   const availableTemplates = dbTemplates.filter((template) => {
     if (!isEditingExisting) {
-      // Don't show heroes already recruited (unless we want duplicates allowed, but logic suggests unique)
       const exists = heroes.some((h) => h.templateId === template.id)
       if (exists) return false
     }
@@ -405,10 +375,11 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
     return true
   })
 
+  // --- RENDER ---
   return (
     <div className="w-full h-full bg-slate-950 font-mono relative overflow-hidden select-none">
       
-      {/* 1. BUNKER MAP LAYER */}
+      {/* CAPA 1: MAPA DE FONDO (z-0) */}
       <div className="absolute inset-0 z-0 pointer-events-auto">
         <BunkerMapSVG 
           onBack={onBack} 
@@ -419,16 +390,25 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
         />
       </div>
 
-      {/* 2. HERO TOKENS LAYER */}
-      <div className="absolute inset-0 z-50 pointer-events-none">
-        <div className="w-full h-full relative pointer-events-none">
-          {heroes.map((hero) => (
-            <HeroToken key={hero.id} hero={hero} onClick={() => setSelectedHeroId(hero.id)} />
-          ))}
-        </div>
+      {/* CAPA 2: HERO TOKENS (z-10) */}
+      {/* pointer-events-none en el contenedor permite clicks en el mapa, 
+          pero los tokens tienen pointer-events-auto dentro */}
+      <div className="absolute inset-0 z-10 pointer-events-none">
+        {heroes && heroes.length > 0 ? (
+          heroes.map((hero) => (
+            <HeroToken 
+              key={hero.id} 
+              hero={hero} 
+              onClick={() => setSelectedHeroId(hero.id)} 
+            />
+          ))
+        ) : (
+          /* Debug visual si no hay héroes */
+          <div className="absolute bottom-4 right-4 text-xs text-red-500 font-bold opacity-50">NO HEROES DETECTED</div>
+        )}
       </div>
 
-      {/* 3. HERO DETAIL MODAL */}
+      {/* CAPA 3: MODAL DETALLE HÉROE (z-60) */}
       {selectedHeroId && selectedHero && (
         <div
           className="absolute inset-0 z-[60] bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4 md:p-12 animate-fade-in"
@@ -438,7 +418,7 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
             className="w-full max-w-4xl bg-slate-900 border-2 border-cyan-500 shadow-[0_0_50px_rgba(6,182,212,0.2)] flex flex-col max-h-full overflow-hidden"
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Header */}
+            {/* Header Modal */}
             <div className="p-4 border-b border-cyan-800 bg-cyan-900/20 flex justify-between items-center">
               <h2 className="text-xl font-bold tracking-[0.2em] text-cyan-200 uppercase">
                 {t.file.title} // {selectedHero.alias}
@@ -446,18 +426,17 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
               <button onClick={() => setSelectedHeroId(null)} className="text-cyan-500 hover:text-white px-2">✕</button>
             </div>
 
-            {/* Content */}
+            {/* Body Modal */}
             <div className="flex-1 p-6 overflow-y-auto">
               <div className="flex flex-col md:flex-row gap-8">
-                
-                {/* Left Column: Image & Scanner */}
+                {/* Columna Izquierda */}
                 <div className="w-full md:w-64 flex flex-col gap-4 shrink-0">
                   <div
                     className="w-full aspect-[3/4] bg-slate-950 border-2 border-cyan-700 relative group overflow-hidden shadow-inner cursor-zoom-in"
                     onClick={() => setZoomedImage(selectedHero.imageUrl || "")}
                   >
                     {selectedHero.imageUrl ? (
-                      <img src={selectedHero.imageUrl || "/placeholder.svg"} className="w-full h-full object-cover" alt={selectedHero.alias} />
+                      <img src={selectedHero.imageUrl || "/placeholder.svg"} className="w-full h-full object-cover" alt="" />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center text-cyan-900 flex-col gap-2">
                         <span className="text-4xl opacity-50">?</span>
@@ -476,7 +455,7 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
                   )}
                 </div>
 
-                {/* Right Column: Info */}
+                {/* Columna Derecha */}
                 <div className="flex-1 flex flex-col gap-6">
                   <div className="flex justify-between items-end border-b border-cyan-900 pb-2">
                     <div>
@@ -496,11 +475,11 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
                   </div>
 
                   <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="bg-yellow-900/10 border border-yellow-900/30 p-3 overflow-y-auto scrollbar-thin scrollbar-thumb-yellow-900">
+                    <div className="bg-yellow-900/10 border border-yellow-900/30 p-3 overflow-y-auto">
                       <h4 className="text-xs font-bold text-yellow-500 mb-2 border-b border-yellow-900/30 pb-1">{t.bunker.currentStory}</h4>
                       <p className="text-xs text-yellow-100/80 leading-relaxed">{selectedHero.currentStory || "CLASSIFIED"}</p>
                     </div>
-                    <div className="bg-emerald-900/10 border border-emerald-900/30 p-3 overflow-y-auto scrollbar-thin scrollbar-thumb-emerald-900">
+                    <div className="bg-emerald-900/10 border border-emerald-900/30 p-3 overflow-y-auto">
                       <h4 className="text-xs font-bold text-emerald-500 mb-2 border-b border-emerald-900/30 pb-1">{t.bunker.objectives}</h4>
                       {selectedHero.objectives && selectedHero.objectives.length > 0 ? (
                         <ul className="space-y-2">
@@ -526,7 +505,7 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
                 </div>
               </div>
 
-              {/* Action Bar */}
+              {/* Footer Actions */}
               <div className="mt-6 p-4 border-t border-cyan-800 bg-cyan-900/20 flex justify-between items-center">
                 <div className="text-xs text-cyan-600">ID: {selectedHero.id}</div>
                 <div>
@@ -560,13 +539,13 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
         </div>
       )}
 
-      {/* 4. MODALS (ASSIGN & RECRUIT) */}
+      {/* CAPA 4: MODALS AUXILIARES (z-60) */}
       
       {/* Assign Mission Modal */}
       {showAssignModal && (
         <div className="absolute inset-0 z-[60] flex items-center justify-center bg-slate-950/90 backdrop-blur-sm p-4">
           <div className="w-full max-w-lg bg-slate-900 border border-cyan-500 shadow-[0_0_50px_rgba(6,182,212,0.3)]">
-             <div className="bg-cyan-900/30 p-4 border-b border-cyan-700 flex justify-between items-center">
+            <div className="bg-cyan-900/30 p-4 border-b border-cyan-700 flex justify-between items-center">
               <h3 className="text-cyan-300 font-bold tracking-widest">{t.bunker.assignModalTitle}</h3>
               <button onClick={() => setShowAssignModal(false)} className="text-cyan-500 hover:text-white">✕</button>
             </div>
@@ -594,6 +573,11 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
                 ))
               )}
             </div>
+            <div className="p-4 border-t border-cyan-900 bg-slate-900 flex justify-end">
+              <button onClick={() => setShowAssignModal(false)} className="px-4 py-2 text-xs text-gray-400 hover:text-white">
+                {t.bunker.cancel}
+              </button>
+            </div>
           </div>
         </div>
       )}
@@ -610,7 +594,7 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
             </div>
 
             <form onSubmit={handleRecruitSubmit} className="flex-1 p-6 flex flex-col gap-4 overflow-hidden">
-               {/* Database Search Section */}
+              {/* Database Search Section */}
               {!isEditingExisting && (
                 <div className="w-full pb-4 border-b border-cyan-900 shrink-0 space-y-2">
                   <label className="block text-[10px] text-cyan-400 font-bold tracking-widest">{t.recruit.selectDb}</label>
@@ -642,9 +626,8 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
                 </div>
               )}
 
-              {/* Form Content (Two Columns) */}
+              {/* Form Content */}
               <div className="flex flex-col md:flex-row gap-6 flex-1 min-h-0 overflow-y-auto md:overflow-hidden">
-                {/* Left: Image Preview */}
                 <div className="w-full md:w-[200px] flex flex-col gap-3 shrink-0">
                   <div
                     className="w-full aspect-[3/4] bg-slate-950 border-2 border-cyan-800 relative group cursor-zoom-in overflow-hidden shadow-inner"
@@ -667,7 +650,6 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
                   <CerebroScanner status="SEARCHING" />
                 </div>
 
-                {/* Right: Details (Read only preview mostly based on logic) */}
                 <div className="flex-1 flex flex-col gap-4 min-h-0">
                   <div className="flex gap-4 border-b border-cyan-900 pb-2">
                     <div className="flex-1">
@@ -685,7 +667,6 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
                   </div>
 
                   <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-4 min-h-0">
-                     {/* ... Story and Objectives display ... */}
                     <div className="bg-yellow-900/5 border border-yellow-900/30 p-2 overflow-y-auto">
                       <h4 className="text-[10px] text-yellow-600 font-bold uppercase mb-1">{t.bunker.currentStory}</h4>
                       <p className="text-[10px] text-yellow-100/70">{recruitForm.currentStory || "PENDING UPDATE..."}</p>
@@ -702,7 +683,7 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
                 </div>
               </div>
 
-              {/* Footer Actions */}
+              {/* Footer Form Actions */}
               <div className="flex justify-between items-center border-t border-cyan-800 pt-4 shrink-0">
                 <button
                   type="button"
@@ -729,7 +710,7 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
         </div>
       )}
 
-      {/* 5. IMAGE ZOOM OVERLAY */}
+      {/* CAPA 5: ZOOM OVERLAY (z-100) */}
       {zoomedImage && (
         <div
           className="fixed inset-0 z-[100] bg-black/90 flex items-center justify-center p-4 cursor-zoom-out backdrop-blur-md"
