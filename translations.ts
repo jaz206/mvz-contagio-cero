@@ -76,10 +76,25 @@ export const translations = {
       status: "ESTADO",
       unassign: "RETIRAR",
       assign: "ASIGNAR A MISIÓN",
+      viewFile: "VER FICHA TÉCNICA",
+      manageSquad: "GESTIONAR ESCUADRÓN",
       assignModalTitle: "SELECCIONAR MISIÓN",
+      squadModalTitle: "ASIGNACIÓN DE ESCUADRÓN",
+      addToMission: "AÑADIR A MISIÓN",
+      removeFromMission: "RETIRAR DE MISIÓN",
       noMissions: "NO HAY MISIONES DISPONIBLES",
       cancel: "CANCELAR",
-      maxHeroes: "CAPACIDAD MÁXIMA ALCANZADA"
+      maxHeroes: "CAPACIDAD MÁXIMA ALCANZADA",
+      rooms: {
+          command: "SALA DE GUERRA",
+          commandDesc: "Misiones activas y despliegue táctico.",
+          barracks: "BARRACONES",
+          barracksDesc: "Agentes en reserva listos para el servicio.",
+          medbay: "ALA MÉDICA / CONTENCIÓN",
+          medbayDesc: "Tratamiento y escaneo de nuevos sujetos.",
+          cerebro: "INTERFAZ CEREBRO",
+          cerebroDesc: "Búsqueda y reclutamiento global."
+      }
     },
     recruit: {
       title: "RECLUTAMIENTO DE HÉROES",
@@ -87,6 +102,9 @@ export const translations = {
       loadingDb: "ACCEDIENDO A ARCHIVOS...",
       alias: "NOMBRE EN CLAVE",
       name: "NOMBRE REAL",
+      fileUrl: "URL DE FICHA (IMAGEN/PDF)",
+      scanZombie: "ESCANEAR: SEÑALES ZOMBIE (CURAR)",
+      scanHuman: "ESCANEAR: CARNE FRESCA (INFECTAR)",
       adminSeed: "ADMIN: REINICIAR DB",
       seedSuccess: "DB REINICIADA",
       submit: "RECLUTAR AGENTE"
@@ -288,10 +306,25 @@ export const translations = {
       status: "STATUS",
       unassign: "WITHDRAW",
       assign: "ASSIGN TO MISSION",
+      viewFile: "VIEW PERSONNEL FILE",
+      manageSquad: "MANAGE SQUAD",
       assignModalTitle: "SELECT MISSION",
+      squadModalTitle: "SQUAD ASSIGNMENT",
+      addToMission: "ADD TO MISSION",
+      removeFromMission: "REMOVE FROM MISSION",
       noMissions: "NO MISSIONS AVAILABLE",
       cancel: "CANCEL",
-      maxHeroes: "MAXIMUM CAPACITY REACHED"
+      maxHeroes: "MAXIMUM CAPACITY REACHED",
+      rooms: {
+          command: "WAR ROOM",
+          commandDesc: "Active missions and tactical deployment.",
+          barracks: "BARRACKS",
+          barracksDesc: "Reserve agents ready for deployment.",
+          medbay: "MEDBAY / CONTAINMENT",
+          medbayDesc: "Treatment and scanning of new subjects.",
+          cerebro: "CEREBRO INTERFACE",
+          cerebroDesc: "Global search and recruitment."
+      }
     },
     recruit: {
       title: "HERO RECRUITMENT",
@@ -299,6 +332,9 @@ export const translations = {
       loadingDb: "ACCESSING FILES...",
       alias: "CODENAME",
       name: "REAL NAME",
+      fileUrl: "FILE URL (IMAGE/PDF)",
+      scanZombie: "SCAN: ZOMBIE SIGNALS (CURE)",
+      scanHuman: "SCAN: FRESH MEAT (INFECT)",
       adminSeed: "ADMIN: RESET DB",
       seedSuccess: "DB RESET",
       submit: "RECRUIT AGENT"

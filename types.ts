@@ -68,6 +68,7 @@ export interface Hero {
   objectives?: string[]; // array de objetivos personales
   completedObjectiveIndices?: number[]; // Índices de los objetivos cumplidos
   imageUrl?: string; // Optional URL for hero portrait
+  characterSheetUrl?: string; // URL to external PDF/Image file (Ficha)
   stats: {
     strength: number;
     agility: number;
@@ -91,6 +92,7 @@ export interface HeroTemplate {
   alias?: string;
   currentStory?: string;
   objectives?: string[];
+  characterSheetUrl?: string;
 }
 
 export type WorldStage = 'NORMAL' | 'ANOMALY' | 'SURFER' | 'GALACTUS';

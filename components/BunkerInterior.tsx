@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { translations, Language } from "../translations";
 import { Hero, Mission, HeroClass, HeroTemplate } from "../types";
@@ -17,174 +18,106 @@ interface BunkerInteriorProps {
   isEditorMode?: boolean;
 }
 
-// --- SUB-COMPONENT: DECORATIVE SCANNER ---
-const CerebroScanner = ({ status }: { status: "SEARCHING" | "LOCKED" }) => {
-  const isLocked = status === "LOCKED";
-  return (
-    <div className={`w-full h-24 bg-slate-950 border relative overflow-hidden flex items-center justify-center p-2 transition-all duration-500 ${isLocked ? "border-emerald-600 shadow-[inset_0_0_20px_rgba(16,185,129,0.2)]" : "border-cyan-900"}`}>
-      <div className={`absolute inset-0 border rounded-full m-1 opacity-30 ${isLocked ? "border-emerald-500" : "border-cyan-900"}`} />
-      <div className={`absolute inset-0 border rounded-full m-6 opacity-20 ${isLocked ? "border-emerald-500" : "border-cyan-800"}`} />
-      
-      {status === "SEARCHING" ? (
-        <div className="absolute w-full h-[2px] bg-cyan-500/50 top-1/2 left-0 animate-[spin_3s_linear_infinite] shadow-[0_0_10px_#06b6d4]" />
-      ) : (
-        <>
-          <div className="absolute w-full h-[1px] bg-emerald-500/50 top-1/2 left-0" />
-          <div className="absolute h-full w-[1px] bg-emerald-500/50 top-0 left-1/2" />
-          <div className="absolute w-12 h-12 border-2 border-emerald-500 rounded-full animate-pulse" />
-        </>
-      )}
+// --- SUB-COMPONENTS ---
 
-      <div className={`text-[8px] font-mono z-10 flex flex-col items-center ${isLocked ? "text-emerald-400" : "text-cyan-600"}`}>
-        <div className="tracking-widest font-bold">CEREBRO SCANNER</div>
-        <div className={`mt-1 ${status === "SEARCHING" ? "animate-pulse" : ""}`}>
-          {status === "SEARCHING" ? "SEARCHING GLOBAL FEED..." : "SIGNAL LOCKED // CONFIRMED"}
-        </div>
-      </div>
-      
-      <div className="absolute inset-0 pointer-events-none opacity-20" style={{ backgroundImage: `radial-gradient(circle, ${isLocked ? "#10b981" : "#06b6d4"} 1px, transparent 1px)`, backgroundSize: "10px 10px" }} />
+const StatBar: React.FC<{ label: string; value: number; colorClass: string }> = ({ label, value, colorClass }) => (
+  <div className="flex items-center gap-2 text-[9px]">
+    <span className="w-8 text-right opacity-70">{label}</span>
+    <div className="flex-1 h-1.5 bg-slate-800 rounded-full overflow-hidden">
+      <div 
+        className={`h-full ${colorClass}`} 
+        style={{ width: `${(value / 10) * 100}%` }}
+      />
     </div>
-  );
-};
-
-// --- SUB-COMPONENT: HERO TOKEN (CORREGIDO) ---
-const HeroToken: React.FC<{ hero: Hero; onClick: () => void }> = ({ hero, onClick }) => {
-  // Posición inicial segura (centro)
-  const [pos, setPos] = useState({ top: 50, left: 50 });
-  const [imageError, setImageError] = useState(false);
-  
-  // Duración de animación fija para evitar retrasos iniciales
-  const [animationDuration] = useState(Math.random() * 2 + 3); // Entre 3 y 5 segundos
-
-  useEffect(() => {
-    let isMounted = true;
-    let minX = 0, maxX = 100, minY = 0, maxY = 100;
-
-    // Definir zonas según estado (Coordenadas % del mapa)
-    switch (hero.status) {
-      case "AVAILABLE": // Area Barracks (Izquierda Abajo)
-        minX = 10; maxX = 25; minY = 20; maxY = 80; break;
-      case "DEPLOYED": // Area Command (Centro Arriba)
-        minX = 40; maxX = 60; minY = 10; maxY = 40; break;
-      case "INJURED": // Area Medbay (Derecha Abajo)
-        minX = 75; maxX = 90; minY = 60; maxY = 90; break;
-      default: // Default center
-        minX = 45; maxX = 55; minY = 45; maxY = 55; break;
-    }
-
-    const moveToken = () => {
-      if (!isMounted) return;
-      const nextPos = {
-        left: Math.random() * (maxX - minX) + minX,
-        top: Math.random() * (maxY - minY) + minY,
-      };
-      setPos(nextPos);
-    };
-
-    // Moverse INMEDIATAMENTE al montar
-    moveToken();
-    
-    // Bucle de movimiento
-    const interval = setInterval(moveToken, animationDuration * 1000);
-
-    return () => {
-      isMounted = false;
-      clearInterval(interval);
-    };
-  }, [hero.status, animationDuration]);
-
-  if (hero.status === "MIA") return null;
-
-  // Colores según estado
-  let statusColor = "border-cyan-500 shadow-[0_0_15px_rgba(6,182,212,0.6)]";
-  let statusDot = "bg-emerald-500";
-  
-  if (hero.status === "INJURED") {
-    statusColor = "border-red-500 shadow-[0_0_15px_rgba(239,68,68,0.6)]";
-    statusDot = "bg-red-600";
-  } else if (hero.status === "DEPLOYED") {
-    statusColor = "border-yellow-500 shadow-[0_0_15px_rgba(234,179,8,0.6)]";
-    statusDot = "bg-yellow-400";
-  }
-
-  return (
-    <div
-      onClick={(e) => {
-        e.stopPropagation();
-        onClick();
-      }}
-      className={`absolute w-12 h-12 rounded-full border-2 cursor-pointer hover:scale-110 z-50 flex items-center justify-center ${statusColor} pointer-events-auto bg-slate-900 transition-all ease-in-out`}
-      style={{
-        left: `${pos.left}%`,
-        top: `${pos.top}%`,
-        transform: `translate(-50%, -50%)`,
-        transitionDuration: `${animationDuration}s`,
-      }}
-      title={`${hero.alias} [${hero.status}]`}
-    >
-      {/* Imagen: Si falla o no existe, se oculta y se ve el texto de fondo */}
-      {hero.imageUrl && !imageError ? (
-        <img
-          src={hero.imageUrl}
-          alt={hero.alias}
-          className="w-full h-full rounded-full object-cover pointer-events-none relative z-10"
-          onError={(e) => {
-            setImageError(true);
-            e.currentTarget.style.display = "none";
-          }}
-        />
-      ) : null}
-
-      {/* Texto de respaldo: Siempre renderizado, visible si no hay imagen */}
-      <span className="text-[10px] font-bold text-white pointer-events-none absolute z-0 font-mono">
-        {hero.alias ? hero.alias.substring(0, 2).toUpperCase() : "??"}
-      </span>
-
-      {/* Indicador de estado */}
-      <div className={`absolute -top-1 -right-1 w-3 h-3 rounded-full border border-black pointer-events-none z-20 ${statusDot}`} />
-    </div>
-  );
-};
-
-// --- SUB-COMPONENT: MAP SVG ---
-const BunkerMapSVG: React.FC<{ onBack: () => void; onOpenDatabase: () => void }> = ({ onBack, onOpenDatabase }) => (
-  <svg width="100%" height="100%" viewBox="0 0 1000 600" preserveAspectRatio="xMidYMid slice" className="opacity-40">
-    <defs>
-      <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
-        <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#0e7490" strokeWidth="0.5" opacity="0.3" />
-      </pattern>
-    </defs>
-    <rect width="100%" height="100%" fill="url(#grid)" />
-
-    {/* BARRACKS */}
-    <path d="M 50 100 L 300 100 L 300 500 L 50 500 Z" fill="none" stroke="#06b6d4" strokeWidth="2" />
-    <text x="175" y="530" textAnchor="middle" fill="#06b6d4" fontSize="14" fontWeight="bold" letterSpacing="2">BARRACKS</text>
-
-    {/* COMMAND */}
-    <path d="M 350 50 L 650 50 L 650 300 L 350 300 Z" fill="none" stroke="#06b6d4" strokeWidth="2" />
-    <text x="500" y="320" textAnchor="middle" fill="#06b6d4" fontSize="14" fontWeight="bold" letterSpacing="2">COMMAND</text>
-
-    {/* BACK BUTTON (SALIDA) */}
-    <g className="cursor-pointer hover:opacity-80 transition-opacity" onClick={onBack} role="button">
-      <rect x="380" y="70" width="240" height="120" fill="#0f172a" stroke="#06b6d4" strokeWidth="2" />
-      <path d="M 390 100 L 410 90 L 450 90 L 470 100 L 580 100 L 600 80 L 610 90 L 600 130 L 580 150 L 550 160 L 530 150 L 500 170 L 480 160 L 450 160 L 430 140 L 400 140 L 390 120 Z" fill="none" stroke="#06b6d4" strokeWidth="1.5" opacity="0.7" />
-    </g>
-
-    {/* HANGAR */}
-    <path d="M 700 50 L 950 50 L 950 300 L 700 300 Z" fill="none" stroke="#eab308" strokeWidth="2" />
-    <text x="825" y="320" textAnchor="middle" fill="#eab308" fontSize="14" fontWeight="bold" letterSpacing="2">HANGAR</text>
-
-    {/* MEDBAY */}
-    <path d="M 700 350 L 950 350 L 950 550 L 700 550 Z" fill="none" stroke="#ef4444" strokeWidth="2" />
-    <text x="825" y="570" textAnchor="middle" fill="#ef4444" fontSize="14" fontWeight="bold" letterSpacing="2">MEDBAY</text>
-
-    {/* DATABASE BUTTON */}
-    <g className="cursor-pointer hover:opacity-80" onClick={onOpenDatabase} role="button">
-      <rect x="450" y="450" width="100" height="60" fill="#0f172a" stroke="#06b6d4" strokeWidth="2" />
-      <text x="500" y="485" textAnchor="middle" fill="#06b6d4" fontSize="10" fontWeight="bold">DATABASE</text>
-    </g>
-  </svg>
+    <span className="w-4 font-bold">{value}</span>
+  </div>
 );
+
+const HeroListCard: React.FC<{ hero: Hero; onClick: () => void; compact?: boolean }> = ({ hero, onClick, compact }) => (
+  <div 
+    onClick={onClick}
+    className="group relative flex items-center gap-3 p-2 bg-slate-900/80 border border-slate-700 hover:border-cyan-500 hover:bg-slate-800 transition-all cursor-pointer overflow-hidden"
+  >
+    {/* Status Indicator Stripe */}
+    <div className={`absolute left-0 top-0 bottom-0 w-1 ${
+      hero.status === 'AVAILABLE' ? 'bg-emerald-500' : 
+      hero.status === 'INJURED' ? 'bg-red-500' : 'bg-yellow-500'
+    }`} />
+
+    {/* Avatar */}
+    <div className="w-10 h-10 shrink-0 border border-slate-600 bg-slate-800 relative overflow-hidden">
+      {hero.imageUrl ? (
+        <img src={hero.imageUrl} alt={hero.alias} className="w-full h-full object-cover" />
+      ) : (
+        <div className="w-full h-full flex items-center justify-center text-xs font-bold text-slate-500">?</div>
+      )}
+    </div>
+
+    {/* Info */}
+    <div className="flex-1 min-w-0">
+      <div className="flex justify-between items-baseline">
+        <h4 className="text-xs font-bold text-cyan-100 truncate">{hero.alias}</h4>
+        <span className="text-[9px] text-cyan-600 font-mono">{hero.class}</span>
+      </div>
+      {!compact && (
+        <div className="mt-1 space-y-0.5">
+           <StatBar label="STR" value={hero.stats.strength} colorClass="bg-red-500" />
+           <StatBar label="AGI" value={hero.stats.agility} colorClass="bg-green-500" />
+           <StatBar label="INT" value={hero.stats.intellect} colorClass="bg-blue-500" />
+        </div>
+      )}
+    </div>
+  </div>
+);
+
+const MissionListCard: React.FC<{ mission: Mission; onClick: () => void; assignedCount: number }> = ({ mission, onClick, assignedCount }) => (
+    <div 
+      onClick={onClick}
+      className="group relative flex items-center gap-3 p-2 bg-slate-900/80 border border-slate-700 hover:border-blue-500 hover:bg-slate-800 transition-all cursor-pointer overflow-hidden mb-1"
+    >
+        <div className="flex-1 min-w-0">
+            <div className="flex justify-between items-center mb-1">
+                <h4 className="text-xs font-bold text-blue-100 truncate group-hover:text-blue-300">{mission.title}</h4>
+                <span className="text-[9px] px-1.5 rounded bg-blue-900/30 text-blue-400 border border-blue-800">{assignedCount} AGENTS</span>
+            </div>
+            <div className="flex justify-between items-center text-[9px] text-slate-400">
+                <span>{mission.location.state}</span>
+                <span className={`font-bold ${mission.threatLevel === 'HIGH' ? 'text-orange-500' : mission.threatLevel === 'EXTREME' || mission.threatLevel.includes('OMEGA') ? 'text-red-500' : 'text-yellow-500'}`}>
+                    {mission.threatLevel}
+                </span>
+            </div>
+        </div>
+    </div>
+);
+
+const CerebroScanner = ({ status }: { status: "SEARCHING" | "LOCKED" }) => {
+    const isLocked = status === "LOCKED";
+    return (
+      <div className={`w-full h-32 bg-slate-950 border relative overflow-hidden flex items-center justify-center p-2 transition-all duration-500 ${isLocked ? "border-emerald-600 shadow-[inset_0_0_20px_rgba(16,185,129,0.2)]" : "border-cyan-900"}`}>
+        <div className={`absolute inset-0 border rounded-full m-1 opacity-30 ${isLocked ? "border-emerald-500" : "border-cyan-900"}`} />
+        <div className={`absolute inset-0 border rounded-full m-6 opacity-20 ${isLocked ? "border-emerald-500" : "border-cyan-800"}`} />
+        
+        {status === "SEARCHING" ? (
+          <div className="absolute w-full h-[2px] bg-cyan-500/50 top-1/2 left-0 animate-[spin_3s_linear_infinite] shadow-[0_0_10px_#06b6d4]" />
+        ) : (
+          <>
+            <div className="absolute w-full h-[1px] bg-emerald-500/50 top-1/2 left-0" />
+            <div className="absolute h-full w-[1px] bg-emerald-500/50 top-0 left-1/2" />
+            <div className="absolute w-12 h-12 border-2 border-emerald-500 rounded-full animate-pulse" />
+          </>
+        )}
+  
+        <div className={`text-[8px] font-mono z-10 flex flex-col items-center ${isLocked ? "text-emerald-400" : "text-cyan-600"}`}>
+          <div className="tracking-widest font-bold">CEREBRO SCANNER</div>
+          <div className={`mt-1 ${status === "SEARCHING" ? "animate-pulse" : ""}`}>
+            {status === "SEARCHING" ? "SEARCHING GLOBAL FEED..." : "SIGNAL LOCKED // CONFIRMED"}
+          </div>
+        </div>
+        
+        <div className="absolute inset-0 pointer-events-none opacity-20" style={{ backgroundImage: `radial-gradient(circle, ${isLocked ? "#10b981" : "#06b6d4"} 1px, transparent 1px)`, backgroundSize: "10px 10px" }} />
+      </div>
+    );
+  };
 
 // --- MAIN COMPONENT ---
 export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
@@ -201,6 +134,7 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
 }) => {
   // --- STATE ---
   const [selectedHeroId, setSelectedHeroId] = useState<string | null>(null);
+  const [selectedMissionIdForSquad, setSelectedMissionIdForSquad] = useState<string | null>(null);
   const [showAssignModal, setShowAssignModal] = useState(false);
   const [showRecruitModal, setShowRecruitModal] = useState(false);
   const [assignError, setAssignError] = useState<string | null>(null);
@@ -222,6 +156,7 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
     currentStory: "",
     objectives: [] as string[],
     imageUrl: "",
+    characterSheetUrl: "",
     str: 5,
     agi: 5,
     int: 5,
@@ -229,6 +164,11 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
 
   const t = translations[language];
   const selectedHero = heroes.find((h) => h.id === selectedHeroId);
+
+  // Filtered Lists
+  const deployedHeroes = heroes.filter(h => h.status === 'DEPLOYED');
+  const availableHeroes = heroes.filter(h => h.status === 'AVAILABLE');
+  const injuredHeroes = heroes.filter(h => h.status === 'INJURED');
 
   // Fetch Templates
   useEffect(() => {
@@ -260,6 +200,7 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
         currentStory: template.currentStory || "",
         objectives: template.objectives || [],
         imageUrl: template.imageUrl,
+        characterSheetUrl: template.characterSheetUrl || "",
         str: template.defaultStats.strength,
         agi: template.defaultStats.agility,
         int: template.defaultStats.intellect,
@@ -278,6 +219,7 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
       currentStory: selectedHero.currentStory || "",
       objectives: selectedHero.objectives || [],
       imageUrl: selectedHero.imageUrl || "",
+      characterSheetUrl: selectedHero.characterSheetUrl || "",
       str: selectedHero.stats.strength,
       agi: selectedHero.stats.agility,
       int: selectedHero.stats.intellect,
@@ -298,11 +240,11 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
         currentStory: recruitForm.currentStory,
         objectives: recruitForm.objectives,
         imageUrl: recruitForm.imageUrl,
+        characterSheetUrl: recruitForm.characterSheetUrl,
         defaultStats: { strength: recruitForm.str, agility: recruitForm.agi, intellect: recruitForm.int },
       };
       await updateHeroTemplate(recruitForm.templateId, updateData);
       alert("DATABASE UPDATED.");
-      // Refresh
       const temps = await getHeroTemplates();
       setDbTemplates(temps);
     } else {
@@ -317,6 +259,7 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
         objectives: recruitForm.objectives,
         completedObjectiveIndices: [],
         imageUrl: recruitForm.imageUrl,
+        characterSheetUrl: recruitForm.characterSheetUrl,
         status: "AVAILABLE",
         stats: { strength: recruitForm.str, agility: recruitForm.agi, intellect: recruitForm.int },
         assignedMissionId: null,
@@ -366,38 +309,148 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
 
   // --- RENDER ---
   return (
-    <div className="w-full h-full bg-slate-950 font-mono relative overflow-hidden select-none">
+    <div className="w-full h-full bg-slate-950 font-mono relative overflow-hidden select-none flex flex-col">
       
-      {/* CAPA 1: MAPA DE FONDO (z-0) */}
-      <div className="absolute inset-0 z-0 pointer-events-auto">
-        <BunkerMapSVG 
-          onBack={onBack} 
-          onOpenDatabase={() => {
-            setIsEditingExisting(false);
-            setShowRecruitModal(true);
-          }} 
-        />
-      </div>
+        {/* Header Bar */}
+        <div className="flex items-center justify-between p-4 bg-slate-900 border-b border-cyan-900 shrink-0 z-20">
+            <div className="flex items-center gap-4">
+                <button onClick={onBack} className="flex items-center gap-2 text-cyan-500 hover:text-cyan-300 transition-colors uppercase text-xs font-bold tracking-widest border border-cyan-800 px-3 py-1 bg-cyan-950/30">
+                    ← {t.bunker.return}
+                </button>
+                <div className="h-6 w-[1px] bg-cyan-900"></div>
+                <h1 className="text-lg md:text-xl font-bold text-cyan-200 tracking-[0.2em] uppercase">
+                    {playerAlignment === 'ZOMBIE' ? t.bunker.hiveTitle : t.bunker.title}
+                </h1>
+            </div>
+            <div className="flex items-center gap-4 text-[10px] md:text-xs">
+                 <div className="bg-slate-800 px-3 py-1 rounded border border-slate-700">
+                     <span className="text-gray-400">TOTAL:</span> <span className="text-white font-bold">{heroes.length}</span>
+                 </div>
+                 <div className="bg-slate-800 px-3 py-1 rounded border border-slate-700">
+                     <span className="text-gray-400">AVAILABLE:</span> <span className="text-emerald-400 font-bold">{availableHeroes.length}</span>
+                 </div>
+            </div>
+        </div>
 
-      {/* CAPA 2: HERO TOKENS (z-10) */}
-      <div className="absolute inset-0 z-10 pointer-events-none">
-        {heroes && heroes.length > 0 ? (
-          heroes.map((hero) => (
-            <HeroToken 
-              key={hero.id} 
-              hero={hero} 
-              onClick={() => setSelectedHeroId(hero.id)} 
-            />
-          ))
-        ) : (
-          /* Debug visual si no hay héroes */
-          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-             <div className="bg-red-900/80 border border-red-500 text-white px-4 py-2 font-bold animate-pulse shadow-[0_0_20px_rgba(239,68,68,0.5)]">
-                ⚠ NO HEROES DETECTED
-             </div>
-          </div>
-        )}
-      </div>
+        {/* Dashboard Grid */}
+        <div className="flex-1 p-4 overflow-y-auto z-10">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 h-full min-h-[600px]">
+                
+                {/* 1. COMMAND DECK (Missions) - UPDATED */}
+                <div id="tutorial-bunker-file" className="bg-slate-900/40 border border-blue-900/50 flex flex-col relative overflow-hidden group">
+                    <div className="absolute top-0 right-0 p-2 opacity-10 group-hover:opacity-20 transition-opacity">
+                         <svg className="w-24 h-24" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2L2 7l10 5 10-5-10-5zm0 9l2.5-1.25L12 8.5l-2.5 1.25L12 11zm0 2.5l-5-2.5-5 2.5L12 22l10-8.5-5-2.5-5 2.5z"/></svg>
+                    </div>
+                    <div className="p-3 bg-slate-900/80 border-b border-blue-900 flex justify-between items-center">
+                        <div>
+                            <h3 className="text-sm font-bold text-blue-300 tracking-widest uppercase">{t.bunker.rooms.command}</h3>
+                            <div className="text-[9px] text-blue-500/70">{t.bunker.rooms.commandDesc}</div>
+                        </div>
+                        <div className="text-xs font-bold text-blue-400 bg-blue-900/20 px-2 py-0.5 rounded border border-blue-900">{missions.length}</div>
+                    </div>
+                    <div className="flex-1 p-3 space-y-2 overflow-y-auto scrollbar-thin scrollbar-thumb-blue-900">
+                        {missions.length === 0 ? (
+                            <div className="h-full flex flex-col items-center justify-center text-blue-900/50 italic text-xs">
+                                NO ACTIVE MISSIONS
+                            </div>
+                        ) : (
+                            missions.map(m => {
+                                const count = heroes.filter(h => h.assignedMissionId === m.id).length;
+                                return (
+                                    <MissionListCard 
+                                        key={m.id} 
+                                        mission={m} 
+                                        assignedCount={count}
+                                        onClick={() => setSelectedMissionIdForSquad(m.id)} 
+                                    />
+                                );
+                            })
+                        )}
+                    </div>
+                </div>
+
+                {/* 2. BARRACKS (Available) */}
+                <div id="tutorial-bunker-roster" className="bg-slate-900/40 border border-emerald-900/50 flex flex-col relative overflow-hidden group lg:row-span-2">
+                    <div className="absolute bottom-0 right-0 p-2 opacity-5 group-hover:opacity-10 transition-opacity">
+                        <svg className="w-48 h-48" viewBox="0 0 24 24" fill="currentColor"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>
+                    </div>
+                    <div className="p-3 bg-slate-900/80 border-b border-emerald-900 flex justify-between items-center">
+                        <div>
+                            <h3 className="text-sm font-bold text-emerald-300 tracking-widest uppercase">{t.bunker.rooms.barracks}</h3>
+                            <div className="text-[9px] text-emerald-500/70">{t.bunker.rooms.barracksDesc}</div>
+                        </div>
+                        <div className="text-xs font-bold text-emerald-400 bg-emerald-900/20 px-2 py-0.5 rounded border border-emerald-900">{availableHeroes.length}</div>
+                    </div>
+                    <div className="flex-1 p-3 space-y-2 overflow-y-auto scrollbar-thin scrollbar-thumb-emerald-900">
+                        {availableHeroes.length === 0 ? (
+                            <div className="h-full flex flex-col items-center justify-center text-emerald-900/50 italic text-xs">
+                                BARRACKS EMPTY
+                            </div>
+                        ) : (
+                            availableHeroes.map(h => (
+                                <HeroListCard key={h.id} hero={h} onClick={() => setSelectedHeroId(h.id)} />
+                            ))
+                        )}
+                    </div>
+                </div>
+
+                {/* 3. CEREBRO (Recruit) */}
+                <div id="tutorial-recruit-btn" className="bg-slate-900/40 border border-purple-900/50 flex flex-col relative overflow-hidden group">
+                     <div className="p-3 bg-slate-900/80 border-b border-purple-900">
+                        <h3 className="text-sm font-bold text-purple-300 tracking-widest uppercase">{t.bunker.rooms.cerebro}</h3>
+                        <div className="text-[9px] text-purple-500/70">{t.bunker.rooms.cerebroDesc}</div>
+                    </div>
+                    <div className="flex-1 p-6 flex flex-col items-center justify-center relative">
+                         {/* Animated BG */}
+                         <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-purple-900/20 via-transparent to-transparent animate-pulse"></div>
+                         
+                         <button 
+                            onClick={() => { setIsEditingExisting(false); setShowRecruitModal(true); }}
+                            className="relative z-10 group/btn w-full h-full border-2 border-dashed border-purple-500/30 hover:border-purple-500 rounded-lg flex flex-col items-center justify-center gap-4 transition-all hover:bg-purple-900/10"
+                        >
+                            <div className="w-16 h-16 rounded-full border border-purple-500 flex items-center justify-center bg-slate-900 shadow-[0_0_20px_rgba(168,85,247,0.3)] group-hover/btn:scale-110 transition-transform">
+                                <span className="text-3xl text-purple-400">+</span>
+                            </div>
+                            <span className="text-xs font-bold text-purple-300 tracking-[0.2em]">{t.bunker.recruit}</span>
+                         </button>
+                    </div>
+                </div>
+
+                {/* 4. MEDBAY (Injured / Scan) - UPDATED with Recruit button */}
+                <div className="bg-slate-900/40 border border-red-900/50 flex flex-col relative overflow-hidden group md:col-span-2 lg:col-span-1">
+                    <div className="absolute top-0 right-0 p-2 opacity-10 group-hover:opacity-20 transition-opacity">
+                         <svg className="w-24 h-24" viewBox="0 0 24 24" fill="currentColor"><path d="M19 3H5c-1.1 0-1.99.9-1.99 2L3 19c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-1 11h-4v4h-4v-4H6v-4h4V6h4v4h4v4z"/></svg>
+                    </div>
+                    <div className="p-3 bg-slate-900/80 border-b border-red-900 flex justify-between items-center">
+                        <div>
+                            <h3 className="text-sm font-bold text-red-300 tracking-widest uppercase">{t.bunker.rooms.medbay}</h3>
+                            <div className="text-[9px] text-red-500/70">{t.bunker.rooms.medbayDesc}</div>
+                        </div>
+                         <div className="text-xs font-bold text-red-400 bg-red-900/20 px-2 py-0.5 rounded border border-red-900">{injuredHeroes.length}</div>
+                    </div>
+                    <div className="flex-1 p-3 flex flex-col gap-2">
+                        {injuredHeroes.length === 0 ? (
+                            <div className="flex-1 flex flex-col items-center justify-center text-red-900/50 italic text-xs min-h-[50px]">
+                                SYSTEMS CLEAR
+                            </div>
+                        ) : (
+                            <div className="space-y-2 overflow-y-auto max-h-[120px] scrollbar-thin scrollbar-thumb-red-900">
+                                {injuredHeroes.map(h => (
+                                    <HeroListCard key={h.id} hero={h} onClick={() => setSelectedHeroId(h.id)} />
+                                ))}
+                            </div>
+                        )}
+                        <button 
+                            onClick={() => { setIsEditingExisting(false); setShowRecruitModal(true); }}
+                            className="mt-auto w-full py-2 border border-red-800 bg-red-900/20 text-red-400 hover:text-white hover:bg-red-900/50 text-[10px] font-bold tracking-widest uppercase transition-colors flex items-center justify-center gap-2"
+                        >
+                            <span className="text-lg">⊕</span> {t.bunker.recruit} / SCAN
+                        </button>
+                    </div>
+                </div>
+
+            </div>
+        </div>
 
       {/* CAPA 3: MODAL DETALLE HÉROE (z-60) */}
       {selectedHeroId && selectedHero && (
@@ -436,6 +489,17 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
                   </div>
                   <CerebroScanner status="LOCKED" />
                   
+                  {selectedHero.characterSheetUrl && (
+                      <a
+                          href={selectedHero.characterSheetUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="w-full py-2 bg-emerald-900/50 hover:bg-emerald-800 text-emerald-300 text-xs font-bold border border-emerald-700 uppercase tracking-wider transition-colors text-center block"
+                      >
+                          {t.bunker.viewFile}
+                      </a>
+                  )}
+
                   {isEditorMode && selectedHero.templateId && (
                     <button
                       onClick={handleEditClick}
@@ -532,7 +596,7 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
 
       {/* CAPA 4: MODALS AUXILIARES (z-60) */}
       
-      {/* Assign Mission Modal */}
+      {/* Assign Mission Modal (Selecting Mission for Hero) */}
       {showAssignModal && (
         <div className="absolute inset-0 z-[60] flex items-center justify-center bg-slate-950/90 backdrop-blur-sm p-4">
           <div className="w-full max-w-lg bg-slate-900 border border-cyan-500 shadow-[0_0_50px_rgba(6,182,212,0.3)]">
@@ -573,6 +637,71 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
         </div>
       )}
 
+      {/* SQUAD SELECTION MODAL (Assigning Heroes to Mission) */}
+      {selectedMissionIdForSquad && (
+          <div className="absolute inset-0 z-[60] flex items-center justify-center bg-slate-950/90 backdrop-blur-sm p-4">
+              <div className="w-full max-w-2xl bg-slate-900 border border-blue-500 shadow-[0_0_50px_rgba(59,130,246,0.3)] flex flex-col max-h-[90vh]">
+                  {/* Header */}
+                  <div className="bg-blue-900/30 p-4 border-b border-blue-700 flex justify-between items-center shrink-0">
+                      <div>
+                          <h3 className="text-blue-300 font-bold tracking-widest uppercase">{t.bunker.squadModalTitle}</h3>
+                          <p className="text-[10px] text-blue-400">{missions.find(m => m.id === selectedMissionIdForSquad)?.title}</p>
+                      </div>
+                      <button onClick={() => setSelectedMissionIdForSquad(null)} className="text-blue-500 hover:text-white text-xl">✕</button>
+                  </div>
+
+                  <div className="flex-1 overflow-y-auto p-4 flex flex-col md:flex-row gap-4">
+                       {/* Deployed List (Assigned to this mission) */}
+                       <div className="flex-1 bg-blue-900/10 border border-blue-800 p-2">
+                           <h4 className="text-[10px] text-blue-400 font-bold mb-2 uppercase border-b border-blue-800 pb-1">ASSIGNED SQUAD</h4>
+                           <div className="space-y-2">
+                               {heroes.filter(h => h.assignedMissionId === selectedMissionIdForSquad).length === 0 && (
+                                   <div className="text-[10px] text-gray-500 italic text-center py-4">NO AGENTS ASSIGNED</div>
+                               )}
+                               {heroes.filter(h => h.assignedMissionId === selectedMissionIdForSquad).map(h => (
+                                   <div key={h.id} className="flex justify-between items-center bg-slate-900 p-2 border border-blue-800">
+                                       <span className="text-xs font-bold text-white">{h.alias}</span>
+                                       <button 
+                                            onClick={() => onUnassign(h.id)}
+                                            className="text-[9px] text-red-400 hover:text-red-200 border border-red-900 px-2 py-0.5"
+                                       >
+                                           {t.bunker.removeFromMission}
+                                       </button>
+                                   </div>
+                               ))}
+                           </div>
+                       </div>
+                       
+                       {/* Available List */}
+                       <div className="flex-1 bg-emerald-900/10 border border-emerald-800 p-2">
+                           <h4 className="text-[10px] text-emerald-400 font-bold mb-2 uppercase border-b border-emerald-800 pb-1">AVAILABLE AGENTS</h4>
+                           <div className="space-y-2 max-h-[300px] overflow-y-auto scrollbar-thin scrollbar-thumb-emerald-800">
+                               {availableHeroes.length === 0 && (
+                                   <div className="text-[10px] text-gray-500 italic text-center py-4">NO AGENTS AVAILABLE</div>
+                               )}
+                               {availableHeroes.map(h => (
+                                   <div key={h.id} className="flex justify-between items-center bg-slate-900 p-2 border border-emerald-800/50">
+                                       <div>
+                                           <div className="text-xs font-bold text-emerald-100">{h.alias}</div>
+                                           <div className="text-[9px] text-emerald-600">{h.class}</div>
+                                       </div>
+                                       <button 
+                                            onClick={() => {
+                                                if(selectedMissionIdForSquad) onAssign(h.id, selectedMissionIdForSquad);
+                                            }}
+                                            className="text-[9px] text-emerald-400 hover:text-emerald-200 border border-emerald-900 bg-emerald-900/20 px-2 py-1"
+                                       >
+                                           {t.bunker.addToMission} +
+                                       </button>
+                                   </div>
+                               ))}
+                           </div>
+                       </div>
+                  </div>
+              </div>
+          </div>
+      )}
+
       {/* Recruit / Edit Database Modal */}
       {showRecruitModal && (
         <div className="absolute inset-0 z-[60] flex items-center justify-center bg-slate-950/95 backdrop-blur-sm p-4 overflow-y-auto">
@@ -585,10 +714,15 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
             </div>
 
             <form onSubmit={handleRecruitSubmit} className="flex-1 p-6 flex flex-col gap-4 overflow-hidden">
-              {/* Database Search Section */}
+              {/* Database Search Section - UPDATED WITH ALIGNMENT SCAN TEXT */}
               {!isEditingExisting && (
                 <div className="w-full pb-4 border-b border-cyan-900 shrink-0 space-y-2">
-                  <label className="block text-[10px] text-cyan-400 font-bold tracking-widest">{t.recruit.selectDb}</label>
+                  <div className="flex justify-between items-end">
+                      <label className="block text-[10px] text-cyan-400 font-bold tracking-widest">{t.recruit.selectDb}</label>
+                      <span className={`text-[10px] font-bold tracking-widest animate-pulse ${playerAlignment === 'ZOMBIE' ? 'text-green-500' : 'text-red-500'}`}>
+                          {playerAlignment === 'ZOMBIE' ? t.recruit.scanHuman : t.recruit.scanZombie}
+                      </span>
+                  </div>
                   <input
                     type="text"
                     placeholder="SEARCH DATABASE (TYPE NAME OR ALIAS)..."
@@ -655,6 +789,18 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
                   
                   <div className="bg-slate-950/50 p-3 border border-cyan-900/50 flex-none h-24 overflow-y-auto scrollbar-thin scrollbar-thumb-cyan-900">
                     <p className="text-xs text-gray-400 leading-relaxed">{recruitForm.bio || "NO DATA AVAILABLE"}</p>
+                  </div>
+
+                  {/* Character Sheet URL Input (Only visible in edit mode or when adding) */}
+                  <div>
+                      <label className="text-[10px] text-cyan-700 font-bold uppercase">{t.recruit.fileUrl}</label>
+                      <input 
+                          type="text" 
+                          placeholder="https://... (PDF/JPG)" 
+                          className="w-full bg-slate-950 border border-cyan-800 p-2 text-xs text-cyan-200 focus:border-cyan-400 outline-none"
+                          value={recruitForm.characterSheetUrl}
+                          onChange={(e) => setRecruitForm({...recruitForm, characterSheetUrl: e.target.value})}
+                      />
                   </div>
 
                   <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-4 min-h-0">

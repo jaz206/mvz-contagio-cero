@@ -73,7 +73,7 @@ const INITIAL_HEROES: Hero[] = [
         templateId: 'sabretooth',
         name: 'Victor Creed',
         alias: 'SABRETOOTH',
-        status: 'DEPLOYED',
+        status: 'AVAILABLE',
         class: 'BRAWLER',
         bio: 'Driven by pure predatory instinct. S.H.I.E.L.D. keeps him on a short leash. He tracks the infected not to save them, but for sport.',
         currentStory: "Víctor Creed fue el primer experimento. Antes de capturar a Banner, la Tríada necesitaba probar la resistencia del tejido al virus. Capturaron a Creed y lo ataron en el \"Laboratorio X\". No buscaban un arma; buscaban una granja. Lo infectaban, esperaban a que la carne se pudriera, y luego cortaban los trozos podridos mientras su factor de curación regeneraba tejido nuevo. Un ciclo infinito de infección y vivisección. Creed era carne infinita para alimentar sus pruebas. Escapó el día que Hulk estalló, aprovechando el fallo de seguridad para arrancar la garganta de su torturador con los dientes. Ahora, su factor de curación está sobrecargado, luchando perpetuamente contra residuos del virus en su sangre. Se une a Lázaro porque sabe dónde están los laboratorios secretos y quiere quemarlos hasta los cimientos... con los científicos dentro.",
@@ -84,7 +84,7 @@ const INITIAL_HEROES: Hero[] = [
         completedObjectiveIndices: [],
         imageUrl: 'https://i.pinimg.com/736x/31/eb/4c/31eb4c0f0dba5c96c80da093a4d83a50.jpg',
         stats: { strength: 9, agility: 7, intellect: 4 },
-        assignedMissionId: 'm_kraven'
+        assignedMissionId: null
     },
     {
         id: 'h3',
@@ -109,7 +109,7 @@ const INITIAL_HEROES: Hero[] = [
         templateId: 'loki',
         name: 'Loki Laufeyson',
         alias: 'LOKI',
-        status: 'INJURED',
+        status: 'AVAILABLE',
         class: 'TACTICIAN',
         bio: 'Former villain turned desperate survivor. His illusions hide him from the horde. Unpredictable, but necessary magic support.',
         currentStory: "Loki estaba en la Tierra para conquistar, como siempre. Cuando Thor cayó infectado en la primera oleada, Loki se rio. Pensó que era el final perfecto para su arrogante hermano: convertido en un animal babeante. Se acercó para burlarse de él... y Thor, con la mente podrida, lo miró y lloró sangre. En ese momento, Loki se dio cuenta de que sin Thor, él no es nada. Intentó usar su magia para curarlo, pero el virus de la Tríada (Ciencia + Magia de Doom) rechazó sus hechizos. Loki tuvo que huir de su propio hermano. Asgard cerró el Bifrost, dejándolo exiliado en este infierno. Ahora, Loki camina entre los muertos usando ilusiones para parecer uno de ellos. Se ha unido a la Iniciativa Lázaro por puro rencor: Doom usó magia asgardiana robada para crear el virus. Loki va a recuperar esa magia, va a despellejar a Doom y luego va a buscar a Thor para concederle la misericordia que le negó el primer día.",
