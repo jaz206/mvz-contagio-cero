@@ -44,12 +44,15 @@ export const USAMap: React.FC<USAMapProps> = ({
   const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
   const [tokensReleased, setTokensReleased] = useState(false);
   
-  // Hulk empieza en un lugar seguro dentro de su zona (ej. Kansas/Nebraska)
-  const [hulkLocation, setHulkLocation] = useState<[number, number]>([-98.5, 40.0]); 
+  // Posición inicial de Hulk (Centro de USA aprox - Kansas)
+  const [hulkLocation, setHulkLocation] = useState<[number, number]>([-98.5, 39.8]); 
+  
+  // Ref para controlar la secuencia de saltos y evitar bucles infinitos en renders
+  const hulkSequenceRef = useRef<{ active: boolean, remainingJumps: number }>({ active: false, remainingJumps: 0 });
 
   const t = translations[language];
 
-  // Timer para liberar tokens
+  // Timer para liberar tokens al inicio
   useEffect(() => {
       if (worldStage === 'SURFER') {
           setTokensReleased(false);
@@ -115,40 +118,97 @@ export const USAMap: React.FC<USAMapProps> = ({
       }
   }, [usData, dimensions]);
 
-  // --- LÓGICA DE SALTO DE HULK (MEJORADA) ---
+  // --- CEREBRO DE HULK: LÓGICA DE SECUENCIA Y VECINDAD ---
   useEffect(() => {
-      if (!tokensReleased || !usData || !pathGenerator) return;
+      if (!tokensReleased || !usData || !pathGenerator || !projection) return;
 
-      const jumpHulk = () => {
-          // 1. Obtener estados válidos (Solo zona de Hulk)
+      // Función auxiliar para calcular distancia simple (Euclídea en lat/lon es suficiente para esto)
+      const getDistance = (a: [number, number], b: [number, number]) => {
+          return Math.sqrt(Math.pow(a[0] - b[0], 2) + Math.pow(a[1] - b[1], 2));
+      };
+
+      const executeHulkLogic = () => {
+          // Si ya hay una secuencia activa, no hacer nada (el timeout interno la manejará)
+          if (hulkSequenceRef.current.active) return;
+
+          // 1. Decidir cuántos saltos hacer (1, 2 o 3)
+          const jumpsToDo = Math.floor(Math.random() * 3) + 1;
+          hulkSequenceRef.current = { active: true, remainingJumps: jumpsToDo };
+
+          performJumpStep();
+      };
+
+      const performJumpStep = () => {
           // @ts-ignore
           const featureFn = topojson.feature;
           // @ts-ignore
           const statesFeatureCollection = featureFn(usData, usData.objects.states);
+          
+          // 1. Filtrar estados de la facción de Hulk
           const validStates = statesFeatureCollection.features.filter((f: any) => 
               factionStates.hulk.has(f.properties.name)
           );
 
           if (validStates.length > 0) {
-              // 2. Elegir estado aleatorio
-              const randomState = validStates[Math.floor(Math.random() * validStates.length)];
-              // 3. Calcular centroide geométrico
-              const centroid = pathGenerator.centroid(randomState);
-              
-              // Invertir proyección para obtener Lat/Lon (necesario para el estado)
-              if (projection && centroid) {
-                  const coords = projection.invert ? projection.invert(centroid) : null;
-                  if (coords) {
-                      setHulkLocation(coords as [number, number]);
+              // 2. Calcular centroides y distancias
+              const candidates: { coords: [number, number], dist: number }[] = [];
+
+              validStates.forEach((state: any) => {
+                  const centroid = pathGenerator.centroid(state);
+                  if (projection.invert && centroid && !isNaN(centroid[0])) {
+                      const coords = projection.invert(centroid) as [number, number];
+                      if (coords) {
+                          const dist = getDistance(hulkLocation, coords);
+                          // Excluir la posición actual (distancia 0 o muy pequeña)
+                          if (dist > 0.5) { 
+                              candidates.push({ coords, dist });
+                          }
+                      }
                   }
+              });
+
+              // 3. Ordenar por distancia (los más cercanos primero)
+              candidates.sort((a, b) => a.dist - b.dist);
+
+              // 4. Elegir uno de los 4 más cercanos (para que sea "adyacente" pero con algo de aleatoriedad)
+              // Si hay menos de 4, elegir entre los que haya.
+              const poolSize = Math.min(candidates.length, 4);
+              if (poolSize > 0) {
+                  const randomIndex = Math.floor(Math.random() * poolSize);
+                  const target = candidates[randomIndex].coords;
+                  
+                  // EJECUTAR SALTO
+                  setHulkLocation(target);
+                  
+                  // Reducir contador
+                  hulkSequenceRef.current.remainingJumps -= 1;
+
+                  // PLANIFICAR SIGUIENTE PASO
+                  if (hulkSequenceRef.current.remainingJumps > 0) {
+                      // Si quedan saltos, esperar a que termine la animación (2s) + un pequeño respiro
+                      setTimeout(performJumpStep, 2500); 
+                  } else {
+                      // Si terminó la racha, descansar 10 segundos
+                      setTimeout(() => {
+                          hulkSequenceRef.current.active = false;
+                          executeHulkLogic(); // Reiniciar ciclo
+                      }, 10000);
+                  }
+              } else {
+                  // Fallback si algo falla: reintentar en 5s
+                  setTimeout(() => {
+                      hulkSequenceRef.current.active = false;
+                      executeHulkLogic();
+                  }, 5000);
               }
           }
       };
 
-      // Saltar cada 8 segundos
-      const interval = setInterval(jumpHulk, 8000);
-      return () => clearInterval(interval);
-  }, [tokensReleased, usData, pathGenerator, projection, factionStates]);
+      // Iniciar el ciclo por primera vez
+      const initialTimer = setTimeout(executeHulkLogic, 2000);
+      return () => clearTimeout(initialTimer);
+
+  }, [tokensReleased, usData, pathGenerator, projection, factionStates, hulkLocation]); // hulkLocation en deps es importante para recalcular distancias
 
   // EFECTO 1: DIBUJO DEL MAPA BASE (Estático)
   useEffect(() => {
@@ -194,14 +254,12 @@ export const USAMap: React.FC<USAMapProps> = ({
                 svg.selectAll('.mission-dot').style('display', 'block').attr('transform', `scale(${1/Math.sqrt(k)})`);
             }
             
-            // Actualizar escala de tokens sin romper la transición de posición
             svg.selectAll('.token-group').each(function() {
                 const sel = d3.select(this);
                 const transform = sel.attr('transform');
                 if (transform) {
                     const translateMatch = transform.match(/translate\(([^)]+)\)/);
                     if (translateMatch) {
-                        // Mantenemos la traslación actual pero actualizamos la escala
                         sel.attr('transform', `${translateMatch[0]} scale(${1/k})`);
                     }
                 }
@@ -368,7 +426,7 @@ export const USAMap: React.FC<USAMapProps> = ({
         .style('display', currentZoom < 2.5 ? 'none' : 'block')
         .attr('transform', `scale(${1/currentZoom * 2})`);
 
-      // --- TOKENS (HULK) ANIMADO ---
+      // --- TOKENS (HULK) ANIMADO CON ARCO ---
       if (tokensReleased) {
           const hulkCoords = projection(hulkLocation);
           if (hulkCoords) {
@@ -383,47 +441,47 @@ export const USAMap: React.FC<USAMapProps> = ({
                   hulkGroup.append('circle').attr('r', 15).attr('fill', '#65a30d').attr('stroke', '#365314').attr('stroke-width', 2).style('filter', 'url(#glow)');
                   hulkGroup.append('text').text('HULK').attr('dy', 4).attr('text-anchor', 'middle').attr('font-size', '8px').attr('font-weight', 'bold').attr('fill', 'white');
               } else {
-                  // ANIMACIÓN DE SALTO (SUPER JUMP)
-                  // 1. Obtener posición actual
+                  // ANIMACIÓN DE SALTO EN ARCO
                   const currentTransform = hulkGroup.attr('transform');
                   const currentCoords = currentTransform.match(/translate\(([^)]+)\)/);
                   const [oldX, oldY] = currentCoords ? currentCoords[1].split(',').map(Number) : [0,0];
                   
-                  // Si la posición ha cambiado significativamente, animar
                   const dist = Math.sqrt(Math.pow(hulkCoords[0] - oldX, 2) + Math.pow(hulkCoords[1] - oldY, 2));
                   
-                  if (dist > 10) { // Solo animar si se mueve lejos
-                      hulkGroup
-                          // FASE 1: SALTO (Crecer y desvanecerse hacia arriba)
-                          .transition().duration(1000).ease(d3.easeQuadIn)
-                          .attr('transform', `translate(${oldX}, ${oldY}) scale(${3/currentZoom})`) // Crece x3
-                          .style('opacity', 0)
-                          .on('end', function() {
-                              // FASE 2: TELETRANSPORTE INVISIBLE
-                              d3.select(this)
-                                  .attr('transform', `translate(${hulkCoords[0]}, ${hulkCoords[1]}) scale(${3/currentZoom})`); // Moverse arriba del destino
+                  if (dist > 10) { 
+                      const iX = d3.interpolateNumber(oldX, hulkCoords[0]);
+                      const iY = d3.interpolateNumber(oldY, hulkCoords[1]);
+                      const baseScale = 1/currentZoom;
+
+                      hulkGroup.transition()
+                          .duration(2000) // 2 segundos de salto
+                          .ease(d3.easeQuadInOut)
+                          .attrTween("transform", function() {
+                              return function(t) {
+                                  const x = iX(t);
+                                  const y = iY(t);
+                                  // Arco parabólico en escala
+                                  const jumpHeight = Math.sin(t * Math.PI) * 2; 
+                                  const currentScale = baseScale * (1 + jumpHeight);
+                                  return `translate(${x},${y}) scale(${currentScale})`;
+                              };
+                          })
+                          .on("end", function() {
+                              d3.select(this).attr('transform', `translate(${hulkCoords[0]}, ${hulkCoords[1]}) scale(${baseScale})`);
                               
-                              // FASE 3: CAÍDA (Aparecer y encogerse de golpe)
-                              d3.select(this)
-                                  .transition().duration(500).ease(d3.easeBounceOut)
-                                  .style('opacity', 1)
-                                  .attr('transform', `translate(${hulkCoords[0]}, ${hulkCoords[1]}) scale(${1/currentZoom})`)
-                                  .on('end', function() {
-                                      // FASE 4: ONDA DE CHOQUE
-                                      d3.select(this).append("circle")
-                                          .attr("r", 15)
-                                          .attr("fill", "none")
-                                          .attr("stroke", "#65a30d")
-                                          .attr("stroke-width", 3)
-                                          .attr("opacity", 1)
-                                          .transition().duration(600)
-                                          .attr("r", 60)
-                                          .attr("opacity", 0)
-                                          .remove();
-                                  });
+                              // Onda de choque
+                              d3.select(this).append("circle")
+                                  .attr("r", 15)
+                                  .attr("fill", "none")
+                                  .attr("stroke", "#65a30d")
+                                  .attr("stroke-width", 3)
+                                  .attr("opacity", 1)
+                                  .transition().duration(600)
+                                  .attr("r", 60)
+                                  .attr("opacity", 0)
+                                  .remove();
                           });
                   } else {
-                      // Movimiento pequeño (ajuste de zoom), sin animación loca
                       hulkGroup.attr('transform', `translate(${hulkCoords[0]}, ${hulkCoords[1]}) scale(${1/currentZoom})`);
                   }
               }
