@@ -1,5 +1,4 @@
 
-// ... existing imports ...
 import React, { useState, useEffect, useMemo } from 'react';
 import { translations, Language } from './translations';
 import { User } from 'firebase/auth';
@@ -8,6 +7,7 @@ import { onAuthStateChanged } from 'firebase/auth';
 import { getUserProfile, saveUserProfile, getCustomMissions } from './services/dbService';
 import { logout } from './services/authService';
 
+// ... other imports ...
 import { LoginScreen } from './components/LoginScreen';
 import { StoryMode } from './components/StoryMode';
 import { TutorialOverlay } from './components/TutorialOverlay';
@@ -19,27 +19,12 @@ import { MissionEditor } from './components/MissionEditor';
 
 import { Mission, Hero, WorldStage, GlobalEvent } from './types';
 
-// ... constants FACTION_STATES, INITIAL_HEROES, INITIAL_ZOMBIE_HEROES ...
+// ... FACTION_STATES, INITIAL_HEROES, INITIAL_ZOMBIE_HEROES ...
 const FACTION_STATES = {
-    magneto: new Set([
-        'Washington', 'Oregon', 'California', 'Nevada', 'Idaho', 
-        'Montana', 'Wyoming', 'Utah', 'Arizona', 'Colorado', 
-        'Alaska', 'Hawaii'
-    ]),
-    kingpin: new Set([
-        'Maine', 'New Hampshire', 'Vermont', 'New York', 'Massachusetts', 
-        'Rhode Island', 'Connecticut', 'New Jersey', 'Pennsylvania', 
-        'Delaware', 'Maryland', 'West Virginia', 'Virginia', 'District of Columbia'
-    ]),
-    hulk: new Set([
-        'North Dakota', 'South Dakota', 'Nebraska', 'Kansas', 'Oklahoma', 
-        'Texas', 'New Mexico', 'Minnesota', 'Iowa', 'Missouri', 
-        'Wisconsin', 'Illinois', 'Michigan', 'Indiana', 'Ohio'
-    ]),
-    doom: new Set([
-        'Arkansas', 'Louisiana', 'Mississippi', 'Alabama', 'Tennessee', 
-        'Kentucky', 'Georgia', 'Florida', 'South Carolina', 'North Carolina'
-    ])
+    magneto: new Set(['Washington', 'Oregon', 'California', 'Nevada', 'Idaho', 'Montana', 'Wyoming', 'Utah', 'Arizona', 'Colorado', 'Alaska', 'Hawaii']),
+    kingpin: new Set(['Maine', 'New Hampshire', 'Vermont', 'New York', 'Massachusetts', 'Rhode Island', 'Connecticut', 'New Jersey', 'Pennsylvania', 'Delaware', 'Maryland', 'West Virginia', 'Virginia', 'District of Columbia']),
+    hulk: new Set(['North Dakota', 'South Dakota', 'Nebraska', 'Kansas', 'Oklahoma', 'Texas', 'New Mexico', 'Minnesota', 'Iowa', 'Missouri', 'Wisconsin', 'Illinois', 'Michigan', 'Indiana', 'Ohio']),
+    doom: new Set(['Arkansas', 'Louisiana', 'Mississippi', 'Alabama', 'Tennessee', 'Kentucky', 'Georgia', 'Florida', 'South Carolina', 'North Carolina'])
 };
 
 const INITIAL_HEROES: Hero[] = [
@@ -172,12 +157,18 @@ const INITIAL_ZOMBIE_HEROES: Hero[] = [
 ];
 
 const App: React.FC = () => {
+    // ... states ...
     const [user, setUser] = useState<User | null>(null);
     const [loading, setLoading] = useState(true);
     const [loadingAuth, setLoadingAuth] = useState(true);
     const [lang, setLang] = useState<Language>('es');
     const [viewMode, setViewMode] = useState<'login' | 'story' | 'tutorial' | 'map' | 'bunker'>('login');
     
+    // Sidebar Collapse State
+    const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+    // Mission Group Collapse State
+    const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
+
     const [playerAlignment, setPlayerAlignment] = useState<'ALIVE' | 'ZOMBIE' | null>(null);
     const [heroes, setHeroes] = useState<Hero[]>([]);
     const [completedMissionIds, setCompletedMissionIds] = useState<Set<string>>(new Set());
@@ -198,6 +189,9 @@ const App: React.FC = () => {
     
     const t = translations[lang];
 
+    // ... (useEffect for Auth, EditorLogin, GuestLogin, Logout, mergeWithLatestContent, loadMissions, loadData, autoSave, tutorialCheck) ...
+    
+    // Auth Listener
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
             setUser(currentUser);
@@ -244,6 +238,7 @@ const App: React.FC = () => {
       setViewMode('login');
     };
 
+    // ... (mergeWithLatestContent) ...
     const mergeWithLatestContent = (savedHeroes: Hero[], isZombie: boolean): Hero[] => {
         const baseList = isZombie ? INITIAL_ZOMBIE_HEROES : INITIAL_HEROES;
         return savedHeroes.map(savedHero => {
@@ -264,6 +259,7 @@ const App: React.FC = () => {
         });
     };
 
+    // ... (loadMissions, loadData, autoSave, tutorialCheck) ...
     useEffect(() => {
         const loadMissions = async () => {
             const loaded = await getCustomMissions();
@@ -311,29 +307,26 @@ const App: React.FC = () => {
 
     useEffect(() => {
         if (isEditorMode || !user || !playerAlignment) return;
-
         const timeout = setTimeout(async () => {
             setIsSaving(true);
             await saveUserProfile(user.uid, playerAlignment, heroes, Array.from(completedMissionIds));
             setTimeout(() => setIsSaving(false), 1000);
         }, 2000);
-
         return () => clearTimeout(timeout);
     }, [heroes, completedMissionIds, user, playerAlignment, isEditorMode]);
-
 
     useEffect(() => {
         if (!playerAlignment) return;
         if (showStory) return;
         if (isEditorMode) return;
-
         const tutorialKey = user ? `shield_tutorial_seen_${user.uid}` : 'shield_tutorial_seen_guest';
         const hasSeenTutorial = localStorage.getItem(tutorialKey);
-
         if (!hasSeenTutorial && viewMode === 'map') {
              setTimeout(() => setShowTutorial(true), 500);
         }
     }, [playerAlignment, showStory, user, viewMode, isEditorMode]);
+
+    // ... (checkGlobalEvents, simulateProgress, resetProgress, missionComplete, reactivate, acknowledge, toggleHeroObjective) ...
 
     const checkGlobalEvents = (completedCount: number) => {
         if (completedCount >= 15 && worldStage !== 'GALACTUS') {
@@ -369,9 +362,8 @@ const App: React.FC = () => {
         setCompletedMissionIds(newSet);
         setSelectedMission(null);
         
-        // SPECIAL BOSS LOGIC
         if (id === 'boss-galactus') {
-            setWorldStage('NORMAL'); // DEFEATED: Reset world stage to remove shadow and surfer
+            setWorldStage('NORMAL');
             setActiveGlobalEvent(null);
         } else {
             checkGlobalEvents(newSet.size);
@@ -401,27 +393,28 @@ const App: React.FC = () => {
          }
     };
 
+    const getMissionFaction = (state: string) => {
+        if (FACTION_STATES.magneto.has(state)) return 'MAGNETO';
+        if (FACTION_STATES.kingpin.has(state)) return 'KINGPIN';
+        if (FACTION_STATES.hulk.has(state)) return 'HULK';
+        if (FACTION_STATES.doom.has(state)) return 'DOOM';
+        return 'NEUTRAL';
+    };
+
+    const toggleGroup = (faction: string) => {
+        const newSet = new Set(collapsedGroups);
+        if (newSet.has(faction)) {
+            newSet.delete(faction);
+        } else {
+            newSet.add(faction);
+        }
+        setCollapsedGroups(newSet);
+    };
+
     const allMissions: Mission[] = useMemo(() => {
         const hardcodedMissions: Mission[] = [
-            {
-                id: 'm_kraven',
-                title: t.missions.kraven.title,
-                description: t.missions.kraven.description,
-                objectives: t.missions.kraven.objectives,
-                location: { state: 'New York', coordinates: [-74.006, 40.7128] },
-                threatLevel: 'HIGH',
-                type: 'STANDARD'
-            },
-            {
-                id: 'm_prison',
-                title: t.missions.fleshSleeps.title,
-                description: t.missions.fleshSleeps.description,
-                objectives: t.missions.fleshSleeps.objectives,
-                location: { state: 'Pennsylvania', coordinates: [-77.1945, 41.2033] },
-                threatLevel: 'EXTREME',
-                type: 'STANDARD',
-                prereq: 'm_kraven'
-            },
+            { id: 'm_kraven', title: t.missions.kraven.title, description: t.missions.kraven.description, objectives: t.missions.kraven.objectives, location: { state: 'New York', coordinates: [-74.006, 40.7128] }, threatLevel: 'HIGH', type: 'STANDARD' },
+            { id: 'm_prison', title: t.missions.fleshSleeps.title, description: t.missions.fleshSleeps.description, objectives: t.missions.fleshSleeps.objectives, location: { state: 'Pennsylvania', coordinates: [-77.1945, 41.2033] }, threatLevel: 'EXTREME', type: 'STANDARD', prereq: 'm_kraven' },
              { id: 'base_alpha', title: t.missions.bases.alpha, description: [t.missions.bases.desc], objectives: [{ title: t.missions.bases.objSecure, desc: '' }, { title: t.missions.bases.objRetrieve, desc: '' }], location: { state: 'Colorado', coordinates: [-105.7821, 39.5501] }, threatLevel: 'MEDIUM', type: 'SHIELD_BASE' },
              { id: 'base_beta', title: t.missions.bases.beta, description: [t.missions.bases.desc], objectives: [{ title: t.missions.bases.objSecure, desc: '' }, { title: t.missions.bases.objRetrieve, desc: '' }], location: { state: 'New Jersey', coordinates: [-74.4, 40.0] }, threatLevel: 'MEDIUM', type: 'SHIELD_BASE' },
              { id: 'base_gamma', title: t.missions.bases.gamma, description: [t.missions.bases.desc], objectives: [{ title: t.missions.bases.objSecure, desc: '' }, { title: t.missions.bases.objRetrieve, desc: '' }], location: { state: 'Massachusetts', coordinates: [-71.3, 42.4] }, threatLevel: 'MEDIUM', type: 'SHIELD_BASE' },
@@ -435,13 +428,15 @@ const App: React.FC = () => {
         customMissions.forEach(m => missionMap.set(m.id, m));
         const missionList = Array.from(missionMap.values());
 
+        // SAFETY CHECK FOR GALACTUS
         if (worldStage === 'GALACTUS' && playerAlignment === 'ALIVE') {
+            const galactusData = t.missions?.galactus; // Safe access
             missionList.push({
                 id: 'boss-galactus',
                 type: 'BOSS',
-                title: t.missions.galactus.title,
-                description: t.missions.galactus.description,
-                objectives: t.missions.galactus.objectives,
+                title: galactusData?.title || "GALACTUS ARRIVES",
+                description: galactusData?.description || ["CRITICAL THREAT"],
+                objectives: galactusData?.objectives || [],
                 location: { state: 'Kansas', coordinates: [-98.0, 38.0] },
                 threatLevel: 'OMEGA++'
             });
@@ -450,14 +445,12 @@ const App: React.FC = () => {
         return missionList;
     }, [t, playerAlignment, worldStage, customMissions]);
 
+    // ... (visibleMissions, factionOrder, missionsByFaction logic) ...
     const visibleMissions = useMemo(() => {
         if (isEditorMode) return allMissions;
-        
-        // GALACTUS EVENT: HIDE ALL STANDARD MISSIONS
         if (worldStage === 'GALACTUS') {
             return allMissions.filter(m => m.type === 'BOSS');
         }
-
         return allMissions.filter(m => {
             const isCompleted = completedMissionIds.has(m.id);
             const prereqMet = !m.prereq || completedMissionIds.has(m.prereq);
@@ -465,12 +458,34 @@ const App: React.FC = () => {
         });
     }, [allMissions, completedMissionIds, isEditorMode, worldStage]);
 
+    const factionOrder = ['MAGNETO', 'KINGPIN', 'HULK', 'DOOM', 'NEUTRAL'];
+    const missionsByFaction = useMemo(() => {
+        const groups: Record<string, Mission[]> = { MAGNETO: [], KINGPIN: [], HULK: [], DOOM: [], NEUTRAL: [] };
+        visibleMissions.forEach(m => {
+            const faction = getMissionFaction(m.location.state);
+            if (groups[faction]) groups[faction].push(m);
+            else groups.NEUTRAL.push(m);
+        });
+        Object.values(groups).forEach(missionArray => {
+            missionArray.sort((a, b) => {
+                const aCompleted = completedMissionIds.has(a.id);
+                const bCompleted = completedMissionIds.has(b.id);
+                if (aCompleted && !bCompleted) return 1;
+                if (!aCompleted && bCompleted) return -1;
+                return a.title.localeCompare(b.title);
+            });
+        });
+        return groups;
+    }, [visibleMissions, completedMissionIds]);
+
+
     if (loading || loadingAuth) return <div className="bg-slate-950 text-cyan-500 h-screen flex items-center justify-center font-mono">LOADING SHIELD OS...</div>;
 
     return (
         <div className={`flex flex-col h-screen w-full bg-slate-950 text-cyan-400 font-mono overflow-hidden relative ${playerAlignment === 'ZOMBIE' ? 'hue-rotate-15 saturate-50' : ''}`}>
             
-            <MissionEditor 
+            {/* ... Modals (MissionEditor, EventModal, MissionModal) ... */}
+             <MissionEditor 
                 isOpen={showMissionEditor}
                 onClose={() => { setShowMissionEditor(false); setMissionToEdit(null); }}
                 onSave={async (newMission) => {
@@ -520,15 +535,17 @@ const App: React.FC = () => {
                 />
             )}
 
+            {/* MAIN APP LAYOUT */}
             {(viewMode === 'map' || viewMode === 'bunker' || viewMode === 'tutorial') && (
                 <>
+                    {/* Header */}
                     <header className="flex-none h-16 border-b border-cyan-900 bg-slate-900/90 flex items-center justify-between px-6 z-30 relative">
                         <div className="flex items-center gap-4">
                             <div className="w-10 h-10 border-2 border-cyan-500 rounded-full flex items-center justify-center overflow-hidden bg-slate-950 shadow-[0_0_10px_rgba(6,182,212,0.3)]">
                                 <img src="https://i.pinimg.com/736x/63/1e/3a/631e3a68228c97963e78381ad11bf3bb.jpg" alt="Logo" className="w-full h-full object-cover" />
                             </div>
                             <div>
-                                <h1 className="text-xl font-bold tracking-[0.2em] text-cyan-100 leading-none">{t.header.project}</h1>
+                                <h1 className="text-xl font-bold tracking-[0.2em] text-cyan-100 leading-none hidden md:block">{t.header.project}</h1>
                                 <div className="text-[10px] text-red-500 font-bold tracking-widest animate-pulse">{t.header.failure}</div>
                             </div>
                         </div>
@@ -550,10 +567,36 @@ const App: React.FC = () => {
                     </header>
 
                     <div className="flex-1 flex overflow-hidden relative">
-                        <aside className="w-80 flex-none bg-slate-900 border-r border-cyan-900 flex flex-col z-20 shadow-xl overflow-hidden relative">
+                        
+                        {/* Sidebar */}
+                        <aside className={`flex-none bg-slate-900 border-r border-cyan-900 flex flex-col z-20 shadow-xl overflow-hidden relative transition-all duration-300 ease-in-out ${isSidebarCollapsed ? 'w-16' : 'w-72'}`}>
                             
-                            {isEditorMode && (
-                                <div className="p-4 bg-slate-800 border-b border-cyan-500 overflow-y-auto max-h-[50vh]">
+                            <button 
+                                onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+                                className="absolute top-1/2 -right-0 w-4 h-12 bg-cyan-900/80 hover:bg-cyan-600 rounded-l flex items-center justify-center cursor-pointer z-50 translate-x-0"
+                                style={{ transform: 'translateY(-50%)' }}
+                            >
+                                <span className="text-[8px] text-white">{isSidebarCollapsed ? '»' : '«'}</span>
+                            </button>
+
+                            {/* ... Threat Level ... */}
+                            <div className={`p-2 border-b border-cyan-900 bg-red-950/10 flex flex-col justify-center ${isSidebarCollapsed ? 'items-center' : ''}`}>
+                                {isSidebarCollapsed ? (
+                                    <div className="text-xs font-black text-red-600 animate-pulse">Ω</div>
+                                ) : (
+                                    <>
+                                        <div className="flex justify-between items-end">
+                                            <h3 className="text-[10px] font-bold text-red-500 tracking-widest">THREAT</h3>
+                                            <span className="text-xl font-black text-red-600 tracking-tighter">{t.sidebar.threatLevelValue}</span>
+                                        </div>
+                                        <div className="w-full bg-red-900/30 h-1 mt-1"><div className="h-full bg-red-600 w-[95%] animate-pulse"></div></div>
+                                    </>
+                                )}
+                            </div>
+
+                            {/* ... Editor Panel ... */}
+                             {isEditorMode && !isSidebarCollapsed && (
+                                <div className="p-2 bg-slate-800 border-b border-cyan-500 overflow-y-auto max-h-[50vh]">
                                     <h3 className="text-[10px] font-bold text-cyan-300 mb-3 tracking-widest border-b border-cyan-600 pb-1">EDITOR CONTROL</h3>
                                     
                                     <div className="mb-3 p-2 border border-blue-600/50 bg-blue-900/10 rounded">
@@ -578,115 +621,130 @@ const App: React.FC = () => {
                                 </div>
                             )}
 
-                            <div className="p-6 border-b border-cyan-900 bg-red-950/10">
-                                <div className="flex justify-between items-end mb-2">
-                                    <h3 className="text-xs font-bold text-red-500 tracking-widest">{t.sidebar.threatLevelTitle}</h3>
-                                    <span className="text-3xl font-black text-red-600 tracking-tighter drop-shadow-[0_0_10px_rgba(220,38,38,0.5)]">{t.sidebar.threatLevelValue}</span>
-                                </div>
-                                <div className="w-full bg-red-900/30 h-1 mt-1"><div className="h-full bg-red-600 w-[95%] animate-pulse"></div></div>
-                                <div className="text-[9px] text-red-400 mt-1 text-right">{t.sidebar.infectionRate}</div>
-                            </div>
-
-                            <div className="p-4 border-b border-cyan-900">
-                                <button id="tutorial-bunker-btn" onClick={() => setViewMode('bunker')} className={`w-full py-4 border-2 flex items-center justify-center gap-3 transition-all duration-300 group relative overflow-hidden ${playerAlignment === 'ZOMBIE' ? 'border-lime-600 bg-lime-900/10 hover:bg-lime-900/30 text-lime-400' : 'border-cyan-500 bg-cyan-900/10 hover:bg-cyan-900/30 text-cyan-300'}`}>
-                                    <div className={`absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 ${playerAlignment === 'ZOMBIE' ? 'bg-[linear-gradient(45deg,transparent_25%,rgba(132,204,22,0.1)_50%,transparent_75%)]' : 'bg-[linear-gradient(45deg,transparent_25%,rgba(6,182,212,0.1)_50%,transparent_75%)]'} bg-[length:250%_250%] animate-[shimmer_2s_linear_infinite]`}></div>
-                                    <span className="text-2xl group-hover:scale-110 transition-transform">{playerAlignment === 'ZOMBIE' ? '☣' : '🛡'}</span>
-                                    <span className="font-bold tracking-widest text-xs">{playerAlignment === 'ZOMBIE' ? t.sidebar.hiveBtn : t.sidebar.bunkerBtn}</span>
+                            {/* ... Nav Buttons ... */}
+                            <div className={`grid ${isSidebarCollapsed ? 'grid-cols-1 gap-2 p-2' : 'grid-cols-2 gap-1 p-2'} border-b border-cyan-900`}>
+                                <button id="tutorial-bunker-btn" onClick={() => setViewMode('bunker')} className={`flex items-center justify-center p-2 border transition-all hover:scale-105 ${playerAlignment === 'ZOMBIE' ? 'border-lime-600 bg-lime-900/10 text-lime-400' : 'border-cyan-500 bg-cyan-900/10 text-cyan-300'}`} title="BUNKER">
+                                    <span className="text-xl">{playerAlignment === 'ZOMBIE' ? '☣' : '🛡'}</span>
+                                    {!isSidebarCollapsed && <span className="text-[9px] font-bold ml-1">{playerAlignment === 'ZOMBIE' ? 'HIVE' : 'BUNKER'}</span>}
+                                </button>
+                                <button onClick={() => setViewMode('story')} className="flex items-center justify-center p-2 border border-gray-700 bg-slate-800 text-gray-400 hover:text-white transition-all" title="REPLAY STORY">
+                                    <span className="text-lg">↺</span>
                                 </button>
                             </div>
 
-                            <div className="p-4 border-b border-cyan-900">
-                                <h4 className="text-[10px] font-bold text-gray-500 uppercase mb-2 tracking-widest">{t.sidebar.campaignMode}</h4>
-                                <div className="flex flex-col gap-2">
-                                    <button disabled={playerAlignment === 'ALIVE'} onClick={() => { setPlayerAlignment('ALIVE'); setViewMode('map'); setHeroes([]); }} className={`w-full py-2 px-3 border text-[9px] font-bold tracking-wider flex justify-between items-center transition-all ${playerAlignment === 'ALIVE' ? 'bg-cyan-900/50 border-cyan-500 text-white' : 'border-gray-800 text-gray-500 hover:border-cyan-700 hover:text-cyan-400'}`}>
-                                        <span>PROTOCOL: LAZARUS</span>
-                                        {playerAlignment === 'ALIVE' && <span className="w-2 h-2 bg-cyan-400 rounded-full animate-pulse"></span>}
-                                    </button>
-                                    <button disabled={playerAlignment === 'ZOMBIE'} onClick={() => { setPlayerAlignment('ZOMBIE'); setViewMode('map'); setHeroes([]); }} className={`w-full py-2 px-3 border text-[9px] font-bold tracking-wider flex justify-between items-center transition-all ${playerAlignment === 'ZOMBIE' ? 'bg-lime-900/50 border-lime-500 text-white' : 'border-gray-800 text-gray-500 hover:border-lime-700 hover:text-lime-400'}`}>
-                                        <span>PROTOCOL: HUNGER</span>
-                                        {playerAlignment === 'ZOMBIE' && <span className="w-2 h-2 bg-lime-400 rounded-full animate-pulse"></span>}
-                                    </button>
-                                </div>
-                            </div>
+                            {/* Mission List */}
+                            <div id="tutorial-sidebar-missions" className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-cyan-900 bg-slate-900">
+                                {!isSidebarCollapsed && <h4 className="text-[9px] font-bold text-gray-500 uppercase px-2 py-1 bg-slate-950 tracking-widest sticky top-0">{t.sidebar.activeMissions}</h4>}
+                                
+                                {visibleMissions.length === 0 && !isSidebarCollapsed && (
+                                    <div className="text-center text-[9px] text-gray-600 italic py-4">{t.sidebar.noMissions}</div>
+                                )}
 
-                            <div id="tutorial-sidebar-missions" className="flex-1 overflow-y-auto p-4 scrollbar-thin scrollbar-thumb-cyan-900">
-                                <h4 className="text-[10px] font-bold text-cyan-600 uppercase mb-3 tracking-widest border-b border-cyan-900 pb-1">{t.sidebar.activeMissions}</h4>
-                                <div className="space-y-2">
-                                    {visibleMissions.length > 0 ? (
-                                        visibleMissions.map(m => {
-                                            const isCompleted = completedMissionIds.has(m.id);
-                                            if (isCompleted) return null;
-                                            
-                                            const isShield = m.type === 'SHIELD_BASE';
-                                            const isStartMission = m.id === 'm_kraven' || m.title.includes("MH0") || m.title.toUpperCase().includes("CADENAS ROTAS");
-                                            const isBoss = m.type === 'BOSS';
-                                            
-                                            let borderClass = 'border-yellow-500/30 bg-yellow-900/5 hover:bg-yellow-900/20';
-                                            let barClass = 'bg-yellow-500';
-                                            let textClass = 'text-yellow-200';
-                                            let subTextClass = 'text-yellow-500/70';
-
-                                            if (isBoss) {
-                                                borderClass = 'border-purple-500/30 bg-purple-900/20 hover:bg-purple-900/40 animate-pulse';
-                                                barClass = 'bg-purple-500';
-                                                textClass = 'text-purple-200';
-                                                subTextClass = 'text-purple-500/70';
-                                            } else if (isShield) {
-                                                borderClass = 'border-cyan-500/30 bg-cyan-900/5 hover:bg-cyan-900/20';
-                                                barClass = 'bg-cyan-500';
-                                                textClass = 'text-cyan-200';
-                                                subTextClass = 'text-cyan-500/70';
-                                            } else if (isStartMission) {
-                                                borderClass = 'border-emerald-500/30 bg-emerald-900/5 hover:bg-emerald-900/20';
-                                                barClass = 'bg-emerald-500';
-                                                textClass = 'text-emerald-200';
-                                                subTextClass = 'text-emerald-500/70';
-                                            }
-                                            
-                                            return (
-                                                <div 
-                                                    key={m.id} 
-                                                    onClick={() => setSelectedMission(m)} 
-                                                    className={`p-3 border cursor-pointer transition-all group relative overflow-hidden ${borderClass}`}
-                                                >
-                                                    <div className={`absolute left-0 top-0 bottom-0 w-1 ${barClass} group-hover:w-1.5 transition-all`}></div>
-                                                    <div className="flex justify-between items-start pl-2">
-                                                        <div className={`text-[10px] font-bold ${textClass} group-hover:text-white uppercase tracking-wider`}>{m.title}</div>
-                                                        <div className={`w-2 h-2 ${barClass} rounded-full animate-pulse shrink-0 mt-1`}></div>
-                                                    </div>
-                                                    <div className={`pl-2 mt-1 text-[9px] ${subTextClass}`}>LOC: {m.location.state}</div>
-                                                </div>
-                                            );
-                                        })
-                                    ) : (
-                                        <div className="text-center text-[10px] text-gray-600 italic py-4">{t.sidebar.noMissions}</div>
-                                    )}
+                                {factionOrder.map(faction => {
+                                    const factionMissions = missionsByFaction[faction];
+                                    if (!factionMissions || factionMissions.length === 0) return null;
                                     
-                                    {Array.from(completedMissionIds).length > 0 && (
-                                        <>
-                                            <div className="my-4 border-t border-cyan-900/50"></div>
-                                            {visibleMissions.filter(m => completedMissionIds.has(m.id)).map(m => (
-                                                <div key={m.id} onClick={() => setSelectedMission(m)} className="p-2 border border-emerald-900/30 bg-emerald-900/5 hover:bg-emerald-900/10 cursor-pointer opacity-70 hover:opacity-100 transition-all pl-3">
-                                                    <div className="flex justify-between items-center">
-                                                        <div className="text-[9px] font-bold text-emerald-400 line-through decoration-emerald-600">{m.title}</div>
-                                                        <div className="text-[10px] text-emerald-600">✓</div>
+                                    // Faction Colors
+                                    let headerColor = 'text-gray-400 border-gray-700 bg-gray-900/50';
+                                    let textColor = 'text-gray-400';
+                                    let barColor = 'bg-gray-700';
+
+                                    if (faction === 'MAGNETO') { headerColor = 'text-red-400 border-red-900 bg-red-900/20'; textColor = 'text-red-200'; barColor = 'bg-red-500'; }
+                                    if (faction === 'KINGPIN') { headerColor = 'text-purple-400 border-purple-900 bg-purple-900/20'; textColor = 'text-purple-200'; barColor = 'bg-purple-500'; }
+                                    if (faction === 'HULK') { headerColor = 'text-lime-400 border-lime-900 bg-lime-900/20'; textColor = 'text-lime-200'; barColor = 'bg-lime-500'; }
+                                    if (faction === 'DOOM') { headerColor = 'text-emerald-600 border-emerald-900 bg-emerald-900/20'; textColor = 'text-emerald-200'; barColor = 'bg-emerald-500'; }
+
+                                    const activeCount = factionMissions.filter(m => !completedMissionIds.has(m.id)).length;
+
+                                    return (
+                                        <div key={faction} className="mb-1">
+                                            {!isSidebarCollapsed ? (
+                                                // EXPANDED SIDEBAR HEADER
+                                                <div 
+                                                    onClick={() => toggleGroup(faction)}
+                                                    className={`flex justify-between items-center px-2 py-1 cursor-pointer hover:brightness-125 transition-all select-none border-l-4 ${headerColor}`}
+                                                    style={{ borderLeftColor: barColor }} 
+                                                >
+                                                    <div className={`text-[9px] font-bold uppercase tracking-wider flex items-center gap-1 ${textColor}`}>
+                                                        <span className="text-[8px] opacity-70">{collapsedGroups.has(faction) ? '►' : '▼'}</span>
+                                                        {t.factions[faction.toLowerCase() as keyof typeof t.factions]?.name.toUpperCase() || faction}
+                                                    </div>
+                                                    <div className="text-[9px] font-mono font-bold bg-slate-950/50 px-1.5 rounded text-cyan-500 border border-cyan-900/30">
+                                                        {activeCount}
                                                     </div>
                                                 </div>
-                                            ))}
-                                        </>
-                                    )}
-                                </div>
-                            </div>
+                                            ) : (
+                                                // COLLAPSED SIDEBAR ICON (Tooltip only)
+                                                <div className="flex justify-center py-2 relative group" onClick={() => toggleGroup(faction)}>
+                                                    <div className={`w-2 h-2 rounded-full ${barColor} ${activeCount > 0 ? 'animate-pulse' : ''}`}></div>
+                                                    <div className="absolute left-full top-0 ml-2 bg-slate-900 border border-cyan-500 text-xs px-2 py-1 whitespace-nowrap hidden group-hover:block z-50">
+                                                        {t.factions[faction.toLowerCase() as keyof typeof t.factions]?.name || faction} ({activeCount})
+                                                    </div>
+                                                </div>
+                                            )}
 
-                            <div className="p-4 border-t border-cyan-900 bg-slate-900 text-center">
-                                <button onClick={() => setViewMode('story')} className="text-[9px] text-cyan-800 hover:text-cyan-500 uppercase tracking-widest transition-colors flex items-center justify-center gap-2 w-full">
-                                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
-                                    {t.sidebar.replayStory}
-                                </button>
+                                            {/* MISSION LIST (Only if not collapsed group AND sidebar is open) */}
+                                            {!collapsedGroups.has(faction) && !isSidebarCollapsed && (
+                                                <div className="bg-slate-900/50 animate-fade-in origin-top">
+                                                    {factionMissions.map(m => {
+                                                        const isCompleted = completedMissionIds.has(m.id);
+                                                        // Sort order preference handled in missionsByFaction, just render here
+                                                        
+                                                        const isShield = m.type === 'SHIELD_BASE';
+                                                        const isStartMission = m.id === 'm_kraven' || m.title.includes("MH0") || m.title.toUpperCase().includes("CADENAS ROTAS");
+                                                        const isBoss = m.type === 'BOSS';
+                                                        
+                                                        let itemBarColor = 'bg-yellow-500';
+                                                        let itemTextColor = 'text-yellow-100';
+                                                        let itemOpacity = isCompleted ? 'opacity-50 hover:opacity-80' : 'opacity-100';
+                                                        
+                                                        if (isCompleted) {
+                                                            itemTextColor = 'text-emerald-500 line-through decoration-emerald-700';
+                                                            itemBarColor = 'bg-emerald-600';
+                                                        } else {
+                                                            if (isBoss) { itemBarColor = 'bg-purple-500'; itemTextColor = 'text-purple-200'; }
+                                                            else if (isShield) { itemBarColor = 'bg-cyan-500'; itemTextColor = 'text-cyan-200'; }
+                                                            else if (isStartMission) { itemBarColor = 'bg-emerald-500'; itemTextColor = 'text-emerald-200'; }
+                                                        }
+
+                                                        return (
+                                                            <div 
+                                                                key={m.id} 
+                                                                onClick={() => setSelectedMission(m)} 
+                                                                className={`group cursor-pointer border-b border-cyan-900/10 hover:bg-cyan-900/10 transition-colors relative ${itemOpacity} p-2 pl-3`}
+                                                                title={`${m.title} (${m.location.state})`} // Tooltip for collapsed view
+                                                            >
+                                                                {/* Status Line */}
+                                                                <div className={`absolute left-0 top-0 bottom-0 w-[3px] ${itemBarColor} group-hover:w-1 transition-all`}></div>
+                                                                
+                                                                {/* Icon based on type */}
+                                                                <div className="shrink-0 text-[10px] opacity-70">
+                                                                    {isShield ? '📡' : isBoss ? '💀' : isStartMission ? '★' : '⚔'}
+                                                                </div>
+
+                                                                <div className="flex-1 min-w-0">
+                                                                    <div className={`text-[9px] font-bold ${itemTextColor} truncate uppercase leading-tight`}>{m.title}</div>
+                                                                    <div className="text-[7px] text-gray-500 truncate flex justify-between mt-0.5">
+                                                                        <span>{m.location.state}</span>
+                                                                        {!isCompleted && <span className="text-red-900/70 font-bold">{m.threatLevel.substring(0,3)}</span>}
+                                                                    </div>
+                                                                </div>
+                                                                
+                                                                {isCompleted && <div className="text-[10px] text-emerald-600">✓</div>}
+                                                            </div>
+                                                        );
+                                                    })}
+                                                </div>
+                                            )}
+                                        </div>
+                                    );
+                                })}
                             </div>
                         </aside>
 
+                        {/* Content Area */}
                         <main className="flex-1 relative bg-slate-950 overflow-hidden">
+                            {/* ... Map / Bunker / Tutorial Overlay ... */}
                             {viewMode === 'map' && (
                                 <USAMap language={lang} missions={visibleMissions} completedMissionIds={completedMissionIds} onMissionComplete={handleMissionComplete} onMissionSelect={setSelectedMission} onBunkerClick={() => setViewMode('bunker')} factionStates={FACTION_STATES} playerAlignment={playerAlignment} worldStage={worldStage} />
                             )}

@@ -1,4 +1,4 @@
-// translations.ts
+
 export type Language = 'es' | 'en';
 
 export const translations = {
@@ -30,11 +30,14 @@ export const translations = {
       hive: "COLMENA",
       bunker: "BÚNKER"
     },
+    file: {
+      title: "EXPEDIENTE TÁCTICO"
+    },
     factions: {
-      magneto: { name: "Imperio de Magneto" },
-      kingpin: { name: "Territorio de Kingpin" },
-      hulk: { name: "Tierras Baldías de Hulk" },
-      doom: { name: "Latveria (Doom)" }
+      magneto: { name: "IMPERIO DE MAGNETO" },
+      kingpin: { name: "TERRITORIO DE KINGPIN" },
+      hulk: { name: "TIERRAS BALDÍAS DE HULK" },
+      doom: { name: "LATVERIA (DR. DOOM)" }
     },
     login: {
       title: "SHIELD OS",
@@ -45,8 +48,8 @@ export const translations = {
       granted: "ACCESO CONCEDIDO",
       scanBtn: "INICIAR ESCANEO DE RETINA",
       googleBtn: "ACCESO OFICIAL DE SHIELD (GOOGLE)",
-      editorBtn: "ACCESO DE EDITOR",
-      editorPass: "CONTRASEÑA DE MANDO",
+      editorBtn: "ACCESO DE EDITOR (NIVEL 10)",
+      editorPass: "CÓDIGO DE ACCESO MAESTRO",
       error: "ERROR DE AUTENTICACIÓN",
       passError: "CONTRASEÑA INCORRECTA"
     },
@@ -56,22 +59,22 @@ export const translations = {
       briefing: "INFORME DE MISIÓN",
       objectives: "OBJETIVOS PRIMARIOS",
       downloadPdf: "DESCARGAR INFORME TÁCTICO COMPLETO",
-      cancel: "CANCELAR",
+      cancel: "CERRAR",
       reactivate: "REACTIVAR",
       sending: "ENVIANDO...",
-      sent: "INFORME ENVIADO",
+      sent: "REPORTE ENVIADO",
       complete: "REPORTAR ÉXITO",
       accept: "ACEPTAR MISIÓN"
     },
     bunker: {
       title: "PUESTO DE MANDO AVANZADO",
       hiveTitle: "NEXO DE LA COLMENA",
-      return: "VOLVER AL MAPA",
+      return: "VOLVER AL MAPA TÁCTICO",
       roster: "LISTA DE ACTIVOS",
       recruit: "RECLUTAR",
-      currentStory: "ESTADO ACTUAL",
+      currentStory: "SITUACIÓN ACTUAL",
       objectives: "OBJETIVOS PERSONALES",
-      status: "ESTADO",
+      status: "ESTADO OPERATIVO",
       unassign: "RETIRAR",
       assign: "ASIGNAR A MISIÓN",
       assignModalTitle: "SELECCIONAR MISIÓN",
@@ -80,14 +83,14 @@ export const translations = {
       maxHeroes: "CAPACIDAD MÁXIMA ALCANZADA"
     },
     recruit: {
-      title: "RECLUTAMIENTO DE HÉROES",
-      selectDb: "BASE DE DATOS DE S.H.I.E.L.D.",
+      title: "RECLUTAMIENTO DE ACTIVO",
+      selectDb: "SELECCIONAR DE LA BASE DE DATOS (NUBE)",
       loadingDb: "ACCEDIENDO A ARCHIVOS...",
-      alias: "NOMBRE EN CLAVE",
+      alias: "ALIAS / NOMBRE EN CLAVE",
       name: "NOMBRE REAL",
-      adminSeed: "ADMIN: REINICIAR DB",
-      seedSuccess: "DB REINICIADA",
-      submit: "RECLUTAR AGENTE"
+      adminSeed: "ADMIN: SUBIR DATOS INICIALES",
+      seedSuccess: "DB SEMBRADA CON ÉXITO",
+      submit: "REGISTRAR EN LA BASE DE DATOS"
     },
     missionEditor: {
       title: "EDITOR DE MISIONES",
@@ -95,7 +98,7 @@ export const translations = {
       location: "UBICACIÓN (ESTADO)",
       threat: "NIVEL DE AMENAZA",
       type: "TIPO DE MISIÓN",
-      pdfUrl: "URL DEL PDF (OPCIONAL)",
+      pdfUrl: "URL DEL INFORME (OPCIONAL)",
       description: "DESCRIPCIÓN",
       objectives: "OBJETIVOS",
       addObjective: "AÑADIR OBJETIVO",
@@ -158,6 +161,30 @@ export const translations = {
                 { title: "Atacar a Galactus", desc: "Coordinar un ataque masivo." },
                 { title: "Salvar la Tierra", desc: "Evitar la destrucción total." }
             ]
+        },
+        freshMeat: {
+            title: "CARNE FRESCA",
+            description: [
+                "El Hambre quema. Olemos sangre caliente al sur. Un convoy de refugiados intenta cruzar la frontera del estado.",
+                "Son lentos. Son débiles. Son comida.",
+                "No dejes que ninguno escape. La Colmena necesita crecer."
+            ],
+            objectives: [
+                { title: "Banquete", desc: "Devora a 15 civiles antes de que alcancen el refugio." },
+                { title: "Sin Testigos", desc: "Destruye el vehículo de escolta blindado." }
+            ]
+        },
+        breakSiege: {
+            title: "ROMPER EL ASEDIO",
+            description: [
+                "La resistencia se ha hecho fuerte en una base militar de la costa. Creen que sus muros los protegerán.",
+                "Ilusos. No saben que no necesitamos puertas.",
+                "Lidera la horda. Trepad los muros. Inundad sus pasillos con dientes y garras."
+            ],
+            objectives: [
+                { title: "Marea Muerta", desc: "Supera las defensas perimetrales y abre la puerta principal." },
+                { title: "Asimilación", desc: "Infecta al Comandante de la base." }
+            ]
         }
     },
     heroes: {
@@ -175,20 +202,20 @@ export const translations = {
             line4: "SISTEMA LISTO"
         },
         slides: [
-            { text: " No hubo trompetas. No hubo cielos rojos ni profecías antiguas cumpliéndose. El fin del mundo no vino del espacio exterior, ni de una dimensión oscura.", image: "https://i.pinimg.com/1200x/18/99/ec/1899ec756f8731e015eb941d7122fbec.jpg" },
-            { text: " Lo construimos nosotros. Aquí. En casa.\nO mejor dicho, lo construyeron ellos.", image: "https://i.pinimg.com/1200x/71/06/7d/71067db72856dfd6ca03d0d51a679bd6.jpg" },
-            { text: " Fue en un laboratorio estéril. Tres hombres se reunieron allí: Victor Von Doom, Magneto y Wilson Fisk.\nDecidieron que la humanidad era demasiado caótica. Su solución fue la ciencia fría y dura: el Pulso Nulificador.", image: "https://i.pinimg.com/1200x/71/06/7d/71067db72856dfd6ca03d0d51a679bd6.jpg" },
-            { text: " Necesitaban cuerpos para afinar la fórmula. Usaron a Jamie Madrox para ver cómo se multiplicaba la infección. Usaron a los Reavers para ver si el metal podía enfermar. Y funcionó.", image: "https://i.pinimg.com/1200x/99/80/1e/99801e7603e4a770127ce29530f13f87.jpg" },
-            { text: " Pero la arrogancia es una pistola cargada que siempre apunta hacia atrás.", image: "https://i.pinimg.com/1200x/19/26/53/1926533335a2b27c4a79c9d2632ec83d.jpg" },
-            { text: " Decidieron probar su obra maestra en Bruce Banner. Buscaban una fuente de energía infinita; lo que consiguieron fue una bomba biológica.", image: "https://i.pinimg.com/1200x/b2/06/15/b20615925dfa53cdf9622fb596cdd5e3.jpg" },
-            { text: " Cuando el virus tocó la sangre gamma, no murió. Se enfureció. Banner no cayó. La cosa que despertó ya no tenía a nadie al volante.", image: "https://i.pinimg.com/1200x/a8/e9/b7/a8e9b76d6a9a87de0cfba509d5fef534.jpg" },
-            { text: " El estallido no fue de fuego, fue de contagio. Hulk rugió, y en ese rugido viajaba la extinción.", image: "https://i.pinimg.com/1200x/eb/db/e8/ebdbe8d5738acd105654dc8ddad8216f.jpg" },
-            { text: " En cuestión de horas, Nueva York era un matadero. Los Vengadores cayeron primero, destrozados por los amigos que intentaban salvar.", image: "https://i.pinimg.com/1200x/b9/0a/18/b90a18369639b131f91273f019b699cd.jpg" },
-            { text: " ¿Y la Tríada? Doom, Magneto y Fisk fueron alcanzados por su propia creación. Pero el destino tiene un sentido del humor cruel.", image: "https://i.pinimg.com/1200x/e1/02/86/e102864e130bfa5b5f2ffc5a9d9ed9c0.jpg" },
-            { text: " No perdieron la mente. Sus cuerpos se pudrieron, pero su intelecto permaneció intacto. Ahora se sientan en tronos de huesos, gobernando facciones de pesadilla.", image: "https://i.pinimg.com/1200x/e2/5c/3a/e25c3ac26e5fc65f9119b6073912e856.jpg" },
-            { text: " Pero hay algo más ahí fuera. S.H.I.E.L.D. sigue activo. No es una agencia; es un fantasma armado. Una IA paranoica que ha decidido que la única forma de mantener el orden es eliminar todo lo que se mueva.", image: "https://i.pinimg.com/1200x/39/c8/cd/39c8cde0a5b56acc78b41c4eecf91f0a.jpg" },
-            { text: " Así que aquí estás. De pie sobre las cenizas. Ya no se trata de salvar el mundo. Se trata de ver quién queda en pie.", image: "https://i.pinimg.com/1200x/45/7d/c5/457dc515c61d470eb26cf1727ebd67ea.jpg" },
-            { text: " Dime, superviviente... en esta nueva era de monstruos y máquinas: ¿QUÉ ERES TÚ?", image: "https://i.pinimg.com/1200x/18/85/ee/1885ee42132b6976d36896a81f33ad8c.jpg" }
+            { text: "No hubo trompetas. No hubo cielos rojos ni profecías antiguas cumpliéndose. El fin del mundo no vino del espacio exterior, ni de una dimensión oscura.", image: "https://i.pinimg.com/1200x/18/99/ec/1899ec756f8731e015eb941d7122fbec.jpg" },
+            { text: "Lo construimos nosotros. Aquí. En casa.\nO mejor dicho, lo construyeron ellos.", image: "https://i.pinimg.com/1200x/71/06/7d/71067db72856dfd6ca03d0d51a679bd6.jpg" },
+            { text: "Fue en un laboratorio estéril. Tres hombres se reunieron allí: Victor Von Doom, Magneto y Wilson Fisk.\nDecidieron que la humanidad era demasiado caótica. Su solución fue la ciencia fría y dura: el Pulso Nulificador.", image: "https://i.pinimg.com/1200x/71/06/7d/71067db72856dfd6ca03d0d51a679bd6.jpg" },
+            { text: "Necesitaban cuerpos para afinar la fórmula. Usaron a Jamie Madrox para ver cómo se multiplicaba la infección. Usaron a los Reavers para ver si el metal podía enfermar. Y funcionó.", image: "https://i.pinimg.com/1200x/99/80/1e/99801e7603e4a770127ce29530f13f87.jpg" },
+            { text: "Pero la arrogancia es una pistola cargada que siempre apunta hacia atrás.", image: "https://i.pinimg.com/1200x/19/26/53/1926533335a2b27c4a79c9d2632ec83d.jpg" },
+            { text: "Decidieron probar su obra maestra en Bruce Banner. Buscaban una fuente de energía infinita; lo que consiguieron fue una bomba biológica.", image: "https://i.pinimg.com/1200x/b2/06/15/b20615925dfa53cdf9622fb596cdd5e3.jpg" },
+            { text: "Cuando el virus tocó la sangre gamma, no murió. Se enfureció. Banner no cayó. La cosa que despertó ya no tenía a nadie al volante.", image: "https://i.pinimg.com/1200x/a8/e9/b7/a8e9b76d6a9a87de0cfba509d5fef534.jpg" },
+            { text: "El estallido no fue de fuego, fue de contagio. Hulk rugió, y en ese rugido viajaba la extinción.", image: "https://i.pinimg.com/1200x/eb/db/e8/ebdbe8d5738acd105654dc8ddad8216f.jpg" },
+            { text: "En cuestión de horas, Nueva York era un matadero. Los Vengadores cayeron primero, destrozados por los amigos que intentaban salvar.", image: "https://i.pinimg.com/1200x/b9/0a/18/b90a18369639b131f91273f019b699cd.jpg" },
+            { text: "¿Y la Tríada? Doom, Magneto y Fisk fueron alcanzados por su propia creación. Pero el destino tiene un sentido del humor cruel.", image: "https://i.pinimg.com/1200x/e1/02/86/e102864e130bfa5b5f2ffc5a9d9ed9c0.jpg" },
+            { text: "No perdieron la mente. Sus cuerpos se pudrieron, pero su intelecto permaneció intacto. Ahora se sientan en tronos de huesos, gobernando facciones de pesadilla.", image: "https://i.pinimg.com/1200x/e2/5c/3a/e25c3ac26e5fc65f9119b6073912e856.jpg" },
+            { text: "Pero hay algo más ahí fuera. S.H.I.E.L.D. sigue activo. No es una agencia; es un fantasma armado. Una IA paranoica que ha decidido que la única forma de mantener el orden es eliminar todo lo que se mueva.", image: "https://i.pinimg.com/1200x/39/c8/cd/39c8cde0a5b56acc78b41c4eecf91f0a.jpg" },
+            { text: "Así que aquí estás. De pie sobre las cenizas. Ya no se trata de salvar el mundo. Se trata de ver quién queda en pie.", image: "https://i.pinimg.com/1200x/45/7d/c5/457dc515c61d470eb26cf1727ebd67ea.jpg" },
+            { text: "Dime, superviviente... en esta nueva era de monstruos y máquinas: ¿QUÉ ERES TÚ?", image: "https://i.pinimg.com/1200x/18/85/ee/1885ee42132b6976d36896a81f33ad8c.jpg" }
         ],
         choose: "ELIGE TU DESTINO",
         optionA: "SUPERVIVIENTE",
@@ -198,14 +225,14 @@ export const translations = {
         next: "SIGUIENTE"
     },
     tutorial: {
-        welcome: { title: "BIENVENIDO A SHIELD", text: "El mundo ha caído, pero la resistencia continúa. Esta es tu interfaz de mando." },
+        welcome: { title: "BIENVENIDO A S.H.I.E.L.D.", text: "El mundo ha caído, pero la resistencia continúa. Esta es tu interfaz de mando." },
         map_zones: { title: "ZONAS DE CONTROL", text: "El mapa muestra los territorios controlados por las facciones. Ten cuidado al desplegar tus agentes." },
         hulk: { title: "AMENAZA MÓVIL", text: "Hulk Zombie vaga por el mapa. Evita el contacto directo a menos que estés preparado." },
         missions: { title: "MISIONES ACTIVAS", text: "Aquí aparecerán las misiones disponibles. Complétalas para obtener recursos y avanzar en la historia." },
         bunker_entry: { title: "ACCESO AL BÚNKER", text: "Gestiona tu equipo, recluta nuevos héroes y revisa el estado de tus agentes aquí." },
         roster: { title: "LISTA DE AGENTES", text: "Tus héroes disponibles. Haz clic para ver detalles y asignar misiones." },
         file: { title: "EXPEDIENTE", text: "Información detallada del agente. Aquí puedes ver su historia y objetivos personales." },
-        recruit: { title: "RECLUTAMIENTO", text: "Busca y recluta nuevos héroes de la base de datos de SHIELD." },
+        recruit: { title: "RECLUTAMIENTO", text: "Busca y recluta nuevos héroes de la base de datos de S.H.I.E.L.D." },
         finish: { title: "LISTO PARA EL COMBATE", text: "Buena suerte, Comandante. La humanidad depende de ti." },
         finishBtn: "FINALIZAR",
         skip: "OMITIR",
@@ -240,11 +267,14 @@ export const translations = {
       hive: "HIVE",
       bunker: "BUNKER"
     },
+    file: {
+      title: "TACTICAL DOSSIER"
+    },
     factions: {
-      magneto: { name: "Magneto's Empire" },
-      kingpin: { name: "Kingpin's Territory" },
-      hulk: { name: "Hulk's Wasteland" },
-      doom: { name: "Latveria (Doom)" }
+      magneto: { name: "MAGNETO'S EMPIRE" },
+      kingpin: { name: "KINGPIN'S TERRITORY" },
+      hulk: { name: "HULK'S WASTELAND" },
+      doom: { name: "LATVERIA (DR. DOOM)" }
     },
     login: {
       title: "SHIELD OS",
@@ -276,12 +306,12 @@ export const translations = {
     bunker: {
       title: "FORWARD COMMAND POST",
       hiveTitle: "HIVE NEXUS",
-      return: "RETURN TO MAP",
+      return: "RETURN TO TACTICAL MAP",
       roster: "ASSET LIST",
       recruit: "RECRUIT",
       currentStory: "CURRENT STATUS",
       objectives: "PERSONAL OBJECTIVES",
-      status: "STATUS",
+      status: "OPERATIONAL STATUS",
       unassign: "WITHDRAW",
       assign: "ASSIGN TO MISSION",
       assignModalTitle: "SELECT MISSION",
@@ -290,14 +320,14 @@ export const translations = {
       maxHeroes: "MAXIMUM CAPACITY REACHED"
     },
     recruit: {
-      title: "HERO RECRUITMENT",
-      selectDb: "S.H.I.E.L.D. DATABASE",
+      title: "ASSET RECRUITMENT",
+      selectDb: "SELECT FROM S.H.I.E.L.D. DATABASE (CLOUD)",
       loadingDb: "ACCESSING FILES...",
       alias: "CODENAME",
       name: "REAL NAME",
-      adminSeed: "ADMIN: RESET DB",
-      seedSuccess: "DB RESET",
-      submit: "RECRUIT AGENT"
+      adminSeed: "ADMIN: SEED DB",
+      seedSuccess: "DB SEEDED SUCCESSFULLY",
+      submit: "REGISTER TO DATABASE"
     },
     missionEditor: {
       title: "MISSION EDITOR",
@@ -317,7 +347,7 @@ export const translations = {
     events: {
       anomaly: {
           title: "COSMIC ANOMALY DETECTED",
-          desc: "UNKNOWN ENERGY READINGS IN DEEP SPACE. REED RICHARDS CONFIRMA: A PLANET IN THE VEGA SYSTEM CEASED TO EXIST INSTANTANEOUSLY.",
+          desc: "UNKNOWN ENERGY READINGS IN DEEP SPACE. REED RICHARDS CONFIRMA: A PLANETA IN THE VEGA SYSTEM CEASED TO EXIST INSTANTANEOUSLY.",
           ack: "CONTINUE MONITORING"
       },
       surfer: {
@@ -385,9 +415,7 @@ export const translations = {
             line4: "SYSTEM READY"
         },
         slides: [
-            { text: "The world ended yesterday.", image: "https://i.pinimg.com/736x/8a/9b/8c/8a9b8c9d7e6f5a4b3c2d1e0f9a8b7c6d.jpg" },
-            { text: "There were no nuclear explosions. No alien invasion.", image: "https://i.pinimg.com/736x/1a/2b/3c/1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d.jpg" },
-            { text: "There was only... hunger.", image: "https://i.pinimg.com/736x/0f/1e/2d/0f1e2d3c4b5a69788910111213141516.jpg" },
+            { text: "There were no trumpets. No red skies. The end of the world didn't come from outer space.", image: "https://i.pinimg.com/1200x/18/99/ec/1899ec756f8731e015eb941d7122fbec.jpg" },
             { text: "We built it ourselves. Here. At home.\nOr rather, they built it.", image: "https://i.pinimg.com/1200x/71/06/7d/71067db72856dfd6ca03d0d51a679bd6.jpg" },
             { text: "It was in a sterile lab. Three men met there: Doom, Magneto, and Fisk.\nThey decided humanity was too chaotic. Their solution was cold science: The Nullifier Pulse.", image: "https://i.pinimg.com/1200x/71/06/7d/71067db72856dfd6ca03d0d51a679bd6.jpg" },
             { text: "They needed bodies to fine-tune the formula. They used Jamie Madrox. They used the Reavers. And it worked.", image: "https://i.pinimg.com/1200x/99/80/1e/99801e7603e4a770127ce29530f13f87.jpg" },
