@@ -365,7 +365,7 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
     }
     setShowRecruitModal(false);
     setIsEditingExisting(false);
-    resetRecruitForm(); // LIMPIAR FORMULARIO AL TERMINAR
+    resetRecruitForm();
   };
 
   // --- LÓGICA DE CURA/INFECCIÓN ---
@@ -603,19 +603,21 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
             className="w-full max-w-4xl bg-slate-900 border-2 border-cyan-500 shadow-[0_0_50px_rgba(6,182,212,0.2)] flex flex-col max-h-full overflow-hidden relative"
             onClick={(e) => e.stopPropagation()}
           >
-            {/* --- SELLO DE CURADO/INFECTADO (CORREGIDO) --- */}
+            {/* --- SELLO DE CURADO/INFECTADO (CORREGIDO CON STYLE INLINE) --- */}
             {transformationResult && (
                 <div className="absolute inset-0 z-[100] flex items-center justify-center pointer-events-none">
-                    <div className={`
-                        border-8 p-6 text-7xl font-black tracking-widest uppercase opacity-0 animate-[stamp_0.4s_ease-out_forwards]
-                        ${transformationResult === 'CURED' 
-                            ? 'border-emerald-500 text-emerald-500 -rotate-12 shadow-[0_0_50px_rgba(16,185,129,0.5)]' 
-                            : 'border-red-600 text-red-600 rotate-12 shadow-[0_0_50px_rgba(220,38,38,0.5)]'}
-                    `}
-                    style={{ 
-                        maskImage: 'url(https://www.transparenttextures.com/patterns/grunge-wall.png)',
-                        backgroundColor: 'rgba(0,0,0,0.3)'
-                    }}
+                    <div 
+                        className={`
+                            border-8 p-6 text-7xl font-black tracking-widest uppercase
+                            ${transformationResult === 'CURED' 
+                                ? 'border-emerald-500 text-emerald-500 shadow-[0_0_50px_rgba(16,185,129,0.5)]' 
+                                : 'border-red-600 text-red-600 shadow-[0_0_50px_rgba(220,38,38,0.5)]'}
+                        `}
+                        style={{ 
+                            maskImage: 'url(https://www.transparenttextures.com/patterns/grunge-wall.png)',
+                            backgroundColor: 'rgba(0,0,0,0.3)',
+                            animation: 'stamp 0.4s ease-out forwards' // ANIMACIÓN INLINE PARA ASEGURAR QUE FUNCIONE
+                        }}
                     >
                         {transformationResult}
                     </div>
