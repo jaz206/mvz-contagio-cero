@@ -340,7 +340,6 @@ const App: React.FC = () => {
     const [showMissionEditor, setShowMissionEditor] = useState(false); 
     const [missionToEdit, setMissionToEdit] = useState<Mission | null>(null); 
     
-    // NUEVO ESTADO PARA EL EDITOR DE PERSONAJES
     const [showCharacterEditor, setShowCharacterEditor] = useState(false);
 
     const [customMissions, setCustomMissions] = useState<Mission[]>([]);
@@ -354,9 +353,7 @@ const App: React.FC = () => {
 
     const t = translations[lang];
 
-    // --- CORRECCIÓN DE FIREBASE ---
     useEffect(() => {
-        // Si auth es null (falló la config), forzamos el fin de la carga
         if (!auth) {
             console.log("Modo sin conexión/invitado activado (Firebase no configurado)");
             setLoadingAuth(false);
@@ -382,7 +379,6 @@ const App: React.FC = () => {
         });
         return () => unsubscribe();
     }, [isGuest]);
-    // ------------------------------
 
     const handleEditorLogin = () => {
         setIsGuest(true);
@@ -464,7 +460,6 @@ const App: React.FC = () => {
         loadMissions();
     }, [isEditorMode]);
 
-    // DATA LOADING EFFECT
     useEffect(() => {
         const loadData = async () => {
             if (isEditorMode) return; 
@@ -517,7 +512,6 @@ const App: React.FC = () => {
         loadData();
     }, [user, isGuest, playerAlignment, isEditorMode]);
 
-    // AUTO-SAVE EFFECT
     useEffect(() => {
         if (isEditorMode || !user || !playerAlignment || !isDataLoadedRef.current) return;
         
@@ -637,6 +631,45 @@ const App: React.FC = () => {
     const allMissions: Mission[] = useMemo(() => {
         const missionMap = new Map<string, Mission>();
         
+        // --- MISIONES POR DEFECTO (HARDCODED) ---
+        // Esto asegura que siempre haya misiones, incluso sin base de datos
+        const DEFAULT_MISSIONS: Mission[] = [
+            {
+                id: 'm_kraven',
+                title: t.missions.kraven.title,
+                description: t.missions.kraven.description,
+                objectives: t.missions.kraven.objectives,
+                location: { state: 'New York', coordinates: [-74.006, 40.7128] },
+                threatLevel: 'ALTA',
+                type: 'STANDARD',
+                alignment: 'BOTH'
+            },
+            {
+                id: 'm_flesh',
+                title: t.missions.fleshSleeps.title,
+                description: t.missions.fleshSleeps.description,
+                objectives: t.missions.fleshSleeps.objectives,
+                location: { state: 'Nevada', coordinates: [-115.1398, 36.1699] }, // Las Vegas
+                threatLevel: 'MEDIA',
+                type: 'STANDARD',
+                alignment: 'BOTH'
+            },
+            {
+                id: 'm_base_alpha',
+                title: t.missions.bases.alpha,
+                description: [t.missions.bases.desc],
+                objectives: [{ title: t.missions.bases.objSecure, desc: t.missions.bases.objRetrieve }],
+                location: { state: 'Colorado', coordinates: [-104.9903, 39.7392] }, // Denver
+                threatLevel: 'BAJA',
+                type: 'SHIELD_BASE',
+                alignment: 'BOTH'
+            }
+        ];
+
+        // Añadimos las misiones por defecto al mapa
+        DEFAULT_MISSIONS.forEach(m => missionMap.set(m.id, m));
+        
+        // Añadimos las misiones personalizadas (si las hay)
         customMissions.forEach(m => {
             if (m && m.id) missionMap.set(m.id, m);
         });
