@@ -256,19 +256,23 @@ const App: React.FC = () => {
         setViewMode('map');
     };
 
-    // --- CORRECCIÓN: BÚSQUEDA EN DB PARA TRANSFORMACIÓN ---
+    // --- CORRECCIÓN: BÚSQUEDA ROBUSTA EN DB PARA TRANSFORMACIÓN ---
     const handleTransformHero = (heroId: string, targetAlignment: 'ALIVE' | 'ZOMBIE') => {
         const currentHero = heroes.find(h => h.id === heroId);
         if (!currentHero) return;
 
+        // Función auxiliar para normalizar strings (quitar comillas, espacios, minúsculas)
+        const normalize = (str: string) => str ? str.replace(/['"]/g, '').trim().toLowerCase() : '';
+
         // 1. Buscar en listas hardcoded
         const hardcodedTargetList = targetAlignment === 'ALIVE' ? INITIAL_HEROES : INITIAL_ZOMBIE_HEROES;
-        let counterpart: any = hardcodedTargetList.find(h => h.alias === currentHero.alias);
+        let counterpart: any = hardcodedTargetList.find(h => normalize(h.alias) === normalize(currentHero.alias));
 
         // 2. Si no está en hardcoded, buscar en DB Templates
         if (!counterpart) {
             const dbCounterpart = dbTemplates.find(t => 
-                t.alias === currentHero.alias && 
+                // Comparamos Alias O Nombre Real, normalizados
+                (normalize(t.alias) === normalize(currentHero.alias) || normalize(t.defaultName) === normalize(currentHero.name)) && 
                 t.defaultAlignment === targetAlignment
             );
 
