@@ -15,12 +15,209 @@ interface BunkerInteriorProps {
   playerAlignment?: "ALIVE" | "ZOMBIE" | null;
   isEditorMode?: boolean;
   onTransformHero?: (heroId: string, targetAlignment: 'ALIVE' | 'ZOMBIE') => void;
-  // NUEVA PROP
   onTickerUpdate?: (message: string) => void;
 }
 
-// ... (SUB-COMPONENTES StatBar, HeroListCard, MissionListCard, CerebroScanner, TransformationModal SE MANTIENEN IGUAL) ...
-// Para ahorrar espacio, asumo que los mantienes. Si necesitas el archivo completo, dímelo.
+// --- SUB-COMPONENTS ---
+
+const StatBar: React.FC<{ label: string; value: number; colorClass: string }> = ({ label, value, colorClass }) => (
+  <div className="flex items-center gap-2 text-[9px]">
+    <span className="w-8 text-right opacity-70">{label}</span>
+    <div className="flex-1 h-1.5 bg-slate-800 rounded-full overflow-hidden">
+      <div 
+        className={`h-full ${colorClass}`} 
+        style={{ width: `${(value / 10) * 100}%` }}
+      />
+    </div>
+    <span className="w-4 font-bold">{value}</span>
+  </div>
+);
+
+const HeroListCard: React.FC<{ hero: Hero; onClick: () => void; compact?: boolean; onAction?: () => void; actionLabel?: string }> = ({ hero, onClick, compact, onAction, actionLabel }) => (
+  <div 
+    onClick={onClick}
+    className={`group relative flex items-center gap-3 p-2 border transition-all cursor-pointer overflow-hidden
+        ${hero.status === 'INJURED' ? 'bg-red-950/30 border-red-900 opacity-80' : 
+          hero.status === 'CAPTURED' ? 'bg-orange-950/30 border-orange-900' : 
+          'bg-slate-900/80 border-slate-700 hover:border-cyan-500 hover:bg-slate-800'}
+    `}
+  >
+    <div className={`absolute left-0 top-0 bottom-0 w-1 ${
+      hero.status === 'AVAILABLE' ? 'bg-emerald-500' : 
+      hero.status === 'INJURED' ? 'bg-red-600 animate-pulse' : 
+      hero.status === 'CAPTURED' ? 'bg-orange-500' : 'bg-yellow-500'
+    }`} />
+
+    <div className="w-10 h-10 shrink-0 border border-slate-600 bg-slate-800 relative overflow-hidden">
+      {hero.imageUrl ? (
+        <>
+            <img 
+                src={hero.imageUrl} 
+                alt={hero.alias} 
+                className={`w-full h-full object-cover transition-all duration-500
+                    ${hero.status === 'INJURED' ? 'grayscale contrast-125 sepia' : ''}
+                    ${hero.status === 'CAPTURED' ? 'opacity-50 blur-[1px]' : ''}
+                `} 
+            />
+            {hero.status === 'INJURED' && (
+                <div className="absolute inset-0 bg-red-500/20 pointer-events-none mix-blend-overlay"></div>
+            )}
+            {hero.status === 'CAPTURED' && (
+                <div className="absolute inset-0 pointer-events-none" 
+                     style={{backgroundImage: 'repeating-linear-gradient(90deg, transparent, transparent 2px, rgba(0,0,0,0.8) 2px, rgba(0,0,0,0.8) 4px)'}}>
+                </div>
+            )}
+        </>
+      ) : (
+        <div className="w-full h-full flex items-center justify-center text-xs font-bold text-slate-500">?</div>
+      )}
+    </div>
+
+    <div className="flex-1 min-w-0">
+      <div className="flex justify-between items-baseline">
+        <h4 className={`text-xs font-bold truncate ${hero.status === 'INJURED' ? 'text-red-400' : 'text-cyan-100'}`}>
+            {hero.alias}
+        </h4>
+        <span className="text-[9px] text-cyan-600 font-mono">{hero.class}</span>
+      </div>
+      
+      {hero.status === 'INJURED' ? (
+          <div className="text-[8px] text-red-500 font-bold tracking-widest mt-1 animate-pulse">CRITICAL CONDITION</div>
+      ) : hero.status === 'CAPTURED' ? (
+          <div className="text-[8px] text-orange-500 font-bold tracking-widest mt-1">M.I.A. - LOCATING...</div>
+      ) : !compact && (
+        <div className="mt-1 space-y-0.5">
+           <StatBar label="STR" value={hero.stats.strength} colorClass="bg-red-500" />
+           <StatBar label="AGI" value={hero.stats.agility} colorClass="bg-green-500" />
+           <StatBar label="INT" value={hero.stats.intellect} colorClass="bg-blue-500" />
+        </div>
+      )}
+    </div>
+
+    {onAction && actionLabel && (
+        <button 
+            onClick={(e) => { 
+                e.stopPropagation(); 
+                onAction(); 
+            }}
+            className="ml-2 px-2 py-1 bg-emerald-900/50 border border-emerald-600 text-[9px] font-bold text-emerald-400 hover:bg-emerald-800 hover:text-white transition-colors z-10 relative"
+        >
+            {actionLabel}
+        </button>
+    )}
+  </div>
+);
+
+const MissionListCard: React.FC<{ mission: Mission; onClick: () => void; assignedCount: number }> = ({ mission, onClick, assignedCount }) => (
+    <div 
+      onClick={onClick}
+      className="group relative flex items-center gap-3 p-2 bg-slate-900/80 border border-slate-700 hover:border-blue-500 hover:bg-slate-800 transition-all cursor-pointer overflow-hidden mb-1"
+    >
+        <div className="flex-1 min-w-0">
+            <div className="flex justify-between items-center mb-1">
+                <h4 className="text-xs font-bold text-blue-100 truncate group-hover:text-blue-300">{mission.title}</h4>
+                <span className="text-[9px] px-1.5 rounded bg-blue-900/30 text-blue-400 border border-blue-800">{assignedCount} AGENTS</span>
+            </div>
+            <div className="flex justify-between items-center text-[9px] text-slate-400">
+                <span>{mission.location.state}</span>
+                <span className={`font-bold ${mission.threatLevel === 'HIGH' ? 'text-orange-500' : mission.threatLevel === 'EXTREME' || mission.threatLevel.includes('OMEGA') ? 'text-red-500' : 'text-yellow-500'}`}>
+                    {mission.threatLevel}
+                </span>
+            </div>
+        </div>
+    </div>
+);
+
+const CerebroScanner = ({ status }: { status: "SEARCHING" | "LOCKED" }) => {
+    const isLocked = status === "LOCKED";
+    return (
+      <div className={`w-full h-32 bg-slate-950 border relative overflow-hidden flex items-center justify-center p-2 transition-all duration-500 ${isLocked ? "border-emerald-600 shadow-[inset_0_0_20px_rgba(16,185,129,0.2)]" : "border-cyan-900"}`}>
+        <div className={`absolute inset-0 border rounded-full m-1 opacity-30 ${isLocked ? "border-emerald-500" : "border-cyan-900"}`} />
+        <div className={`absolute inset-0 border rounded-full m-6 opacity-20 ${isLocked ? "border-emerald-500" : "border-cyan-800"}`} />
+        
+        {status === "SEARCHING" ? (
+          <div className="absolute w-full h-[2px] bg-cyan-500/50 top-1/2 left-0 animate-[spin_3s_linear_infinite] shadow-[0_0_10px_#06b6d4]" />
+        ) : (
+          <>
+            <div className="absolute w-full h-[1px] bg-emerald-500/50 top-1/2 left-0" />
+            <div className="absolute h-full w-[1px] bg-emerald-500/50 top-0 left-1/2" />
+            <div className="absolute w-12 h-12 border-2 border-emerald-500 rounded-full animate-pulse" />
+          </>
+        )}
+  
+        <div className={`text-[8px] font-mono z-10 flex flex-col items-center ${isLocked ? "text-emerald-400" : "text-cyan-600"}`}>
+          <div className="tracking-widest font-bold">CEREBRO SCANNER</div>
+          <div className={`mt-1 ${status === "SEARCHING" ? "animate-pulse" : ""}`}>
+            {status === "SEARCHING" ? "SEARCHING GLOBAL FEED..." : "SIGNAL LOCKED // CONFIRMED"}
+          </div>
+        </div>
+        
+        <div className="absolute inset-0 pointer-events-none opacity-20" style={{ backgroundImage: `radial-gradient(circle, ${isLocked ? "#10b981" : "#06b6d4"} 1px, transparent 1px)`, backgroundSize: "10px 10px" }} />
+      </div>
+    );
+  };
+
+const TransformationModal: React.FC<{ 
+    isOpen: boolean; 
+    type: 'CURING' | 'INFECTING'; 
+    heroName: string; 
+    onComplete: () => void; 
+}> = ({ isOpen, type, heroName, onComplete }) => {
+    const [progress, setProgress] = useState(0);
+    
+    useEffect(() => {
+        if (!isOpen) {
+            setProgress(0);
+            return;
+        }
+        
+        const interval = setInterval(() => {
+            setProgress(prev => {
+                if (prev >= 100) {
+                    clearInterval(interval);
+                    setTimeout(onComplete, 500);
+                    return 100;
+                }
+                return prev + 2;
+            });
+        }, 50);
+        
+        return () => clearInterval(interval);
+    }, [isOpen]);
+
+    if (!isOpen) return null;
+
+    const isCuring = type === 'CURING';
+    const colorClass = isCuring ? 'text-blue-400 border-blue-500' : 'text-green-500 border-green-500';
+    const barColor = isCuring ? 'bg-blue-500' : 'bg-green-500';
+    const title = isCuring ? 'ADMINISTRANDO ANTÍDOTO' : 'INYECTANDO CEPA ZOMBIE';
+    const subtitle = isCuring ? 'REESTRUCTURANDO ADN...' : 'CORROMPIENDO TEJIDOS...';
+
+    return (
+        <div className="fixed inset-0 z-[100] bg-black/95 flex items-center justify-center flex-col font-mono">
+            <div className={`w-full max-w-md p-8 border-2 ${colorClass} bg-slate-900/50 relative overflow-hidden`}>
+                <div className="absolute inset-0 pointer-events-none opacity-10 bg-[linear-gradient(transparent_50%,rgba(0,0,0,0.5)_50%)] bg-[length:100%_4px]"></div>
+                
+                <h2 className={`text-2xl font-black tracking-widest mb-2 animate-pulse ${isCuring ? 'text-blue-400' : 'text-green-500'}`}>
+                    {title}
+                </h2>
+                <div className="text-xs text-white mb-8 tracking-[0.2em]">SUJETO: {heroName}</div>
+
+                <div className="w-full h-4 bg-slate-800 border border-slate-600 mb-2 relative">
+                    <div 
+                        className={`h-full ${barColor} transition-all duration-75 ease-linear`} 
+                        style={{ width: `${progress}%` }}
+                    ></div>
+                </div>
+                
+                <div className="flex justify-between text-[10px] text-gray-400">
+                    <span>{subtitle}</span>
+                    <span>{progress}%</span>
+                </div>
+            </div>
+        </div>
+    );
+};
 
 // --- MAIN COMPONENT ---
 export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
@@ -35,9 +232,8 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
   playerAlignment,
   isEditorMode,
   onTransformHero,
-  onTickerUpdate // Recibimos la prop
+  onTickerUpdate
 }) => {
-  // ... (ESTADOS SE MANTIENEN IGUAL) ...
   const [selectedHeroId, setSelectedHeroId] = useState<string | null>(null);
   const [selectedMissionIdForSquad, setSelectedMissionIdForSquad] = useState<string | null>(null);
   const [showAssignModal, setShowAssignModal] = useState(false);
@@ -165,7 +361,6 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
       };
       onAddHero(newHero);
       
-      // NOTIFICACIÓN DE RECLUTAMIENTO/CAPTURA
       if (onTickerUpdate) {
           const action = recruitMode === 'CAPTURE' ? 'CAPTURADO' : 'RECLUTADO';
           onTickerUpdate(`NUEVO SUJETO ${action}: ${newHero.alias} (${newHero.name})`);
@@ -267,10 +462,6 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
             onComplete={handleTransformationComplete} 
         />
 
-        {/* ... (RESTO DEL JSX SE MANTIENE IGUAL QUE EN LA VERSIÓN ANTERIOR) ... */}
-        {/* Para no repetir 600 líneas, asumo que mantienes el resto del renderizado */}
-        {/* Si necesitas el archivo completo de nuevo, dímelo */}
-        
         {/* Header Bar */}
         <div className="flex items-center justify-between p-4 bg-slate-900 border-b border-cyan-900 shrink-0 z-20">
             <div className="flex items-center gap-4">
@@ -401,7 +592,7 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
             className="w-full max-w-4xl bg-slate-900 border-2 border-cyan-500 shadow-[0_0_50px_rgba(6,182,212,0.2)] flex flex-col max-h-full overflow-hidden relative"
             onClick={(e) => e.stopPropagation()}
           >
-            {/* --- SELLO DE CURADO/INFECTADO (CORREGIDO CON STYLE INLINE) --- */}
+            {/* --- SELLO DE CURADO/INFECTADO --- */}
             {transformationResult && (
                 <div className="absolute inset-0 z-[100] flex items-center justify-center pointer-events-none">
                     <div 
@@ -414,7 +605,7 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
                         style={{ 
                             maskImage: 'url(https://www.transparenttextures.com/patterns/grunge-wall.png)',
                             backgroundColor: 'rgba(0,0,0,0.3)',
-                            animation: 'stamp 0.4s ease-out forwards' // ANIMACIÓN INLINE PARA ASEGURAR QUE FUNCIONE
+                            animation: 'stamp 0.4s ease-out forwards'
                         }}
                     >
                         {transformationResult}
