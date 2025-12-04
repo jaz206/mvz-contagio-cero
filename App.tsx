@@ -256,6 +256,52 @@ const App: React.FC = () => {
         setViewMode('map');
     };
 
+    // --- NUEVA FUNCIÓN: TRANSFORMAR HÉROE (CURAR/INFECTAR) ---
+    const handleTransformHero = (heroId: string, targetAlignment: 'ALIVE' | 'ZOMBIE') => {
+        const currentHero = heroes.find(h => h.id === heroId);
+        if (!currentHero) return;
+
+        // Buscar la versión alternativa en las listas hardcoded
+        const targetList = targetAlignment === 'ALIVE' ? INITIAL_HEROES : INITIAL_ZOMBIE_HEROES;
+        
+        // Intentamos encontrar el equivalente por Alias (ej: "SPIDER-MAN")
+        const counterpart = targetList.find(h => h.alias === currentHero.alias);
+
+        if (counterpart) {
+            // Si existe, reemplazamos los datos pero mantenemos el ID original para no romper referencias
+            const newHeroes = heroes.map(h => {
+                if (h.id === heroId) {
+                    return {
+                        ...h,
+                        name: counterpart.name,
+                        alias: counterpart.alias,
+                        class: counterpart.class,
+                        bio: counterpart.bio,
+                        currentStory: counterpart.currentStory,
+                        objectives: counterpart.objectives,
+                        imageUrl: counterpart.imageUrl,
+                        characterSheetUrl: counterpart.characterSheetUrl,
+                        stats: counterpart.stats,
+                        status: 'AVAILABLE', // Al transformar, queda disponible
+                        assignedMissionId: null
+                    };
+                }
+                return h;
+            });
+            setHeroes(newHeroes);
+        } else {
+            // Si no hay contraparte (ej: personaje custom), solo lo liberamos
+            // Podríamos añadir lógica extra aquí si quisieras "zombificar" genéricamente
+            const newHeroes = heroes.map(h => {
+                if (h.id === heroId) {
+                    return { ...h, status: 'AVAILABLE', assignedMissionId: null };
+                }
+                return h;
+            });
+            setHeroes(newHeroes);
+        }
+    };
+
     const mergeWithLatestContent = (savedHeroes: Hero[], isZombie: boolean, templates: HeroTemplate[]): Hero[] => {
         const baseList = isZombie ? INITIAL_ZOMBIE_HEROES : INITIAL_HEROES;
         return savedHeroes.map(savedHero => {
@@ -378,7 +424,7 @@ const App: React.FC = () => {
     };
 
     const handleResetProgress = () => {
-        setCompletedMissionIds(new Set());
+        setCompletedMissionIds(newSet);
         setWorldStage('NORMAL');
         setActiveGlobalEvent(null);
     };
@@ -631,7 +677,7 @@ const App: React.FC = () => {
                         </aside>
                         <main className="flex-1 relative bg-slate-950 overflow-hidden">
                             {viewMode === 'map' && (<USAMap language={lang} missions={visibleMissions} completedMissionIds={completedMissionIds} onMissionComplete={handleMissionComplete} onMissionSelect={setSelectedMission} onBunkerClick={() => setViewMode('bunker')} factionStates={FACTION_STATES} playerAlignment={playerAlignment} worldStage={worldStage} />)}
-                            {viewMode === 'bunker' && (<BunkerInterior heroes={heroes} missions={visibleMissions.filter(m => m && !completedMissionIds.has(m.id))} onAssign={(heroId, missionId) => { const hIndex = heroes.findIndex(h => h.id === heroId); if(hIndex >= 0) { const newHeroes = [...heroes]; newHeroes[hIndex] = { ...newHeroes[hIndex], status: 'DEPLOYED', assignedMissionId: missionId }; setHeroes(newHeroes); return true; } return false; }} onUnassign={(heroId) => { const hIndex = heroes.findIndex(h => h.id === heroId); if(hIndex >= 0) { const newHeroes = [...heroes]; newHeroes[hIndex] = { ...newHeroes[hIndex], status: 'AVAILABLE', assignedMissionId: null }; setHeroes(newHeroes); } }} onAddHero={(hero) => setHeroes([...heroes, hero])} onToggleObjective={handleToggleHeroObjective} onBack={() => setViewMode('map')} language={lang} playerAlignment={playerAlignment} isEditorMode={isEditorMode} />)}
+                            {viewMode === 'bunker' && (<BunkerInterior heroes={heroes} missions={visibleMissions.filter(m => m && !completedMissionIds.has(m.id))} onAssign={(heroId, missionId) => { const hIndex = heroes.findIndex(h => h.id === heroId); if(hIndex >= 0) { const newHeroes = [...heroes]; newHeroes[hIndex] = { ...newHeroes[hIndex], status: 'DEPLOYED', assignedMissionId: missionId }; setHeroes(newHeroes); return true; } return false; }} onUnassign={(heroId) => { const hIndex = heroes.findIndex(h => h.id === heroId); if(hIndex >= 0) { const newHeroes = [...heroes]; newHeroes[hIndex] = { ...newHeroes[hIndex], status: 'AVAILABLE', assignedMissionId: null }; setHeroes(newHeroes); } }} onAddHero={(hero) => setHeroes([...heroes, hero])} onToggleObjective={handleToggleHeroObjective} onBack={() => setViewMode('map')} language={lang} playerAlignment={playerAlignment} isEditorMode={isEditorMode} onTransformHero={handleTransformHero} />)}
                             {viewMode === 'tutorial' && (<div className="absolute inset-0 z-40"><USAMap language={lang} missions={visibleMissions} completedMissionIds={completedMissionIds} onMissionComplete={() => {}} onMissionSelect={() => {}} onBunkerClick={() => {}} factionStates={FACTION_STATES} playerAlignment={playerAlignment} worldStage={worldStage} /><TutorialOverlay language={lang} onComplete={() => { if(user) localStorage.setItem(`shield_tutorial_seen_${user.uid}`, 'true'); setViewMode('map'); }} onStepChange={(stepKey) => { if (['roster', 'file', 'recruit'].includes(stepKey)) { setViewMode('bunker'); } }} /></div>)}
                         </main>
                     </div>

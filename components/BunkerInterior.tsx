@@ -14,6 +14,8 @@ interface BunkerInteriorProps {
   language: Language;
   playerAlignment?: "ALIVE" | "ZOMBIE" | null;
   isEditorMode?: boolean;
+  // NUEVA PROP: Para transformar héroes
+  onTransformHero?: (heroId: string, targetAlignment: 'ALIVE' | 'ZOMBIE') => void;
 }
 
 // --- SUB-COMPONENTS ---
@@ -67,7 +69,7 @@ const HeroListCard: React.FC<{ hero: Hero; onClick: () => void; compact?: boolea
     {onAction && actionLabel && (
         <button 
             onClick={(e) => { 
-                e.stopPropagation(); // Evitar que se abra el detalle al pulsar la acción
+                e.stopPropagation(); 
                 onAction(); 
             }}
             className="ml-2 px-2 py-1 bg-emerald-900/50 border border-emerald-600 text-[9px] font-bold text-emerald-400 hover:bg-emerald-800 hover:text-white transition-colors z-10 relative"
@@ -127,6 +129,77 @@ const CerebroScanner = ({ status }: { status: "SEARCHING" | "LOCKED" }) => {
     );
   };
 
+// --- NUEVO COMPONENTE: MODAL DE TRANSFORMACIÓN ---
+const TransformationModal: React.FC<{ 
+    isOpen: boolean; 
+    type: 'CURING' | 'INFECTING'; 
+    heroName: string; 
+    onComplete: () => void; 
+}> = ({ isOpen, type, heroName, onComplete }) => {
+    const [progress, setProgress] = useState(0);
+    
+    useEffect(() => {
+        if (!isOpen) {
+            setProgress(0);
+            return;
+        }
+        
+        const interval = setInterval(() => {
+            setProgress(prev => {
+                if (prev >= 100) {
+                    clearInterval(interval);
+                    setTimeout(onComplete, 500); // Pequeña pausa al final
+                    return 100;
+                }
+                return prev + 2; // Velocidad de carga
+            });
+        }, 50);
+        
+        return () => clearInterval(interval);
+    }, [isOpen]);
+
+    if (!isOpen) return null;
+
+    const isCuring = type === 'CURING';
+    const colorClass = isCuring ? 'text-blue-400 border-blue-500' : 'text-green-500 border-green-500';
+    const barColor = isCuring ? 'bg-blue-500' : 'bg-green-500';
+    const title = isCuring ? 'ADMINISTRANDO ANTÍDOTO' : 'INYECTANDO CEPA ZOMBIE';
+    const subtitle = isCuring ? 'REESTRUCTURANDO ADN...' : 'CORROMPIENDO TEJIDOS...';
+
+    return (
+        <div className="fixed inset-0 z-[100] bg-black/95 flex items-center justify-center flex-col font-mono">
+            <div className={`w-full max-w-md p-8 border-2 ${colorClass} bg-slate-900/50 relative overflow-hidden`}>
+                {/* Scanlines */}
+                <div className="absolute inset-0 pointer-events-none opacity-10 bg-[linear-gradient(transparent_50%,rgba(0,0,0,0.5)_50%)] bg-[length:100%_4px]"></div>
+                
+                <h2 className={`text-2xl font-black tracking-widest mb-2 animate-pulse ${isCuring ? 'text-blue-400' : 'text-green-500'}`}>
+                    {title}
+                </h2>
+                <div className="text-xs text-white mb-8 tracking-[0.2em]">SUJETO: {heroName}</div>
+
+                <div className="w-full h-4 bg-slate-800 border border-slate-600 mb-2 relative">
+                    <div 
+                        className={`h-full ${barColor} transition-all duration-75 ease-linear`} 
+                        style={{ width: `${progress}%` }}
+                    ></div>
+                </div>
+                
+                <div className="flex justify-between text-[10px] text-gray-400">
+                    <span>{subtitle}</span>
+                    <span>{progress}%</span>
+                </div>
+
+                {/* Decoración Sci-Fi */}
+                <div className="mt-6 grid grid-cols-3 gap-2 text-[8px] opacity-50">
+                    <div>VITALS: UNSTABLE</div>
+                    <div className="text-center">BPM: {120 + Math.floor(Math.random() * 40)}</div>
+                    <div className="text-right">TEMP: {isCuring ? 'DROPPING' : 'RISING'}</div>
+                </div>
+            </div>
+        </div>
+    );
+};
+
 // --- MAIN COMPONENT ---
 export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
   heroes,
@@ -139,6 +212,7 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
   language,
   playerAlignment,
   isEditorMode,
+  onTransformHero
 }) => {
   const [selectedHeroId, setSelectedHeroId] = useState<string | null>(null);
   const [selectedMissionIdForSquad, setSelectedMissionIdForSquad] = useState<string | null>(null);
@@ -148,6 +222,9 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
   const [assignError, setAssignError] = useState<string | null>(null);
   const [zoomedImage, setZoomedImage] = useState<string | null>(null);
   const [viewingSheetUrl, setViewingSheetUrl] = useState<string | null>(null);
+
+  // Estados para la transformación
+  const [processingHero, setProcessingHero] = useState<{ id: string, name: string, type: 'CURING' | 'INFECTING' } | null>(null);
 
   const [dbTemplates, setDbTemplates] = useState<HeroTemplate[]>([]);
   const [isLoadingDb, setIsLoadingDb] = useState(false);
@@ -281,8 +358,33 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
     setSearchTerm("");
   };
 
+  // --- LÓGICA DE CURA/INFECCIÓN ---
   const handleCureHero = (heroId: string) => {
-      onUnassign(heroId); 
+      const hero = heroes.find(h => h.id === heroId);
+      if (!hero) return;
+
+      // Determinar el tipo de acción basado en el bando actual
+      // Si soy ZOMBIE y capturo a alguien, lo voy a INFECTAR.
+      // Si soy ALIVE y capturo a alguien, lo voy a CURAR.
+      const actionType = playerAlignment === 'ZOMBIE' ? 'INFECTING' : 'CURING';
+
+      // Iniciar la animación
+      setProcessingHero({
+          id: heroId,
+          name: hero.alias,
+          type: actionType
+      });
+  };
+
+  const handleTransformationComplete = () => {
+      if (processingHero && onTransformHero) {
+          // Ejecutar la transformación real de datos
+          // Si estoy curando, el objetivo es que sea ALIVE. Si infecto, ZOMBIE.
+          const targetAlignment = processingHero.type === 'CURING' ? 'ALIVE' : 'ZOMBIE';
+          onTransformHero(processingHero.id, targetAlignment);
+      }
+      setProcessingHero(null);
+      setSelectedHeroId(null);
   };
 
   const handleSeedDatabase = async () => {
@@ -330,6 +432,14 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
   return (
     <div className="w-full h-full bg-slate-950 font-mono relative overflow-hidden select-none flex flex-col">
       
+        {/* MODAL DE PROCESO VISUAL */}
+        <TransformationModal 
+            isOpen={!!processingHero} 
+            type={processingHero?.type || 'CURING'} 
+            heroName={processingHero?.name || ''} 
+            onComplete={handleTransformationComplete} 
+        />
+
         {/* Header Bar */}
         <div className="flex items-center justify-between p-4 bg-slate-900 border-b border-cyan-900 shrink-0 z-20">
             <div className="flex items-center gap-4">
@@ -573,7 +683,7 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
                     </button>
                   ) : selectedHero.status === "CAPTURED" ? (
                       <button
-                          onClick={() => { handleCureHero(selectedHero.id); setSelectedHeroId(null); }}
+                          onClick={() => handleCureHero(selectedHero.id)}
                           className="px-6 py-2 bg-emerald-900/50 border border-emerald-600 text-emerald-400 hover:bg-emerald-800 text-xs font-bold tracking-widest transition-colors"
                       >
                           {playerAlignment === 'ZOMBIE' ? 'INFECTAR' : 'CURAR'}
