@@ -458,10 +458,47 @@ export const USAMap: React.FC<USAMapProps> = ({
             ></div>
         </div>
         
+        {/* SOMBRA DE GALACTUS MEJORADA */}
+        {worldStage === 'GALACTUS' && (
+            <div className="absolute inset-0 z-30 pointer-events-none overflow-hidden flex items-center justify-center">
+                {/* 1. Tinte atmosférico global */}
+                <div className="absolute inset-0 bg-purple-900/30 mix-blend-overlay animate-pulse-slow"></div>
+                
+                {/* 2. La Sombra (con máscara radial para suavizar bordes) */}
+                <div 
+                    className="w-[120%] h-[120%] absolute animate-breathing opacity-60"
+                    style={{
+                        backgroundImage: `url('https://i.pinimg.com/736x/7d/99/05/7d9905d417620745edc2c724f94e56c8.jpg')`,
+                        backgroundSize: 'contain',
+                        backgroundPosition: 'center',
+                        backgroundRepeat: 'no-repeat',
+                        mixBlendMode: 'hard-light', // Esto hace que los colores brillen sobre el oscuro
+                        maskImage: 'radial-gradient(circle, black 40%, transparent 80%)',
+                        WebkitMaskImage: 'radial-gradient(circle, black 40%, transparent 80%)'
+                    }}
+                ></div>
+
+                {/* 3. Ojos brillantes (Efecto extra) */}
+                <div className="absolute top-[30%] left-[45%] w-4 h-4 bg-purple-400 rounded-full blur-md animate-pulse shadow-[0_0_20px_#a855f7]"></div>
+                <div className="absolute top-[30%] right-[45%] w-4 h-4 bg-purple-400 rounded-full blur-md animate-pulse shadow-[0_0_20px_#a855f7]"></div>
+            </div>
+        )}
+        
         <style>{`
             @keyframes radar {
                 from { transform: rotate(0deg); }
                 to { transform: rotate(360deg); }
+            }
+            @keyframes breathing {
+                0% { transform: scale(1); opacity: 0.5; }
+                50% { transform: scale(1.05); opacity: 0.7; }
+                100% { transform: scale(1); opacity: 0.5; }
+            }
+            .animate-breathing {
+                animation: breathing 8s ease-in-out infinite;
+            }
+            .animate-pulse-slow {
+                animation: pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite;
             }
         `}</style>
 
