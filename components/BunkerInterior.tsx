@@ -261,6 +261,24 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
     fetchTemplates();
   }, []);
 
+  // --- FUNCIÓN PARA LIMPIAR EL FORMULARIO ---
+  const resetRecruitForm = () => {
+      setRecruitForm({
+        templateId: "",
+        name: "",
+        alias: "",
+        class: "BRAWLER",
+        bio: "",
+        currentStory: "",
+        objectives: [],
+        imageUrl: "",
+        characterSheetUrl: "",
+        str: 5, agi: 5, int: 5,
+        alignment: "ALIVE"
+      });
+      setSearchTerm("");
+  };
+
   const handleSelectTemplate = (templateId: string) => {
     const template = dbTemplates.find((h) => h.id === templateId);
     if (template) {
@@ -347,7 +365,7 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
     }
     setShowRecruitModal(false);
     setIsEditingExisting(false);
-    setSearchTerm("");
+    resetRecruitForm(); // LIMPIAR FORMULARIO AL TERMINAR
   };
 
   // --- LÓGICA DE CURA/INFECCIÓN ---
@@ -374,7 +392,7 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
           setTransformationResult(processingHero.type === 'CURING' ? 'CURED' : 'INFECTED');
           
           // 3. Quitar el sello después de unos segundos
-          setTimeout(() => setTransformationResult(null), 3000);
+          setTimeout(() => setTransformationResult(null), 4000);
       }
       setProcessingHero(null);
   };
@@ -403,51 +421,34 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
     }
   };
 
-  // --- CORRECCIÓN: FILTRO DE RECLUTAMIENTO MEJORADO ---
   const availableTemplates = dbTemplates.filter((template) => {
-    // 1. Filtro de búsqueda por texto
     if (searchTerm) {
       const term = searchTerm.toLowerCase();
       if (!(template.alias || template.defaultName).toLowerCase().includes(term)) {
           return false;
       }
     }
-
-    // 2. Si estamos editando, mostramos todo
     if (isEditingExisting) return true;
 
-    // 3. VERIFICACIÓN DE EXISTENCIA (CORREGIDA)
-    // Comprobamos si el personaje YA existe en nuestra lista de héroes (en cualquier estado: vivo, zombie, capturado)
-    // Usamos la normalización para comparar Alias o Nombres, ignorando mayúsculas y comillas.
     const normalize = (str: string) => str ? str.replace(/['"]/g, '').trim().toLowerCase() : '';
     
     const characterAlreadyInRoster = heroes.some(h => {
-        // Coincidencia por ID de template (exacta)
         if (h.templateId === template.id) return true;
-        
-        // Coincidencia por Alias (ej: "INVISIBLE WOMAN" vs "Invisible Woman")
         const hAlias = normalize(h.alias);
         const tAlias = normalize(template.alias);
         if (hAlias && tAlias && hAlias === tAlias) return true;
-
-        // Coincidencia por Nombre Real (ej: "Susan Storm")
         const hName = normalize(h.name);
         const tName = normalize(template.defaultName);
         if (hName && tName && hName === tName) return true;
-
         return false;
     });
 
-    // Si ya lo tenemos, NO lo mostramos en la lista de reclutamiento
     if (characterAlreadyInRoster) return false;
 
-    // 4. Filtro por Bando (Aliado vs Enemigo)
     const templateAlign = template.defaultAlignment || 'ALIVE';
     if (recruitMode === 'DIRECT') {
-        // Reclutar Aliado: Debe ser de mi mismo bando
         return templateAlign === playerAlignment;
     } else {
-        // Capturar Enemigo: Debe ser del bando contrario
         return templateAlign !== playerAlignment;
     }
   });
@@ -458,8 +459,9 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
         {/* ESTILOS PARA LA ANIMACIÓN DEL SELLO */}
         <style>{`
             @keyframes stamp {
-                0% { opacity: 0; transform: scale(2) rotate(-15deg); }
-                100% { opacity: 0.8; transform: scale(1) rotate(-15deg); }
+                0% { opacity: 0; transform: scale(3); }
+                50% { opacity: 1; transform: scale(0.8); }
+                100% { opacity: 1; transform: scale(1) rotate(-15deg); }
             }
         `}</style>
 
@@ -544,7 +546,7 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
                     <div className="flex-1 p-6 flex flex-col items-center justify-center relative">
                          <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-purple-900/20 via-transparent to-transparent animate-pulse"></div>
                          <button 
-                            onClick={() => { setIsEditingExisting(false); setRecruitMode('DIRECT'); setShowRecruitModal(true); }}
+                            onClick={() => { setIsEditingExisting(false); setRecruitMode('DIRECT'); resetRecruitForm(); setShowRecruitModal(true); }}
                             className="relative z-10 group/btn w-full h-full border-2 border-dashed border-purple-500/30 hover:border-purple-500 rounded-lg flex flex-col items-center justify-center gap-4 transition-all hover:bg-purple-900/10"
                         >
                             <div className="w-16 h-16 rounded-full border border-purple-500 flex items-center justify-center bg-slate-900 shadow-[0_0_20px_rgba(168,85,247,0.3)] group-hover/btn:scale-110 transition-transform">
@@ -581,7 +583,7 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
                             </div>
                         )}
                         <button 
-                            onClick={() => { setIsEditingExisting(false); setRecruitMode('CAPTURE'); setShowRecruitModal(true); }}
+                            onClick={() => { setIsEditingExisting(false); setRecruitMode('CAPTURE'); resetRecruitForm(); setShowRecruitModal(true); }}
                             className="mt-auto w-full py-2 border border-red-800 bg-red-900/20 text-red-400 hover:text-white hover:bg-red-900/50 text-[10px] font-bold tracking-widest uppercase transition-colors flex items-center justify-center gap-2"
                         >
                             <span className="text-lg">⊕</span> CAPTURAR SUJETO
@@ -601,16 +603,19 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
             className="w-full max-w-4xl bg-slate-900 border-2 border-cyan-500 shadow-[0_0_50px_rgba(6,182,212,0.2)] flex flex-col max-h-full overflow-hidden relative"
             onClick={(e) => e.stopPropagation()}
           >
-            {/* --- SELLO DE CURADO/INFECTADO --- */}
+            {/* --- SELLO DE CURADO/INFECTADO (CORREGIDO) --- */}
             {transformationResult && (
-                <div className="absolute inset-0 z-50 flex items-center justify-center pointer-events-none">
+                <div className="absolute inset-0 z-[100] flex items-center justify-center pointer-events-none">
                     <div className={`
-                        border-8 p-4 text-6xl font-black tracking-widest uppercase opacity-0 animate-[stamp_0.3s_ease-out_forwards]
+                        border-8 p-6 text-7xl font-black tracking-widest uppercase opacity-0 animate-[stamp_0.4s_ease-out_forwards]
                         ${transformationResult === 'CURED' 
-                            ? 'border-emerald-500 text-emerald-500 -rotate-12' 
-                            : 'border-red-600 text-red-600 rotate-12'}
+                            ? 'border-emerald-500 text-emerald-500 -rotate-12 shadow-[0_0_50px_rgba(16,185,129,0.5)]' 
+                            : 'border-red-600 text-red-600 rotate-12 shadow-[0_0_50px_rgba(220,38,38,0.5)]'}
                     `}
-                    style={{ maskImage: 'url(https://www.transparenttextures.com/patterns/grunge-wall.png)' }}
+                    style={{ 
+                        maskImage: 'url(https://www.transparenttextures.com/patterns/grunge-wall.png)',
+                        backgroundColor: 'rgba(0,0,0,0.3)'
+                    }}
                     >
                         {transformationResult}
                     </div>
@@ -935,38 +940,49 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
                 </div>
 
                 <div className="flex-1 flex flex-col gap-4 min-h-0">
-                  <div className="flex gap-4 border-b border-cyan-900 pb-2">
-                    <div className="flex-1">
-                      <label className="text-[10px] text-cyan-700 font-bold uppercase">{t.recruit.alias}</label>
-                      <div className="text-2xl text-white font-bold tracking-tight leading-none">{recruitForm.alias || "---"}</div>
-                    </div>
-                    <div className="flex-1 text-right">
-                      <label className="text-[10px] text-cyan-700 font-bold uppercase">{t.recruit.name}</label>
-                      <div className="text-lg text-cyan-500 leading-none">{recruitForm.name || "---"}</div>
-                    </div>
-                  </div>
-                  
-                  <div className="bg-slate-950/50 p-3 border border-cyan-900/50 flex-none h-24 overflow-y-auto scrollbar-thin scrollbar-thumb-cyan-900">
-                    <p className="text-xs text-gray-400 leading-relaxed">{recruitForm.bio || "NO DATA AVAILABLE"}</p>
-                  </div>
+                  {/* CORRECCIÓN: Si no hay template seleccionado, mostramos mensaje vacío */}
+                  {!recruitForm.templateId && !isEditingExisting ? (
+                      <div className="h-full flex flex-col items-center justify-center text-cyan-900/50 border-2 border-dashed border-cyan-900/30 rounded p-8">
+                          <div className="text-4xl mb-4">⌖</div>
+                          <div className="text-sm font-bold tracking-widest">SELECCIONE UN OBJETIVO</div>
+                          <div className="text-[10px] mt-2">ESPERANDO DATOS DE CEREBRO...</div>
+                      </div>
+                  ) : (
+                      <>
+                          <div className="flex gap-4 border-b border-cyan-900 pb-2">
+                            <div className="flex-1">
+                              <label className="text-[10px] text-cyan-700 font-bold uppercase">{t.recruit.alias}</label>
+                              <div className="text-2xl text-white font-bold tracking-tight leading-none">{recruitForm.alias || "---"}</div>
+                            </div>
+                            <div className="flex-1 text-right">
+                              <label className="text-[10px] text-cyan-700 font-bold uppercase">{t.recruit.name}</label>
+                              <div className="text-lg text-cyan-500 leading-none">{recruitForm.name || "---"}</div>
+                            </div>
+                          </div>
+                          
+                          <div className="bg-slate-950/50 p-3 border border-cyan-900/50 flex-none h-24 overflow-y-auto scrollbar-thin scrollbar-thumb-cyan-900">
+                            <p className="text-xs text-gray-400 leading-relaxed">{recruitForm.bio || "NO DATA AVAILABLE"}</p>
+                          </div>
 
-                  <div>
-                      <label className="text-[10px] text-cyan-700 font-bold uppercase">{t.recruit.fileUrl}</label>
-                      <input type="text" placeholder="https://... (PDF/JPG)" className="w-full bg-slate-950 border border-cyan-800 p-2 text-xs text-cyan-200 focus:border-cyan-400 outline-none" value={recruitForm.characterSheetUrl} onChange={(e) => setRecruitForm({...recruitForm, characterSheetUrl: e.target.value})} />
-                  </div>
+                          <div>
+                              <label className="text-[10px] text-cyan-700 font-bold uppercase">{t.recruit.fileUrl}</label>
+                              <input type="text" placeholder="https://... (PDF/JPG)" className="w-full bg-slate-950 border border-cyan-800 p-2 text-xs text-cyan-200 focus:border-cyan-400 outline-none" value={recruitForm.characterSheetUrl} onChange={(e) => setRecruitForm({...recruitForm, characterSheetUrl: e.target.value})} />
+                          </div>
 
-                  <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-4 min-h-0">
-                    <div className="bg-yellow-900/5 border border-yellow-900/30 p-2 overflow-y-auto">
-                      <h4 className="text-[10px] text-yellow-600 font-bold uppercase mb-1">{t.bunker.currentStory}</h4>
-                      <p className="text-[10px] text-yellow-100/70">{recruitForm.currentStory || "PENDING UPDATE..."}</p>
-                    </div>
-                    <div className="bg-emerald-900/5 border border-emerald-900/30 p-2 overflow-y-auto">
-                       <h4 className="text-[10px] text-emerald-600 font-bold uppercase mb-1">{t.bunker.objectives}</h4>
-                       <ul className="space-y-1">
-                          {recruitForm.objectives.length > 0 ? recruitForm.objectives.map((obj, i) => <li key={i} className="text-[10px] text-emerald-100/70">› {obj}</li>) : <li className="text-[10px] italic opacity-50">NONE</li>}
-                       </ul>
-                    </div>
-                  </div>
+                          <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-4 min-h-0">
+                            <div className="bg-yellow-900/5 border border-yellow-900/30 p-2 overflow-y-auto">
+                              <h4 className="text-[10px] text-yellow-600 font-bold uppercase mb-1">{t.bunker.currentStory}</h4>
+                              <p className="text-[10px] text-yellow-100/70">{recruitForm.currentStory || "PENDING UPDATE..."}</p>
+                            </div>
+                            <div className="bg-emerald-900/5 border border-emerald-900/30 p-2 overflow-y-auto">
+                               <h4 className="text-[10px] text-emerald-600 font-bold uppercase mb-1">{t.bunker.objectives}</h4>
+                               <ul className="space-y-1">
+                                  {recruitForm.objectives.length > 0 ? recruitForm.objectives.map((obj, i) => <li key={i} className="text-[10px] text-emerald-100/70">› {obj}</li>) : <li className="text-[10px] italic opacity-50">NONE</li>}
+                               </ul>
+                            </div>
+                          </div>
+                      </>
+                  )}
                 </div>
               </div>
 
@@ -980,7 +996,8 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
                   </button>
                   <button
                     type="submit"
-                    disabled={!recruitForm.name || !recruitForm.alias}
+                    // CORRECCIÓN: Deshabilitar si no hay template seleccionado
+                    disabled={!recruitForm.templateId && !isEditingExisting}
                     className={`px-6 py-2 text-white font-bold tracking-widest text-xs shadow-[0_0_20px_rgba(6,182,212,0.4)] disabled:opacity-50 disabled:cursor-not-allowed transition-all ${recruitMode === 'CAPTURE' ? 'bg-red-600 hover:bg-red-500' : 'bg-cyan-600 hover:bg-cyan-500'}`}
                   >
                     {isEditingExisting ? "UPDATE DB" : recruitMode === 'CAPTURE' ? "CAPTURAR" : t.recruit.submit}
