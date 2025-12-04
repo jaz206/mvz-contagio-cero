@@ -14,7 +14,6 @@ interface BunkerInteriorProps {
   language: Language;
   playerAlignment?: "ALIVE" | "ZOMBIE" | null;
   isEditorMode?: boolean;
-  // NUEVA PROP: Para transformar héroes
   onTransformHero?: (heroId: string, targetAlignment: 'ALIVE' | 'ZOMBIE') => void;
 }
 
@@ -129,7 +128,7 @@ const CerebroScanner = ({ status }: { status: "SEARCHING" | "LOCKED" }) => {
     );
   };
 
-// --- NUEVO COMPONENTE: MODAL DE TRANSFORMACIÓN ---
+// --- COMPONENTE: MODAL DE TRANSFORMACIÓN ---
 const TransformationModal: React.FC<{ 
     isOpen: boolean; 
     type: 'CURING' | 'INFECTING'; 
@@ -148,10 +147,10 @@ const TransformationModal: React.FC<{
             setProgress(prev => {
                 if (prev >= 100) {
                     clearInterval(interval);
-                    setTimeout(onComplete, 500); // Pequeña pausa al final
+                    setTimeout(onComplete, 500);
                     return 100;
                 }
-                return prev + 2; // Velocidad de carga
+                return prev + 2;
             });
         }, 50);
         
@@ -169,7 +168,6 @@ const TransformationModal: React.FC<{
     return (
         <div className="fixed inset-0 z-[100] bg-black/95 flex items-center justify-center flex-col font-mono">
             <div className={`w-full max-w-md p-8 border-2 ${colorClass} bg-slate-900/50 relative overflow-hidden`}>
-                {/* Scanlines */}
                 <div className="absolute inset-0 pointer-events-none opacity-10 bg-[linear-gradient(transparent_50%,rgba(0,0,0,0.5)_50%)] bg-[length:100%_4px]"></div>
                 
                 <h2 className={`text-2xl font-black tracking-widest mb-2 animate-pulse ${isCuring ? 'text-blue-400' : 'text-green-500'}`}>
@@ -187,13 +185,6 @@ const TransformationModal: React.FC<{
                 <div className="flex justify-between text-[10px] text-gray-400">
                     <span>{subtitle}</span>
                     <span>{progress}%</span>
-                </div>
-
-                {/* Decoración Sci-Fi */}
-                <div className="mt-6 grid grid-cols-3 gap-2 text-[8px] opacity-50">
-                    <div>VITALS: UNSTABLE</div>
-                    <div className="text-center">BPM: {120 + Math.floor(Math.random() * 40)}</div>
-                    <div className="text-right">TEMP: {isCuring ? 'DROPPING' : 'RISING'}</div>
                 </div>
             </div>
         </div>
@@ -225,6 +216,7 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
 
   // Estados para la transformación
   const [processingHero, setProcessingHero] = useState<{ id: string, name: string, type: 'CURING' | 'INFECTING' } | null>(null);
+  const [transformationResult, setTransformationResult] = useState<'CURED' | 'INFECTED' | null>(null);
 
   const [dbTemplates, setDbTemplates] = useState<HeroTemplate[]>([]);
   const [isLoadingDb, setIsLoadingDb] = useState(false);
@@ -362,13 +354,7 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
   const handleCureHero = (heroId: string) => {
       const hero = heroes.find(h => h.id === heroId);
       if (!hero) return;
-
-      // Determinar el tipo de acción basado en el bando actual
-      // Si soy ZOMBIE y capturo a alguien, lo voy a INFECTAR.
-      // Si soy ALIVE y capturo a alguien, lo voy a CURAR.
       const actionType = playerAlignment === 'ZOMBIE' ? 'INFECTING' : 'CURING';
-
-      // Iniciar la animación
       setProcessingHero({
           id: heroId,
           name: hero.alias,
@@ -378,13 +364,19 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
 
   const handleTransformationComplete = () => {
       if (processingHero && onTransformHero) {
-          // Ejecutar la transformación real de datos
-          // Si estoy curando, el objetivo es que sea ALIVE. Si infecto, ZOMBIE.
           const targetAlignment = processingHero.type === 'CURING' ? 'ALIVE' : 'ZOMBIE';
           onTransformHero(processingHero.id, targetAlignment);
+          
+          // 1. Abrir la ficha del héroe (ahora transformado)
+          setSelectedHeroId(processingHero.id);
+          
+          // 2. Activar el sello visual
+          setTransformationResult(processingHero.type === 'CURING' ? 'CURED' : 'INFECTED');
+          
+          // 3. Quitar el sello después de unos segundos
+          setTimeout(() => setTransformationResult(null), 3000);
       }
       setProcessingHero(null);
-      setSelectedHeroId(null);
   };
 
   const handleSeedDatabase = async () => {
@@ -567,9 +559,25 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
           onClick={() => setSelectedHeroId(null)}
         >
           <div
-            className="w-full max-w-4xl bg-slate-900 border-2 border-cyan-500 shadow-[0_0_50px_rgba(6,182,212,0.2)] flex flex-col max-h-full overflow-hidden"
+            className="w-full max-w-4xl bg-slate-900 border-2 border-cyan-500 shadow-[0_0_50px_rgba(6,182,212,0.2)] flex flex-col max-h-full overflow-hidden relative"
             onClick={(e) => e.stopPropagation()}
           >
+            {/* --- SELLO DE CURADO/INFECTADO --- */}
+            {transformationResult && (
+                <div className="absolute inset-0 z-50 flex items-center justify-center pointer-events-none">
+                    <div className={`
+                        border-8 p-4 text-6xl font-black tracking-widest uppercase opacity-0 animate-[stamp_0.3s_ease-out_forwards]
+                        ${transformationResult === 'CURED' 
+                            ? 'border-emerald-500 text-emerald-500 -rotate-12' 
+                            : 'border-red-600 text-red-600 rotate-12'}
+                    `}
+                    style={{ maskImage: 'url(https://www.transparenttextures.com/patterns/grunge-wall.png)' }}
+                    >
+                        {transformationResult}
+                    </div>
+                </div>
+            )}
+
             {/* Header Modal */}
             <div className="p-4 border-b border-cyan-800 bg-cyan-900/20 flex justify-between items-center">
               <h2 className="text-xl font-bold tracking-[0.2em] text-cyan-200 uppercase">
