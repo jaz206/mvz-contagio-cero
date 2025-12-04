@@ -173,7 +173,6 @@ const App: React.FC = () => {
     const [isGuest, setIsGuest] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
     
-    // NUEVO ESTADO PARA NOTICIAS URGENTES
     const [tickerMessage, setTickerMessage] = useState<string | null>(null);
     
     const isDataLoadedRef = useRef(false);
@@ -260,13 +259,18 @@ const App: React.FC = () => {
         setViewMode('map');
     };
 
+    // --- FUNCIÓN PARA ACTUALIZAR NOTICIAS ---
+    const handleTickerUpdate = (message: string) => {
+        setTickerMessage(message);
+    };
+
     const handleTransformHero = (heroId: string, targetAlignment: 'ALIVE' | 'ZOMBIE') => {
         const currentHero = heroes.find(h => h.id === heroId);
         if (!currentHero) return;
 
         // LANZAR NOTICIA URGENTE
         const actionText = targetAlignment === 'ALIVE' ? 'CURADO' : 'INFECTADO';
-        setTickerMessage(`SUJETO ${currentHero.alias} ${actionText} - BASE DE DATOS ACTUALIZADA`);
+        handleTickerUpdate(`SUJETO ${currentHero.alias} ${actionText} - BASE DE DATOS ACTUALIZADA`);
 
         const normalize = (str: string) => str ? str.replace(/['"]/g, '').trim().toLowerCase() : '';
         const hardcodedTargetList = targetAlignment === 'ALIVE' ? INITIAL_HEROES : INITIAL_ZOMBIE_HEROES;
@@ -432,15 +436,15 @@ const App: React.FC = () => {
         if (completedCount >= 15 && worldStage !== 'GALACTUS') {
             setActiveGlobalEvent({ stage: 'GALACTUS', title: '', description: '' });
             setWorldStage('GALACTUS');
-            setTickerMessage("¡ALERTA OMEGA! GALACTUS HA LLEGADO. TODAS LAS MISIONES SECUNDARIAS CANCELADAS.");
+            handleTickerUpdate("¡ALERTA OMEGA! GALACTUS HA LLEGADO. TODAS LAS MISIONES SECUNDARIAS CANCELADAS.");
         } else if (completedCount >= 10 && completedCount < 15 && worldStage !== 'SURFER' && worldStage !== 'GALACTUS') {
             setActiveGlobalEvent({ stage: 'SURFER', title: '', description: '' });
             setWorldStage('SURFER');
-            setTickerMessage("OBJETO PLATEADO ENTRANDO EN LA ATMÓSFERA. PREPARAR INTERCEPCIÓN.");
+            handleTickerUpdate("OBJETO PLATEADO ENTRANDO EN LA ATMÓSFERA. PREPARAR INTERCEPCIÓN.");
         } else if (completedCount >= 4 && completedCount < 10 && worldStage === 'NORMAL') {
             setActiveGlobalEvent({ stage: 'ANOMALY', title: '', description: '' });
             setWorldStage('ANOMALY');
-            setTickerMessage("LECTURAS DE ENERGÍA ANÓMALAS EN EL ESPACIO PROFUNDO.");
+            handleTickerUpdate("LECTURAS DE ENERGÍA ANÓMALAS EN EL ESPACIO PROFUNDO.");
         }
     };
 
@@ -477,7 +481,7 @@ const App: React.FC = () => {
         if (id === 'boss-galactus') {
             setWorldStage('NORMAL');
             setActiveGlobalEvent(null);
-            setTickerMessage("AMENAZA OMEGA NEUTRALIZADA. BUEN TRABAJO, AGENTES.");
+            handleTickerUpdate("AMENAZA OMEGA NEUTRALIZADA. BUEN TRABAJO, AGENTES.");
         } else {
             checkGlobalEvents(newSet.size);
         }
@@ -685,7 +689,6 @@ const App: React.FC = () => {
                             <div id="tutorial-sidebar-missions" className="flex-1 overflow-y-auto p-4 scrollbar-thin scrollbar-thumb-cyan-900">
                                 <h4 className="text-[10px] font-bold text-cyan-600 uppercase mb-3 tracking-widest border-b border-cyan-900 pb-1">{t.sidebar.activeMissions}</h4>
                                 <div className="space-y-2">
-                                    {/* RENDERIZADO ESPECIAL PARA GALACTUS */}
                                     {groupedMissions.galactus.length > 0 && (
                                         <div className="mb-4 border-2 border-purple-600 bg-purple-900/20 animate-pulse">
                                             <div className="p-2 bg-purple-900/80 text-white text-[10px] font-black tracking-widest uppercase text-center">
@@ -700,14 +703,11 @@ const App: React.FC = () => {
                                             </div>
                                         </div>
                                     )}
-
-                                    {/* RENDERIZADO NORMAL (BLOQUEADO SI GALACTUS) */}
                                     {Object.entries(groupedMissions).map(([zoneKey, missions]) => {
                                         if (zoneKey === 'galactus' || missions.length === 0) return null;
                                         const isExpanded = expandedZones.has(zoneKey);
                                         const factionLabel = t.factions[zoneKey as keyof typeof t.factions]?.name || zoneKey.toUpperCase();
-                                        const isBlocked = worldStage === 'GALACTUS'; // Bloqueo global
-
+                                        const isBlocked = worldStage === 'GALACTUS';
                                         return (
                                             <div key={zoneKey} className={`mb-2 border border-cyan-900/30 bg-slate-900/30 ${isBlocked ? 'opacity-40 pointer-events-none grayscale' : ''}`}>
                                                 <button onClick={() => toggleZone(zoneKey)} className="w-full flex justify-between items-center p-2 bg-slate-800/80 hover:bg-cyan-900/30 transition-colors border-b border-cyan-900/30">
@@ -761,7 +761,7 @@ const App: React.FC = () => {
                         </aside>
                         <main className="flex-1 relative bg-slate-950 overflow-hidden">
                             {viewMode === 'map' && (<USAMap language={lang} missions={visibleMissions} completedMissionIds={completedMissionIds} onMissionComplete={handleMissionComplete} onMissionSelect={handleMissionSelectWrapper} onBunkerClick={() => setViewMode('bunker')} factionStates={FACTION_STATES} playerAlignment={playerAlignment} worldStage={worldStage} />)}
-                            {viewMode === 'bunker' && (<BunkerInterior heroes={heroes} missions={visibleMissions.filter(m => m && !completedMissionIds.has(m.id))} onAssign={(heroId, missionId) => { const hIndex = heroes.findIndex(h => h.id === heroId); if(hIndex >= 0) { const newHeroes = [...heroes]; newHeroes[hIndex] = { ...newHeroes[hIndex], status: 'DEPLOYED', assignedMissionId: missionId }; setHeroes(newHeroes); return true; } return false; }} onUnassign={(heroId) => { const hIndex = heroes.findIndex(h => h.id === heroId); if(hIndex >= 0) { const newHeroes = [...heroes]; newHeroes[hIndex] = { ...newHeroes[hIndex], status: 'AVAILABLE', assignedMissionId: null }; setHeroes(newHeroes); } }} onAddHero={(hero) => setHeroes([...heroes, hero])} onToggleObjective={handleToggleHeroObjective} onBack={() => setViewMode('map')} language={lang} playerAlignment={playerAlignment} isEditorMode={isEditorMode} onTransformHero={handleTransformHero} />)}
+                            {viewMode === 'bunker' && (<BunkerInterior heroes={heroes} missions={visibleMissions.filter(m => m && !completedMissionIds.has(m.id))} onAssign={(heroId, missionId) => { const hIndex = heroes.findIndex(h => h.id === heroId); if(hIndex >= 0) { const newHeroes = [...heroes]; newHeroes[hIndex] = { ...newHeroes[hIndex], status: 'DEPLOYED', assignedMissionId: missionId }; setHeroes(newHeroes); return true; } return false; }} onUnassign={(heroId) => { const hIndex = heroes.findIndex(h => h.id === heroId); if(hIndex >= 0) { const newHeroes = [...heroes]; newHeroes[hIndex] = { ...newHeroes[hIndex], status: 'AVAILABLE', assignedMissionId: null }; setHeroes(newHeroes); } }} onAddHero={(hero) => setHeroes([...heroes, hero])} onToggleObjective={handleToggleHeroObjective} onBack={() => setViewMode('map')} language={lang} playerAlignment={playerAlignment} isEditorMode={isEditorMode} onTransformHero={handleTransformHero} onTickerUpdate={handleTickerUpdate} />)}
                             {viewMode === 'tutorial' && (<div className="absolute inset-0 z-40"><USAMap language={lang} missions={visibleMissions} completedMissionIds={completedMissionIds} onMissionComplete={() => {}} onMissionSelect={() => {}} onBunkerClick={() => {}} factionStates={FACTION_STATES} playerAlignment={playerAlignment} worldStage={worldStage} /><TutorialOverlay language={lang} onComplete={() => { if(user) localStorage.setItem(`shield_tutorial_seen_${user.uid}`, 'true'); setViewMode('map'); }} onStepChange={(stepKey) => { if (['roster', 'file', 'recruit'].includes(stepKey)) { setViewMode('bunker'); } }} /></div>)}
                             <NewsTicker alignment={playerAlignment || 'ALIVE'} worldStage={worldStage} urgentMessage={tickerMessage} />
                         </main>
