@@ -1,6 +1,5 @@
 import React, { useRef, useEffect, useState, useMemo } from 'react';
 import * as d3 from 'd3';
-// CORRECCIÓN: Importamos 'feature' directamente en lugar de todo el paquete
 import { feature } from 'topojson-client'; 
 import { fetchUSATopoJSON } from '../services/topojsonService';
 import { USATopoJSON, Mission, WorldStage } from '../types';
@@ -112,8 +111,6 @@ export const USAMap: React.FC<USAMapProps> = ({
           return { projection: null, pathGenerator: null };
       }
       try {
-          // CORRECCIÓN: Usamos la función 'feature' importada correctamente
-          // Casteamos a 'any' para evitar conflictos de tipos estrictos entre D3 y TopoJSON
           const statesFeatureCollection = feature(usData as any, usData.objects.states as any);
           
           const proj = d3.geoAlbersUsa().fitSize([dimensions.width, dimensions.height], statesFeatureCollection as any);
@@ -125,7 +122,6 @@ export const USAMap: React.FC<USAMapProps> = ({
       }
   }, [usData, dimensions]);
 
-  // Lógica de Hulk
   useEffect(() => {
       if (!tokensReleased || !usData || !pathGenerator || !projection) return;
       const getDistance = (a: [number, number], b: [number, number]) => Math.sqrt(Math.pow(a[0] - b[0], 2) + Math.pow(a[1] - b[1], 2));
@@ -138,7 +134,6 @@ export const USAMap: React.FC<USAMapProps> = ({
       };
 
       const performJumpStep = () => {
-          // CORRECCIÓN: Usamos 'feature' importada
           const statesFeatureCollection = feature(usData as any, usData!.objects.states as any) as any;
           const validStates = statesFeatureCollection.features.filter((f: any) => factionStates.hulk.has(f.properties.name));
 
@@ -171,7 +166,6 @@ export const USAMap: React.FC<USAMapProps> = ({
       return () => clearTimeout(initialTimer);
   }, [tokensReleased, usData, pathGenerator, projection, factionStates, hulkLocation]);
 
-  // --- DIBUJO DEL MAPA ---
   useEffect(() => {
     if (!usData || !svgRef.current || !projection || !pathGenerator) return;
 
@@ -234,7 +228,6 @@ export const USAMap: React.FC<USAMapProps> = ({
     const gMap = gMapRef.current;
     if (!gMap) return;
 
-    // CORRECCIÓN: Usamos 'feature' importada
     const statesFeatureCollection = feature(usData as any, usData.objects.states as any) as any;
     const statesFeatures = statesFeatureCollection.features;
 
@@ -245,7 +238,6 @@ export const USAMap: React.FC<USAMapProps> = ({
         return 'fill-emerald-900/60 stroke-emerald-600 stroke-[1px] hover:fill-emerald-800 hover:stroke-emerald-300 hover:stroke-[2px]';
     };
 
-    // 1. Dibujar Estados
     gMap.selectAll('path.state')
       .data(statesFeatures)
       .join('path')
@@ -271,7 +263,6 @@ export const USAMap: React.FC<USAMapProps> = ({
     gMap.selectAll('path.state').filter(function() { return d3.select(this).select('title').empty(); })
       .append('title').text((d: any) => `${d.properties.name.toUpperCase()}`);
 
-    // 2. Dibujar Etiquetas
     gMap.selectAll('text.label')
       .data(statesFeatures)
       .join('text')
@@ -289,7 +280,6 @@ export const USAMap: React.FC<USAMapProps> = ({
       .text((d: any) => d.properties.name ? d.properties.name.toUpperCase() : '')
       .raise();
 
-    // 3. Dibujar Búnker
     const bunkerCoords = projection([-82.9, 40.0]);
     if (bunkerCoords && gMap.select('.bunker').empty()) {
         const bunkerGroup = gMap.append('g')
@@ -308,7 +298,6 @@ export const USAMap: React.FC<USAMapProps> = ({
 
   }, [usData, dimensions, projection, pathGenerator, factionStates]); 
 
-  // EFECTO 2: ACTUALIZACIÓN DE MARCADORES
   useEffect(() => {
       if (!projection || !gMissionsRef.current || !gTokensRef.current || !svgRef.current) return;
       
@@ -455,8 +444,27 @@ export const USAMap: React.FC<USAMapProps> = ({
   </div>;
 
   return (
-    <div ref={containerRef} className="w-full h-full relative bg-transparent overflow-hidden">
+    <div ref={containerRef} className="w-full h-full relative bg-transparent overflow-hidden group">
+        {/* Fondo de rejilla */}
         <div className="absolute inset-0 z-0 pointer-events-none" style={{backgroundImage: 'radial-gradient(circle, #0e7490 1px, transparent 1px)', backgroundSize: '20px 20px', opacity: 0.2}}></div>
+        
+        {/* EFECTO RADAR */}
+        <div className="absolute inset-0 z-20 pointer-events-none overflow-hidden">
+            <div className="w-[200%] h-[200%] absolute -top-[50%] -left-[50%] animate-[radar_10s_linear_infinite]"
+                 style={{
+                     background: 'conic-gradient(from 0deg, transparent 0deg, transparent 270deg, rgba(6,182,212,0.1) 310deg, rgba(6,182,212,0.4) 360deg)',
+                     borderRadius: '50%'
+                 }}
+            ></div>
+        </div>
+        
+        <style>{`
+            @keyframes radar {
+                from { transform: rotate(0deg); }
+                to { transform: rotate(360deg); }
+            }
+        `}</style>
+
         <svg ref={svgRef} className="w-full h-full relative z-10"></svg>
     </div>
   );

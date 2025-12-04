@@ -15,6 +15,7 @@ import { MissionModal } from './components/MissionModal';
 import { EventModal } from './components/EventModal';
 import { MissionEditor } from './components/MissionEditor';
 import { CharacterEditor } from './components/CharacterEditor';
+import { NewsTicker } from './components/NewsTicker';
 
 import { Mission, Hero, WorldStage, GlobalEvent, HeroTemplate } from './types';
 

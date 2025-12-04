@@ -95,7 +95,9 @@ export const MissionModal: React.FC<MissionModalProps> = ({ mission, isOpen, onC
                     </h3>
                     <div className="text-right">
                          <div className="text-[10px] text-cyan-500 uppercase">{t.threat}</div>
-                         <div className={`text-sm md:text-base font-bold ${isCompleted ? 'text-emerald-500' : 'text-red-500'}`}>{isCompleted ? 'NEUTRALIZED' : mission.threatLevel}</div>
+                         <div className={`text-sm md:text-base font-bold ${isCompleted ? 'text-emerald-500' : 'text-red-500'}`}>
+                             {isCompleted ? 'NEUTRALIZED' : (mission.threatLevel || 'UNKNOWN')}
+                         </div>
                     </div>
                 </div>
                 <div className="flex flex-wrap gap-2 text-sm text-cyan-400 mb-2">
