@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Mission } from '../types';
 import { translations, Language } from '../translations';
 
@@ -19,25 +19,39 @@ export const MissionModal: React.FC<MissionModalProps> = ({ mission, isOpen, onC
   const [reportSuccess, setReportSuccess] = useState(false);
   const [showMap, setShowMap] = useState(false);
   const t = translations[language].missionModal;
+  
+  // Ref para limpiar timeouts
+  const timeoutsRef = useRef<NodeJS.Timeout[]>([]);
 
   useEffect(() => {
     setReporting(false);
     setReportSuccess(false);
     setShowMap(false);
+    
+    // Limpiar timeouts al cambiar de misión o desmontar
+    return () => {
+        timeoutsRef.current.forEach(clearTimeout);
+        timeoutsRef.current = [];
+    };
   }, [mission]);
 
   if (!isOpen) return null;
 
   const handleReportClick = () => {
     setReporting(true);
-    setTimeout(() => {
+    
+    const t1 = setTimeout(() => {
       setReporting(false);
       setReportSuccess(true);
-      setTimeout(() => {
+      
+      const t2 = setTimeout(() => {
          onComplete(mission.id);
          onClose();
       }, 1500);
+      timeoutsRef.current.push(t2);
+      
     }, 3000);
+    timeoutsRef.current.push(t1);
   };
 
   const handleReactivateClick = () => {

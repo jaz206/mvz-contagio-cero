@@ -14,6 +14,7 @@ import { BunkerInterior } from './components/BunkerInterior';
 import { MissionModal } from './components/MissionModal';
 import { EventModal } from './components/EventModal';
 import { MissionEditor } from './components/MissionEditor';
+import { CharacterEditor } from './components/CharacterEditor'; // IMPORTACIÓN NUEVA
 
 import { Mission, Hero, WorldStage, GlobalEvent, HeroTemplate } from './types';
 
@@ -167,20 +168,155 @@ const INITIAL_HEROES: Hero[] = [
 
 const INITIAL_ZOMBIE_HEROES: Hero[] = [
     {
-        id: 'z1',
-        templateId: 'colonel',
+        id: 'z_cap',
+        templateId: 'Captain_America',
         name: 'Steve Rogers',
-        alias: 'CORONEL AMÉRICA',
+        alias: 'Captain America',
         status: 'AVAILABLE',
         class: 'TACTICIAN',
-        bio: 'The former symbol of freedom, now with his skull exposed. Leads the horde with military precision. His shield no longer protects, it only beheads.',
-        currentStory: "CLASSIFIED",
-        objectives: ["Consume Brains", "Lead the Horde"],
+        bio: 'El antiguo símbolo de la libertad, ahora con el cráneo expuesto. Lidera la horda con precisión militar. Su escudo ya no protege, solo decapita.',
+        currentStory: "Steve ya no siente lealtad a la bandera, solo al Hambre. Mantiene su intelecto táctico intacto, organizando a los infectados no como una turba, sino como un ejército.",
+        objectives: ["Consumir cerebros estratégicos", "Liderar la Horda"],
         completedObjectiveIndices: [],
-        imageUrl: 'https://i.pinimg.com/736x/1a/2b/3c/1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d.jpg', // Placeholder
+        imageUrl: 'https://i.pinimg.com/736x/be/82/49/be8249c6a34eb0a40c3429cca8504bab.jpg', 
         stats: { strength: 8, agility: 8, intellect: 8 },
         assignedMissionId: null
     },
+    {
+        id: 'z_marvel',
+        templateId: 'cap_marvel_z',
+        name: 'Carol Danvers',
+        alias: 'CAPTAIN MARVEL',
+        status: 'AVAILABLE',
+        class: 'BLASTER',
+        bio: 'Poder cósmico corrompido. Vuela a través de las naves de evacuación como un misil viviente. El brillo de sus ojos es ahora un vacío muerto.',
+        currentStory: "Carol es la artillería pesada. No necesita comer tanto como los demás gracias a su absorción de energía, pero disfruta cazando presas en vuelo.",
+        objectives: ["Derribar el Helicarrier", "Cazar supervivientes aéreos"],
+        completedObjectiveIndices: [],
+        imageUrl: 'https://i.pinimg.com/736x/b2/89/d4/b289d415b0b846ffc85a7956d576915b.jpg', 
+        stats: { strength: 10, agility: 8, intellect: 6 },
+        assignedMissionId: null
+    },
+    {
+        id: 'z_deadpool',
+        templateId: 'deadpool_z',
+        name: 'Wade Wilson',
+        alias: 'DEADPOOL',
+        status: 'AVAILABLE',
+        class: 'BRAWLER',
+        bio: 'El mercenario bocazas ahora es el mercenario que muerde. Su factor de curación lucha constantemente contra el virus, dejándolo en un estado perpetuo de putrefacción regenerativa.',
+        currentStory: "Wade piensa que todo esto es una broma muy larga. Sigue rompiendo la cuarta pared, pero ahora sus chistes tratan sobre el sabor del bazo humano.",
+        objectives: ["Encontrar salsa picante", "Hacer amigos (y comerlos)"],
+        completedObjectiveIndices: [],
+        imageUrl: 'https://i.pinimg.com/736x/26/e3/38/26e3385c44cd7c8023c1ddf62d3d954a.jpg', 
+        stats: { strength: 7, agility: 9, intellect: 4 },
+        assignedMissionId: null
+    }, 
+    {
+        id: 'z_ironman',
+        templateId: 'ironman_z',
+        name: 'Tony Stark',
+        alias: 'IRON MAN',
+        status: 'AVAILABLE',
+        class: 'TACTICIAN',
+        bio: 'Su armadura está oxidada y manchada de fluidos negros. Tony usa los repulsores para cocinar la carne antes de comerla. Tecnología punta al servicio del canibalismo.',
+        currentStory: "Tony está obsesionado con encontrar una cura... no para el virus, sino para el hecho de que la carne se acaba. Busca clonar humanos para tener suministro infinito.",
+        objectives: ["Reparar armadura con huesos", "Optimizar la cosecha"],
+        completedObjectiveIndices: [],
+        imageUrl: 'https://i.pinimg.com/736x/3a/ad/5b/3aad5b8a9b89b928e33bd8e71a047de1.jpg', 
+        stats: { strength: 7, agility: 7, intellect: 10 },
+        assignedMissionId: null
+    },
+    {
+        id: 'z_wasp',
+        templateId: 'wasp_z',
+        name: 'Janet Van Dyne',
+        alias: 'WASP',
+        status: 'AVAILABLE',
+        class: 'SCOUT',
+        bio: 'Pequeña, rápida y letal. Puede entrar en cualquier búnker por los conductos de ventilación y devorar a los supervivientes desde dentro antes de que sepan que está ahí.',
+        currentStory: "Janet perdió la cabeza cuando Hank Pym fue devorado (por ella). Ahora vuela zumbando canciones de cuna mientras busca cuellos que morder.",
+        objectives: ["Infiltración microscópica", "Enjambre"],
+        completedObjectiveIndices: [],
+        imageUrl: 'https://i.pinimg.com/736x/5c/e8/83/5ce883dd3030f0b7f85a847bcaf47486.jpg', 
+        stats: { strength: 4, agility: 10, intellect: 6 },
+        assignedMissionId: null
+    },
+    {
+        id: 'z_cyclops',
+        templateId: 'cyclops_z',
+        name: 'Scott Summers',
+        alias: 'CYCLOPS',
+        status: 'AVAILABLE',
+        class: 'BLASTER',
+        bio: 'Sin su visor, sus ojos podridos disparan energía incontrolable. Lidera a los X-Men caídos con la misma disciplina férrea, ahora enfocada en la caza.',
+        currentStory: "Scott se comió a Jean. Es lo único que recuerda. Ahora busca a Emma Frost, no para salvarla, sino para compartir la 'comunión'.",
+        objectives: ["Liderar mutantes caídos", "Visión letal"],
+        completedObjectiveIndices: [],
+        imageUrl: 'https://i.pinimg.com/736x/c0/b5/d5/c0b5d511f39d428725dd24e5d883a548.jpg', 
+        stats: { strength: 6, agility: 7, intellect: 9 },
+        assignedMissionId: null
+    },
+    {
+        id: 'z_phoenix',
+        templateId: 'phoenix_z',
+        name: 'Jean Grey',
+        alias: 'DARK PHOENIX',
+        status: 'AVAILABLE',
+        class: 'BLASTER',
+        bio: 'Nivel Omega. El Fénix y el Hambre se han fusionado. No solo devora carne, devora la energía vital de planetas enteros. Es el fin de todo.',
+        currentStory: "La entidad Fénix está agonizando dentro del cuerpo podrido de Jean, volviéndola loca de dolor y hambre cósmica.",
+        objectives: ["Consumir estrellas", "Quemar la resistencia"],
+        completedObjectiveIndices: [],
+        imageUrl: 'https://i.pinimg.com/736x/77/26/00/772600dfc2f3599608a19f4618aedcb8.jpg', 
+        stats: { strength: 10, agility: 7, intellect: 8 },
+        assignedMissionId: null
+    },
+    {
+        id: 'z_iceman',
+        templateId: 'iceman_z',
+        name: 'Bobby Drake',
+        alias: 'ICEMAN',
+        status: 'AVAILABLE',
+        class: 'BLASTER',
+        bio: 'Su hielo ya no es transparente, es turbio y está lleno de sangre congelada. Congela a sus víctimas para guardarlas como aperitivos para más tarde.',
+        currentStory: "Bobby ha perdido su humor. Es una estatua de hielo necrótico que se desliza silenciosamente, rompiendo extremidades congeladas para comer el tuétano.",
+        objectives: ["Congelar suministros", "Cero absoluto"],
+        completedObjectiveIndices: [],
+        imageUrl: 'https://i.pinimg.com/736x/e6/bf/cb/e6bfcb7bc171610a028f1f2bbda38e29.jpg', 
+        stats: { strength: 6, agility: 8, intellect: 5 },
+        assignedMissionId: null
+    },
+    {
+        id: 'z_juggernaut',
+        templateId: 'juggernaut_z',
+        name: 'Cain Marko',
+        alias: 'JUGGERNAUT',
+        status: 'AVAILABLE',
+        class: 'BRAWLER',
+        bio: 'Imparable. Inmortal. Hambriento. Nada puede detenerlo cuando huele carne. Atraviesa edificios enteros solo para alcanzar a una persona.',
+        currentStory: "La gema de Cyttorak lo mantiene vivo a pesar de que le falta la mitad del torso. Es un ariete de carne podrida y magia carmesí.",
+        objectives: ["Aplastar defensas", "Carga imparable"],
+        completedObjectiveIndices: [],
+        imageUrl: 'https://i.pinimg.com/736x/ec/e9/87/ece98736e0cca78734ed0d4a29e222b1.jpg', 
+        stats: { strength: 10, agility: 4, intellect: 3 },
+        assignedMissionId: null
+    },
+    {
+        id: 'z_psylocke',
+        templateId: 'psylocke_z',
+        name: 'Betsy Braddock',
+        alias: 'PSYLOCKE',
+        status: 'AVAILABLE',
+        class: 'SCOUT',
+        bio: 'Su cuchillo psíquico ahora induce el dolor de ser devorado vivo directamente en la mente de la víctima antes de que ella dé el primer bocado.',
+        currentStory: "Betsy usa su telepatía para atraer a los supervivientes, haciéndoles creer que han encontrado un refugio seguro, solo para emboscarlos.",
+        objectives: ["Trampa mental", "Asesinato psíquico"],
+        completedObjectiveIndices: [],
+        imageUrl: 'https://i.pinimg.com/736x/3d/04/bd/3d04bd41a1f395cf2bf4324729734f1e.jpg', 
+        stats: { strength: 6, agility: 9, intellect: 7 },
+        assignedMissionId: null
+    }
 ];
 
 const App: React.FC = () => {
@@ -204,6 +340,9 @@ const App: React.FC = () => {
     const [showMissionEditor, setShowMissionEditor] = useState(false); 
     const [missionToEdit, setMissionToEdit] = useState<Mission | null>(null); 
     
+    // NUEVO ESTADO PARA EL EDITOR DE PERSONAJES
+    const [showCharacterEditor, setShowCharacterEditor] = useState(false);
+
     const [customMissions, setCustomMissions] = useState<Mission[]>([]);
     const [dbTemplates, setDbTemplates] = useState<HeroTemplate[]>([]);
 
@@ -264,12 +403,8 @@ const App: React.FC = () => {
       setViewMode('login');
     };
 
-    // --- NUEVA FUNCIÓN: CAMBIAR DIMENSIÓN ---
     const toggleDimension = () => {
-        // Al cambiar el alineamiento, el useEffect de carga de datos se disparará automáticamente
-        // porque 'playerAlignment' está en su array de dependencias.
         setPlayerAlignment(prev => prev === 'ALIVE' ? 'ZOMBIE' : 'ALIVE');
-        // Reseteamos la vista al mapa para evitar inconsistencias visuales en el búnker
         setViewMode('map');
     };
 
@@ -492,14 +627,12 @@ const App: React.FC = () => {
     const allMissions: Mission[] = useMemo(() => {
         const missionMap = new Map<string, Mission>();
         
-        // 1. Cargar SOLO las misiones que vienen de la base de datos (customMissions)
         customMissions.forEach(m => {
             if (m && m.id) missionMap.set(m.id, m);
         });
         
         const missionList = Array.from(missionMap.values());
 
-        // 2. Mantener la lógica del Jefe Final (Galactus) ya que es un evento global del código
         if (worldStage === 'GALACTUS') {
             missionList.push({
                 id: 'boss-galactus',
@@ -519,20 +652,16 @@ const App: React.FC = () => {
     const visibleMissions = useMemo(() => {
         if (isEditorMode) return allMissions;
         
-        // 1. Filtrar por Etapa del Mundo
         let stageFiltered = allMissions;
         if (worldStage === 'GALACTUS') {
             stageFiltered = allMissions.filter(m => m.type === 'BOSS');
         }
 
-        // 2. Filtrar por Alineamiento (ALIVE vs ZOMBIE)
-        // Si m.alignment es undefined, asumimos que es para ambos o legacy
         const alignmentFiltered = stageFiltered.filter(m => {
             if (!m.alignment || m.alignment === 'BOTH') return true;
             return m.alignment === playerAlignment;
         });
 
-        // 3. Filtrar por Prerrequisitos
         return alignmentFiltered.filter(m => {
             if (!m) return false;
             const isCompleted = completedMissionIds.has(m.id);
@@ -541,7 +670,6 @@ const App: React.FC = () => {
         });
     }, [allMissions, completedMissionIds, isEditorMode, worldStage, playerAlignment]);
 
-    // Group missions for sidebar
     const groupedMissions = useMemo(() => {
         const activeMissions = visibleMissions.filter(m => m && !completedMissionIds.has(m.id));
         const groups: Record<string, Mission[]> = {
@@ -574,6 +702,13 @@ const App: React.FC = () => {
     return (
         <div className={`flex flex-col h-screen w-full bg-slate-950 text-cyan-400 font-mono overflow-hidden relative ${playerAlignment === 'ZOMBIE' ? 'hue-rotate-15 saturate-50' : ''}`}>
             
+            {/* EDITOR DE PERSONAJES */}
+            <CharacterEditor 
+                isOpen={showCharacterEditor}
+                onClose={() => setShowCharacterEditor(false)}
+                language={lang}
+            />
+
             <MissionEditor 
                 isOpen={showMissionEditor}
                 onClose={() => { setShowMissionEditor(false); setMissionToEdit(null); }}
@@ -639,7 +774,6 @@ const App: React.FC = () => {
                         </div>
 
                         <div className="flex items-center gap-6">
-                            {/* BOTÓN DE CAMBIO DE DIMENSIÓN */}
                             <button 
                                 onClick={toggleDimension}
                                 className={`hidden md:flex items-center gap-2 px-3 py-1 border rounded transition-all duration-500 ${playerAlignment === 'ZOMBIE' ? 'border-lime-600 bg-lime-900/20 text-lime-400 hover:bg-lime-900/40' : 'border-cyan-500 bg-cyan-900/20 text-cyan-300 hover:bg-cyan-900/40'}`}
@@ -669,15 +803,20 @@ const App: React.FC = () => {
                     <div className="flex-1 flex overflow-hidden relative">
                         <aside className="w-80 flex-none bg-slate-900 border-r border-cyan-900 flex flex-col z-20 shadow-xl overflow-hidden relative">
                             
-                            {/* ... (Resto del Sidebar igual) ... */}
                             {isEditorMode && (
                                 <div className="p-4 bg-slate-800 border-b border-cyan-500 overflow-y-auto max-h-[50vh]">
                                     <h3 className="text-[10px] font-bold text-cyan-300 mb-3 tracking-widest border-b border-cyan-600 pb-1">EDITOR CONTROL</h3>
                                     
-                                    <div className="mb-3 p-2 border border-blue-600/50 bg-blue-900/10 rounded">
+                                    <div className="mb-3 p-2 border border-blue-600/50 bg-blue-900/10 rounded space-y-2">
                                         <div className="text-[8px] text-blue-400 font-bold mb-2 uppercase tracking-wider">CONTENT MANAGEMENT</div>
+                                        
                                         <button onClick={() => { setMissionToEdit(null); setShowMissionEditor(true); }} className="w-full py-2 bg-blue-600 hover:bg-blue-500 text-white text-[10px] font-bold uppercase tracking-wider shadow-sm transition-all hover:shadow-blue-500/20">
                                             CREATE MISSION
+                                        </button>
+
+                                        {/* NUEVO BOTÓN PARA CREAR PERSONAJES */}
+                                        <button onClick={() => setShowCharacterEditor(true)} className="w-full py-2 bg-purple-600 hover:bg-purple-500 text-white text-[10px] font-bold uppercase tracking-wider shadow-sm transition-all hover:shadow-purple-500/20">
+                                            CREATE CHARACTER
                                         </button>
                                     </div>
 

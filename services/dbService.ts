@@ -40,7 +40,6 @@ export const getHeroTemplates = async (): Promise<HeroTemplate[]> => {
       const currentStory = findField(data, ['currentStory', 'historia_actual', 'historiaActual', 'current_story']);
       const objectives = findField(data, ['objectives', 'objetivos', 'goals', 'misiones']);
       
-      // NUEVO CAMPO
       const defaultAlignment = findField(data, ['defaultAlignment', 'alignment', 'bando', 'tipo']);
 
       templates.push({
@@ -57,7 +56,6 @@ export const getHeroTemplates = async (): Promise<HeroTemplate[]> => {
           alias: alias || '',
           currentStory: currentStory || '',
           objectives: Array.isArray(objectives) ? objectives : [],
-          // Si no existe, asumimos ALIVE por defecto
           defaultAlignment: defaultAlignment || 'ALIVE' 
       });
     });
@@ -94,7 +92,18 @@ export const updateHeroTemplate = async (id: string, data: Partial<HeroTemplate>
     }
 };
 
-// ... (Resto de funciones de usuario y misiones igual que antes) ...
+// --- NUEVA FUNCIÓN AÑADIDA ---
+export const createHeroTemplateInDB = async (heroData: Omit<HeroTemplate, 'id'>): Promise<string> => {
+    try {
+        const docRef = await addDoc(collection(db, COLLECTION_NAME), heroData);
+        console.log("Hero created with ID:", docRef.id);
+        return docRef.id;
+    } catch (error) {
+        console.error("Error creating hero template:", error);
+        throw error;
+    }
+};
+
 export interface UserProfileData {
     heroes: Hero[];
     completedMissionIds: string[];

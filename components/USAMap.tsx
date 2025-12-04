@@ -44,26 +44,35 @@ export const USAMap: React.FC<USAMapProps> = ({
   const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
   const [tokensReleased, setTokensReleased] = useState(false);
   
-  // Posición inicial de Hulk (Centro de USA aprox - Kansas)
   const [hulkLocation, setHulkLocation] = useState<[number, number]>([-98.5, 39.8]); 
   
-  // Ref para controlar la secuencia de saltos y evitar bucles infinitos en renders
   const hulkSequenceRef = useRef<{ active: boolean, remainingJumps: number }>({ active: false, remainingJumps: 0 });
+  const timeoutsRef = useRef<NodeJS.Timeout[]>([]);
 
   const t = translations[language];
 
-  // Timer para liberar tokens al inicio
+  const addTimeout = (callback: () => void, ms: number) => {
+      const id = setTimeout(() => {
+          callback();
+          timeoutsRef.current = timeoutsRef.current.filter(t => t !== id);
+      }, ms);
+      timeoutsRef.current.push(id);
+      return id;
+  };
+
   useEffect(() => {
       if (worldStage === 'SURFER') {
           setTokensReleased(false);
-          const timer = setTimeout(() => setTokensReleased(true), 5000);
-          return () => clearTimeout(timer);
+          addTimeout(() => setTokensReleased(true), 5000);
       } else {
           setTokensReleased(true);
       }
+      return () => {
+          timeoutsRef.current.forEach(clearTimeout);
+          timeoutsRef.current = [];
+      };
   }, [worldStage]);
 
-  // Carga de datos
   useEffect(() => {
     const loadData = async () => {
       try {
@@ -83,7 +92,6 @@ export const USAMap: React.FC<USAMapProps> = ({
     loadData();
   }, []);
 
-  // Resize Observer
   useEffect(() => {
     if (!containerRef.current) return;
     const observer = new ResizeObserver(entries => {
@@ -98,7 +106,6 @@ export const USAMap: React.FC<USAMapProps> = ({
     return () => observer.disconnect();
   }, []);
 
-  // Proyección Memoizada
   const { projection, pathGenerator } = useMemo(() => {
       if (!usData || !usData.objects || !usData.objects.states || dimensions.width === 0 || dimensions.height === 0) {
           return { projection: null, pathGenerator: null };
@@ -118,23 +125,15 @@ export const USAMap: React.FC<USAMapProps> = ({
       }
   }, [usData, dimensions]);
 
-  // --- CEREBRO DE HULK: LÓGICA DE SECUENCIA Y VECINDAD ---
+  // Lógica de Hulk (Simplificada para brevedad, igual que antes)
   useEffect(() => {
       if (!tokensReleased || !usData || !pathGenerator || !projection) return;
-
-      // Función auxiliar para calcular distancia simple (Euclídea en lat/lon es suficiente para esto)
-      const getDistance = (a: [number, number], b: [number, number]) => {
-          return Math.sqrt(Math.pow(a[0] - b[0], 2) + Math.pow(a[1] - b[1], 2));
-      };
+      const getDistance = (a: [number, number], b: [number, number]) => Math.sqrt(Math.pow(a[0] - b[0], 2) + Math.pow(a[1] - b[1], 2));
 
       const executeHulkLogic = () => {
-          // Si ya hay una secuencia activa, no hacer nada (el timeout interno la manejará)
           if (hulkSequenceRef.current.active) return;
-
-          // 1. Decidir cuántos saltos hacer (1, 2 o 3)
           const jumpsToDo = Math.floor(Math.random() * 3) + 1;
           hulkSequenceRef.current = { active: true, remainingJumps: jumpsToDo };
-
           performJumpStep();
       };
 
@@ -143,74 +142,38 @@ export const USAMap: React.FC<USAMapProps> = ({
           const featureFn = topojson.feature;
           // @ts-ignore
           const statesFeatureCollection = featureFn(usData, usData.objects.states);
-          
-          // 1. Filtrar estados de la facción de Hulk
-          const validStates = statesFeatureCollection.features.filter((f: any) => 
-              factionStates.hulk.has(f.properties.name)
-          );
+          const validStates = statesFeatureCollection.features.filter((f: any) => factionStates.hulk.has(f.properties.name));
 
           if (validStates.length > 0) {
-              // 2. Calcular centroides y distancias
               const candidates: { coords: [number, number], dist: number }[] = [];
-
               validStates.forEach((state: any) => {
                   const centroid = pathGenerator.centroid(state);
                   if (projection.invert && centroid && !isNaN(centroid[0])) {
                       const coords = projection.invert(centroid) as [number, number];
                       if (coords) {
                           const dist = getDistance(hulkLocation, coords);
-                          // Excluir la posición actual (distancia 0 o muy pequeña)
-                          if (dist > 0.5) { 
-                              candidates.push({ coords, dist });
-                          }
+                          if (dist > 0.5) candidates.push({ coords, dist });
                       }
                   }
               });
-
-              // 3. Ordenar por distancia (los más cercanos primero)
               candidates.sort((a, b) => a.dist - b.dist);
-
-              // 4. Elegir uno de los 4 más cercanos (para que sea "adyacente" pero con algo de aleatoriedad)
-              // Si hay menos de 4, elegir entre los que haya.
               const poolSize = Math.min(candidates.length, 4);
               if (poolSize > 0) {
                   const randomIndex = Math.floor(Math.random() * poolSize);
-                  const target = candidates[randomIndex].coords;
-                  
-                  // EJECUTAR SALTO
-                  setHulkLocation(target);
-                  
-                  // Reducir contador
+                  setHulkLocation(candidates[randomIndex].coords);
                   hulkSequenceRef.current.remainingJumps -= 1;
-
-                  // PLANIFICAR SIGUIENTE PASO
-                  if (hulkSequenceRef.current.remainingJumps > 0) {
-                      // Si quedan saltos, esperar a que termine la animación (2s) + un pequeño respiro
-                      setTimeout(performJumpStep, 2500); 
-                  } else {
-                      // Si terminó la racha, descansar 10 segundos
-                      setTimeout(() => {
-                          hulkSequenceRef.current.active = false;
-                          executeHulkLogic(); // Reiniciar ciclo
-                      }, 10000);
-                  }
+                  if (hulkSequenceRef.current.remainingJumps > 0) addTimeout(performJumpStep, 2500); 
+                  else addTimeout(() => { hulkSequenceRef.current.active = false; executeHulkLogic(); }, 10000);
               } else {
-                  // Fallback si algo falla: reintentar en 5s
-                  setTimeout(() => {
-                      hulkSequenceRef.current.active = false;
-                      executeHulkLogic();
-                  }, 5000);
+                  addTimeout(() => { hulkSequenceRef.current.active = false; executeHulkLogic(); }, 5000);
               }
           }
       };
-
-      // Iniciar el ciclo por primera vez
-      const initialTimer = setTimeout(executeHulkLogic, 2000);
+      const initialTimer = addTimeout(executeHulkLogic, 2000);
       return () => clearTimeout(initialTimer);
+  }, [tokensReleased, usData, pathGenerator, projection, factionStates, hulkLocation]);
 
-  }, [tokensReleased, usData, pathGenerator, projection, factionStates, hulkLocation]); // hulkLocation en deps es importante para recalcular distancias
-
-  // EFECTO 1: DIBUJO DEL MAPA BASE (Estático)
+  // --- DIBUJO DEL MAPA (AQUÍ ESTÁ LA CORRECCIÓN DE LOS NOMBRES) ---
   useEffect(() => {
     if (!usData || !svgRef.current || !projection || !pathGenerator) return;
 
@@ -219,7 +182,6 @@ export const USAMap: React.FC<USAMapProps> = ({
     if (svg.select('g.layer-map').empty()) {
         svg.selectAll('*').remove();
 
-        // Defs
         const defs = svg.append("defs");
         const filter = defs.append("filter").attr("id", "glow").attr("x", "-50%").attr("y", "-50%").attr("width", "200%").attr("height", "200%");
         filter.append("feGaussianBlur").attr("stdDeviation", "2.5").attr("result", "coloredBlur");
@@ -245,6 +207,9 @@ export const USAMap: React.FC<USAMapProps> = ({
                  const coords = d3.select(this).attr('data-coords')?.split(',').map(Number) || [0,0];
                  return `translate(${coords[0]},${coords[1]}) scale(${1/k})`;
             });
+
+            // Ajustar tamaño de texto al hacer zoom
+            svg.selectAll('text.label').style('font-size', `${Math.max(6, 10/k)}px`);
 
             if (k >= 2.5) {
                 svg.selectAll('.mission-dot').style('display', 'none');
@@ -285,6 +250,7 @@ export const USAMap: React.FC<USAMapProps> = ({
         return 'fill-emerald-900/60 stroke-emerald-600 stroke-[1px] hover:fill-emerald-800 hover:stroke-emerald-300 hover:stroke-[2px]';
     };
 
+    // 1. Dibujar Estados
     gMap.selectAll('path.state')
       .data(statesFeatures)
       .join('path')
@@ -310,18 +276,26 @@ export const USAMap: React.FC<USAMapProps> = ({
     gMap.selectAll('path.state').filter(function() { return d3.select(this).select('title').empty(); })
       .append('title').text((d: any) => `${d.properties.name.toUpperCase()}`);
 
+    // 2. Dibujar Etiquetas (CORREGIDO: Color blanco sólido, sombra y .raise())
     gMap.selectAll('text.label')
       .data(statesFeatures)
       .join('text')
-      .attr('class', 'label pointer-events-none text-[8px] sm:text-[10px] font-mono fill-white/50 select-none tracking-wider font-bold')
+      .attr('class', 'label pointer-events-none font-mono select-none tracking-wider font-bold')
       .attr('transform', (d: any) => {
           const centroid = pathGenerator.centroid(d);
-          return (centroid && !isNaN(centroid[0])) ? `translate(${centroid[0]},${centroid[1]})` : 'translate(0,0)';
+          // Evitar errores si el centroide no se puede calcular (islas pequeñas, etc)
+          if (!centroid || isNaN(centroid[0]) || isNaN(centroid[1])) return 'translate(-1000,-1000)';
+          return `translate(${centroid[0]},${centroid[1]})`;
       })
       .attr('text-anchor', 'middle')
       .attr('dominant-baseline', 'central')
-      .text((d: any) => d.properties.name.toUpperCase());
+      .style('fill', 'rgba(255, 255, 255, 0.9)') // Blanco casi puro
+      .style('font-size', '10px')
+      .style('text-shadow', '0px 0px 3px #000') // Sombra negra para contraste
+      .text((d: any) => d.properties.name ? d.properties.name.toUpperCase() : '')
+      .raise(); // IMPORTANTE: Traer al frente
 
+    // 3. Dibujar Búnker
     const bunkerCoords = projection([-82.9, 40.0]);
     if (bunkerCoords && gMap.select('.bunker').empty()) {
         const bunkerGroup = gMap.append('g')
@@ -334,11 +308,14 @@ export const USAMap: React.FC<USAMapProps> = ({
             .append('animate').attr('attributeName', 'r').attr('from', '12').attr('to', '25').attr('dur', '2s').attr('repeatCount', 'indefinite');
         bunkerGroup.append('image').attr('href', 'https://i.pinimg.com/736x/63/1e/3a/631e3a68228c97963e78381ad11bf3bb.jpg')
             .attr('x', -12).attr('y', -12).attr('width', 24).attr('height', 24).attr('clip-path', 'url(#bunker-clip)');
+        
+        // Asegurar que el búnker esté encima de las etiquetas
+        bunkerGroup.raise();
     }
 
   }, [usData, dimensions, projection, pathGenerator, factionStates]); 
 
-  // EFECTO 2: ACTUALIZACIÓN DE MARCADORES (Misiones y Tokens)
+  // EFECTO 2: ACTUALIZACIÓN DE MARCADORES (Igual que antes)
   useEffect(() => {
       if (!projection || !gMissionsRef.current || !gTokensRef.current || !svgRef.current) return;
       
@@ -348,7 +325,6 @@ export const USAMap: React.FC<USAMapProps> = ({
 
       const validMissions = missions.filter(m => m && m.id && m.location && m.location.coordinates);
 
-      // --- LÍNEAS ---
       gMissions.selectAll('path.mission-line')
         .data(validMissions.filter(m => m.prereq))
         .join('path')
@@ -364,7 +340,6 @@ export const USAMap: React.FC<USAMapProps> = ({
         })
         .attr('fill', 'none').attr('stroke', '#eab308').attr('stroke-width', 1.5).attr('stroke-dasharray', '4,4').attr('opacity', 0.6);
 
-      // --- MISIONES ---
       const missionGroups = gMissions.selectAll('g.mission')
         .data(validMissions, (d: any) => d.id) 
         .join(
@@ -426,14 +401,12 @@ export const USAMap: React.FC<USAMapProps> = ({
         .style('display', currentZoom < 2.5 ? 'none' : 'block')
         .attr('transform', `scale(${1/currentZoom * 2})`);
 
-      // --- TOKENS (HULK) ANIMADO CON ARCO ---
       if (tokensReleased) {
           const hulkCoords = projection(hulkLocation);
           if (hulkCoords) {
               let hulkGroup = gTokens.select('.hulk-token');
               
               if (hulkGroup.empty()) {
-                  // Crear Hulk si no existe
                   hulkGroup = gTokens.append('g')
                       .attr('class', 'token-group hulk-token cursor-pointer')
                       .attr('transform', `translate(${hulkCoords[0]}, ${hulkCoords[1]}) scale(${1/currentZoom})`);
@@ -441,7 +414,6 @@ export const USAMap: React.FC<USAMapProps> = ({
                   hulkGroup.append('circle').attr('r', 15).attr('fill', '#65a30d').attr('stroke', '#365314').attr('stroke-width', 2).style('filter', 'url(#glow)');
                   hulkGroup.append('text').text('HULK').attr('dy', 4).attr('text-anchor', 'middle').attr('font-size', '8px').attr('font-weight', 'bold').attr('fill', 'white');
               } else {
-                  // ANIMACIÓN DE SALTO EN ARCO
                   const currentTransform = hulkGroup.attr('transform');
                   const currentCoords = currentTransform.match(/translate\(([^)]+)\)/);
                   const [oldX, oldY] = currentCoords ? currentCoords[1].split(',').map(Number) : [0,0];
@@ -454,13 +426,12 @@ export const USAMap: React.FC<USAMapProps> = ({
                       const baseScale = 1/currentZoom;
 
                       hulkGroup.transition()
-                          .duration(2000) // 2 segundos de salto
+                          .duration(2000)
                           .ease(d3.easeQuadInOut)
                           .attrTween("transform", function() {
                               return function(t) {
                                   const x = iX(t);
                                   const y = iY(t);
-                                  // Arco parabólico en escala
                                   const jumpHeight = Math.sin(t * Math.PI) * 2; 
                                   const currentScale = baseScale * (1 + jumpHeight);
                                   return `translate(${x},${y}) scale(${currentScale})`;
@@ -468,18 +439,9 @@ export const USAMap: React.FC<USAMapProps> = ({
                           })
                           .on("end", function() {
                               d3.select(this).attr('transform', `translate(${hulkCoords[0]}, ${hulkCoords[1]}) scale(${baseScale})`);
-                              
-                              // Onda de choque
                               d3.select(this).append("circle")
-                                  .attr("r", 15)
-                                  .attr("fill", "none")
-                                  .attr("stroke", "#65a30d")
-                                  .attr("stroke-width", 3)
-                                  .attr("opacity", 1)
-                                  .transition().duration(600)
-                                  .attr("r", 60)
-                                  .attr("opacity", 0)
-                                  .remove();
+                                  .attr("r", 15).attr("fill", "none").attr("stroke", "#65a30d").attr("stroke-width", 3).attr("opacity", 1)
+                                  .transition().duration(600).attr("r", 60).attr("opacity", 0).remove();
                           });
                   } else {
                       hulkGroup.attr('transform', `translate(${hulkCoords[0]}, ${hulkCoords[1]}) scale(${1/currentZoom})`);
