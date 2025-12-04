@@ -3,7 +3,7 @@ import { translations, Language } from './translations';
 import { User } from 'firebase/auth';
 import { auth } from './firebaseConfig';
 import { onAuthStateChanged } from 'firebase/auth';
-import { getUserProfile, saveUserProfile, getCustomMissions, getHeroTemplates } from './services/dbService';
+import { getUserProfile, saveUserProfile, getCustomMissions, getHeroTemplates, deleteMissionInDB } from './services/dbService';
 import { logout } from './services/authService';
 
 import { LoginScreen } from './components/LoginScreen';
@@ -487,6 +487,21 @@ const App: React.FC = () => {
         setCompletedMissionIds(newSet);
     };
 
+    // --- NUEVA FUNCIÓN: ELIMINAR MISIÓN ---
+    const handleDeleteMission = async (id: string) => {
+        if (!window.confirm("¿ESTÁS SEGURO DE QUE QUIERES ELIMINAR ESTA MISIÓN DE LA BASE DE DATOS?")) return;
+        
+        try {
+            await deleteMissionInDB(id);
+            // Actualizar estado local
+            const loaded = await getCustomMissions();
+            setCustomMissions(loaded);
+            setSelectedMission(null); // Cerrar modal
+        } catch (e) {
+            alert("Error al eliminar la misión");
+        }
+    };
+
     const handleEventAcknowledge = () => setActiveGlobalEvent(null);
     
     const handleToggleHeroObjective = (heroId: string, idx: number) => {
@@ -591,7 +606,21 @@ const App: React.FC = () => {
             <CharacterEditor isOpen={showCharacterEditor} onClose={() => setShowCharacterEditor(false)} language={lang} />
             <MissionEditor isOpen={showMissionEditor} onClose={() => { setShowMissionEditor(false); setMissionToEdit(null); }} onSave={async (newMission) => { const loaded = await getCustomMissions(); setCustomMissions(loaded); }} language={lang} initialData={missionToEdit} existingMissions={allMissions} />
             {activeGlobalEvent && (<EventModal event={activeGlobalEvent} isOpen={!!activeGlobalEvent} onAcknowledge={handleEventAcknowledge} language={lang} />)}
-            {selectedMission && (<MissionModal mission={selectedMission} isOpen={!!selectedMission} onClose={() => setSelectedMission(null)} onComplete={handleMissionComplete} onReactivate={handleMissionReactivate} language={lang} isCompleted={completedMissionIds.has(selectedMission.id)} isEditorMode={isEditorMode} onEdit={(m) => { setMissionToEdit(m); setShowMissionEditor(true); setSelectedMission(null); }} />)}
+            {selectedMission && (
+                <MissionModal 
+                    mission={selectedMission} 
+                    isOpen={!!selectedMission} 
+                    onClose={() => setSelectedMission(null)} 
+                    onComplete={handleMissionComplete} 
+                    onReactivate={handleMissionReactivate} 
+                    language={lang} 
+                    isCompleted={completedMissionIds.has(selectedMission.id)} 
+                    isEditorMode={isEditorMode} 
+                    onEdit={(m) => { setMissionToEdit(m); setShowMissionEditor(true); setSelectedMission(null); }} 
+                    // PASAMOS LA FUNCIÓN DE BORRAR
+                    onDelete={handleDeleteMission}
+                />
+            )}
             {viewMode === 'login' && (<LoginScreen onLogin={handleGuestLogin} onGoogleLogin={() => {}} onEditorLogin={handleEditorLogin} language={lang} setLanguage={setLang} />)}
             {viewMode === 'story' && (<StoryMode language={lang} onComplete={(choice) => { setPlayerAlignment(choice); if(user) localStorage.setItem(`shield_intro_seen_${user.uid}`, 'true'); setViewMode('tutorial'); }} onSkip={() => { setPlayerAlignment('ALIVE'); setViewMode('map'); }} />)}
             {(viewMode === 'map' || viewMode === 'bunker' || viewMode === 'tutorial') && (

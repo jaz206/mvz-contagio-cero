@@ -1,4 +1,4 @@
-import { collection, getDocs, doc, writeBatch, getDoc, setDoc, addDoc, updateDoc, Timestamp } from 'firebase/firestore';
+import { collection, getDocs, doc, writeBatch, getDoc, setDoc, addDoc, updateDoc, deleteDoc, Timestamp } from 'firebase/firestore';
 import { db } from '../firebaseConfig';
 import { HeroTemplate, HeroClass, Hero, Mission } from '../types';
 import { HERO_DATABASE } from '../data/heroDatabase';
@@ -196,6 +196,19 @@ export const updateMissionInDB = async (id: string, missionData: Partial<Mission
         await setDoc(docRef, dataToUpdate, { merge: true });
     } catch (error) {
         console.error("Error updating mission:", error);
+        throw error;
+    }
+};
+
+// --- NUEVA FUNCIÓN: ELIMINAR MISIÓN ---
+export const deleteMissionInDB = async (id: string): Promise<void> => {
+    if (!db) throw new Error("Base de datos no configurada");
+    try {
+        const docRef = doc(db, MISSIONS_COLLECTION, id);
+        await deleteDoc(docRef);
+        console.log(`Mission ${id} deleted successfully`);
+    } catch (error) {
+        console.error("Error deleting mission:", error);
         throw error;
     }
 };
