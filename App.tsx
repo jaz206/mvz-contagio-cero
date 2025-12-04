@@ -256,19 +256,44 @@ const App: React.FC = () => {
         setViewMode('map');
     };
 
-    // --- NUEVA FUNCIÓN: TRANSFORMAR HÉROE (CURAR/INFECTAR) ---
+    // --- CORRECCIÓN: BÚSQUEDA EN DB PARA TRANSFORMACIÓN ---
     const handleTransformHero = (heroId: string, targetAlignment: 'ALIVE' | 'ZOMBIE') => {
         const currentHero = heroes.find(h => h.id === heroId);
         if (!currentHero) return;
 
-        // Buscar la versión alternativa en las listas hardcoded
-        const targetList = targetAlignment === 'ALIVE' ? INITIAL_HEROES : INITIAL_ZOMBIE_HEROES;
-        
-        // Intentamos encontrar el equivalente por Alias (ej: "SPIDER-MAN")
-        const counterpart = targetList.find(h => h.alias === currentHero.alias);
+        // 1. Buscar en listas hardcoded
+        const hardcodedTargetList = targetAlignment === 'ALIVE' ? INITIAL_HEROES : INITIAL_ZOMBIE_HEROES;
+        let counterpart: any = hardcodedTargetList.find(h => h.alias === currentHero.alias);
+
+        // 2. Si no está en hardcoded, buscar en DB Templates
+        if (!counterpart) {
+            const dbCounterpart = dbTemplates.find(t => 
+                t.alias === currentHero.alias && 
+                t.defaultAlignment === targetAlignment
+            );
+
+            if (dbCounterpart) {
+                // Convertir Template a estructura Hero
+                counterpart = {
+                    id: heroId, // Mantenemos el ID original
+                    templateId: dbCounterpart.id,
+                    name: dbCounterpart.defaultName,
+                    alias: dbCounterpart.alias,
+                    class: dbCounterpart.defaultClass,
+                    bio: dbCounterpart.bio || '',
+                    currentStory: dbCounterpart.currentStory || '',
+                    objectives: dbCounterpart.objectives || [],
+                    imageUrl: dbCounterpart.imageUrl,
+                    characterSheetUrl: dbCounterpart.characterSheetUrl,
+                    stats: dbCounterpart.defaultStats,
+                    status: 'AVAILABLE',
+                    assignedMissionId: null
+                };
+            }
+        }
 
         if (counterpart) {
-            // Si existe, reemplazamos los datos pero mantenemos el ID original para no romper referencias
+            // Reemplazar datos
             const newHeroes = heroes.map(h => {
                 if (h.id === heroId) {
                     return {
@@ -282,7 +307,7 @@ const App: React.FC = () => {
                         imageUrl: counterpart.imageUrl,
                         characterSheetUrl: counterpart.characterSheetUrl,
                         stats: counterpart.stats,
-                        status: 'AVAILABLE', // Al transformar, queda disponible
+                        status: 'AVAILABLE',
                         assignedMissionId: null
                     };
                 }
@@ -290,8 +315,7 @@ const App: React.FC = () => {
             });
             setHeroes(newHeroes);
         } else {
-            // Si no hay contraparte (ej: personaje custom), solo lo liberamos
-            // Podríamos añadir lógica extra aquí si quisieras "zombificar" genéricamente
+            // Fallback: Si no existe la versión alternativa, solo lo liberamos
             const newHeroes = heroes.map(h => {
                 if (h.id === heroId) {
                     return { ...h, status: 'AVAILABLE', assignedMissionId: null };
