@@ -35,7 +35,8 @@ export const NewsTicker: React.FC<NewsTickerProps> = ({ alignment }) => {
                 <span className="text-[10px] font-bold tracking-widest">LIVE FEED</span>
             </div>
             <div className="whitespace-nowrap overflow-hidden flex-1 relative">
-                <div className="inline-block animate-[ticker_60s_linear_infinite] pl-[100%]">
+                {/* CAMBIO: De 60s a 120s para que vaya más lento */}
+                <div className="inline-block animate-[ticker_120s_linear_infinite] pl-[100%]">
                     {news.map((item, i) => (
                         <span key={i} className="mx-8 text-xs font-mono tracking-wide uppercase">
                             {item} <span className="opacity-50 mx-2">///</span>
