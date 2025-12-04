@@ -3,7 +3,6 @@ import { translations, Language } from "../translations";
 import { Hero, Mission, HeroClass, HeroTemplate } from "../types";
 import { getHeroTemplates, seedHeroTemplates, updateHeroTemplate } from "../services/dbService";
 
-// --- TYPES ---
 interface BunkerInteriorProps {
   heroes: Hero[];
   missions: Mission[];
@@ -32,14 +31,15 @@ const StatBar: React.FC<{ label: string; value: number; colorClass: string }> = 
   </div>
 );
 
-const HeroListCard: React.FC<{ hero: Hero; onClick: () => void; compact?: boolean }> = ({ hero, onClick, compact }) => (
+const HeroListCard: React.FC<{ hero: Hero; onClick: () => void; compact?: boolean; onAction?: () => void; actionLabel?: string }> = ({ hero, onClick, compact, onAction, actionLabel }) => (
   <div 
     onClick={onClick}
     className="group relative flex items-center gap-3 p-2 bg-slate-900/80 border border-slate-700 hover:border-cyan-500 hover:bg-slate-800 transition-all cursor-pointer overflow-hidden"
   >
     <div className={`absolute left-0 top-0 bottom-0 w-1 ${
       hero.status === 'AVAILABLE' ? 'bg-emerald-500' : 
-      hero.status === 'INJURED' ? 'bg-red-500' : 'bg-yellow-500'
+      hero.status === 'INJURED' ? 'bg-red-500' : 
+      hero.status === 'CAPTURED' ? 'bg-orange-500' : 'bg-yellow-500'
     }`} />
 
     <div className="w-10 h-10 shrink-0 border border-slate-600 bg-slate-800 relative overflow-hidden">
@@ -63,6 +63,18 @@ const HeroListCard: React.FC<{ hero: Hero; onClick: () => void; compact?: boolea
         </div>
       )}
     </div>
+
+    {onAction && actionLabel && (
+        <button 
+            onClick={(e) => { 
+                e.stopPropagation(); // Evitar que se abra el detalle al pulsar la acción
+                onAction(); 
+            }}
+            className="ml-2 px-2 py-1 bg-emerald-900/50 border border-emerald-600 text-[9px] font-bold text-emerald-400 hover:bg-emerald-800 hover:text-white transition-colors z-10 relative"
+        >
+            {actionLabel}
+        </button>
+    )}
   </div>
 );
 
@@ -132,10 +144,9 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
   const [selectedMissionIdForSquad, setSelectedMissionIdForSquad] = useState<string | null>(null);
   const [showAssignModal, setShowAssignModal] = useState(false);
   const [showRecruitModal, setShowRecruitModal] = useState(false);
+  const [recruitMode, setRecruitMode] = useState<'DIRECT' | 'CAPTURE'>('DIRECT');
   const [assignError, setAssignError] = useState<string | null>(null);
   const [zoomedImage, setZoomedImage] = useState<string | null>(null);
-  
-  // NUEVO ESTADO: Para controlar el popup de la ficha de juego
   const [viewingSheetUrl, setViewingSheetUrl] = useState<string | null>(null);
 
   const [dbTemplates, setDbTemplates] = useState<HeroTemplate[]>([]);
@@ -157,14 +168,14 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
     str: 5,
     agi: 5,
     int: 5,
+    alignment: "ALIVE" as "ALIVE" | "ZOMBIE"
   });
 
   const t = translations[language];
   const selectedHero = heroes.find((h) => h.id === selectedHeroId);
 
-  const deployedHeroes = heroes.filter(h => h.status === 'DEPLOYED');
   const availableHeroes = heroes.filter(h => h.status === 'AVAILABLE');
-  const injuredHeroes = heroes.filter(h => h.status === 'INJURED');
+  const capturedHeroes = heroes.filter(h => h.status === 'CAPTURED');
 
   useEffect(() => {
     const fetchTemplates = async () => {
@@ -198,12 +209,15 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
         str: template.defaultStats.strength,
         agi: template.defaultStats.agility,
         int: template.defaultStats.intellect,
+        alignment: template.defaultAlignment || "ALIVE"
       });
     }
   };
 
   const handleEditClick = () => {
     if (!selectedHero) return;
+    const originalTemplate = dbTemplates.find(t => t.id === selectedHero.templateId);
+    
     setRecruitForm({
       templateId: selectedHero.templateId || "",
       name: selectedHero.name,
@@ -217,6 +231,7 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
       str: selectedHero.stats.strength,
       agi: selectedHero.stats.agility,
       int: selectedHero.stats.intellect,
+      alignment: originalTemplate?.defaultAlignment || "ALIVE"
     });
     setIsEditingExisting(true);
     setShowRecruitModal(true);
@@ -236,6 +251,7 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
         imageUrl: recruitForm.imageUrl,
         characterSheetUrl: recruitForm.characterSheetUrl,
         defaultStats: { strength: recruitForm.str, agility: recruitForm.agi, intellect: recruitForm.int },
+        defaultAlignment: recruitForm.alignment
       };
       await updateHeroTemplate(recruitForm.templateId, updateData);
       alert("DATABASE UPDATED.");
@@ -254,7 +270,7 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
         completedObjectiveIndices: [],
         imageUrl: recruitForm.imageUrl,
         characterSheetUrl: recruitForm.characterSheetUrl,
-        status: "AVAILABLE",
+        status: recruitMode === 'CAPTURE' ? 'CAPTURED' : 'AVAILABLE',
         stats: { strength: recruitForm.str, agility: recruitForm.agi, intellect: recruitForm.int },
         assignedMissionId: null,
       };
@@ -263,6 +279,10 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
     setShowRecruitModal(false);
     setIsEditingExisting(false);
     setSearchTerm("");
+  };
+
+  const handleCureHero = (heroId: string) => {
+      onUnassign(heroId); 
   };
 
   const handleSeedDatabase = async () => {
@@ -290,15 +310,21 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
   };
 
   const availableTemplates = dbTemplates.filter((template) => {
-    if (!isEditingExisting) {
-      const exists = heroes.some((h) => h.templateId === template.id);
-      if (exists) return false;
-    }
     if (searchTerm) {
       const term = searchTerm.toLowerCase();
-      return (template.alias || template.defaultName).toLowerCase().includes(term);
+      if (!(template.alias || template.defaultName).toLowerCase().includes(term)) {
+          return false;
+      }
     }
-    return true;
+    if (isEditingExisting) return true;
+    const exists = heroes.some((h) => h.templateId === template.id);
+    if (exists) return false;
+    const templateAlign = template.defaultAlignment || 'ALIVE';
+    if (recruitMode === 'DIRECT') {
+        return templateAlign === playerAlignment;
+    } else {
+        return templateAlign !== playerAlignment;
+    }
   });
 
   return (
@@ -331,9 +357,6 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
                 
                 {/* 1. COMMAND DECK */}
                 <div id="tutorial-bunker-file" className="bg-slate-900/40 border border-blue-900/50 flex flex-col relative overflow-hidden group">
-                    <div className="absolute top-0 right-0 p-2 opacity-10 group-hover:opacity-20 transition-opacity">
-                         <svg className="w-24 h-24" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2L2 7l10 5 10-5-10-5zm0 9l2.5-1.25L12 8.5l-2.5 1.25L12 11zm0 2.5l-5-2.5-5 2.5L12 22l10-8.5-5-2.5-5 2.5z"/></svg>
-                    </div>
                     <div className="p-3 bg-slate-900/80 border-b border-blue-900 flex justify-between items-center">
                         <div>
                             <h3 className="text-sm font-bold text-blue-300 tracking-widest uppercase">{t.bunker.rooms.command}</h3>
@@ -343,20 +366,11 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
                     </div>
                     <div className="flex-1 p-3 space-y-2 overflow-y-auto scrollbar-thin scrollbar-thumb-blue-900">
                         {missions.length === 0 ? (
-                            <div className="h-full flex flex-col items-center justify-center text-blue-900/50 italic text-xs">
-                                NO ACTIVE MISSIONS
-                            </div>
+                            <div className="h-full flex flex-col items-center justify-center text-blue-900/50 italic text-xs">NO ACTIVE MISSIONS</div>
                         ) : (
                             missions.map(m => {
                                 const count = heroes.filter(h => h.assignedMissionId === m.id).length;
-                                return (
-                                    <MissionListCard 
-                                        key={m.id} 
-                                        mission={m} 
-                                        assignedCount={count}
-                                        onClick={() => setSelectedMissionIdForSquad(m.id)} 
-                                    />
-                                );
+                                return <MissionListCard key={m.id} mission={m} assignedCount={count} onClick={() => setSelectedMissionIdForSquad(m.id)} />;
                             })
                         )}
                     </div>
@@ -364,9 +378,6 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
 
                 {/* 2. BARRACKS */}
                 <div id="tutorial-bunker-roster" className="bg-slate-900/40 border border-emerald-900/50 flex flex-col relative overflow-hidden group lg:row-span-2">
-                    <div className="absolute bottom-0 right-0 p-2 opacity-5 group-hover:opacity-10 transition-opacity">
-                        <svg className="w-48 h-48" viewBox="0 0 24 24" fill="currentColor"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>
-                    </div>
                     <div className="p-3 bg-slate-900/80 border-b border-emerald-900 flex justify-between items-center">
                         <div>
                             <h3 className="text-sm font-bold text-emerald-300 tracking-widest uppercase">{t.bunker.rooms.barracks}</h3>
@@ -376,13 +387,9 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
                     </div>
                     <div className="flex-1 p-3 space-y-2 overflow-y-auto scrollbar-thin scrollbar-thumb-emerald-900">
                         {availableHeroes.length === 0 ? (
-                            <div className="h-full flex flex-col items-center justify-center text-emerald-900/50 italic text-xs">
-                                BARRACKS EMPTY
-                            </div>
+                            <div className="h-full flex flex-col items-center justify-center text-emerald-900/50 italic text-xs">BARRACKS EMPTY</div>
                         ) : (
-                            availableHeroes.map(h => (
-                                <HeroListCard key={h.id} hero={h} onClick={() => setSelectedHeroId(h.id)} />
-                            ))
+                            availableHeroes.map(h => <HeroListCard key={h.id} hero={h} onClick={() => setSelectedHeroId(h.id)} />)
                         )}
                     </div>
                 </div>
@@ -395,9 +402,8 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
                     </div>
                     <div className="flex-1 p-6 flex flex-col items-center justify-center relative">
                          <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-purple-900/20 via-transparent to-transparent animate-pulse"></div>
-                         
                          <button 
-                            onClick={() => { setIsEditingExisting(false); setShowRecruitModal(true); }}
+                            onClick={() => { setIsEditingExisting(false); setRecruitMode('DIRECT'); setShowRecruitModal(true); }}
                             className="relative z-10 group/btn w-full h-full border-2 border-dashed border-purple-500/30 hover:border-purple-500 rounded-lg flex flex-col items-center justify-center gap-4 transition-all hover:bg-purple-900/10"
                         >
                             <div className="w-16 h-16 rounded-full border border-purple-500 flex items-center justify-center bg-slate-900 shadow-[0_0_20px_rgba(168,85,247,0.3)] group-hover/btn:scale-110 transition-transform">
@@ -408,39 +414,39 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
                     </div>
                 </div>
 
-                {/* 4. MEDBAY */}
+                {/* 4. MEDBAY / CONTENCIÓN */}
                 <div className="bg-slate-900/40 border border-red-900/50 flex flex-col relative overflow-hidden group md:col-span-2 lg:col-span-1">
-                    <div className="absolute top-0 right-0 p-2 opacity-10 group-hover:opacity-20 transition-opacity">
-                         <svg className="w-24 h-24" viewBox="0 0 24 24" fill="currentColor"><path d="M19 3H5c-1.1 0-1.99.9-1.99 2L3 19c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-1 11h-4v4h-4v-4H6v-4h4V6h4v4h4v4z"/></svg>
-                    </div>
                     <div className="p-3 bg-slate-900/80 border-b border-red-900 flex justify-between items-center">
                         <div>
                             <h3 className="text-sm font-bold text-red-300 tracking-widest uppercase">{t.bunker.rooms.medbay}</h3>
                             <div className="text-[9px] text-red-500/70">{t.bunker.rooms.medbayDesc}</div>
                         </div>
-                         <div className="text-xs font-bold text-red-400 bg-red-900/20 px-2 py-0.5 rounded border border-red-900">{injuredHeroes.length}</div>
+                         <div className="text-xs font-bold text-red-400 bg-red-900/20 px-2 py-0.5 rounded border border-red-900">{capturedHeroes.length}</div>
                     </div>
                     <div className="flex-1 p-3 flex flex-col gap-2">
-                        {injuredHeroes.length === 0 ? (
-                            <div className="flex-1 flex flex-col items-center justify-center text-red-900/50 italic text-xs min-h-[50px]">
-                                SYSTEMS CLEAR
-                            </div>
+                        {capturedHeroes.length === 0 ? (
+                            <div className="flex-1 flex flex-col items-center justify-center text-red-900/50 italic text-xs min-h-[50px]">CONTAINMENT EMPTY</div>
                         ) : (
                             <div className="space-y-2 overflow-y-auto max-h-[120px] scrollbar-thin scrollbar-thumb-red-900">
-                                {injuredHeroes.map(h => (
-                                    <HeroListCard key={h.id} hero={h} onClick={() => setSelectedHeroId(h.id)} />
+                                {capturedHeroes.map(h => (
+                                    <HeroListCard 
+                                        key={h.id} 
+                                        hero={h} 
+                                        onClick={() => setSelectedHeroId(h.id)} 
+                                        onAction={() => handleCureHero(h.id)}
+                                        actionLabel={playerAlignment === 'ZOMBIE' ? 'INFECTAR' : 'CURAR'}
+                                    />
                                 ))}
                             </div>
                         )}
                         <button 
-                            onClick={() => { setIsEditingExisting(false); setShowRecruitModal(true); }}
+                            onClick={() => { setIsEditingExisting(false); setRecruitMode('CAPTURE'); setShowRecruitModal(true); }}
                             className="mt-auto w-full py-2 border border-red-800 bg-red-900/20 text-red-400 hover:text-white hover:bg-red-900/50 text-[10px] font-bold tracking-widest uppercase transition-colors flex items-center justify-center gap-2"
                         >
-                            <span className="text-lg">⊕</span> {t.bunker.recruit} / SCAN
+                            <span className="text-lg">⊕</span> CAPTURAR SUJETO
                         </button>
                     </div>
                 </div>
-
             </div>
         </div>
 
@@ -481,15 +487,12 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
                   </div>
                   <CerebroScanner status="LOCKED" />
                   
-                  {/* --- BOTÓN INFO SECRET / GAME DATA (MODIFICADO PARA POPUP) --- */}
                   {selectedHero.characterSheetUrl && (
                       <button
                           onClick={() => setViewingSheetUrl(selectedHero.characterSheetUrl || null)}
                           className="mt-2 w-full py-3 border-2 border-red-600/50 bg-red-950/20 hover:bg-red-900/40 hover:border-red-500 transition-all group relative overflow-hidden flex items-center justify-center gap-2"
                       >
-                          {/* Fondo rayado animado */}
                           <div className="absolute inset-0 bg-[repeating-linear-gradient(45deg,transparent,transparent_5px,rgba(220,38,38,0.1)_5px,rgba(220,38,38,0.1)_10px)] opacity-50"></div>
-                          
                           <span className="text-red-500 text-xs">🔒</span>
                           <span className="text-red-400 font-bold tracking-[0.2em] text-[10px] uppercase group-hover:text-red-200 relative z-10">
                               INFO SECRET // GAME DATA
@@ -516,7 +519,7 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
                     </div>
                     <div className="text-right">
                       <div className="text-xs text-cyan-600 font-bold uppercase">{t.bunker.status}</div>
-                      <div className={`text-lg font-bold ${selectedHero.status === "AVAILABLE" ? "text-emerald-400" : selectedHero.status === "INJURED" ? "text-red-500" : "text-yellow-400"}`}>
+                      <div className={`text-lg font-bold ${selectedHero.status === "AVAILABLE" ? "text-emerald-400" : selectedHero.status === "INJURED" ? "text-red-500" : selectedHero.status === "CAPTURED" ? "text-orange-500" : "text-yellow-400"}`}>
                         {selectedHero.status}
                       </div>
                     </div>
@@ -568,6 +571,13 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
                     >
                       {t.bunker.unassign}
                     </button>
+                  ) : selectedHero.status === "CAPTURED" ? (
+                      <button
+                          onClick={() => { handleCureHero(selectedHero.id); setSelectedHeroId(null); }}
+                          className="px-6 py-2 bg-emerald-900/50 border border-emerald-600 text-emerald-400 hover:bg-emerald-800 text-xs font-bold tracking-widest transition-colors"
+                      >
+                          {playerAlignment === 'ZOMBIE' ? 'INFECTAR' : 'CURAR'}
+                      </button>
                   ) : (
                     <button
                       disabled={selectedHero.status === "INJURED"}
@@ -591,7 +601,8 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
         </div>
       )}
 
-      {/* MODALS AUXILIARES */}
+      {/* ... (Resto de modales: Assign, Squad, Recruit, Zoom, Sheet) ... */}
+      {/* ... (Mantener el resto del código igual) ... */}
       {showAssignModal && (
         <div className="absolute inset-0 z-[60] flex items-center justify-center bg-slate-950/90 backdrop-blur-sm p-4">
           <div className="w-full max-w-lg bg-slate-900 border border-cyan-500 shadow-[0_0_50px_rgba(6,182,212,0.3)]">
@@ -698,7 +709,7 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
           <div className="w-full max-w-5xl bg-slate-900 border-2 border-cyan-500 shadow-[0_0_50px_rgba(6,182,212,0.3)] flex flex-col max-h-[90vh]">
             <div className="bg-cyan-900/40 p-4 border-b border-cyan-600 flex justify-between items-center shrink-0">
               <h3 className="text-cyan-300 font-bold tracking-widest text-lg">
-                {isEditingExisting ? "EDITING DATABASE ENTRY" : t.recruit.title}
+                {isEditingExisting ? "EDITING DATABASE ENTRY" : recruitMode === 'CAPTURE' ? "CONTAINMENT PROTOCOL" : t.recruit.title}
               </h3>
               <button onClick={() => setShowRecruitModal(false)} className="text-cyan-500 hover:text-white font-bold">✕</button>
             </div>
@@ -707,14 +718,13 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
               {!isEditingExisting && (
                 <div className="w-full pb-4 border-b border-cyan-900 shrink-0 space-y-2">
                   <div className="flex justify-between items-end">
-                      <label className="block text-[10px] text-cyan-400 font-bold tracking-widest">{t.recruit.selectDb}</label>
-                      <span className={`text-[10px] font-bold tracking-widest animate-pulse ${playerAlignment === 'ZOMBIE' ? 'text-green-500' : 'text-red-500'}`}>
-                          {playerAlignment === 'ZOMBIE' ? t.recruit.scanHuman : t.recruit.scanZombie}
-                      </span>
+                      <label className="block text-[10px] text-cyan-400 font-bold tracking-widest">
+                          {recruitMode === 'CAPTURE' ? 'BUSCAR ENEMIGOS (BANDO CONTRARIO)' : 'BUSCAR ALIADOS (MISMO BANDO)'}
+                      </label>
                   </div>
                   <input
                     type="text"
-                    placeholder="SEARCH DATABASE (TYPE NAME OR ALIAS)..."
+                    placeholder="SEARCH DATABASE..."
                     className="w-full bg-slate-950 border border-cyan-700 p-2 text-cyan-300 font-mono text-xs focus:border-cyan-400 focus:outline-none mb-2 placeholder-cyan-800 uppercase"
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
@@ -732,7 +742,12 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
                           className={`p-2 text-xs cursor-pointer flex justify-between items-center border-b border-cyan-900/30 last:border-0 hover:bg-cyan-900/30 transition-colors ${recruitForm.templateId === h.id ? "bg-cyan-900/50 text-white" : "text-cyan-400"}`}
                         >
                           <span className="font-bold tracking-wide uppercase">{t.heroes[h.id as keyof typeof t.heroes]?.alias || h.alias || h.defaultName}</span>
-                          <span className="text-[10px] opacity-70">{h.defaultName}</span>
+                          <div className="flex items-center gap-2">
+                              <span className={`text-[9px] px-1 rounded border ${h.defaultAlignment === 'ZOMBIE' ? 'border-lime-600 text-lime-400' : 'border-cyan-600 text-cyan-400'}`}>
+                                  {h.defaultAlignment || 'ALIVE'}
+                              </span>
+                              <span className="text-[10px] opacity-70">{h.defaultName}</span>
+                          </div>
                         </div>
                       ))
                     )}
@@ -742,25 +757,24 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
 
               <div className="flex flex-col md:flex-row gap-6 flex-1 min-h-0 overflow-y-auto md:overflow-hidden">
                 <div className="w-full md:w-[200px] flex flex-col gap-3 shrink-0">
-                  <div
-                    className="w-full aspect-[3/4] bg-slate-950 border-2 border-cyan-800 relative group cursor-zoom-in overflow-hidden shadow-inner"
-                    onClick={() => recruitForm.imageUrl && setZoomedImage(recruitForm.imageUrl)}
-                  >
-                    <div className="absolute top-0 left-0 w-4 h-4 border-t border-l border-cyan-500 z-10" />
-                    <div className="absolute bottom-0 right-0 w-4 h-4 border-b border-r border-cyan-500 z-10" />
-                    {recruitForm.imageUrl ? (
-                      <img
-                        src={recruitForm.imageUrl || "/placeholder.svg"}
-                        className="w-full h-full object-cover opacity-90 group-hover:opacity-100 transition-all duration-500"
-                        alt="Preview"
-                      />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center text-cyan-900 flex-col gap-2">
-                        <span className="text-4xl opacity-50">?</span>
-                      </div>
-                    )}
+                  <div className="w-full aspect-[3/4] bg-slate-950 border-2 border-cyan-800 relative group cursor-zoom-in overflow-hidden shadow-inner" onClick={() => recruitForm.imageUrl && setZoomedImage(recruitForm.imageUrl)}>
+                    {recruitForm.imageUrl ? <img src={recruitForm.imageUrl || "/placeholder.svg"} className="w-full h-full object-cover opacity-90 group-hover:opacity-100 transition-all duration-500" alt="Preview" /> : <div className="w-full h-full flex items-center justify-center text-cyan-900 flex-col gap-2"><span className="text-4xl opacity-50">?</span></div>}
                   </div>
-                  <CerebroScanner status="SEARCHING" />
+                  
+                  {/* SELECTOR DE ALINEAMIENTO (Solo visible en modo edición) */}
+                  {isEditingExisting && (
+                      <div className="mt-2">
+                          <label className="text-[9px] text-cyan-600 font-bold block mb-1">ESTADO BASE</label>
+                          <select 
+                              value={recruitForm.alignment} 
+                              onChange={(e) => setRecruitForm({...recruitForm, alignment: e.target.value as any})}
+                              className="w-full bg-slate-900 border border-cyan-700 text-xs text-white p-1"
+                          >
+                              <option value="ALIVE">HERO (ALIVE)</option>
+                              <option value="ZOMBIE">ZOMBIE (UNDEAD)</option>
+                          </select>
+                      </div>
+                  )}
                 </div>
 
                 <div className="flex-1 flex flex-col gap-4 min-h-0">
@@ -781,13 +795,7 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
 
                   <div>
                       <label className="text-[10px] text-cyan-700 font-bold uppercase">{t.recruit.fileUrl}</label>
-                      <input 
-                          type="text" 
-                          placeholder="https://... (PDF/JPG)" 
-                          className="w-full bg-slate-950 border border-cyan-800 p-2 text-xs text-cyan-200 focus:border-cyan-400 outline-none"
-                          value={recruitForm.characterSheetUrl}
-                          onChange={(e) => setRecruitForm({...recruitForm, characterSheetUrl: e.target.value})}
-                      />
+                      <input type="text" placeholder="https://... (PDF/JPG)" className="w-full bg-slate-950 border border-cyan-800 p-2 text-xs text-cyan-200 focus:border-cyan-400 outline-none" value={recruitForm.characterSheetUrl} onChange={(e) => setRecruitForm({...recruitForm, characterSheetUrl: e.target.value})} />
                   </div>
 
                   <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-4 min-h-0">
@@ -798,9 +806,7 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
                     <div className="bg-emerald-900/5 border border-emerald-900/30 p-2 overflow-y-auto">
                        <h4 className="text-[10px] text-emerald-600 font-bold uppercase mb-1">{t.bunker.objectives}</h4>
                        <ul className="space-y-1">
-                          {recruitForm.objectives.length > 0 ? recruitForm.objectives.map((obj, i) => (
-                            <li key={i} className="text-[10px] text-emerald-100/70">› {obj}</li>
-                          )) : <li className="text-[10px] italic opacity-50">NONE</li>}
+                          {recruitForm.objectives.length > 0 ? recruitForm.objectives.map((obj, i) => <li key={i} className="text-[10px] text-emerald-100/70">› {obj}</li>) : <li className="text-[10px] italic opacity-50">NONE</li>}
                        </ul>
                     </div>
                   </div>
@@ -808,11 +814,7 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
               </div>
 
               <div className="flex justify-between items-center border-t border-cyan-800 pt-4 shrink-0">
-                <button
-                  type="button"
-                  onClick={handleSeedDatabase}
-                  className="text-[9px] text-cyan-900 hover:text-cyan-600 uppercase transition-colors"
-                >
+                <button type="button" onClick={handleSeedDatabase} className="text-[9px] text-cyan-900 hover:text-cyan-600 uppercase transition-colors">
                   {seedStatus === "idle" ? t.recruit.adminSeed : seedStatus === "success" ? t.recruit.seedSuccess : "ERROR"}
                 </button>
                 <div className="flex gap-3">
@@ -822,9 +824,9 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
                   <button
                     type="submit"
                     disabled={!recruitForm.name || !recruitForm.alias}
-                    className="px-6 py-2 bg-cyan-600 hover:bg-cyan-500 text-white font-bold tracking-widest text-xs shadow-[0_0_20px_rgba(6,182,212,0.4)] disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                    className={`px-6 py-2 text-white font-bold tracking-widest text-xs shadow-[0_0_20px_rgba(6,182,212,0.4)] disabled:opacity-50 disabled:cursor-not-allowed transition-all ${recruitMode === 'CAPTURE' ? 'bg-red-600 hover:bg-red-500' : 'bg-cyan-600 hover:bg-cyan-500'}`}
                   >
-                    {isEditingExisting ? "UPDATE DB" : t.recruit.submit}
+                    {isEditingExisting ? "UPDATE DB" : recruitMode === 'CAPTURE' ? "CAPTURAR" : t.recruit.submit}
                   </button>
                 </div>
               </div>
@@ -834,31 +836,19 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
       )}
 
       {zoomedImage && (
-        <div
-          className="fixed inset-0 z-[100] bg-black/90 flex items-center justify-center p-4 cursor-zoom-out backdrop-blur-md"
-          onClick={() => setZoomedImage(null)}
-        >
-          <img
-            src={zoomedImage || "/placeholder.svg"}
-            alt="Zoomed Asset"
-            className="max-h-[90vh] max-w-[90vw] border-4 border-cyan-500 shadow-[0_0_100px_rgba(6,182,212,0.5)] object-contain"
-          />
-          <div className="absolute bottom-10 left-1/2 -translate-x-1/2 text-cyan-500 text-xs tracking-[0.5em] animate-pulse">
-            CLICK TO CLOSE
-          </div>
+        <div className="fixed inset-0 z-[100] bg-black/90 flex items-center justify-center p-4 cursor-zoom-out backdrop-blur-md" onClick={() => setZoomedImage(null)}>
+          <img src={zoomedImage || "/placeholder.svg"} alt="Zoomed Asset" className="max-h-[90vh] max-w-[90vw] border-4 border-cyan-500 shadow-[0_0_100px_rgba(6,182,212,0.5)] object-contain" />
+          <div className="absolute bottom-10 left-1/2 -translate-x-1/2 text-cyan-500 text-xs tracking-[0.5em] animate-pulse">CLICK TO CLOSE</div>
         </div>
       )}
 
-      {/* --- NUEVO POPUP PARA LA FICHA DE JUEGO (TOP SECRET) --- */}
       {viewingSheetUrl && (
         <div className="fixed inset-0 z-[110] bg-black/95 backdrop-blur-md flex items-center justify-center p-4">
             <div className="relative w-full max-w-5xl h-[90vh] flex flex-col bg-slate-900 border-2 border-red-600 shadow-[0_0_50px_rgba(220,38,38,0.5)]">
-                {/* Header */}
                 <div className="flex justify-between items-center p-4 bg-red-950/30 border-b border-red-800 shrink-0">
                     <h3 className="text-red-500 font-bold tracking-[0.3em] animate-pulse">TOP SECRET // EYES ONLY</h3>
                     <button onClick={() => setViewingSheetUrl(null)} className="text-red-500 hover:text-white text-xl font-bold">✕</button>
                 </div>
-                {/* Image Container */}
                 <div className="flex-1 overflow-auto p-4 flex justify-center bg-slate-950 scrollbar-thin scrollbar-thumb-red-900">
                     <img src={viewingSheetUrl} className="max-w-full h-auto object-contain" alt="Game Sheet" />
                 </div>

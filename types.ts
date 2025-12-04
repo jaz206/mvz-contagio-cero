@@ -1,5 +1,5 @@
 export type HeroClass = 'SCOUT' | 'BRAWLER' | 'TACTICIAN' | 'BLASTER';
-export type HeroStatus = 'AVAILABLE' | 'DEPLOYED' | 'INJURED';
+export type HeroStatus = 'AVAILABLE' | 'DEPLOYED' | 'INJURED' | 'CAPTURED';
 export type WorldStage = 'NORMAL' | 'ANOMALY' | 'SURFER' | 'GALACTUS';
 
 export interface HeroStats {
@@ -36,11 +36,13 @@ export interface HeroTemplate {
     currentStory?: string;
     objectives?: string[];
     characterSheetUrl?: string;
+    // NUEVO CAMPO: Define si el personaje es originalmente Héroe o Zombie en la DB
+    defaultAlignment?: 'ALIVE' | 'ZOMBIE'; 
 }
 
 export interface Location {
     state: string;
-    coordinates: [number, number]; // [Longitude, Latitude]
+    coordinates: [number, number]; 
 }
 
 export interface Objective {
@@ -59,8 +61,10 @@ export interface Mission {
     prereq?: string;
     pdfUrl?: string;
     alignment?: 'ALIVE' | 'ZOMBIE' | 'BOTH';
-    // NUEVO CAMPO: Requisitos de expansiones
-    requirements?: string[]; 
+    requirements?: string[];
+    specialRules?: string[];      
+    setupInstructions?: string[]; 
+    layoutUrl?: string;           
 }
 
 export interface GlobalEvent {
