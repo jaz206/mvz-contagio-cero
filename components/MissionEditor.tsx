@@ -12,7 +12,6 @@ interface MissionEditorProps {
     existingMissions?: Mission[];
 }
 
-// Approximate center coordinates [Longitude, Latitude]
 const STATE_CENTERS: Record<string, [number, number]> = {
     'Alabama': [-86.9, 32.8], 'Alaska': [-152.4, 61.3], 'Arizona': [-111.4, 34.0], 'Arkansas': [-92.3, 34.9],
     'California': [-119.6, 36.1], 'Colorado': [-105.3, 39.0], 'Connecticut': [-72.7, 41.6], 'Delaware': [-75.5, 39.3],
@@ -31,20 +30,39 @@ const STATE_CENTERS: Record<string, [number, number]> = {
 
 const STATES_LIST = Object.keys(STATE_CENTERS).sort();
 
+const THREAT_LEVELS = [
+    "Infección latente (Fácil)",
+    "Hambre insaciable (Intermedia)",
+    "Plaga desatada (Difícil)",
+    "Apocalipsis Gamma (Muy difícil)"
+];
+
+const GAME_EXPANSIONS = [
+    "Core Box (Marvel Zombies)",
+    "X-Men Resistance",
+    "Fantastic 4: Under Siege",
+    "Hydra Resurrection",
+    "Clash of the Sinister Six",
+    "Guardians of the Galaxy Set",
+    "Galactus the Devourer",
+    "Stretch Goals (Promos)"
+];
+
 export const MissionEditor: React.FC<MissionEditorProps> = ({ isOpen, onClose, onSave, language, initialData, existingMissions = [] }) => {
     const t = translations[language].missionEditor;
     
     const [title, setTitle] = useState('');
     const [description, setDescription] = useState('');
     const [locationState, setLocationState] = useState(STATES_LIST[0]);
-    const [threatLevel, setThreatLevel] = useState('HIGH');
+    const [threatLevel, setThreatLevel] = useState(THREAT_LEVELS[1]); 
     const [type, setType] = useState<'STANDARD' | 'SHIELD_BASE' | 'BOSS'>('STANDARD');
-    // NUEVO ESTADO: ALINEAMIENTO
     const [alignment, setAlignment] = useState<'ALIVE' | 'ZOMBIE' | 'BOTH'>('BOTH');
-    
-    const [pdfUrl, setPdfUrl] = useState('');
     const [prereq, setPrereq] = useState('');
     const [objectives, setObjectives] = useState<Objective[]>([{ title: '', desc: '' }]);
+    const [requirements, setRequirements] = useState<string[]>([]);
+    const [selectedExpansion, setSelectedExpansion] = useState(GAME_EXPANSIONS[0]);
+    const [layoutUrl, setLayoutUrl] = useState('');
+
     const [saving, setSaving] = useState(false);
 
     useEffect(() => {
@@ -52,23 +70,24 @@ export const MissionEditor: React.FC<MissionEditorProps> = ({ isOpen, onClose, o
             setTitle(initialData.title);
             setDescription(initialData.description.join('\n'));
             setLocationState(initialData.location.state);
-            setThreatLevel(initialData.threatLevel);
+            setThreatLevel(initialData.threatLevel || THREAT_LEVELS[1]);
             setType(initialData.type || 'STANDARD');
-            // Cargar alineamiento existente o default a BOTH
             setAlignment(initialData.alignment || 'BOTH');
-            setPdfUrl(initialData.pdfUrl || '');
             setPrereq(initialData.prereq || '');
             setObjectives(initialData.objectives.length > 0 ? initialData.objectives : [{ title: '', desc: '' }]);
+            setRequirements(initialData.requirements || []);
+            setLayoutUrl(initialData.layoutUrl || '');
         } else {
             setTitle('');
             setDescription('');
             setLocationState(STATES_LIST[0]);
-            setThreatLevel('HIGH');
+            setThreatLevel(THREAT_LEVELS[1]);
             setType('STANDARD');
             setAlignment('BOTH');
-            setPdfUrl('');
             setPrereq('');
             setObjectives([{ title: '', desc: '' }]);
+            setRequirements([]);
+            setLayoutUrl('');
         }
     }, [initialData, isOpen]);
 
@@ -84,12 +103,21 @@ export const MissionEditor: React.FC<MissionEditorProps> = ({ isOpen, onClose, o
         setObjectives(newObjs);
     };
 
+    const handleAddRequirement = () => {
+        if (!requirements.includes(selectedExpansion)) {
+            setRequirements([...requirements, selectedExpansion]);
+        }
+    };
+
+    const handleRemoveRequirement = (reqToRemove: string) => {
+        setRequirements(requirements.filter(r => r !== reqToRemove));
+    };
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setSaving(true);
 
         let finalCoordinates: [number, number];
-
         const stateChanged = !initialData || initialData.location.state !== locationState;
 
         if (stateChanged) {
@@ -101,21 +129,17 @@ export const MissionEditor: React.FC<MissionEditorProps> = ({ isOpen, onClose, o
             finalCoordinates = initialData.location.coordinates;
         }
 
-        // CONSTRUCCIÓN DEL OBJETO DE MISIÓN
         const missionPayload: any = {
             title,
             description: description.split('\n').filter(p => p.trim() !== ''),
-            location: {
-                state: locationState,
-                coordinates: finalCoordinates
-            },
+            location: { state: locationState, coordinates: finalCoordinates },
             threatLevel,
             type,
-            alignment, // Guardamos el alineamiento
+            alignment,
             objectives: objectives.filter(o => o.title && o.desc),
-            // CORRECCIÓN CRÍTICA: Usar null en lugar de undefined
-            prereq: prereq || null, 
-            ...(pdfUrl.trim() ? { pdfUrl: pdfUrl.trim() } : {})
+            prereq: prereq || null,
+            requirements,
+            layoutUrl: layoutUrl.trim() || null,
         };
 
         try {
@@ -135,94 +159,130 @@ export const MissionEditor: React.FC<MissionEditorProps> = ({ isOpen, onClose, o
         }
     };
 
+    const validPrereqs = existingMissions.filter(m => {
+        if (initialData && m.id === initialData.id) return false;
+        const mAlign = m.alignment || 'ALIVE';
+        if (alignment === 'BOTH') return true;
+        if (mAlign === 'BOTH') return true;
+        return mAlign === alignment;
+    });
+
     return (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/90 backdrop-blur-sm p-4">
-            <div className="w-full max-w-3xl bg-slate-900 border-2 border-cyan-500 shadow-2xl flex flex-col max-h-[90vh]">
+            <div className="w-full max-w-4xl bg-slate-900 border-2 border-cyan-500 shadow-2xl flex flex-col max-h-[90vh]">
                 <div className="bg-cyan-900/40 p-4 border-b border-cyan-600 flex justify-between items-center">
-                    <h3 className="text-cyan-300 font-bold tracking-widest">
+                    <h3 className="text-cyan-300 font-bold tracking-widest uppercase">
                         {initialData ? `EDITING: ${initialData.title}` : t.title}
                     </h3>
                     <button onClick={onClose} className="text-cyan-500 hover:text-white">✕</button>
                 </div>
 
-                <form onSubmit={handleSubmit} className="p-6 overflow-y-auto font-mono flex flex-col gap-4">
-                    <div>
-                        <label className="text-[10px] text-cyan-600 font-bold block mb-1">{t.missionTitle}</label>
-                        <input value={title} onChange={e => setTitle(e.target.value)} required className="w-full bg-slate-950 border border-cyan-800 p-2 text-cyan-200 focus:border-cyan-400 outline-none" />
-                    </div>
+                <form onSubmit={handleSubmit} className="p-6 overflow-y-auto font-mono flex flex-col gap-4 scrollbar-thin scrollbar-thumb-cyan-900">
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        {/* COLUMNA IZQUIERDA: DATOS BÁSICOS */}
+                        <div className="space-y-4">
+                            <div>
+                                <label className="text-[10px] text-cyan-600 font-bold block mb-1 uppercase">{t.missionTitle}</label>
+                                <input value={title} onChange={e => setTitle(e.target.value)} required className="w-full bg-slate-950 border border-cyan-800 p-2 text-cyan-200 focus:border-cyan-400 outline-none" />
+                            </div>
 
-                    {/* NUEVO SELECTOR DE ALINEAMIENTO */}
-                    <div>
-                        <label className="text-[10px] text-cyan-600 font-bold block mb-1">BANDO / ALINEAMIENTO</label>
-                        <select 
-                            value={alignment} 
-                            onChange={e => setAlignment(e.target.value as any)} 
-                            className={`w-full bg-slate-950 border p-2 font-bold ${
-                                alignment === 'ALIVE' ? 'text-cyan-400 border-cyan-600' : 
-                                alignment === 'ZOMBIE' ? 'text-lime-400 border-lime-600' : 
-                                'text-white border-gray-600'
-                            }`}
-                        >
-                            <option value="ALIVE">🛡️ HÉROES (ALIVE)</option>
-                            <option value="ZOMBIE">🧟 ZOMBIES (UNDEAD)</option>
-                            <option value="BOTH">⚖️ AMBOS (GLOBAL)</option>
-                        </select>
-                    </div>
+                            <div className="grid grid-cols-2 gap-2">
+                                <div>
+                                    <label className="text-[10px] text-cyan-600 font-bold block mb-1 uppercase">{t.location}</label>
+                                    <select value={locationState} onChange={e => setLocationState(e.target.value)} className="w-full bg-slate-950 border border-cyan-800 p-2 text-cyan-200">
+                                        {STATES_LIST.map(s => <option key={s} value={s}>{s}</option>)}
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className="text-[10px] text-cyan-600 font-bold block mb-1 uppercase">{t.threat}</label>
+                                    <select value={threatLevel} onChange={e => setThreatLevel(e.target.value)} className="w-full bg-slate-950 border border-cyan-800 p-2 text-yellow-400 font-bold">
+                                        {THREAT_LEVELS.map(lvl => <option key={lvl} value={lvl}>{lvl}</option>)}
+                                    </select>
+                                </div>
+                            </div>
 
-                    <div className="grid grid-cols-2 gap-4">
-                        <div>
-                            <label className="text-[10px] text-cyan-600 font-bold block mb-1">{t.location}</label>
-                            <select value={locationState} onChange={e => setLocationState(e.target.value)} className="w-full bg-slate-950 border border-cyan-800 p-2 text-cyan-200">
-                                {STATES_LIST.map(s => <option key={s} value={s}>{s}</option>)}
-                            </select>
+                            <div className="grid grid-cols-2 gap-2">
+                                <div>
+                                    <label className="text-[10px] text-cyan-600 font-bold block mb-1 uppercase">{t.type}</label>
+                                    <select value={type} onChange={e => setType(e.target.value as any)} className="w-full bg-slate-950 border border-cyan-800 p-2 text-cyan-200">
+                                        <option value="STANDARD">STANDARD</option>
+                                        <option value="SHIELD_BASE">SHIELD BASE</option>
+                                        <option value="BOSS">BOSS</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className="text-[10px] text-cyan-600 font-bold block mb-1 uppercase">MODO</label>
+                                    <select 
+                                        value={alignment} 
+                                        onChange={e => { setAlignment(e.target.value as any); setPrereq(''); }} 
+                                        className="w-full bg-slate-950 border border-cyan-800 p-2 text-white font-bold"
+                                    >
+                                        <option value="ALIVE">🛡️ HÉROES</option>
+                                        <option value="ZOMBIE">🧟 ZOMBIES</option>
+                                        <option value="BOTH">⚖️ AMBOS</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div>
+                                <label className="text-[10px] text-cyan-600 font-bold block mb-1 uppercase">{t.prereq}</label>
+                                <select value={prereq} onChange={e => setPrereq(e.target.value)} className="w-full bg-slate-950 border border-cyan-800 p-2 text-cyan-200">
+                                    <option value="">-- NINGUNA --</option>
+                                    {validPrereqs.map(m => (
+                                        <option key={m.id} value={m.id}>{m.title}</option>
+                                    ))}
+                                </select>
+                            </div>
+
+                            <div className="bg-slate-900/50 border border-blue-900/30 p-3">
+                                <label className="text-[10px] text-blue-400 font-bold block mb-2 uppercase">REQUISITOS (EXPANSIONES)</label>
+                                <div className="flex gap-2 mb-2">
+                                    <select 
+                                        value={selectedExpansion} 
+                                        onChange={e => setSelectedExpansion(e.target.value)} 
+                                        className="flex-1 bg-slate-950 border border-blue-800 p-2 text-xs text-blue-200"
+                                    >
+                                        {GAME_EXPANSIONS.map(exp => <option key={exp} value={exp}>{exp}</option>)}
+                                    </select>
+                                    <button type="button" onClick={handleAddRequirement} className="bg-blue-900/50 border border-blue-600 text-blue-300 px-3 py-1 text-[10px] font-bold uppercase">+ AÑADIR</button>
+                                </div>
+                                <div className="flex flex-wrap gap-2">
+                                    {requirements.map((req, idx) => (
+                                        <div key={idx} className="flex items-center gap-2 bg-blue-950 border border-blue-800 px-2 py-1 rounded">
+                                            <span className="text-[10px] text-blue-300">{req}</span>
+                                            <button type="button" onClick={() => handleRemoveRequirement(req)} className="text-red-400 font-bold">×</button>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
                         </div>
-                        <div>
-                            <label className="text-[10px] text-cyan-600 font-bold block mb-1">{t.threat}</label>
-                            <input value={threatLevel} onChange={e => setThreatLevel(e.target.value)} className="w-full bg-slate-950 border border-cyan-800 p-2 text-cyan-200" />
+
+                        {/* COLUMNA DERECHA: DETALLES DE JUEGO */}
+                        <div className="space-y-4">
+                            {/* RECURSOS EXTERNOS (MAPA) */}
+                            <div className="bg-slate-900/50 border border-cyan-900/30 p-3">
+                                <label className="text-[10px] text-cyan-500 font-bold block mb-2 uppercase">RECURSOS EXTERNOS</label>
+                                <div className="space-y-2">
+                                    <div>
+                                        <label className="text-[9px] text-cyan-700 block mb-1">URL IMAGEN MAPA (LAYOUT)</label>
+                                        <input value={layoutUrl} onChange={e => setLayoutUrl(e.target.value)} placeholder="https://..." className="w-full bg-slate-950 border border-cyan-800 p-2 text-cyan-200 text-xs" />
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div>
+                                <label className="text-[10px] text-cyan-600 font-bold block mb-1 uppercase">{t.description} (FLAVOR TEXT)</label>
+                                <textarea value={description} onChange={e => setDescription(e.target.value)} rows={8} className="w-full bg-slate-950 border border-cyan-800 p-2 text-cyan-200 text-xs" />
+                            </div>
                         </div>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-4">
-                        <div>
-                            <label className="text-[10px] text-cyan-600 font-bold block mb-1">{t.type}</label>
-                            <select value={type} onChange={e => setType(e.target.value as any)} className="w-full bg-slate-950 border border-cyan-800 p-2 text-cyan-200">
-                                <option value="STANDARD">STANDARD</option>
-                                <option value="SHIELD_BASE">SHIELD BASE</option>
-                                <option value="BOSS">BOSS</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label className="text-[10px] text-cyan-600 font-bold block mb-1">{t.prereq}</label>
-                            <select value={prereq} onChange={e => setPrereq(e.target.value)} className="w-full bg-slate-950 border border-cyan-800 p-2 text-cyan-200">
-                                <option value="">-- NONE --</option>
-                                {existingMissions
-                                    .filter(m => !initialData || m.id !== initialData.id)
-                                    .map(m => (
-                                        <option key={m.id} value={m.id}>
-                                            {m.title}
-                                        </option>
-                                    ))
-                                }
-                            </select>
-                        </div>
-                    </div>
-
-                    <div className="grid grid-cols-1 gap-4">
-                        <div>
-                            <label className="text-[10px] text-cyan-600 font-bold block mb-1">{t.pdfUrl}</label>
-                            <input value={pdfUrl} onChange={e => setPdfUrl(e.target.value)} placeholder="https://..." className="w-full bg-slate-950 border border-cyan-800 p-2 text-cyan-200" />
-                        </div>
-                    </div>
-
-                    <div>
-                        <label className="text-[10px] text-cyan-600 font-bold block mb-1">{t.description}</label>
-                        <textarea value={description} onChange={e => setDescription(e.target.value)} rows={4} className="w-full bg-slate-950 border border-cyan-800 p-2 text-cyan-200" />
-                    </div>
-
-                    <div className="bg-slate-950/50 p-4 border border-cyan-900/50">
+                    {/* OBJETIVOS (ANCHO COMPLETO) */}
+                    <div className="bg-slate-950/50 p-4 border border-cyan-900/50 mt-2">
                         <div className="flex justify-between mb-2">
-                            <label className="text-[10px] text-cyan-600 font-bold">{t.objectives}</label>
-                            <button type="button" onClick={handleAddObjective} className="text-[10px] text-cyan-400 hover:text-white border border-cyan-700 px-2">+ {t.addObjective}</button>
+                            <label className="text-[10px] text-cyan-600 font-bold uppercase">{t.objectives}</label>
+                            <button type="button" onClick={handleAddObjective} className="text-[10px] text-cyan-400 hover:text-white border border-cyan-700 px-2 uppercase">+ {t.addObjective}</button>
                         </div>
                         {objectives.map((obj, i) => (
                             <div key={i} className="mb-2 grid grid-cols-1 md:grid-cols-2 gap-2">
@@ -233,8 +293,10 @@ export const MissionEditor: React.FC<MissionEditorProps> = ({ isOpen, onClose, o
                     </div>
 
                     <div className="flex justify-end gap-4 pt-4 border-t border-cyan-800">
-                        <button type="button" onClick={onClose} className="px-4 py-2 border border-red-900 text-red-500 text-xs font-bold">{t.cancel}</button>
-                        <button type="submit" disabled={saving} className="px-6 py-2 bg-cyan-600 text-white text-xs font-bold">{saving ? 'SAVING...' : t.save}</button>
+                        <button type="button" onClick={onClose} className="px-4 py-2 border border-red-900 text-red-500 text-xs font-bold uppercase hover:bg-red-900/20">{t.cancel}</button>
+                        <button type="submit" disabled={saving} className="px-6 py-2 bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-bold uppercase shadow-[0_0_15px_rgba(6,182,212,0.4)] transition-all">
+                            {saving ? 'GUARDANDO...' : t.save}
+                        </button>
                     </div>
                 </form>
             </div>

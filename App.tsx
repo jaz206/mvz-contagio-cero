@@ -120,7 +120,7 @@ const INITIAL_HEROES: Hero[] = [
             'El Destino de Scott: Localizar a Cyclops. Si está vivo, salvarlo. Si es uno de ellos, vaporizarlo antes de que ella lea su mente podrida.'
         ],
         completedObjectiveIndices: [],
-        imageUrl: 'https://i.pinimg.com/736x/ea/5c/07/ea5c075678330756a1b63702131fa429.jpg',
+        imageUrl: 'https://i.pinimg.com/736x/36/73/8b/36738b0e8995b32aafd5493f0174807f.jpg',
         characterSheetUrl: 'https://i.pinimg.com/736x/8d/60/a3/8d60a340788644365735165842813583.jpg',
         stats: { strength: 4, agility: 5, intellect: 10 },
         assignedMissionId: null

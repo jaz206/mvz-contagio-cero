@@ -44,10 +44,8 @@ export const StoryMode: React.FC<StoryModeProps> = ({ language, onComplete, onSk
     }
   };
 
-  // Manejador de la elección con retraso para la animación
   const handleChoice = (choice: 'ALIVE' | 'ZOMBIE') => {
       setSelection(choice);
-      // Esperar 2 segundos para ver la firma o la sangre antes de entrar
       setTimeout(() => {
           onComplete(choice);
       }, 2000);
@@ -63,8 +61,7 @@ export const StoryMode: React.FC<StoryModeProps> = ({ language, onComplete, onSk
                   <div className="w-24 h-1 bg-red-600 mb-8"></div>
                   
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-8 w-full max-w-4xl z-10">
-                      
-                      {/* --- OPCIÓN ALIVE (SHIELD) --- */}
+                      {/* ALIVE */}
                       <button 
                           onClick={() => handleChoice('ALIVE')}
                           disabled={selection !== null}
@@ -82,26 +79,17 @@ export const StoryMode: React.FC<StoryModeProps> = ({ language, onComplete, onSk
                           <div className="p-3 bg-slate-50 border-t border-slate-200 w-full text-center">
                               <span className="text-[10px] font-bold text-blue-700 tracking-widest">AUTHORIZE DEPLOYMENT</span>
                           </div>
-
-                          {/* EFECTO DE FIRMA Y SELLO (Solo si se selecciona ALIVE) */}
                           {selection === 'ALIVE' && (
                               <div className="absolute inset-0 flex items-center justify-center z-50 bg-white/10 backdrop-blur-[1px]">
-                                  {/* Sello */}
                                   <div className="border-4 border-blue-900 text-blue-900 rounded-full w-40 h-40 flex flex-col items-center justify-center rotate-[-15deg] opacity-0 animate-[stamp_0.3s_ease-in_forwards] shadow-xl" style={{maskImage: 'url(https://www.transparenttextures.com/patterns/grunge-wall.png)'}}>
                                       <span className="text-3xl font-black tracking-tighter">APPROVED</span>
                                       <span className="text-[10px] font-bold tracking-widest mt-1">DIRECTOR FURY</span>
-                                      <div className="w-full h-px bg-blue-900 my-1"></div>
-                                      <span className="text-[8px] font-mono">LEVEL 10 CLEARANCE</span>
-                                  </div>
-                                  {/* Firma */}
-                                  <div className="absolute bottom-16 right-10 text-4xl text-blue-800 font-bold opacity-0 animate-[fadeIn_1s_ease-out_0.5s_forwards]" style={{ fontFamily: '"Brush Script MT", cursive' }}>
-                                      Nick Fury
                                   </div>
                               </div>
                           )}
                       </button>
 
-                      {/* --- OPCIÓN ZOMBIE (HIVE) --- */}
+                      {/* ZOMBIE */}
                       <button 
                            onClick={() => handleChoice('ZOMBIE')}
                            disabled={selection !== null}
@@ -119,26 +107,8 @@ export const StoryMode: React.FC<StoryModeProps> = ({ language, onComplete, onSk
                           <div className="p-3 bg-slate-50 border-t border-slate-200 w-full text-center">
                               <span className="text-[10px] font-bold text-green-700 tracking-widest">UNLEASH PATHOGEN</span>
                           </div>
-
-                          {/* EFECTO DE SANGRE (Solo si se selecciona ZOMBIE) */}
                           {selection === 'ZOMBIE' && (
                               <div className="absolute inset-0 z-50 flex items-center justify-center pointer-events-none">
-                                  {/* Mancha de sangre SVG */}
-                                  <svg viewBox="0 0 200 200" className="w-full h-full opacity-0 animate-[splatter_0.2s_ease-in_forwards] mix-blend-multiply">
-                                      <path fill="#8a0303" d="M98.6,18.5c-2.6,0.9-6.6,4.8-6.6,8.9c0,5.6-2.6,12.8-6.9,12.8c-2.3,0-4.6-2.6-5.6-5.9c-1.3-4.3-5.3-6.3-8.6-4.6
-                                      c-3.6,1.6-4.3,7.3-1.3,10.6c2.3,2.6,2.3,6.3,0,8.9c-3.3,3.6-9.6,2.6-11.9-1.7c-1.6-3.3-6.3-4.3-9.6-2c-3.6,2.3-3.6,7.9,0,10.2
-                                      c4.3,2.6,4.3,8.9,0,11.6c-2.6,1.6-6.3,1.3-8.6-1.3c-3.3-3.6-9.2-2.3-10.9,2.3c-1.3,3.6,1.3,7.6,5,7.6c4.6,0,7.3,4.6,5.3,8.6
-                                      c-1.3,2.6-5.3,3.6-8.3,2c-4.3-2.3-9.2,1.3-8.9,6.3c0.3,3.6,4,6.3,7.6,5.3c4.6-1.3,8.9,2.3,8.3,6.9c-0.3,3.3-4,5.6-7.3,4.6
-                                      c-4.6-1.3-8.9,2.6-7.9,7.3c0.7,3.3,4.6,5.3,7.9,4c4.3-1.6,8.9,1.6,8.9,6.3c0,3.3-3.3,6.3-6.6,5.6c-4.6-0.7-8.3,3.6-6.6,7.9
-                                      c1.3,3.3,5.6,4.3,8.6,2.3c3.6-2.3,8.3,0.3,8.3,4.6c0,3.3-3.3,6.3-6.6,5.6c-4.6-0.7-8.3,3.6-6.6,7.9c1.3,3.3,5.6,4.3,8.6,2.3
-                                      c3.6-2.3,8.3,0.3,8.3,4.6c0,3.3-3.3,6.3-6.6,5.6c-4.6-0.7-8.3,3.6-6.6,7.9c1.6,4,6.9,4.6,9.9,1.3c2.6-3,7.6-2.3,9.6,1.3c1.6,3,6.3,3.6,9.2,1.3
-                                      c3.6-3,9.2-0.7,9.9,4c0.7,3.6,5.3,5.6,8.9,3.6c4-2.3,8.9,0.7,8.9,5.3c0,3.6,4,6.3,7.6,5.3c4.6-1.3,8.9,2.3,8.3,6.9
-                                      c-0.3,3.3,3.3,6.3,6.6,5.3c4.3-1.3,8.3,2.3,7.3,6.6c-0.7,3.3,2.3,6.6,5.6,5.9c4.3-0.7,7.9,3,6.6,7.3c-1.3,4.3,2.3,8.3,6.6,7.3
-                                      c4.3-1,7.9,2.6,6.6,6.9c-1.3,4.3,2.3,8.3,6.6,7.3c4.3-1,7.9,2.6,6.6,6.9c-1.3,4.3,2.3,8.3,6.6,7.3c4.3-1,7.9,2.6,6.6,6.9
-                                      c-1.3,4.3,2.3,8.3,6.6,7.3c4.3-1,7.9,2.6,6.6,6.9c-1.3,4.3,2.3,8.3,6.6,7.3c4.3-1,7.9,2.6,6.6,6.9c-1.3,4.3,2.3,8.3,6.6,7.3
-                                      c4.3-1,7.9,2.6,6.6,6.9"/>
-                                  </svg>
-                                  {/* Texto de infección */}
                                   <div className="absolute text-4xl font-black text-red-900 tracking-widest rotate-12 border-4 border-red-900 p-4 opacity-0 animate-[stamp_0.3s_ease-in_0.2s_forwards]">
                                       INFECTED
                                   </div>
@@ -151,47 +121,51 @@ export const StoryMode: React.FC<StoryModeProps> = ({ language, onComplete, onSk
       }
 
       const slide = slides[currentIndex];
+      // Rotación aleatoria sutil basada en el índice para que parezca natural
+      const rotation = currentIndex % 2 === 0 ? '-rotate-2' : 'rotate-1';
 
       return (
           <div className="flex flex-col md:flex-row h-full w-full bg-white shadow-inner">
               
-              {/* IZQUIERDA: VISOR DE IMAGEN (55%) */}
-              <div className="w-full md:w-[55%] h-1/2 md:h-full relative bg-[#0a0a0a] border-r border-slate-300 flex items-center justify-center overflow-hidden">
+              {/* IZQUIERDA: SUPERFICIE DE LA CARPETA CON FOTO SUJETA */}
+              <div className="w-full md:w-[55%] h-1/2 md:h-full relative bg-[#2d3748] border-r border-slate-400 flex items-center justify-center overflow-hidden shadow-[inset_-10px_0_20px_rgba(0,0,0,0.3)]">
                   
-                  {/* Fondo de cuadrícula técnica */}
-                  <div className="absolute inset-0 opacity-20" 
-                       style={{backgroundImage: 'linear-gradient(#333 1px, transparent 1px), linear-gradient(90deg, #333 1px, transparent 1px)', backgroundSize: '20px 20px'}}>
-                  </div>
+                  {/* Textura de la carpeta interior */}
+                  <div className="absolute inset-0 opacity-10 bg-[url('https://www.transparenttextures.com/patterns/leather.png')]"></div>
 
-                  {/* La Imagen en sí (Ajustada para verse entera) */}
-                  <img 
-                    src={slide.image} 
-                    alt="Visual Intel" 
-                    className="max-w-full max-h-full object-contain shadow-2xl relative z-10" 
-                  />
-                  
-                  {/* Overlay Digital (HUD) */}
-                  <div className="absolute inset-0 pointer-events-none z-20">
-                      <div className="absolute top-4 left-4 w-8 h-8 border-t-2 border-l-2 border-white/30"></div>
-                      <div className="absolute top-4 right-4 w-8 h-8 border-t-2 border-r-2 border-white/30"></div>
-                      <div className="absolute bottom-4 left-4 w-8 h-8 border-b-2 border-l-2 border-white/30"></div>
-                      <div className="absolute bottom-4 right-4 w-8 h-8 border-b-2 border-r-2 border-white/30"></div>
+                  {/* CONTENEDOR DE LA FOTO (POLAROID / PAPEL FOTOGRÁFICO) */}
+                  <div className={`relative bg-white p-3 pb-8 shadow-2xl transform transition-all duration-500 ease-out hover:rotate-0 hover:scale-105 cursor-zoom-in group ${rotation} max-w-[85%] max-h-[85%] flex flex-col`}>
                       
-                      <div className="absolute top-4 left-14 text-[8px] text-cyan-400 font-mono bg-black/80 px-2 py-0.5 rounded border border-cyan-900/50">
-                          IMG_SRC: SAT_V4 // RES: 8K // NO_CROP
+                      {/* CLIP METÁLICO (CSS PURO) */}
+                      <div className="absolute -top-4 left-1/2 -translate-x-1/2 w-8 h-16 rounded-full border-4 border-gray-300 z-20 shadow-md bg-transparent pointer-events-none"></div>
+                      <div className="absolute -top-4 left-1/2 -translate-x-1/2 w-8 h-10 bg-[#2d3748] z-10 pointer-events-none"></div> {/* Tapa la parte trasera del clip */}
+
+                      {/* IMAGEN */}
+                      <div className="relative overflow-hidden border border-gray-200 bg-black">
+                          <img 
+                            src={slide.image} 
+                            alt="Evidence" 
+                            className="w-full h-full object-contain max-h-[60vh]" 
+                          />
+                          
+                          {/* Efecto Glossy (Brillo de papel fotográfico) */}
+                          <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/10 to-transparent opacity-0 group-hover:opacity-40 transition-opacity pointer-events-none"></div>
                       </div>
-                      <div className="absolute bottom-4 right-14 text-[8px] text-red-500 font-mono font-bold animate-pulse bg-black/80 px-2 py-0.5 rounded border border-red-900/50">
-                          ● LIVE FEED RECORDING
+
+                      {/* PIE DE FOTO (Escrito a mano o máquina) */}
+                      <div className="mt-3 flex justify-between items-end px-2">
+                          <div className="font-mono text-[10px] text-gray-500">FIG. {currentIndex + 1}A</div>
+                          <div className="font-handwriting text-sm text-blue-900 rotate-[-1deg]" style={{ fontFamily: '"Courier New", monospace' }}>
+                              Evidence #{1024 + currentIndex}
+                          </div>
                       </div>
                   </div>
               </div>
 
-              {/* DERECHA: TEXTO DEL INFORME (45%) */}
-              <div className="w-full md:w-[45%] h-1/2 md:h-full p-6 md:p-10 flex flex-col bg-[#f8f9fa] relative">
-                  {/* Marca de agua de fondo */}
-                  <div className="absolute inset-0 flex items-center justify-center opacity-[0.03] pointer-events-none">
-                      <img src="https://upload.wikimedia.org/wikipedia/commons/b/b9/Marvel_Logo.svg" className="w-3/4 rotate-[-30deg]" />
-                  </div>
+              {/* DERECHA: INFORME MECANOGRAFIADO */}
+              <div className="w-full md:w-[45%] h-1/2 md:h-full p-6 md:p-10 flex flex-col bg-[#fdfbf7] relative">
+                  {/* Textura de papel */}
+                  <div className="absolute inset-0 opacity-40 pointer-events-none" style={{backgroundImage: 'linear-gradient(#e5e7eb 1px, transparent 1px)', backgroundSize: '100% 2rem'}}></div>
 
                   <div className="relative z-10 flex-1 overflow-y-auto pr-2">
                       <div className="flex justify-between items-end border-b-2 border-slate-800 pb-2 mb-6">
@@ -201,11 +175,11 @@ export const StoryMode: React.FC<StoryModeProps> = ({ language, onComplete, onSk
                           </div>
                           <div className="text-right">
                               <div className="text-[10px] font-mono text-slate-400">DATE: 2025-10-31</div>
-                              <div className="text-xs font-bold text-red-700 border border-red-700 px-1 inline-block mt-1">CLASSIFIED</div>
+                              <div className="text-xs font-bold text-red-700 border-2 border-red-700 px-1 inline-block mt-1 rotate-[-2deg] opacity-80">TOP SECRET</div>
                           </div>
                       </div>
 
-                      <div className="font-mono text-sm md:text-base text-slate-800 leading-relaxed space-y-4 text-justify">
+                      <div className="font-mono text-sm md:text-base text-slate-900 leading-relaxed space-y-4 text-justify font-medium">
                           {slide.text.split('\n').map((line, i) => (
                               <p key={i}>{line}</p>
                           ))}
@@ -213,13 +187,11 @@ export const StoryMode: React.FC<StoryModeProps> = ({ language, onComplete, onSk
                   </div>
 
                   <div className="mt-4 pt-4 border-t border-slate-300 flex justify-between items-center">
-                      <div className="flex gap-2">
-                          <div className="w-2 h-2 rounded-full bg-slate-300"></div>
-                          <div className="w-2 h-2 rounded-full bg-slate-300"></div>
-                          <div className="w-2 h-2 rounded-full bg-slate-800 animate-pulse"></div>
-                      </div>
                       <div className="text-[10px] font-bold text-slate-400 tracking-widest">
-                          S.H.I.E.L.D. GLOBAL DATABASE
+                          S.H.I.E.L.D. ARCHIVES // DO NOT COPY
+                      </div>
+                      <div className="text-xs font-mono text-slate-500">
+                          PG. {currentIndex + 1}
                       </div>
                   </div>
               </div>
@@ -230,7 +202,6 @@ export const StoryMode: React.FC<StoryModeProps> = ({ language, onComplete, onSk
   return (
     <div className="fixed inset-0 z-[60] bg-[#0f172a] flex items-center justify-center perspective-[1500px] overflow-hidden">
       
-      {/* Estilos para las animaciones personalizadas */}
       <style>{`
         @keyframes stamp {
           0% { opacity: 0; transform: scale(2) rotate(-15deg); }
@@ -242,10 +213,10 @@ export const StoryMode: React.FC<StoryModeProps> = ({ language, onComplete, onSk
         }
       `}</style>
 
+      {/* Mesa de fondo */}
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_#1e293b_0%,_#020617_100%)]"></div>
       <div className="absolute inset-0 opacity-20" style={{backgroundImage: 'linear-gradient(#334155 1px, transparent 1px), linear-gradient(90deg, #334155 1px, transparent 1px)', backgroundSize: '40px 40px'}}></div>
 
-      {/* CORRECCIÓN: Usar &gt;&gt; en lugar de >> */}
       <button 
         onClick={onSkip} 
         className="absolute top-8 right-8 z-50 text-cyan-500 text-xs font-bold tracking-[0.2em] hover:text-white transition-colors border border-cyan-900 px-4 py-2 bg-slate-900/80 backdrop-blur"
@@ -253,16 +224,18 @@ export const StoryMode: React.FC<StoryModeProps> = ({ language, onComplete, onSk
         SKIP INTRO &gt;&gt;
       </button>
 
+      {/* CARPETA PRINCIPAL */}
       <div 
-        className={`relative w-[95%] h-[85%] max-w-6xl bg-[#e2e8f0] shadow-[0_20px_50px_rgba(0,0,0,0.5)] transition-all duration-1000 ease-out transform-style-3d
+        className={`relative w-[95%] h-[85%] max-w-6xl bg-[#d1d5db] shadow-[0_20px_50px_rgba(0,0,0,0.6)] transition-all duration-1000 ease-out transform-style-3d rounded-r-md border-l-8 border-slate-400
             ${isFolderOpen ? 'rotate-x-0 translate-y-0 opacity-100' : 'rotate-x-20 translate-y-[100px] opacity-0'}
         `}
       >
-          <div className="absolute -top-6 left-0 w-48 h-8 bg-[#cbd5e1] rounded-t-lg border-t border-x border-white/50 flex items-center px-4">
-              <span className="text-[10px] font-bold text-slate-600 tracking-widest">PROJECT: LAZARUS</span>
+          {/* Pestaña de la carpeta */}
+          <div className="absolute -top-6 left-0 w-48 h-8 bg-[#9ca3af] rounded-t-lg border-t border-x border-white/20 flex items-center px-4 shadow-inner">
+              <span className="text-[10px] font-bold text-slate-800 tracking-widest">PROJECT: LAZARUS</span>
           </div>
 
-          <div className="w-full h-full bg-white relative overflow-hidden flex">
+          <div className="w-full h-full bg-white relative overflow-hidden flex rounded-r-sm">
               {renderContent()}
               
               {pageTurn && (
@@ -279,7 +252,7 @@ export const StoryMode: React.FC<StoryModeProps> = ({ language, onComplete, onSk
                   >
                       ←
                   </button>
-                  <div className="h-12 px-6 bg-slate-900/90 border border-slate-700 rounded-full flex items-center justify-center text-cyan-400 font-mono text-xs tracking-widest">
+                  <div className="h-12 px-6 bg-slate-900/90 border border-slate-700 rounded-full flex items-center justify-center text-cyan-400 font-mono text-xs tracking-widest shadow-lg">
                       SLIDE {currentIndex + 1} / {slides.length}
                   </div>
                   <button 
