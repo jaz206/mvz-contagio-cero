@@ -410,7 +410,14 @@ const App: React.FC = () => {
     };
 
     const toggleDimension = () => {
-        setPlayerAlignment(prev => prev === 'ALIVE' ? 'ZOMBIE' : 'ALIVE');
+        const newAlignment = playerAlignment === 'ALIVE' ? 'ZOMBIE' : 'ALIVE';
+        setPlayerAlignment(newAlignment);
+        
+        // CORRECCIÓN: En modo editor, cambiamos manualmente la lista de héroes
+        if (isEditorMode) {
+            setHeroes(newAlignment === 'ZOMBIE' ? INITIAL_ZOMBIE_HEROES : INITIAL_HEROES);
+        }
+
         setViewMode('map');
     };
 
@@ -632,7 +639,6 @@ const App: React.FC = () => {
         const missionMap = new Map<string, Mission>();
         
         // --- MISIONES POR DEFECTO (HARDCODED) ---
-        // Esto asegura que siempre haya misiones, incluso sin base de datos
         const DEFAULT_MISSIONS: Mission[] = [
             {
                 id: 'm_kraven',

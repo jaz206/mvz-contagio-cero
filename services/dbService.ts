@@ -18,6 +18,7 @@ const findField = (data: any, possibleKeys: string[]): any => {
 };
 
 export const getHeroTemplates = async (): Promise<HeroTemplate[]> => {
+  if (!db) { console.warn("DB no disponible (getHeroTemplates)"); return []; }
   try {
     const querySnapshot = await getDocs(collection(db, COLLECTION_NAME));
     const templates: HeroTemplate[] = [];
@@ -67,6 +68,7 @@ export const getHeroTemplates = async (): Promise<HeroTemplate[]> => {
 };
 
 export const seedHeroTemplates = async (): Promise<void> => {
+  if (!db) throw new Error("Base de datos no configurada");
   try {
     const batch = writeBatch(db);
     HERO_DATABASE.forEach((hero) => {
@@ -82,6 +84,7 @@ export const seedHeroTemplates = async (): Promise<void> => {
 };
 
 export const updateHeroTemplate = async (id: string, data: Partial<HeroTemplate>): Promise<void> => {
+    if (!db) return;
     try {
         const docRef = doc(db, COLLECTION_NAME, id);
         await updateDoc(docRef, data);
@@ -92,8 +95,8 @@ export const updateHeroTemplate = async (id: string, data: Partial<HeroTemplate>
     }
 };
 
-// --- NUEVA FUNCIÓN AÑADIDA ---
 export const createHeroTemplateInDB = async (heroData: Omit<HeroTemplate, 'id'>): Promise<string> => {
+    if (!db) throw new Error("Base de datos no configurada");
     try {
         const docRef = await addDoc(collection(db, COLLECTION_NAME), heroData);
         console.log("Hero created with ID:", docRef.id);
@@ -111,6 +114,7 @@ export interface UserProfileData {
 }
 
 export const getUserProfile = async (uid: string, campaignMode: 'ALIVE' | 'ZOMBIE'): Promise<UserProfileData | null> => {
+    if (!db) return null;
     try {
         const docRef = doc(db, USERS_COLLECTION, uid);
         const docSnap = await getDoc(docRef);
@@ -139,6 +143,7 @@ export const saveUserProfile = async (
     heroes: Hero[], 
     completedMissionIds: string[]
 ): Promise<void> => {
+    if (!db) return;
     try {
         const docRef = doc(db, USERS_COLLECTION, uid);
         const updateData = {
@@ -157,6 +162,7 @@ export const saveUserProfile = async (
 };
 
 export const getCustomMissions = async (): Promise<Mission[]> => {
+    if (!db) { console.warn("DB no disponible (getCustomMissions)"); return []; }
     try {
         const querySnapshot = await getDocs(collection(db, MISSIONS_COLLECTION));
         const missions: Mission[] = [];
@@ -172,6 +178,7 @@ export const getCustomMissions = async (): Promise<Mission[]> => {
 };
 
 export const createMissionInDB = async (missionData: Omit<Mission, 'id'>): Promise<string> => {
+    if (!db) throw new Error("Base de datos no configurada");
     try {
         const docRef = await addDoc(collection(db, MISSIONS_COLLECTION), missionData);
         return docRef.id;
@@ -182,6 +189,7 @@ export const createMissionInDB = async (missionData: Omit<Mission, 'id'>): Promi
 };
 
 export const updateMissionInDB = async (id: string, missionData: Partial<Mission>): Promise<void> => {
+    if (!db) throw new Error("Base de datos no configurada");
     try {
         const docRef = doc(db, MISSIONS_COLLECTION, id);
         const { id: _, ...dataToUpdate } = missionData as any;
