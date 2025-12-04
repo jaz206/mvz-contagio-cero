@@ -424,6 +424,14 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
   return (
     <div className="w-full h-full bg-slate-950 font-mono relative overflow-hidden select-none flex flex-col">
       
+        {/* ESTILOS PARA LA ANIMACIÓN DEL SELLO */}
+        <style>{`
+            @keyframes stamp {
+                0% { opacity: 0; transform: scale(2) rotate(-15deg); }
+                100% { opacity: 0.8; transform: scale(1) rotate(-15deg); }
+            }
+        `}</style>
+
         {/* MODAL DE PROCESO VISUAL */}
         <TransformationModal 
             isOpen={!!processingHero} 
