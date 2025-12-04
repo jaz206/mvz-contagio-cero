@@ -1,6 +1,7 @@
 import React, { useRef, useEffect, useState, useMemo } from 'react';
 import * as d3 from 'd3';
-import * as topojson from 'topojson-client'; 
+// CORRECCIÓN: Importamos 'feature' directamente en lugar de todo el paquete
+import { feature } from 'topojson-client'; 
 import { fetchUSATopoJSON } from '../services/topojsonService';
 import { USATopoJSON, Mission, WorldStage } from '../types';
 import { translations, Language } from '../translations';
@@ -111,10 +112,9 @@ export const USAMap: React.FC<USAMapProps> = ({
           return { projection: null, pathGenerator: null };
       }
       try {
-          // @ts-ignore
-          const featureFn = topojson.feature; 
-          // @ts-ignore
-          const statesFeatureCollection = featureFn(usData, usData.objects.states);
+          // CORRECCIÓN: Usamos la función 'feature' importada correctamente
+          // Casteamos a 'any' para evitar conflictos de tipos estrictos entre D3 y TopoJSON
+          const statesFeatureCollection = feature(usData as any, usData.objects.states as any);
           
           const proj = d3.geoAlbersUsa().fitSize([dimensions.width, dimensions.height], statesFeatureCollection as any);
           const path = d3.geoPath().projection(proj);
@@ -125,7 +125,7 @@ export const USAMap: React.FC<USAMapProps> = ({
       }
   }, [usData, dimensions]);
 
-  // Lógica de Hulk (Simplificada para brevedad, igual que antes)
+  // Lógica de Hulk
   useEffect(() => {
       if (!tokensReleased || !usData || !pathGenerator || !projection) return;
       const getDistance = (a: [number, number], b: [number, number]) => Math.sqrt(Math.pow(a[0] - b[0], 2) + Math.pow(a[1] - b[1], 2));
@@ -138,10 +138,8 @@ export const USAMap: React.FC<USAMapProps> = ({
       };
 
       const performJumpStep = () => {
-          // @ts-ignore
-          const featureFn = topojson.feature;
-          // @ts-ignore
-          const statesFeatureCollection = featureFn(usData, usData.objects.states);
+          // CORRECCIÓN: Usamos 'feature' importada
+          const statesFeatureCollection = feature(usData as any, usData!.objects.states as any) as any;
           const validStates = statesFeatureCollection.features.filter((f: any) => factionStates.hulk.has(f.properties.name));
 
           if (validStates.length > 0) {
@@ -173,7 +171,7 @@ export const USAMap: React.FC<USAMapProps> = ({
       return () => clearTimeout(initialTimer);
   }, [tokensReleased, usData, pathGenerator, projection, factionStates, hulkLocation]);
 
-  // --- DIBUJO DEL MAPA (AQUÍ ESTÁ LA CORRECCIÓN DE LOS NOMBRES) ---
+  // --- DIBUJO DEL MAPA ---
   useEffect(() => {
     if (!usData || !svgRef.current || !projection || !pathGenerator) return;
 
@@ -208,7 +206,6 @@ export const USAMap: React.FC<USAMapProps> = ({
                  return `translate(${coords[0]},${coords[1]}) scale(${1/k})`;
             });
 
-            // Ajustar tamaño de texto al hacer zoom
             svg.selectAll('text.label').style('font-size', `${Math.max(6, 10/k)}px`);
 
             if (k >= 2.5) {
@@ -237,11 +234,9 @@ export const USAMap: React.FC<USAMapProps> = ({
     const gMap = gMapRef.current;
     if (!gMap) return;
 
-    // @ts-ignore
-    const featureFn = topojson.feature;
-    // @ts-ignore
-    const statesFeatureCollection = featureFn(usData, usData.objects.states);
-    const statesFeatures = (statesFeatureCollection as any).features;
+    // CORRECCIÓN: Usamos 'feature' importada
+    const statesFeatureCollection = feature(usData as any, usData.objects.states as any) as any;
+    const statesFeatures = statesFeatureCollection.features;
 
     const getFactionStyle = (stateName: string) => {
         if (factionStates.magneto.has(stateName)) return 'fill-red-900/60 stroke-red-500 stroke-[1px] hover:fill-red-700 hover:stroke-red-300 hover:stroke-[2px]';
@@ -276,24 +271,23 @@ export const USAMap: React.FC<USAMapProps> = ({
     gMap.selectAll('path.state').filter(function() { return d3.select(this).select('title').empty(); })
       .append('title').text((d: any) => `${d.properties.name.toUpperCase()}`);
 
-    // 2. Dibujar Etiquetas (CORREGIDO: Color blanco sólido, sombra y .raise())
+    // 2. Dibujar Etiquetas
     gMap.selectAll('text.label')
       .data(statesFeatures)
       .join('text')
       .attr('class', 'label pointer-events-none font-mono select-none tracking-wider font-bold')
       .attr('transform', (d: any) => {
           const centroid = pathGenerator.centroid(d);
-          // Evitar errores si el centroide no se puede calcular (islas pequeñas, etc)
           if (!centroid || isNaN(centroid[0]) || isNaN(centroid[1])) return 'translate(-1000,-1000)';
           return `translate(${centroid[0]},${centroid[1]})`;
       })
       .attr('text-anchor', 'middle')
       .attr('dominant-baseline', 'central')
-      .style('fill', 'rgba(255, 255, 255, 0.9)') // Blanco casi puro
+      .style('fill', 'rgba(255, 255, 255, 0.9)')
       .style('font-size', '10px')
-      .style('text-shadow', '0px 0px 3px #000') // Sombra negra para contraste
+      .style('text-shadow', '0px 0px 3px #000')
       .text((d: any) => d.properties.name ? d.properties.name.toUpperCase() : '')
-      .raise(); // IMPORTANTE: Traer al frente
+      .raise();
 
     // 3. Dibujar Búnker
     const bunkerCoords = projection([-82.9, 40.0]);
@@ -309,13 +303,12 @@ export const USAMap: React.FC<USAMapProps> = ({
         bunkerGroup.append('image').attr('href', 'https://i.pinimg.com/736x/63/1e/3a/631e3a68228c97963e78381ad11bf3bb.jpg')
             .attr('x', -12).attr('y', -12).attr('width', 24).attr('height', 24).attr('clip-path', 'url(#bunker-clip)');
         
-        // Asegurar que el búnker esté encima de las etiquetas
         bunkerGroup.raise();
     }
 
   }, [usData, dimensions, projection, pathGenerator, factionStates]); 
 
-  // EFECTO 2: ACTUALIZACIÓN DE MARCADORES (Igual que antes)
+  // EFECTO 2: ACTUALIZACIÓN DE MARCADORES
   useEffect(() => {
       if (!projection || !gMissionsRef.current || !gTokensRef.current || !svgRef.current) return;
       

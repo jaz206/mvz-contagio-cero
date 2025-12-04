@@ -14,7 +14,7 @@ import { BunkerInterior } from './components/BunkerInterior';
 import { MissionModal } from './components/MissionModal';
 import { EventModal } from './components/EventModal';
 import { MissionEditor } from './components/MissionEditor';
-import { CharacterEditor } from './components/CharacterEditor'; // IMPORTACIÓN NUEVA
+import { CharacterEditor } from './components/CharacterEditor';
 
 import { Mission, Hero, WorldStage, GlobalEvent, HeroTemplate } from './types';
 
@@ -354,7 +354,16 @@ const App: React.FC = () => {
 
     const t = translations[lang];
 
+    // --- CORRECCIÓN DE FIREBASE ---
     useEffect(() => {
+        // Si auth es null (falló la config), forzamos el fin de la carga
+        if (!auth) {
+            console.log("Modo sin conexión/invitado activado (Firebase no configurado)");
+            setLoadingAuth(false);
+            setLoading(false);
+            return;
+        }
+
         const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
             setUser(currentUser);
             setLoadingAuth(false);
@@ -373,6 +382,7 @@ const App: React.FC = () => {
         });
         return () => unsubscribe();
     }, [isGuest]);
+    // ------------------------------
 
     const handleEditorLogin = () => {
         setIsGuest(true);
@@ -395,7 +405,7 @@ const App: React.FC = () => {
     };
 
     const handleLogout = async () => {
-      await logout();
+      if (auth) await logout();
       setIsGuest(false);
       setIsEditorMode(false);
       isDataLoadedRef.current = false;
