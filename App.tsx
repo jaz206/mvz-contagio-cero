@@ -173,6 +173,9 @@ const App: React.FC = () => {
     const [isGuest, setIsGuest] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
     
+    // NUEVO ESTADO PARA NOTICIAS URGENTES
+    const [tickerMessage, setTickerMessage] = useState<string | null>(null);
+    
     const isDataLoadedRef = useRef(false);
     
     const [isEditorMode, setIsEditorMode] = useState(false);
@@ -257,30 +260,27 @@ const App: React.FC = () => {
         setViewMode('map');
     };
 
-    // --- CORRECCIÓN: BÚSQUEDA ROBUSTA EN DB PARA TRANSFORMACIÓN ---
     const handleTransformHero = (heroId: string, targetAlignment: 'ALIVE' | 'ZOMBIE') => {
         const currentHero = heroes.find(h => h.id === heroId);
         if (!currentHero) return;
 
-        // Función auxiliar para normalizar strings (quitar comillas, espacios, minúsculas)
-        const normalize = (str: string) => str ? str.replace(/['"]/g, '').trim().toLowerCase() : '';
+        // LANZAR NOTICIA URGENTE
+        const actionText = targetAlignment === 'ALIVE' ? 'CURADO' : 'INFECTADO';
+        setTickerMessage(`SUJETO ${currentHero.alias} ${actionText} - BASE DE DATOS ACTUALIZADA`);
 
-        // 1. Buscar en listas hardcoded
+        const normalize = (str: string) => str ? str.replace(/['"]/g, '').trim().toLowerCase() : '';
         const hardcodedTargetList = targetAlignment === 'ALIVE' ? INITIAL_HEROES : INITIAL_ZOMBIE_HEROES;
         let counterpart: any = hardcodedTargetList.find(h => normalize(h.alias) === normalize(currentHero.alias));
 
-        // 2. Si no está en hardcoded, buscar en DB Templates
         if (!counterpart) {
             const dbCounterpart = dbTemplates.find(t => 
-                // Comparamos Alias O Nombre Real, normalizados
                 (normalize(t.alias) === normalize(currentHero.alias) || normalize(t.defaultName) === normalize(currentHero.name)) && 
                 t.defaultAlignment === targetAlignment
             );
 
             if (dbCounterpart) {
-                // Convertir Template a estructura Hero
                 counterpart = {
-                    id: heroId, // Mantenemos el ID original
+                    id: heroId,
                     templateId: dbCounterpart.id,
                     name: dbCounterpart.defaultName,
                     alias: dbCounterpart.alias,
@@ -298,7 +298,6 @@ const App: React.FC = () => {
         }
 
         if (counterpart) {
-            // Reemplazar datos
             const newHeroes = heroes.map(h => {
                 if (h.id === heroId) {
                     return {
@@ -320,7 +319,6 @@ const App: React.FC = () => {
             });
             setHeroes(newHeroes);
         } else {
-            // Fallback: Si no existe la versión alternativa, solo lo liberamos
             const newHeroes = heroes.map(h => {
                 if (h.id === heroId) {
                     return { ...h, status: 'AVAILABLE', assignedMissionId: null };
@@ -434,12 +432,15 @@ const App: React.FC = () => {
         if (completedCount >= 15 && worldStage !== 'GALACTUS') {
             setActiveGlobalEvent({ stage: 'GALACTUS', title: '', description: '' });
             setWorldStage('GALACTUS');
+            setTickerMessage("¡ALERTA OMEGA! GALACTUS HA LLEGADO. TODAS LAS MISIONES SECUNDARIAS CANCELADAS.");
         } else if (completedCount >= 10 && completedCount < 15 && worldStage !== 'SURFER' && worldStage !== 'GALACTUS') {
             setActiveGlobalEvent({ stage: 'SURFER', title: '', description: '' });
             setWorldStage('SURFER');
+            setTickerMessage("OBJETO PLATEADO ENTRANDO EN LA ATMÓSFERA. PREPARAR INTERCEPCIÓN.");
         } else if (completedCount >= 4 && completedCount < 10 && worldStage === 'NORMAL') {
             setActiveGlobalEvent({ stage: 'ANOMALY', title: '', description: '' });
             setWorldStage('ANOMALY');
+            setTickerMessage("LECTURAS DE ENERGÍA ANÓMALAS EN EL ESPACIO PROFUNDO.");
         }
     };
 
@@ -476,6 +477,7 @@ const App: React.FC = () => {
         if (id === 'boss-galactus') {
             setWorldStage('NORMAL');
             setActiveGlobalEvent(null);
+            setTickerMessage("AMENAZA OMEGA NEUTRALIZADA. BUEN TRABAJO, AGENTES.");
         } else {
             checkGlobalEvents(newSet.size);
         }
@@ -487,16 +489,14 @@ const App: React.FC = () => {
         setCompletedMissionIds(newSet);
     };
 
-    // --- NUEVA FUNCIÓN: ELIMINAR MISIÓN ---
     const handleDeleteMission = async (id: string) => {
         if (!window.confirm("¿ESTÁS SEGURO DE QUE QUIERES ELIMINAR ESTA MISIÓN DE LA BASE DE DATOS?")) return;
         
         try {
             await deleteMissionInDB(id);
-            // Actualizar estado local
             const loaded = await getCustomMissions();
             setCustomMissions(loaded);
-            setSelectedMission(null); // Cerrar modal
+            setSelectedMission(null);
         } catch (e) {
             alert("Error al eliminar la misión");
         }
@@ -531,11 +531,11 @@ const App: React.FC = () => {
         const DEFAULT_MISSIONS: Mission[] = [
             {
                 id: 'm_kraven', title: t.missions.kraven.title, description: t.missions.kraven.description, objectives: t.missions.kraven.objectives,
-                location: { state: 'New York', coordinates: [-74.006, 40.7128] }, threatLevel: 'ALTA', type: 'STANDARD', alignment: 'ALIVE' // Kraven es solo para Héroes
+                location: { state: 'New York', coordinates: [-74.006, 40.7128] }, threatLevel: 'ALTA', type: 'STANDARD', alignment: 'ALIVE'
             },
             {
                 id: 'm_zombie_feast', title: "EL FESTÍN DE LOS MUTANTES", description: ["La Escuela de Xavier está fortificada.", "Cerebro detecta mucha carne fresca dentro."], objectives: [{ title: "Romper las defensas", desc: "Destruir los muros." }],
-                location: { state: 'New York', coordinates: [-73.8, 41.0] }, threatLevel: 'EXTREMA', type: 'STANDARD', alignment: 'ZOMBIE' // Solo para Zombies
+                location: { state: 'New York', coordinates: [-73.8, 41.0] }, threatLevel: 'EXTREMA', type: 'STANDARD', alignment: 'ZOMBIE'
             },
             {
                 id: 'm_flesh', title: t.missions.fleshSleeps.title, description: t.missions.fleshSleeps.description, objectives: t.missions.fleshSleeps.objectives,
@@ -559,24 +559,20 @@ const App: React.FC = () => {
     }, [t, playerAlignment, worldStage, customMissions]);
 
     const visibleMissions = useMemo(() => {
-        // 1. Filtrado por Bando (Alignment) - SIEMPRE APLICA
         const alignmentFiltered = allMissions.filter(m => {
             if (!m.alignment || m.alignment === 'BOTH') return true;
             return m.alignment === playerAlignment;
         });
 
-        // 2. Lógica MODO EDITOR: Devuelve TODAS las del bando actual, ignorando etapa y requisitos
         if (isEditorMode) {
             return alignmentFiltered;
         }
 
-        // 3. Lógica MODO JUEGO (Normal)
-        let stageFiltered = alignmentFiltered;
         if (worldStage === 'GALACTUS') {
-            stageFiltered = alignmentFiltered.filter(m => m.type === 'BOSS');
+            return alignmentFiltered;
         }
 
-        return stageFiltered.filter(m => {
+        return alignmentFiltered.filter(m => {
             if (!m) return false;
             const isCompleted = completedMissionIds.has(m.id);
             const prereqMet = !m.prereq || completedMissionIds.has(m.prereq);
@@ -586,18 +582,30 @@ const App: React.FC = () => {
 
     const groupedMissions = useMemo(() => {
         const activeMissions = visibleMissions.filter(m => m && !completedMissionIds.has(m.id));
-        const groups: Record<string, Mission[]> = { kingpin: [], magneto: [], hulk: [], doom: [], neutral: [] };
+        const groups: Record<string, Mission[]> = { galactus: [], kingpin: [], magneto: [], hulk: [], doom: [], neutral: [] };
+        
         activeMissions.forEach(m => {
-            const isMainMission = m.title && m.title.toUpperCase().includes("CADENAS ROTAS");
-            if (isMainMission) {
-                groups.neutral.push(m);
+            if (m.type === 'BOSS' && worldStage === 'GALACTUS') {
+                groups.galactus.push(m);
             } else {
-                const faction = getFactionForState(m.location.state);
-                if (groups[faction]) { groups[faction].push(m); } else { groups.neutral.push(m); }
+                const isMainMission = m.title && m.title.toUpperCase().includes("CADENAS ROTAS");
+                if (isMainMission) {
+                    groups.neutral.push(m);
+                } else {
+                    const faction = getFactionForState(m.location.state);
+                    if (groups[faction]) { groups[faction].push(m); } else { groups.neutral.push(m); }
+                }
             }
         });
         return groups;
-    }, [visibleMissions, completedMissionIds]);
+    }, [visibleMissions, completedMissionIds, worldStage]);
+
+    const handleMissionSelectWrapper = (m: Mission) => {
+        if (worldStage === 'GALACTUS' && m.type !== 'BOSS') {
+            return; 
+        }
+        setSelectedMission(m);
+    };
 
     if (loading || loadingAuth) return <div className="bg-slate-950 text-cyan-500 h-screen flex items-center justify-center font-mono">LOADING SHIELD OS...</div>;
 
@@ -617,7 +625,6 @@ const App: React.FC = () => {
                     isCompleted={completedMissionIds.has(selectedMission.id)} 
                     isEditorMode={isEditorMode} 
                     onEdit={(m) => { setMissionToEdit(m); setShowMissionEditor(true); setSelectedMission(null); }} 
-                    // PASAMOS LA FUNCIÓN DE BORRAR
                     onDelete={handleDeleteMission}
                 />
             )}
@@ -678,12 +685,31 @@ const App: React.FC = () => {
                             <div id="tutorial-sidebar-missions" className="flex-1 overflow-y-auto p-4 scrollbar-thin scrollbar-thumb-cyan-900">
                                 <h4 className="text-[10px] font-bold text-cyan-600 uppercase mb-3 tracking-widest border-b border-cyan-900 pb-1">{t.sidebar.activeMissions}</h4>
                                 <div className="space-y-2">
+                                    {/* RENDERIZADO ESPECIAL PARA GALACTUS */}
+                                    {groupedMissions.galactus.length > 0 && (
+                                        <div className="mb-4 border-2 border-purple-600 bg-purple-900/20 animate-pulse">
+                                            <div className="p-2 bg-purple-900/80 text-white text-[10px] font-black tracking-widest uppercase text-center">
+                                                ⚠ AMENAZA OMEGA ⚠
+                                            </div>
+                                            <div className="p-2">
+                                                {groupedMissions.galactus.map(m => (
+                                                    <div key={m.id} onClick={() => setSelectedMission(m)} className="p-3 bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs cursor-pointer text-center shadow-lg border border-purple-400">
+                                                        {m.title}
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* RENDERIZADO NORMAL (BLOQUEADO SI GALACTUS) */}
                                     {Object.entries(groupedMissions).map(([zoneKey, missions]) => {
-                                        if (missions.length === 0) return null;
+                                        if (zoneKey === 'galactus' || missions.length === 0) return null;
                                         const isExpanded = expandedZones.has(zoneKey);
                                         const factionLabel = t.factions[zoneKey as keyof typeof t.factions]?.name || zoneKey.toUpperCase();
+                                        const isBlocked = worldStage === 'GALACTUS'; // Bloqueo global
+
                                         return (
-                                            <div key={zoneKey} className="mb-2 border border-cyan-900/30 bg-slate-900/30">
+                                            <div key={zoneKey} className={`mb-2 border border-cyan-900/30 bg-slate-900/30 ${isBlocked ? 'opacity-40 pointer-events-none grayscale' : ''}`}>
                                                 <button onClick={() => toggleZone(zoneKey)} className="w-full flex justify-between items-center p-2 bg-slate-800/80 hover:bg-cyan-900/30 transition-colors border-b border-cyan-900/30">
                                                     <span className="text-[9px] font-bold text-cyan-400 uppercase tracking-widest truncate max-w-[160px]">{factionLabel}</span>
                                                     <div className="flex items-center gap-2"><span className="text-[9px] bg-cyan-900/50 text-cyan-200 px-1.5 py-0.5 rounded font-mono border border-cyan-700">{missions.length}</span><span className={`text-[10px] text-cyan-500 transform transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`}>▼</span></div>
@@ -702,7 +728,7 @@ const App: React.FC = () => {
                                                             else if (isShield) { borderClass = 'border-cyan-500/30 bg-cyan-900/5 hover:bg-cyan-900/20'; barClass = 'bg-cyan-500'; textClass = 'text-cyan-200'; subTextClass = 'text-cyan-500/70'; }
                                                             else if (isStartMission) { borderClass = 'border-emerald-500/30 bg-emerald-900/5 hover:bg-emerald-900/20'; barClass = 'bg-emerald-500'; textClass = 'text-emerald-200'; subTextClass = 'text-emerald-500/70'; }
                                                             return (
-                                                                <div key={m.id} onClick={() => setSelectedMission(m)} className={`p-2 border cursor-pointer transition-all group relative overflow-hidden ${borderClass}`}>
+                                                                <div key={m.id} onClick={() => handleMissionSelectWrapper(m)} className={`p-2 border cursor-pointer transition-all group relative overflow-hidden ${borderClass}`}>
                                                                     <div className={`absolute left-0 top-0 bottom-0 w-1 ${barClass} group-hover:w-1.5 transition-all`}></div>
                                                                     <div className="flex justify-between items-start pl-2"><div className={`text-[9px] font-bold ${textClass} group-hover:text-white uppercase tracking-wider leading-tight`}>{m.title || 'UNKNOWN MISSION'}</div></div>
                                                                     <div className={`pl-2 mt-0.5 text-[8px] ${subTextClass}`}>LOC: {m.location?.state || 'UNKNOWN'}</div>
@@ -734,10 +760,10 @@ const App: React.FC = () => {
                             </div>
                         </aside>
                         <main className="flex-1 relative bg-slate-950 overflow-hidden">
-                            {viewMode === 'map' && (<USAMap language={lang} missions={visibleMissions} completedMissionIds={completedMissionIds} onMissionComplete={handleMissionComplete} onMissionSelect={setSelectedMission} onBunkerClick={() => setViewMode('bunker')} factionStates={FACTION_STATES} playerAlignment={playerAlignment} worldStage={worldStage} />)}
+                            {viewMode === 'map' && (<USAMap language={lang} missions={visibleMissions} completedMissionIds={completedMissionIds} onMissionComplete={handleMissionComplete} onMissionSelect={handleMissionSelectWrapper} onBunkerClick={() => setViewMode('bunker')} factionStates={FACTION_STATES} playerAlignment={playerAlignment} worldStage={worldStage} />)}
                             {viewMode === 'bunker' && (<BunkerInterior heroes={heroes} missions={visibleMissions.filter(m => m && !completedMissionIds.has(m.id))} onAssign={(heroId, missionId) => { const hIndex = heroes.findIndex(h => h.id === heroId); if(hIndex >= 0) { const newHeroes = [...heroes]; newHeroes[hIndex] = { ...newHeroes[hIndex], status: 'DEPLOYED', assignedMissionId: missionId }; setHeroes(newHeroes); return true; } return false; }} onUnassign={(heroId) => { const hIndex = heroes.findIndex(h => h.id === heroId); if(hIndex >= 0) { const newHeroes = [...heroes]; newHeroes[hIndex] = { ...newHeroes[hIndex], status: 'AVAILABLE', assignedMissionId: null }; setHeroes(newHeroes); } }} onAddHero={(hero) => setHeroes([...heroes, hero])} onToggleObjective={handleToggleHeroObjective} onBack={() => setViewMode('map')} language={lang} playerAlignment={playerAlignment} isEditorMode={isEditorMode} onTransformHero={handleTransformHero} />)}
                             {viewMode === 'tutorial' && (<div className="absolute inset-0 z-40"><USAMap language={lang} missions={visibleMissions} completedMissionIds={completedMissionIds} onMissionComplete={() => {}} onMissionSelect={() => {}} onBunkerClick={() => {}} factionStates={FACTION_STATES} playerAlignment={playerAlignment} worldStage={worldStage} /><TutorialOverlay language={lang} onComplete={() => { if(user) localStorage.setItem(`shield_tutorial_seen_${user.uid}`, 'true'); setViewMode('map'); }} onStepChange={(stepKey) => { if (['roster', 'file', 'recruit'].includes(stepKey)) { setViewMode('bunker'); } }} /></div>)}
-                            <NewsTicker alignment={playerAlignment || 'ALIVE'} />
+                            <NewsTicker alignment={playerAlignment || 'ALIVE'} worldStage={worldStage} urgentMessage={tickerMessage} />
                         </main>
                     </div>
                 </>

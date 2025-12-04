@@ -336,11 +336,19 @@ export const USAMap: React.FC<USAMapProps> = ({
             const coords = projection(d.location.coordinates);
             return coords ? `translate(${coords[0]}, ${coords[1]})` : 'translate(-100,-100)';
         })
-        .on('click', (e, d) => { e.stopPropagation(); onMissionSelect(d); });
+        .on('click', (e, d) => { 
+            e.stopPropagation(); 
+            // BLOQUEO DE CLIC EN MAPA SI ES GALACTUS
+            if (worldStage === 'GALACTUS' && d.type !== 'BOSS') return;
+            onMissionSelect(d); 
+        });
 
       missionGroups.select('.mission-dot')
         .attr('r', (d) => completedMissionIds.has(d.id) ? 6 : 4.5)
         .attr('fill', (d) => {
+            // SI ES GALACTUS, LAS OTRAS SE VEN GRISES
+            if (worldStage === 'GALACTUS' && d.type !== 'BOSS') return '#64748b'; // Slate-500
+            
             if (completedMissionIds.has(d.id)) return '#10b981'; 
             if (d.type === 'SHIELD_BASE') return '#06b6d4'; 
             if (d.type === 'BOSS') return '#9333ea'; 
@@ -356,26 +364,34 @@ export const USAMap: React.FC<USAMapProps> = ({
           const isCompleted = completedMissionIds.has(d.id);
           const currentStatus = sel.attr('data-status');
           const newStatus = isCompleted ? 'completed' : 'active';
+          const isBlocked = worldStage === 'GALACTUS' && d.type !== 'BOSS';
 
           if (sel.selectAll('*').empty() || currentStatus !== newStatus) {
               sel.selectAll('*').remove();
               sel.attr('data-status', newStatus);
               
+              const strokeColor = isBlocked ? '#64748b' : (isCompleted ? '#10b981' : '#eab308');
+              const fillColor = isBlocked ? '#1e293b' : '#0f172a';
+
               if (d.type === 'SHIELD_BASE' && !isCompleted) {
-                 sel.append('circle').attr('r', 9).attr('fill', '#0f172a').attr('stroke', '#06b6d4').attr('stroke-width', 1);
-                 sel.append('image')
-                    .attr('href', 'https://i.pinimg.com/736x/63/1e/3a/631e3a68228c97963e78381ad11bf3bb.jpg')
-                    .attr('x', -8).attr('y', -8)
-                    .attr('width', 16).attr('height', 16)
-                    .attr('clip-path', 'url(#mission-clip)');
+                 sel.append('circle').attr('r', 9).attr('fill', fillColor).attr('stroke', isBlocked ? '#64748b' : '#06b6d4').attr('stroke-width', 1);
+                 if (!isBlocked) {
+                     sel.append('image')
+                        .attr('href', 'https://i.pinimg.com/736x/63/1e/3a/631e3a68228c97963e78381ad11bf3bb.jpg')
+                        .attr('x', -8).attr('y', -8)
+                        .attr('width', 16).attr('height', 16)
+                        .attr('clip-path', 'url(#mission-clip)');
+                 }
               } else {
-                  sel.append('circle').attr('r', 8).attr('fill', '#0f172a').attr('stroke', isCompleted ? '#10b981' : '#eab308');
+                  sel.append('circle').attr('r', 8).attr('fill', fillColor).attr('stroke', strokeColor);
                   if (isCompleted) {
-                      sel.append('path').attr('d', "M-3,0 L0,3 L5,-4").attr('stroke', '#10b981').attr('stroke-width', 2).attr('fill', 'none');
+                      sel.append('path').attr('d', "M-3,0 L0,3 L5,-4").attr('stroke', strokeColor).attr('stroke-width', 2).attr('fill', 'none');
                   } else if (d.type === 'BOSS') {
                       sel.append('text').attr('dy', 4).attr('text-anchor', 'middle').attr('font-size', '10px').text('💀').attr('fill', '#9333ea');
                   } else {
-                      sel.append('path').attr('d', "M-4,-4 L4,4 M-4,4 L4,-4").attr('stroke', '#eab308').attr('stroke-width', 1.5);
+                      if (!isBlocked) {
+                          sel.append('path').attr('d', "M-4,-4 L4,4 M-4,4 L4,-4").attr('stroke', strokeColor).attr('stroke-width', 1.5);
+                      }
                   }
               }
           }
