@@ -403,20 +403,51 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
     }
   };
 
+  // --- CORRECCIÓN: FILTRO DE RECLUTAMIENTO MEJORADO ---
   const availableTemplates = dbTemplates.filter((template) => {
+    // 1. Filtro de búsqueda por texto
     if (searchTerm) {
       const term = searchTerm.toLowerCase();
       if (!(template.alias || template.defaultName).toLowerCase().includes(term)) {
           return false;
       }
     }
+
+    // 2. Si estamos editando, mostramos todo
     if (isEditingExisting) return true;
-    const exists = heroes.some((h) => h.templateId === template.id);
-    if (exists) return false;
+
+    // 3. VERIFICACIÓN DE EXISTENCIA (CORREGIDA)
+    // Comprobamos si el personaje YA existe en nuestra lista de héroes (en cualquier estado: vivo, zombie, capturado)
+    // Usamos la normalización para comparar Alias o Nombres, ignorando mayúsculas y comillas.
+    const normalize = (str: string) => str ? str.replace(/['"]/g, '').trim().toLowerCase() : '';
+    
+    const characterAlreadyInRoster = heroes.some(h => {
+        // Coincidencia por ID de template (exacta)
+        if (h.templateId === template.id) return true;
+        
+        // Coincidencia por Alias (ej: "INVISIBLE WOMAN" vs "Invisible Woman")
+        const hAlias = normalize(h.alias);
+        const tAlias = normalize(template.alias);
+        if (hAlias && tAlias && hAlias === tAlias) return true;
+
+        // Coincidencia por Nombre Real (ej: "Susan Storm")
+        const hName = normalize(h.name);
+        const tName = normalize(template.defaultName);
+        if (hName && tName && hName === tName) return true;
+
+        return false;
+    });
+
+    // Si ya lo tenemos, NO lo mostramos en la lista de reclutamiento
+    if (characterAlreadyInRoster) return false;
+
+    // 4. Filtro por Bando (Aliado vs Enemigo)
     const templateAlign = template.defaultAlignment || 'ALIVE';
     if (recruitMode === 'DIRECT') {
+        // Reclutar Aliado: Debe ser de mi mismo bando
         return templateAlign === playerAlignment;
     } else {
+        // Capturar Enemigo: Debe ser del bando contrario
         return templateAlign !== playerAlignment;
     }
   });
