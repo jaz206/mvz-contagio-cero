@@ -31,11 +31,12 @@ export const translations = {
       bunker: "BÚNKER"
     },
     factions: {
-      magneto: { name: "Imperio de Magneto" },
-      kingpin: { name: "Territorio de Kingpin" },
-      hulk: { name: "Tierras Baldías de Hulk" },
-      doom: { name: "Latveria (Doom)" },
-      neutral: { name: "Zona Neutral / S.H.I.E.L.D." }
+      // CAMBIO: Nombres actualizados
+      magneto: { name: "Edén Roto (Magneto)" },
+      kingpin: { name: "Imperio de la Carne" },
+      hulk: { name: "Tierras Baldías (Hulk)" },
+      doom: { name: "Doomsberg (Latveria)" },
+      neutral: { name: "Zona Neutral" }
     },
     login: {
       title: "SHIELD OS",
@@ -227,7 +228,7 @@ export const translations = {
             { text: "Cuando el virus tocó la sangre gamma, no murió. Se enfureció. Banner no cayó. La cosa que despertó ya no tenía a nadie al volante.", image: "https://i.pinimg.com/1200x/a8/e9/b7/a8e9b76d6a9a87de0cfba509d5fef534.jpg" },
             { text: "El estallido no fue de fuego, fue de contagio. Hulk rugió, y en ese rugido viajaba la extinción.", image: "https://i.pinimg.com/1200x/eb/db/e8/ebdbe8d5738acd105654dc8ddad8216f.jpg" },
             { text: "En cuestión de horas, Nueva York era un matadero. Los Vengadores cayeron primero, destrozados por los amigos que intentaban salvar.", image: "https://i.pinimg.com/1200x/b9/0a/18/b90a18369639b131f91273f019b699cd.jpg" },
-            { text: "¿Y la Tríada? Doom, Magneto y Fisk fueron alcanzados por su propia creación. Pero el destino tiene un sentido del humor cruel.", image: "https://i.pinimg.com/1200x/e1/02/86/e102864e130bfa5b5f2ffc5a9d9ed9c0.jpg" },
+            { text: "¿Y la Tríada? Doom, Magneto, y Fisk fueron alcanzados por su propia creación. Pero el destino tiene un sentido del humor cruel.", image: "https://i.pinimg.com/1200x/e1/02/86/e102864e130bfa5b5f2ffc5a9d9ed9c0.jpg" },
             { text: "No perdieron la mente. Sus cuerpos se pudrieron, pero su intelecto permaneció intacto. Ahora se sientan en tronos de huesos, gobernando facciones de pesadilla.", image: "https://i.pinimg.com/1200x/e2/5c/3a/e25c3ac26e5fc65f9119b6073912e856.jpg" },
             { text: "Pero hay algo más ahí fuera. S.H.I.E.L.D. sigue activo. No es una agencia; es un fantasma armado. Una IA paranoica que ha decidido que la única forma de mantener el orden es eliminar todo lo que se mueva.", image: "https://i.pinimg.com/1200x/39/c8/cd/39c8cde0a5b56acc78b41c4eecf91f0a.jpg" },
             { text: "Así que aquí estás. De pie sobre las cenizas. Ya no se trata de salvar el mundo. Se trata de ver quién queda en pie.", image: "https://i.pinimg.com/1200x/45/7d/c5/457dc515c61d470eb26cf1727ebd67ea.jpg" },
@@ -284,11 +285,11 @@ export const translations = {
       bunker: "BUNKER"
     },
     factions: {
-      magneto: { name: "Magneto's Empire" },
-      kingpin: { name: "Kingpin's Territory" },
+      magneto: { name: "Broken Eden (Magneto)" },
+      kingpin: { name: "Empire of Flesh" },
       hulk: { name: "Hulk's Wasteland" },
-      doom: { name: "Latveria (Doom)" },
-      neutral: { name: "Neutral Zone / S.H.I.E.L.D." }
+      doom: { name: "Doomsberg (Latveria)" },
+      neutral: { name: "Neutral Zone" }
     },
     login: {
       title: "SHIELD OS",

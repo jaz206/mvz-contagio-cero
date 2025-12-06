@@ -575,6 +575,10 @@ const App: React.FC = () => {
             return alignmentFiltered;
         }
 
+        if (worldStage === 'GALACTUS') {
+            return alignmentFiltered;
+        }
+
         return alignmentFiltered.filter(m => {
             if (!m) return false;
             const isCompleted = completedMissionIds.has(m.id);
@@ -586,20 +590,16 @@ const App: React.FC = () => {
                 prereqMet = completedMissionIds.has(m.prereq);
             }
 
-            // CAMBIO: Lógica de visibilidad para misiones GALACTUS basada en triggerStage
             if (m.type === 'GALACTUS') {
                 if (m.triggerStage === 'SURFER') {
-                    // Visible si estamos en SURFER o GALACTUS
                     return worldStage === 'SURFER' || worldStage === 'GALACTUS';
                 }
                 if (m.triggerStage === 'GALACTUS') {
-                    // Visible solo en GALACTUS
                     return worldStage === 'GALACTUS';
                 }
                 return false;
             }
 
-            // Si estamos en etapa GALACTUS, ocultar misiones normales no completadas para enfocar en el jefe
             if (worldStage === 'GALACTUS' && !isCompleted && m.type !== 'GALACTUS' && m.type !== 'BOSS') {
                 return false;
             }
@@ -610,18 +610,47 @@ const App: React.FC = () => {
 
     const groupedMissions = useMemo(() => {
         const activeMissions = visibleMissions.filter(m => m && !completedMissionIds.has(m.id));
-        const groups: Record<string, Mission[]> = { galactus: [], kingpin: [], magneto: [], hulk: [], doom: [], neutral: [] };
+        
+        // CAMBIO: Estructura de grupos actualizada para incluir variantes de SHIELD
+        const groups: Record<string, Mission[]> = { 
+            galactus: [], 
+            
+            kingpin: [], 
+            shield_kingpin: [],
+            
+            magneto: [], 
+            shield_magneto: [],
+            
+            hulk: [], 
+            shield_hulk: [],
+            
+            doom: [], 
+            shield_doom: [],
+            
+            neutral: [],
+            shield_neutral: []
+        };
         
         activeMissions.forEach(m => {
             if (m.type === 'GALACTUS' || (m.type === 'BOSS' && worldStage === 'GALACTUS')) {
                 groups.galactus.push(m);
             } else {
-                const isMainMission = m.title && m.title.toUpperCase().includes("CADENAS ROTAS");
-                if (isMainMission) {
-                    groups.neutral.push(m);
+                const faction = getFactionForState(m.location.state);
+                
+                // CAMBIO: Lógica para separar bases de SHIELD en su propio subgrupo
+                if (m.type === 'SHIELD_BASE') {
+                    const key = `shield_${faction}`;
+                    if (groups[key]) {
+                        groups[key].push(m);
+                    } else {
+                        groups.shield_neutral.push(m);
+                    }
                 } else {
-                    const faction = getFactionForState(m.location.state);
-                    if (groups[faction]) { groups[faction].push(m); } else { groups.neutral.push(m); }
+                    if (groups[faction]) { 
+                        groups[faction].push(m); 
+                    } else { 
+                        groups.neutral.push(m); 
+                    }
                 }
             }
         });
@@ -629,7 +658,6 @@ const App: React.FC = () => {
     }, [visibleMissions, completedMissionIds, worldStage]);
 
     const handleMissionSelectWrapper = (m: Mission) => {
-        // Permitir seleccionar misiones GALACTUS en cualquier momento que sean visibles
         if (worldStage === 'GALACTUS' && m.type !== 'BOSS' && m.type !== 'GALACTUS') {
             return; 
         }
@@ -640,7 +668,6 @@ const App: React.FC = () => {
 
     return (
         <div className={`flex flex-col h-screen w-full bg-slate-950 text-cyan-400 font-mono overflow-hidden relative ${playerAlignment === 'ZOMBIE' ? 'hue-rotate-15 saturate-50' : ''}`}>
-            {/* ... (Resto del renderizado igual) ... */}
             <CharacterEditor isOpen={showCharacterEditor} onClose={() => setShowCharacterEditor(false)} language={lang} />
             <MissionEditor isOpen={showMissionEditor} onClose={() => { setShowMissionEditor(false); setMissionToEdit(null); }} onSave={async (newMission) => { const loaded = await getCustomMissions(); setCustomMissions(loaded); }} language={lang} initialData={missionToEdit} existingMissions={allMissions} />
             {activeGlobalEvent && (
@@ -740,7 +767,17 @@ const App: React.FC = () => {
                                     {Object.entries(groupedMissions).map(([zoneKey, missions]) => {
                                         if (zoneKey === 'galactus' || missions.length === 0) return null;
                                         const isExpanded = expandedZones.has(zoneKey);
-                                        const factionLabel = t.factions[zoneKey as keyof typeof t.factions]?.name || zoneKey.toUpperCase();
+                                        
+                                        // CAMBIO: Lógica para mostrar el nombre correcto en el sidebar
+                                        const factionLabel = (() => {
+                                            if (zoneKey.startsWith('shield_')) {
+                                                const baseFaction = zoneKey.replace('shield_', '');
+                                                const baseName = t.factions[baseFaction as keyof typeof t.factions]?.name || baseFaction.toUpperCase();
+                                                return `S.H.I.E.L.D. (${baseName})`;
+                                            }
+                                            return t.factions[zoneKey as keyof typeof t.factions]?.name || zoneKey.toUpperCase();
+                                        })();
+
                                         const isBlocked = worldStage === 'GALACTUS';
                                         return (
                                             <div key={zoneKey} className={`mb-2 border border-cyan-900/30 bg-slate-900/30 ${isBlocked ? 'opacity-40 pointer-events-none grayscale' : ''}`}>
