@@ -36,7 +36,6 @@ export interface HeroTemplate {
     currentStory?: string;
     objectives?: string[];
     characterSheetUrl?: string;
-    // NUEVO CAMPO: Define si el personaje es originalmente Héroe o Zombie en la DB
     defaultAlignment?: 'ALIVE' | 'ZOMBIE'; 
 }
 
@@ -57,11 +56,11 @@ export interface Mission {
     objectives: Objective[];
     location: Location;
     threatLevel: string;
-    type?: 'STANDARD' | 'SHIELD_BASE' | 'BOSS';
+    // CAMBIO: Añadido tipo 'GALACTUS'
+    type?: 'STANDARD' | 'SHIELD_BASE' | 'BOSS' | 'GALACTUS';
     
-    // CAMBIO: Soporte para múltiples requisitos
-    prereq?: string;       // Legacy (singular)
-    prereqs?: string[];    // Nuevo (múltiple)
+    prereq?: string;       
+    prereqs?: string[];    
     
     pdfUrl?: string;
     alignment?: 'ALIVE' | 'ZOMBIE' | 'BOTH';

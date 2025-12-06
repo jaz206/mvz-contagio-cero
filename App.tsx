@@ -554,8 +554,9 @@ const App: React.FC = () => {
         customMissions.forEach(m => { if (m && m.id) missionMap.set(m.id, m); });
         const missionList = Array.from(missionMap.values());
         if (worldStage === 'GALACTUS') {
+            // CAMBIO: Usamos el nuevo tipo GALACTUS para la misión hardcodeada
             missionList.push({
-                id: 'boss-galactus', type: 'BOSS', title: t.missions.galactus.title, description: t.missions.galactus.description, objectives: t.missions.galactus.objectives,
+                id: 'boss-galactus', type: 'GALACTUS', title: t.missions.galactus.title, description: t.missions.galactus.description, objectives: t.missions.galactus.objectives,
                 location: { state: 'Kansas', coordinates: [-98.0, 38.0] }, threatLevel: 'OMEGA++', alignment: 'BOTH'
             });
         }
@@ -590,6 +591,11 @@ const App: React.FC = () => {
                 prereqMet = completedMissionIds.has(m.prereq);
             }
 
+            // CAMBIO: Las misiones de tipo GALACTUS solo aparecen en la etapa GALACTUS
+            if (m.type === 'GALACTUS') {
+                return worldStage === 'GALACTUS';
+            }
+
             return isCompleted || prereqMet;
         });
     }, [allMissions, completedMissionIds, isEditorMode, worldStage, playerAlignment]);
@@ -599,7 +605,8 @@ const App: React.FC = () => {
         const groups: Record<string, Mission[]> = { galactus: [], kingpin: [], magneto: [], hulk: [], doom: [], neutral: [] };
         
         activeMissions.forEach(m => {
-            if (m.type === 'BOSS' && worldStage === 'GALACTUS') {
+            // CAMBIO: Agrupar por tipo GALACTUS
+            if (m.type === 'GALACTUS' || (m.type === 'BOSS' && worldStage === 'GALACTUS')) {
                 groups.galactus.push(m);
             } else {
                 const isMainMission = m.title && m.title.toUpperCase().includes("CADENAS ROTAS");
@@ -615,7 +622,7 @@ const App: React.FC = () => {
     }, [visibleMissions, completedMissionIds, worldStage]);
 
     const handleMissionSelectWrapper = (m: Mission) => {
-        if (worldStage === 'GALACTUS' && m.type !== 'BOSS') {
+        if (worldStage === 'GALACTUS' && m.type !== 'BOSS' && m.type !== 'GALACTUS') {
             return; 
         }
         setSelectedMission(m);

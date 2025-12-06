@@ -355,7 +355,7 @@ export const USAMap: React.FC<USAMapProps> = ({
         .on('click', (e, d) => { 
             e.stopPropagation(); 
             // BLOQUEO DE CLIC EN MAPA SI ES GALACTUS
-            if (worldStage === 'GALACTUS' && d.type !== 'BOSS') return;
+            if (worldStage === 'GALACTUS' && d.type !== 'BOSS' && d.type !== 'GALACTUS') return;
             onMissionSelect(d); 
         });
 
@@ -363,11 +363,13 @@ export const USAMap: React.FC<USAMapProps> = ({
         .attr('r', (d) => completedMissionIds.has(d.id) ? 6 : 4.5)
         .attr('fill', (d) => {
             // SI ES GALACTUS, LAS OTRAS SE VEN GRISES
-            if (worldStage === 'GALACTUS' && d.type !== 'BOSS') return '#64748b'; // Slate-500
+            if (worldStage === 'GALACTUS' && d.type !== 'BOSS' && d.type !== 'GALACTUS') return '#64748b'; // Slate-500
             
             if (completedMissionIds.has(d.id)) return '#10b981'; 
             if (d.type === 'SHIELD_BASE') return '#06b6d4'; 
             if (d.type === 'BOSS') return '#9333ea'; 
+            // CAMBIO: Color para misiones GALACTUS
+            if (d.type === 'GALACTUS') return '#9333ea'; 
             return '#eab308';
         })
         .attr('stroke', 'white').attr('stroke-width', 0.5).style('filter', 'url(#glow)')
@@ -380,7 +382,7 @@ export const USAMap: React.FC<USAMapProps> = ({
           const isCompleted = completedMissionIds.has(d.id);
           const currentStatus = sel.attr('data-status');
           const newStatus = isCompleted ? 'completed' : 'active';
-          const isBlocked = worldStage === 'GALACTUS' && d.type !== 'BOSS';
+          const isBlocked = worldStage === 'GALACTUS' && d.type !== 'BOSS' && d.type !== 'GALACTUS';
 
           if (sel.selectAll('*').empty() || currentStatus !== newStatus) {
               sel.selectAll('*').remove();
@@ -402,7 +404,8 @@ export const USAMap: React.FC<USAMapProps> = ({
                   sel.append('circle').attr('r', 8).attr('fill', fillColor).attr('stroke', strokeColor);
                   if (isCompleted) {
                       sel.append('path').attr('d', "M-3,0 L0,3 L5,-4").attr('stroke', strokeColor).attr('stroke-width', 2).attr('fill', 'none');
-                  } else if (d.type === 'BOSS') {
+                  } else if (d.type === 'BOSS' || d.type === 'GALACTUS') {
+                      // CAMBIO: Icono para BOSS y GALACTUS
                       sel.append('text').attr('dy', 4).attr('text-anchor', 'middle').attr('font-size', '10px').text('💀').attr('fill', '#9333ea');
                   } else {
                       if (!isBlocked) {

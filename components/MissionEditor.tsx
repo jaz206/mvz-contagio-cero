@@ -55,10 +55,10 @@ export const MissionEditor: React.FC<MissionEditorProps> = ({ isOpen, onClose, o
     const [description, setDescription] = useState('');
     const [locationState, setLocationState] = useState(STATES_LIST[0]);
     const [threatLevel, setThreatLevel] = useState(THREAT_LEVELS[1]); 
-    const [type, setType] = useState<'STANDARD' | 'SHIELD_BASE' | 'BOSS'>('STANDARD');
+    // CAMBIO: Añadido GALACTUS al estado inicial si es necesario
+    const [type, setType] = useState<'STANDARD' | 'SHIELD_BASE' | 'BOSS' | 'GALACTUS'>('STANDARD');
     const [alignment, setAlignment] = useState<'ALIVE' | 'ZOMBIE' | 'BOTH'>('BOTH');
     
-    // CAMBIO: Manejo de múltiples prerequisitos
     const [prereqs, setPrereqs] = useState<string[]>([]);
     const [selectedPrereqToAdd, setSelectedPrereqToAdd] = useState('');
 
@@ -78,7 +78,6 @@ export const MissionEditor: React.FC<MissionEditorProps> = ({ isOpen, onClose, o
             setType(initialData.type || 'STANDARD');
             setAlignment(initialData.alignment || 'BOTH');
             
-            // Cargar prerequisitos (soporte legacy y nuevo)
             if (initialData.prereqs && initialData.prereqs.length > 0) {
                 setPrereqs(initialData.prereqs);
             } else if (initialData.prereq) {
@@ -126,7 +125,6 @@ export const MissionEditor: React.FC<MissionEditorProps> = ({ isOpen, onClose, o
         setRequirements(requirements.filter(r => r !== reqToRemove));
     };
 
-    // --- Lógica para Prerequisitos Múltiples ---
     const handleAddPrereq = () => {
         if (selectedPrereqToAdd && !prereqs.includes(selectedPrereqToAdd)) {
             setPrereqs([...prereqs, selectedPrereqToAdd]);
@@ -162,7 +160,6 @@ export const MissionEditor: React.FC<MissionEditorProps> = ({ isOpen, onClose, o
             type,
             alignment,
             objectives: objectives.filter(o => o.title && o.desc),
-            // Guardamos ambos campos para compatibilidad, pero prereqs es el principal
             prereq: prereqs.length > 0 ? prereqs[0] : null, 
             prereqs: prereqs,
             requirements,
@@ -186,10 +183,9 @@ export const MissionEditor: React.FC<MissionEditorProps> = ({ isOpen, onClose, o
         }
     };
 
-    // Filtrar misiones válidas para ser prerequisitos (evitar auto-referencia y conflictos de bando)
     const validPrereqOptions = existingMissions.filter(m => {
-        if (initialData && m.id === initialData.id) return false; // No puede ser requisito de sí misma
-        if (prereqs.includes(m.id)) return false; // Ya está añadida
+        if (initialData && m.id === initialData.id) return false; 
+        if (prereqs.includes(m.id)) return false; 
         
         const mAlign = m.alignment || 'ALIVE';
         if (alignment === 'BOTH') return true;
@@ -210,7 +206,6 @@ export const MissionEditor: React.FC<MissionEditorProps> = ({ isOpen, onClose, o
                 <form onSubmit={handleSubmit} className="p-6 overflow-y-auto font-mono flex flex-col gap-4 scrollbar-thin scrollbar-thumb-cyan-900">
                     
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        {/* COLUMNA IZQUIERDA: DATOS BÁSICOS */}
                         <div className="space-y-4">
                             <div>
                                 <label className="text-[10px] text-cyan-600 font-bold block mb-1 uppercase">{t.missionTitle}</label>
@@ -239,6 +234,8 @@ export const MissionEditor: React.FC<MissionEditorProps> = ({ isOpen, onClose, o
                                         <option value="STANDARD">STANDARD</option>
                                         <option value="SHIELD_BASE">SHIELD BASE</option>
                                         <option value="BOSS">BOSS</option>
+                                        {/* CAMBIO: Opción GALACTUS añadida */}
+                                        <option value="GALACTUS">GALACTUS EVENT</option>
                                     </select>
                                 </div>
                                 <div>
@@ -255,7 +252,6 @@ export const MissionEditor: React.FC<MissionEditorProps> = ({ isOpen, onClose, o
                                 </div>
                             </div>
 
-                            {/* SECCIÓN DE PREREQUISITOS MÚLTIPLES */}
                             <div className="bg-slate-900/50 border border-cyan-900/30 p-3">
                                 <label className="text-[10px] text-cyan-600 font-bold block mb-2 uppercase">{t.prereq} (MÚLTIPLES)</label>
                                 <div className="flex gap-2 mb-2">
@@ -315,9 +311,7 @@ export const MissionEditor: React.FC<MissionEditorProps> = ({ isOpen, onClose, o
                             </div>
                         </div>
 
-                        {/* COLUMNA DERECHA: DETALLES DE JUEGO */}
                         <div className="space-y-4">
-                            {/* RECURSOS EXTERNOS (MAPA) */}
                             <div className="bg-slate-900/50 border border-cyan-900/30 p-3">
                                 <label className="text-[10px] text-cyan-500 font-bold block mb-2 uppercase">RECURSOS EXTERNOS</label>
                                 <div className="space-y-2">
@@ -335,7 +329,6 @@ export const MissionEditor: React.FC<MissionEditorProps> = ({ isOpen, onClose, o
                         </div>
                     </div>
 
-                    {/* OBJETIVOS (ANCHO COMPLETO) */}
                     <div className="bg-slate-950/50 p-4 border border-cyan-900/50 mt-2">
                         <div className="flex justify-between mb-2">
                             <label className="text-[10px] text-cyan-600 font-bold uppercase">{t.objectives}</label>
