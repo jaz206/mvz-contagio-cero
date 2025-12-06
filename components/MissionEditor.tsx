@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { translations, Language } from '../translations';
-import { Mission, Objective } from '../types';
+import { Mission, Objective, WorldStage } from '../types';
 import { createMissionInDB, updateMissionInDB } from '../services/dbService';
 
 interface MissionEditorProps {
@@ -55,10 +55,12 @@ export const MissionEditor: React.FC<MissionEditorProps> = ({ isOpen, onClose, o
     const [description, setDescription] = useState('');
     const [locationState, setLocationState] = useState(STATES_LIST[0]);
     const [threatLevel, setThreatLevel] = useState(THREAT_LEVELS[1]); 
-    // CAMBIO: Añadido GALACTUS al estado inicial si es necesario
     const [type, setType] = useState<'STANDARD' | 'SHIELD_BASE' | 'BOSS' | 'GALACTUS'>('STANDARD');
     const [alignment, setAlignment] = useState<'ALIVE' | 'ZOMBIE' | 'BOTH'>('BOTH');
     
+    // CAMBIO: Estado para triggerStage
+    const [triggerStage, setTriggerStage] = useState<WorldStage>('NORMAL');
+
     const [prereqs, setPrereqs] = useState<string[]>([]);
     const [selectedPrereqToAdd, setSelectedPrereqToAdd] = useState('');
 
@@ -77,6 +79,7 @@ export const MissionEditor: React.FC<MissionEditorProps> = ({ isOpen, onClose, o
             setThreatLevel(initialData.threatLevel || THREAT_LEVELS[1]);
             setType(initialData.type || 'STANDARD');
             setAlignment(initialData.alignment || 'BOTH');
+            setTriggerStage(initialData.triggerStage || 'NORMAL');
             
             if (initialData.prereqs && initialData.prereqs.length > 0) {
                 setPrereqs(initialData.prereqs);
@@ -96,6 +99,7 @@ export const MissionEditor: React.FC<MissionEditorProps> = ({ isOpen, onClose, o
             setThreatLevel(THREAT_LEVELS[1]);
             setType('STANDARD');
             setAlignment('BOTH');
+            setTriggerStage('NORMAL');
             setPrereqs([]);
             setObjectives([{ title: '', desc: '' }]);
             setRequirements([]);
@@ -159,6 +163,8 @@ export const MissionEditor: React.FC<MissionEditorProps> = ({ isOpen, onClose, o
             threatLevel,
             type,
             alignment,
+            // CAMBIO: Guardar triggerStage solo si es tipo GALACTUS, sino null
+            triggerStage: type === 'GALACTUS' ? triggerStage : null,
             objectives: objectives.filter(o => o.title && o.desc),
             prereq: prereqs.length > 0 ? prereqs[0] : null, 
             prereqs: prereqs,
@@ -234,7 +240,6 @@ export const MissionEditor: React.FC<MissionEditorProps> = ({ isOpen, onClose, o
                                         <option value="STANDARD">STANDARD</option>
                                         <option value="SHIELD_BASE">SHIELD BASE</option>
                                         <option value="BOSS">BOSS</option>
-                                        {/* CAMBIO: Opción GALACTUS añadida */}
                                         <option value="GALACTUS">GALACTUS EVENT</option>
                                     </select>
                                 </div>
@@ -251,6 +256,24 @@ export const MissionEditor: React.FC<MissionEditorProps> = ({ isOpen, onClose, o
                                     </select>
                                 </div>
                             </div>
+
+                            {/* CAMBIO: Selector de Etapa de Activación para misiones GALACTUS */}
+                            {type === 'GALACTUS' && (
+                                <div className="bg-purple-900/20 border border-purple-500/50 p-2 animate-fade-in">
+                                    <label className="text-[10px] text-purple-400 font-bold block mb-1 uppercase">ETAPA DE ACTIVACIÓN</label>
+                                    <select 
+                                        value={triggerStage} 
+                                        onChange={e => setTriggerStage(e.target.value as WorldStage)} 
+                                        className="w-full bg-slate-950 border border-purple-500 p-2 text-purple-200 font-bold"
+                                    >
+                                        <option value="SURFER">LLEGADA DE SILVER SURFER (ETAPA 2)</option>
+                                        <option value="GALACTUS">LLEGADA DE GALACTUS (ETAPA 3)</option>
+                                    </select>
+                                    <div className="text-[9px] text-purple-400/70 mt-1">
+                                        * Esta misión aparecerá automáticamente cuando ocurra el evento seleccionado.
+                                    </div>
+                                </div>
+                            )}
 
                             <div className="bg-slate-900/50 border border-cyan-900/30 p-3">
                                 <label className="text-[10px] text-cyan-600 font-bold block mb-2 uppercase">{t.prereq} (MÚLTIPLES)</label>

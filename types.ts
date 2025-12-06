@@ -56,9 +56,11 @@ export interface Mission {
     objectives: Objective[];
     location: Location;
     threatLevel: string;
-    // CAMBIO: Añadido tipo 'GALACTUS'
     type?: 'STANDARD' | 'SHIELD_BASE' | 'BOSS' | 'GALACTUS';
     
+    // CAMBIO: Define en qué etapa del evento aparece esta misión
+    triggerStage?: WorldStage; 
+
     prereq?: string;       
     prereqs?: string[];    
     

@@ -548,19 +548,21 @@ const App: React.FC = () => {
             {
                 id: 'm_base_alpha', title: t.missions.bases.alpha, description: [t.missions.bases.desc], objectives: [{ title: t.missions.bases.objSecure, desc: t.missions.bases.objRetrieve }],
                 location: { state: 'Colorado', coordinates: [-104.9903, 39.7392] }, threatLevel: 'BAJA', type: 'SHIELD_BASE', alignment: 'BOTH'
+            },
+            // CAMBIO: Misión de Silver Surfer (aparece en etapa SURFER)
+            {
+                id: 'm_surfer', type: 'GALACTUS', triggerStage: 'SURFER', title: t.events.surfer[playerAlignment === 'ZOMBIE' ? 'zombie' : 'alive'].title, description: [t.events.surfer[playerAlignment === 'ZOMBIE' ? 'zombie' : 'alive'].desc], objectives: [{ title: "Interceptar", desc: "Detener al Heraldo." }],
+                location: { state: 'Kansas', coordinates: [-98.0, 38.0] }, threatLevel: 'OMEGA', alignment: 'BOTH'
+            },
+            // CAMBIO: Misión de Galactus (aparece en etapa GALACTUS)
+            {
+                id: 'boss-galactus', type: 'GALACTUS', triggerStage: 'GALACTUS', title: t.missions.galactus.title, description: t.missions.galactus.description, objectives: t.missions.galactus.objectives,
+                location: { state: 'Kansas', coordinates: [-98.0, 38.0] }, threatLevel: 'OMEGA++', alignment: 'BOTH'
             }
         ];
         DEFAULT_MISSIONS.forEach(m => missionMap.set(m.id, m));
         customMissions.forEach(m => { if (m && m.id) missionMap.set(m.id, m); });
-        const missionList = Array.from(missionMap.values());
-        if (worldStage === 'GALACTUS') {
-            // CAMBIO: Usamos el nuevo tipo GALACTUS para la misión hardcodeada
-            missionList.push({
-                id: 'boss-galactus', type: 'GALACTUS', title: t.missions.galactus.title, description: t.missions.galactus.description, objectives: t.missions.galactus.objectives,
-                location: { state: 'Kansas', coordinates: [-98.0, 38.0] }, threatLevel: 'OMEGA++', alignment: 'BOTH'
-            });
-        }
-        return missionList;
+        return Array.from(missionMap.values());
     }, [t, playerAlignment, worldStage, customMissions]);
 
     const visibleMissions = useMemo(() => {
@@ -573,27 +575,33 @@ const App: React.FC = () => {
             return alignmentFiltered;
         }
 
-        if (worldStage === 'GALACTUS') {
-            return alignmentFiltered;
-        }
-
         return alignmentFiltered.filter(m => {
             if (!m) return false;
             const isCompleted = completedMissionIds.has(m.id);
             
-            // CAMBIO: Lógica para múltiples prerequisitos
             let prereqMet = true;
             if (m.prereqs && m.prereqs.length > 0) {
-                // Si tiene array de prerequisitos, deben cumplirse TODOS
                 prereqMet = m.prereqs.every(pid => completedMissionIds.has(pid));
             } else if (m.prereq) {
-                // Fallback legacy
                 prereqMet = completedMissionIds.has(m.prereq);
             }
 
-            // CAMBIO: Las misiones de tipo GALACTUS solo aparecen en la etapa GALACTUS
+            // CAMBIO: Lógica de visibilidad para misiones GALACTUS basada en triggerStage
             if (m.type === 'GALACTUS') {
-                return worldStage === 'GALACTUS';
+                if (m.triggerStage === 'SURFER') {
+                    // Visible si estamos en SURFER o GALACTUS
+                    return worldStage === 'SURFER' || worldStage === 'GALACTUS';
+                }
+                if (m.triggerStage === 'GALACTUS') {
+                    // Visible solo en GALACTUS
+                    return worldStage === 'GALACTUS';
+                }
+                return false;
+            }
+
+            // Si estamos en etapa GALACTUS, ocultar misiones normales no completadas para enfocar en el jefe
+            if (worldStage === 'GALACTUS' && !isCompleted && m.type !== 'GALACTUS' && m.type !== 'BOSS') {
+                return false;
             }
 
             return isCompleted || prereqMet;
@@ -605,7 +613,6 @@ const App: React.FC = () => {
         const groups: Record<string, Mission[]> = { galactus: [], kingpin: [], magneto: [], hulk: [], doom: [], neutral: [] };
         
         activeMissions.forEach(m => {
-            // CAMBIO: Agrupar por tipo GALACTUS
             if (m.type === 'GALACTUS' || (m.type === 'BOSS' && worldStage === 'GALACTUS')) {
                 groups.galactus.push(m);
             } else {
@@ -622,6 +629,7 @@ const App: React.FC = () => {
     }, [visibleMissions, completedMissionIds, worldStage]);
 
     const handleMissionSelectWrapper = (m: Mission) => {
+        // Permitir seleccionar misiones GALACTUS en cualquier momento que sean visibles
         if (worldStage === 'GALACTUS' && m.type !== 'BOSS' && m.type !== 'GALACTUS') {
             return; 
         }
@@ -632,6 +640,7 @@ const App: React.FC = () => {
 
     return (
         <div className={`flex flex-col h-screen w-full bg-slate-950 text-cyan-400 font-mono overflow-hidden relative ${playerAlignment === 'ZOMBIE' ? 'hue-rotate-15 saturate-50' : ''}`}>
+            {/* ... (Resto del renderizado igual) ... */}
             <CharacterEditor isOpen={showCharacterEditor} onClose={() => setShowCharacterEditor(false)} language={lang} />
             <MissionEditor isOpen={showMissionEditor} onClose={() => { setShowMissionEditor(false); setMissionToEdit(null); }} onSave={async (newMission) => { const loaded = await getCustomMissions(); setCustomMissions(loaded); }} language={lang} initialData={missionToEdit} existingMissions={allMissions} />
             {activeGlobalEvent && (
