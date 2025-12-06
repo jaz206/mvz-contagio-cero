@@ -1,4 +1,3 @@
-
 // translations.ts
 export type Language = 'es' | 'en';
 
@@ -127,21 +126,44 @@ export const translations = {
     },
     events: {
       anomaly: {
-          title: "ANOMALÍA CÓSMICA DETECTADA",
-          desc: "LECTURAS DE ENERGÍA DESCONOCIDA EN EL ESPACIO PROFUNDO. REED RICHARDS CONFIRMA: UN PLANETA DEL SISTEMA VEGA HA DEJADO DE EXISTIR INSTANTÁNEAMENTE.",
-          ack: "CONTINUAR MONITORIZACIÓN"
+          alive: {
+              title: "ANOMALÍA CÓSMICA DETECTADA",
+              desc: "LECTURAS DE ENERGÍA DESCONOCIDA EN EL ESPACIO PROFUNDO. REED RICHARDS CONFIRMA: UN PLANETA DEL SISTEMA VEGA HA DEJADO DE EXISTIR INSTANTÁNEAMENTE.",
+              ack: "CONTINUAR MONITORIZACIÓN"
+          },
+          zombie: {
+              title: "COMPETENCIA DETECTADA",
+              desc: "EL HAMBRE SIENTE UNA PERTURBACIÓN. HANK PYM (ZOMBIE) INFORMA: ALGO MÁS ESTÁ DEVORANDO PLANETAS EN EL ESPACIO PROFUNDO. ¿ES COMIDA O UN RIVAL?",
+              ack: "RASTREAR PRESA"
+          }
       },
       surfer: {
-          title: "LA CAÍDA DEL HERALDO",
-          desc: "OBJETO PLATEADO ENTRÓ EN LA ATMÓSFERA. INTERCEPTADO POR HULK EN KANSAS. VÍDEO CONFIRMA INFECCIÓN. SILVER SURFER HA CAÍDO ANTE EL HAMBRE. REPITO: TENEMOS A UN HERALDO ZOMBIE EN JUEGO.",
-          ack: "ACTIVAR PROTOCOLO OMEGA",
-          image: "https://i.pinimg.com/1200x/ed/22/4b/ed224b12777f7372e1a4b6ca74912cf9.jpg"
+          alive: {
+              title: "LA CAÍDA DEL HERALDO",
+              desc: "OBJETO PLATEADO ENTRÓ EN LA ATMÓSFERA. INTERCEPTADO POR HULK EN KANSAS. VÍDEO CONFIRMA INFECCIÓN. SILVER SURFER HA CAÍDO ANTE EL HAMBRE. REPITO: TENEMOS A UN HERALDO ZOMBIE EN JUEGO.",
+              ack: "ACTIVAR PROTOCOLO OMEGA",
+              image: "https://i.pinimg.com/1200x/ed/22/4b/ed224b12777f7372e1a4b6ca74912cf9.jpg"
+          },
+          zombie: {
+              title: "COMIDA A DOMICILIO",
+              desc: "UN SER DE PLATA HA ENTRADO EN LA ATMÓSFERA. TIENE SABOR A PODER CÓSMICO. HULK YA LE HA DADO EL PRIMER MORDISCO. EL HERALDO ES NUESTRO.",
+              ack: "CONSUMIR PODER",
+              image: "https://i.pinimg.com/1200x/ed/22/4b/ed224b12777f7372e1a4b6ca74912cf9.jpg"
+          }
       },
       galactus: {
-          title: "LLEGADA DE GALACTUS",
-          desc: "EL DEVORADOR DE MUNDOS ESTÁ EN ÓRBITA. EL CIELO SE HA VUELTO PÚRPURA. NO VIENE A SALVARNOS. VIENE A COMER. LA ÚLTIMA BATALLA POR LA TIERRA HA COMENZADO.",
-          ack: "PREPARARSE PARA EL JUICIO FINAL",
-          image: "https://i.pinimg.com/736x/03/c7/6c/03c76c56fccbdc6bc57aff5c1b506089.jpg"
+          alive: {
+              title: "LLEGADA DE GALACTUS",
+              desc: "EL DEVORADOR DE MUNDOS ESTÁ EN ÓRBITA. EL CIELO SE HA VUELTO PÚRPURA. NO VIENE A SALVARNOS. VIENE A COMER. LA ÚLTIMA BATALLA POR LA TIERRA HA COMENZADO.",
+              ack: "PREPARARSE PARA EL JUICIO FINAL",
+              image: "https://i.pinimg.com/736x/03/c7/6c/03c76c56fccbdc6bc57aff5c1b506089.jpg"
+          },
+          zombie: {
+              title: "EL PLATO PRINCIPAL",
+              desc: "GALACTUS HA LLEGADO. ES GIGANTE. ESTÁ LLENO DE ENERGÍA. SI NOS COMEMOS A ESTE DIOS ESPACIAL, NUNCA MÁS TENDREMOS HAMBRE. ¡A LA MESA!",
+              ack: "DEVORAR AL DEVORADOR",
+              image: "https://i.pinimg.com/736x/03/c7/6c/03c76c56fccbdc6bc57aff5c1b506089.jpg"
+          }
       }
     },
     missions: {
@@ -357,21 +379,44 @@ export const translations = {
     },
     events: {
       anomaly: {
-          title: "COSMIC ANOMALY DETECTED",
-          desc: "UNKNOWN ENERGY READINGS IN DEEP SPACE. REED RICHARDS CONFIRMA: A PLANET IN THE VEGA SYSTEM CEASED TO EXIST INSTANTANEOUSLY.",
-          ack: "CONTINUE MONITORING"
+          alive: {
+              title: "COSMIC ANOMALY DETECTED",
+              desc: "UNKNOWN ENERGY READINGS IN DEEP SPACE. REED RICHARDS CONFIRMS: A PLANET IN THE VEGA SYSTEM CEASED TO EXIST INSTANTANEOUSLY.",
+              ack: "CONTINUE MONITORING"
+          },
+          zombie: {
+              title: "COMPETITION DETECTED",
+              desc: "THE HUNGER SENSES A DISTURBANCE. ZOMBIE PYM REPORTS: SOMETHING ELSE IS DEVOURING PLANETS IN DEEP SPACE. IS IT FOOD OR A RIVAL?",
+              ack: "TRACK PREY"
+          }
       },
       surfer: {
-          title: "FALL OF THE HERALD",
-          desc: "SILVER OBJECT ENTERED ATMOSPHERE. INTERCEPTED BY HULK IN KANSAS. FOOTAGE CONFIRMS INFECTION. SILVER SURFER HAS FALLEN TO THE HUNGER. REPEAT: WE HAVE A ZOMBIE HERALD IN PLAY.",
-          ack: "ACTIVATE OMEGA PROTOCOL",
-          image: "https://i.pinimg.com/1200x/ed/22/4b/ed224b12777f7372e1a4b6ca74912cf9.jpg"
+          alive: {
+              title: "FALL OF THE HERALD",
+              desc: "SILVER OBJECT ENTERED ATMOSPHERE. INTERCEPTED BY HULK IN KANSAS. FOOTAGE CONFIRMS INFECTION. SILVER SURFER HAS FALLEN TO THE HUNGER.",
+              ack: "ACTIVATE OMEGA PROTOCOL",
+              image: "https://i.pinimg.com/1200x/ed/22/4b/ed224b12777f7372e1a4b6ca74912cf9.jpg"
+          },
+          zombie: {
+              title: "FAST FOOD DELIVERY",
+              desc: "A SILVER BEING HAS ENTERED THE ATMOSPHERE. TASTES LIKE COSMIC POWER. HULK HAS ALREADY TAKEN A BITE. THE HERALD IS OURS.",
+              ack: "CONSUME POWER",
+              image: "https://i.pinimg.com/1200x/ed/22/4b/ed224b12777f7372e1a4b6ca74912cf9.jpg"
+          }
       },
       galactus: {
-          title: "ARRIVAL OF GALACTUS",
-          desc: "THE DEVOURER OF WORLDS IS IN ORBIT. THE SKY HAS TURNED PURPLE. HE IS NOT HERE TO SAVE US. HE IS HERE TO EAT. THE FINAL BATTLE FOR EARTH HAS BEGUN.",
-          ack: "PREPARE FOR JUDGMENT",
-          image: "https://i.pinimg.com/736x/03/c7/6c/03c76c56fccbdc6bc57aff5c1b506089.jpg"
+          alive: {
+              title: "ARRIVAL OF GALACTUS",
+              desc: "THE DEVOURER OF WORLDS IS IN ORBIT. THE SKY HAS TURNED PURPLE. HE IS NOT HERE TO SAVE US. HE IS HERE TO EAT. THE FINAL BATTLE FOR EARTH HAS BEGUN.",
+              ack: "PREPARE FOR JUDGMENT",
+              image: "https://i.pinimg.com/736x/03/c7/6c/03c76c56fccbdc6bc57aff5c1b506089.jpg"
+          },
+          zombie: {
+              title: "THE MAIN COURSE",
+              desc: "GALACTUS IS HERE. HE IS GIANT. HE IS FULL OF ENERGY. IF WE EAT THIS SPACE GOD, WE WILL NEVER HUNGER AGAIN. DINNER IS SERVED!",
+              ack: "DEVOUR THE DEVOURER",
+              image: "https://i.pinimg.com/736x/03/c7/6c/03c76c56fccbdc6bc57aff5c1b506089.jpg"
+          }
       }
     },
     missions: {

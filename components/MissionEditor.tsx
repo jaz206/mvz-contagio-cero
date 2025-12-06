@@ -57,7 +57,11 @@ export const MissionEditor: React.FC<MissionEditorProps> = ({ isOpen, onClose, o
     const [threatLevel, setThreatLevel] = useState(THREAT_LEVELS[1]); 
     const [type, setType] = useState<'STANDARD' | 'SHIELD_BASE' | 'BOSS'>('STANDARD');
     const [alignment, setAlignment] = useState<'ALIVE' | 'ZOMBIE' | 'BOTH'>('BOTH');
-    const [prereq, setPrereq] = useState('');
+    
+    // CAMBIO: Manejo de múltiples prerequisitos
+    const [prereqs, setPrereqs] = useState<string[]>([]);
+    const [selectedPrereqToAdd, setSelectedPrereqToAdd] = useState('');
+
     const [objectives, setObjectives] = useState<Objective[]>([{ title: '', desc: '' }]);
     const [requirements, setRequirements] = useState<string[]>([]);
     const [selectedExpansion, setSelectedExpansion] = useState(GAME_EXPANSIONS[0]);
@@ -73,7 +77,16 @@ export const MissionEditor: React.FC<MissionEditorProps> = ({ isOpen, onClose, o
             setThreatLevel(initialData.threatLevel || THREAT_LEVELS[1]);
             setType(initialData.type || 'STANDARD');
             setAlignment(initialData.alignment || 'BOTH');
-            setPrereq(initialData.prereq || '');
+            
+            // Cargar prerequisitos (soporte legacy y nuevo)
+            if (initialData.prereqs && initialData.prereqs.length > 0) {
+                setPrereqs(initialData.prereqs);
+            } else if (initialData.prereq) {
+                setPrereqs([initialData.prereq]);
+            } else {
+                setPrereqs([]);
+            }
+
             setObjectives(initialData.objectives.length > 0 ? initialData.objectives : [{ title: '', desc: '' }]);
             setRequirements(initialData.requirements || []);
             setLayoutUrl(initialData.layoutUrl || '');
@@ -84,7 +97,7 @@ export const MissionEditor: React.FC<MissionEditorProps> = ({ isOpen, onClose, o
             setThreatLevel(THREAT_LEVELS[1]);
             setType('STANDARD');
             setAlignment('BOTH');
-            setPrereq('');
+            setPrereqs([]);
             setObjectives([{ title: '', desc: '' }]);
             setRequirements([]);
             setLayoutUrl('');
@@ -113,6 +126,18 @@ export const MissionEditor: React.FC<MissionEditorProps> = ({ isOpen, onClose, o
         setRequirements(requirements.filter(r => r !== reqToRemove));
     };
 
+    // --- Lógica para Prerequisitos Múltiples ---
+    const handleAddPrereq = () => {
+        if (selectedPrereqToAdd && !prereqs.includes(selectedPrereqToAdd)) {
+            setPrereqs([...prereqs, selectedPrereqToAdd]);
+            setSelectedPrereqToAdd('');
+        }
+    };
+
+    const handleRemovePrereq = (idToRemove: string) => {
+        setPrereqs(prereqs.filter(id => id !== idToRemove));
+    };
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setSaving(true);
@@ -137,7 +162,9 @@ export const MissionEditor: React.FC<MissionEditorProps> = ({ isOpen, onClose, o
             type,
             alignment,
             objectives: objectives.filter(o => o.title && o.desc),
-            prereq: prereq || null,
+            // Guardamos ambos campos para compatibilidad, pero prereqs es el principal
+            prereq: prereqs.length > 0 ? prereqs[0] : null, 
+            prereqs: prereqs,
             requirements,
             layoutUrl: layoutUrl.trim() || null,
         };
@@ -159,8 +186,11 @@ export const MissionEditor: React.FC<MissionEditorProps> = ({ isOpen, onClose, o
         }
     };
 
-    const validPrereqs = existingMissions.filter(m => {
-        if (initialData && m.id === initialData.id) return false;
+    // Filtrar misiones válidas para ser prerequisitos (evitar auto-referencia y conflictos de bando)
+    const validPrereqOptions = existingMissions.filter(m => {
+        if (initialData && m.id === initialData.id) return false; // No puede ser requisito de sí misma
+        if (prereqs.includes(m.id)) return false; // Ya está añadida
+        
         const mAlign = m.alignment || 'ALIVE';
         if (alignment === 'BOTH') return true;
         if (mAlign === 'BOTH') return true;
@@ -215,7 +245,7 @@ export const MissionEditor: React.FC<MissionEditorProps> = ({ isOpen, onClose, o
                                     <label className="text-[10px] text-cyan-600 font-bold block mb-1 uppercase">MODO</label>
                                     <select 
                                         value={alignment} 
-                                        onChange={e => { setAlignment(e.target.value as any); setPrereq(''); }} 
+                                        onChange={e => { setAlignment(e.target.value as any); setPrereqs([]); }} 
                                         className="w-full bg-slate-950 border border-cyan-800 p-2 text-white font-bold"
                                     >
                                         <option value="ALIVE">🛡️ HÉROES</option>
@@ -225,14 +255,41 @@ export const MissionEditor: React.FC<MissionEditorProps> = ({ isOpen, onClose, o
                                 </div>
                             </div>
 
-                            <div>
-                                <label className="text-[10px] text-cyan-600 font-bold block mb-1 uppercase">{t.prereq}</label>
-                                <select value={prereq} onChange={e => setPrereq(e.target.value)} className="w-full bg-slate-950 border border-cyan-800 p-2 text-cyan-200">
-                                    <option value="">-- NINGUNA --</option>
-                                    {validPrereqs.map(m => (
-                                        <option key={m.id} value={m.id}>{m.title}</option>
-                                    ))}
-                                </select>
+                            {/* SECCIÓN DE PREREQUISITOS MÚLTIPLES */}
+                            <div className="bg-slate-900/50 border border-cyan-900/30 p-3">
+                                <label className="text-[10px] text-cyan-600 font-bold block mb-2 uppercase">{t.prereq} (MÚLTIPLES)</label>
+                                <div className="flex gap-2 mb-2">
+                                    <select 
+                                        value={selectedPrereqToAdd} 
+                                        onChange={e => setSelectedPrereqToAdd(e.target.value)} 
+                                        className="flex-1 bg-slate-950 border border-cyan-800 p-2 text-xs text-cyan-200"
+                                    >
+                                        <option value="">-- SELECCIONAR MISIÓN --</option>
+                                        {validPrereqOptions.map(m => (
+                                            <option key={m.id} value={m.id}>{m.title}</option>
+                                        ))}
+                                    </select>
+                                    <button 
+                                        type="button" 
+                                        onClick={handleAddPrereq} 
+                                        disabled={!selectedPrereqToAdd}
+                                        className="bg-cyan-900/50 border border-cyan-600 text-cyan-300 px-3 py-1 text-[10px] font-bold uppercase disabled:opacity-50"
+                                    >
+                                        + AÑADIR
+                                    </button>
+                                </div>
+                                <div className="flex flex-wrap gap-2">
+                                    {prereqs.map((pid) => {
+                                        const m = existingMissions.find(em => em.id === pid);
+                                        return (
+                                            <div key={pid} className="flex items-center gap-2 bg-cyan-950 border border-cyan-800 px-2 py-1 rounded">
+                                                <span className="text-[10px] text-cyan-300 truncate max-w-[150px]">{m ? m.title : pid}</span>
+                                                <button type="button" onClick={() => handleRemovePrereq(pid)} className="text-red-400 font-bold hover:text-red-200">×</button>
+                                            </div>
+                                        );
+                                    })}
+                                    {prereqs.length === 0 && <span className="text-[10px] text-gray-600 italic">Sin requisitos previos</span>}
+                                </div>
                             </div>
 
                             <div className="bg-slate-900/50 border border-blue-900/30 p-3">

@@ -307,16 +307,32 @@ export const USAMap: React.FC<USAMapProps> = ({
 
       const validMissions = missions.filter(m => m && m.id && m.location && m.location.coordinates);
 
+      // CAMBIO: Lógica para dibujar múltiples líneas de conexión
+      const connections: { source: string, target: string }[] = [];
+      
+      validMissions.forEach(m => {
+          if (m.prereqs && m.prereqs.length > 0) {
+              m.prereqs.forEach(pid => connections.push({ source: pid, target: m.id }));
+          } else if (m.prereq) {
+              connections.push({ source: m.prereq, target: m.id });
+          }
+      });
+
       gMissions.selectAll('path.mission-line')
-        .data(validMissions.filter(m => m.prereq))
+        .data(connections)
         .join('path')
         .attr('class', 'mission-line')
         .attr('d', (d) => {
-            const startMission = missions.find(m => m.id === d.prereq);
-            if (!startMission) return null;
+            const startMission = missions.find(m => m.id === d.source);
+            const endMission = missions.find(m => m.id === d.target);
+            
+            if (!startMission || !endMission) return null;
+            
             const start = projection(startMission.location.coordinates);
-            const end = projection(d.location.coordinates);
+            const end = projection(endMission.location.coordinates);
+            
             if (!start || !end) return null;
+            
             const dr = Math.sqrt(Math.pow(end[0]-start[0], 2) + Math.pow(end[1]-start[1], 2));
             return `M${start[0]},${start[1]}A${dr},${dr} 0 0,1 ${end[0]},${end[1]}`;
         })

@@ -58,7 +58,11 @@ export interface Mission {
     location: Location;
     threatLevel: string;
     type?: 'STANDARD' | 'SHIELD_BASE' | 'BOSS';
-    prereq?: string;
+    
+    // CAMBIO: Soporte para múltiples requisitos
+    prereq?: string;       // Legacy (singular)
+    prereqs?: string[];    // Nuevo (múltiple)
+    
     pdfUrl?: string;
     alignment?: 'ALIVE' | 'ZOMBIE' | 'BOTH';
     requirements?: string[];

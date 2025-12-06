@@ -458,7 +458,7 @@ const App: React.FC = () => {
     };
 
     const handleResetProgress = () => {
-        setCompletedMissionIds(newSet);
+        setCompletedMissionIds(new Set());
         setWorldStage('NORMAL');
         setActiveGlobalEvent(null);
     };
@@ -579,7 +579,17 @@ const App: React.FC = () => {
         return alignmentFiltered.filter(m => {
             if (!m) return false;
             const isCompleted = completedMissionIds.has(m.id);
-            const prereqMet = !m.prereq || completedMissionIds.has(m.prereq);
+            
+            // CAMBIO: Lógica para múltiples prerequisitos
+            let prereqMet = true;
+            if (m.prereqs && m.prereqs.length > 0) {
+                // Si tiene array de prerequisitos, deben cumplirse TODOS
+                prereqMet = m.prereqs.every(pid => completedMissionIds.has(pid));
+            } else if (m.prereq) {
+                // Fallback legacy
+                prereqMet = completedMissionIds.has(m.prereq);
+            }
+
             return isCompleted || prereqMet;
         });
     }, [allMissions, completedMissionIds, isEditorMode, worldStage, playerAlignment]);
@@ -617,7 +627,15 @@ const App: React.FC = () => {
         <div className={`flex flex-col h-screen w-full bg-slate-950 text-cyan-400 font-mono overflow-hidden relative ${playerAlignment === 'ZOMBIE' ? 'hue-rotate-15 saturate-50' : ''}`}>
             <CharacterEditor isOpen={showCharacterEditor} onClose={() => setShowCharacterEditor(false)} language={lang} />
             <MissionEditor isOpen={showMissionEditor} onClose={() => { setShowMissionEditor(false); setMissionToEdit(null); }} onSave={async (newMission) => { const loaded = await getCustomMissions(); setCustomMissions(loaded); }} language={lang} initialData={missionToEdit} existingMissions={allMissions} />
-            {activeGlobalEvent && (<EventModal event={activeGlobalEvent} isOpen={!!activeGlobalEvent} onAcknowledge={handleEventAcknowledge} language={lang} />)}
+            {activeGlobalEvent && (
+                <EventModal 
+                    event={activeGlobalEvent} 
+                    isOpen={!!activeGlobalEvent} 
+                    onAcknowledge={handleEventAcknowledge} 
+                    language={lang} 
+                    playerAlignment={playerAlignment} 
+                />
+            )}
             {selectedMission && (
                 <MissionModal 
                     mission={selectedMission} 
