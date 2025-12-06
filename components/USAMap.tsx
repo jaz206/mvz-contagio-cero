@@ -200,6 +200,12 @@ export const USAMap: React.FC<USAMapProps> = ({
                  return `translate(${coords[0]},${coords[1]}) scale(${1/k})`;
             });
 
+            // Actualizar transformación de TODOS los radares
+            svg.selectAll('.radar-effect').attr('transform', function() {
+                const coords = d3.select(this).attr('data-coords')?.split(',').map(Number) || [0,0];
+                return `translate(${coords[0] - 300},${coords[1] - 300}) scale(1)`; 
+            });
+
             svg.selectAll('text.label').style('font-size', `${Math.max(6, 10/k)}px`);
 
             if (k >= 2.5) {
@@ -280,7 +286,57 @@ export const USAMap: React.FC<USAMapProps> = ({
       .text((d: any) => d.properties.name ? d.properties.name.toUpperCase() : '')
       .raise();
 
+    // --- RADAR EFFECT DINÁMICO ---
+    // 1. Recopilar todos los puntos que deben tener radar
+    const radarPoints: { id: string, coords: [number, number] }[] = [];
+
+    // A. Búnker Principal (Siempre activo)
     const bunkerCoords = projection([-82.9, 40.0]);
+    if (bunkerCoords) {
+        radarPoints.push({ id: 'main-bunker', coords: bunkerCoords });
+    }
+
+    // B. Bases SHIELD completadas
+    missions.forEach(m => {
+        if (m.type === 'SHIELD_BASE' && completedMissionIds.has(m.id)) {
+            const coords = projection(m.location.coordinates);
+            if (coords) {
+                radarPoints.push({ id: m.id, coords: coords });
+            }
+        }
+    });
+
+    // 2. Renderizar Radares usando D3 Data Join
+    // Usamos insert con :first-child para que queden al fondo (detrás de los estados y misiones)
+    gMap.selectAll('.radar-effect')
+        .data(radarPoints, (d: any) => d.id)
+        .join(
+            enter => enter.insert('foreignObject', ':first-child')
+                .attr('class', 'radar-effect pointer-events-none')
+                .attr('width', 600)
+                .attr('height', 600)
+                .attr('x', 0)
+                .attr('y', 0)
+                .html(`
+                    <div style="
+                        width: 100%; 
+                        height: 100%; 
+                        border-radius: 50%;
+                        background: conic-gradient(from 0deg, transparent 0deg, transparent 270deg, rgba(6,182,212,0.1) 310deg, rgba(6,182,212,0.4) 360deg);
+                        animation: radar-spin 10s linear infinite;
+                    "></div>
+                    <style>
+                        @keyframes radar-spin {
+                            from { transform: rotate(0deg); }
+                            to { transform: rotate(360deg); }
+                        }
+                    </style>
+                `)
+        )
+        .attr('data-coords', d => `${d.coords[0]},${d.coords[1]}`)
+        .attr('transform', d => `translate(${d.coords[0] - 300}, ${d.coords[1] - 300})`);
+
+    // 3. Renderizar Icono del Búnker Principal (Siempre visible)
     if (bunkerCoords && gMap.select('.bunker').empty()) {
         const bunkerGroup = gMap.append('g')
             .attr('class', 'bunker cursor-pointer hover:opacity-100')
@@ -296,7 +352,7 @@ export const USAMap: React.FC<USAMapProps> = ({
         bunkerGroup.raise();
     }
 
-  }, [usData, dimensions, projection, pathGenerator, factionStates]); 
+  }, [usData, dimensions, projection, pathGenerator, factionStates, missions, completedMissionIds]); 
 
   useEffect(() => {
       if (!projection || !gMissionsRef.current || !gTokensRef.current || !svgRef.current) return;
@@ -483,16 +539,6 @@ export const USAMap: React.FC<USAMapProps> = ({
         {/* Fondo de rejilla */}
         <div className="absolute inset-0 z-0 pointer-events-none" style={{backgroundImage: 'radial-gradient(circle, #0e7490 1px, transparent 1px)', backgroundSize: '20px 20px', opacity: 0.2}}></div>
         
-        {/* EFECTO RADAR */}
-        <div className="absolute inset-0 z-20 pointer-events-none overflow-hidden">
-            <div className="w-[200%] h-[200%] absolute -top-[50%] -left-[50%] animate-[radar_10s_linear_infinite]"
-                 style={{
-                     background: 'conic-gradient(from 0deg, transparent 0deg, transparent 270deg, rgba(6,182,212,0.1) 310deg, rgba(6,182,212,0.4) 360deg)',
-                     borderRadius: '50%'
-                 }}
-            ></div>
-        </div>
-        
         {/* SOMBRA DE GALACTUS MEJORADA */}
         {worldStage === 'GALACTUS' && (
             <div className="absolute inset-0 z-30 pointer-events-none overflow-hidden flex items-center justify-center">
@@ -520,10 +566,6 @@ export const USAMap: React.FC<USAMapProps> = ({
         )}
         
         <style>{`
-            @keyframes radar {
-                from { transform: rotate(0deg); }
-                to { transform: rotate(360deg); }
-            }
             @keyframes breathing {
                 0% { transform: scale(1); opacity: 0.5; }
                 50% { transform: scale(1.05); opacity: 0.7; }
