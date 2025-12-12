@@ -20,9 +20,9 @@ import { NewsTicker } from './components/NewsTicker';
 
 import { Mission, Hero, WorldStage, GlobalEvent, HeroTemplate } from './types';
 
-// --- DEFINICIÓN DE LA MISIÓN 0 (GLOBAL) ---
-const MISSION_ZERO: Mission = {
-    id: 'm_intro_0', // ID ÚNICO IMPORTANTE
+// --- MISIÓN DE RESPALDO (Solo se usa si no carga la de Firebase) ---
+const MISSION_ZERO_FALLBACK: Mission = {
+    id: 'm_intro_0_fallback',
     title: "MH0: CADENAS ROTAS",
     description: [
         "SITUACIÓN CRÍTICA: El transporte ha sido neutralizado. Estamos heridos, desorientados y en territorio hostil.",
@@ -566,12 +566,27 @@ const App: React.FC = () => {
         setExpandedZones(newSet);
     };
 
+    // --- LÓGICA DE SELECCIÓN DE MISIÓN INTRO ---
+    // Buscamos la misión en la DB o usamos el fallback
+    const introMission = useMemo(() => {
+        // 1. Intentar buscar por ID exacto de Firebase
+        const dbMissionById = customMissions.find(m => m.id === 'BJOpwXrXDz2soy2yLnSY');
+        if (dbMissionById) return dbMissionById;
+
+        // 2. Intentar buscar por título (por si el ID cambia)
+        const dbMissionByTitle = customMissions.find(m => m.title.includes("MH0") || m.title.includes("Cadenas Rotas"));
+        if (dbMissionByTitle) return dbMissionByTitle;
+
+        // 3. Fallback hardcoded
+        return MISSION_ZERO_FALLBACK;
+    }, [customMissions]);
+
     const allMissions: Mission[] = useMemo(() => {
         const missionMap = new Map<string, Mission>();
         
-        // AÑADIMOS LA MISIÓN 0 A LA LISTA PRINCIPAL
+        // AÑADIMOS LA MISIÓN 0 (DINÁMICA) A LA LISTA PRINCIPAL
         const DEFAULT_MISSIONS: Mission[] = [
-            MISSION_ZERO, // <--- AQUÍ ESTÁ LA CLAVE
+            introMission, // <--- USAMOS LA MISIÓN CALCULADA
             {
                 id: 'm_kraven', title: t.missions.kraven.title, description: t.missions.kraven.description, objectives: t.missions.kraven.objectives,
                 location: { state: 'New York', coordinates: [-74.006, 40.7128] }, threatLevel: 'ALTA', type: 'STANDARD', alignment: 'ALIVE'
@@ -600,7 +615,7 @@ const App: React.FC = () => {
         DEFAULT_MISSIONS.forEach(m => missionMap.set(m.id, m));
         customMissions.forEach(m => { if (m && m.id) missionMap.set(m.id, m); });
         return Array.from(missionMap.values());
-    }, [t, playerAlignment, worldStage, customMissions]);
+    }, [t, playerAlignment, worldStage, customMissions, introMission]);
 
     const visibleMissions = useMemo(() => {
         const alignmentFiltered = allMissions.filter(m => {
@@ -690,7 +705,7 @@ const App: React.FC = () => {
 
     // --- CÁLCULO DE PROGRESO ---
     const totalMissions = useMemo(() => {
-        return customMissions.length + 7; // +7 porque ahora incluimos MISSION_ZERO
+        return customMissions.length + 6; 
     }, [customMissions]);
     
     const progressPercentage = Math.min(100, Math.round((completedMissionIds.size / Math.max(1, totalMissions)) * 100));
@@ -713,11 +728,11 @@ const App: React.FC = () => {
             {/* MODAL DE MISIÓN 0 (INTRODUCCIÓN) */}
             {viewMode === 'mission0' && (
                 <MissionModal 
-                    mission={MISSION_ZERO} 
+                    mission={introMission} // USAMOS LA MISIÓN DINÁMICA
                     isOpen={true} 
                     onClose={() => setViewMode('tutorial')} 
                     onComplete={() => {
-                        handleMissionComplete('m_intro_0');
+                        handleMissionComplete(introMission.id); // COMPLETAMOS EL ID CORRECTO
                         setViewMode('tutorial');
                     }}
                     language={lang}
