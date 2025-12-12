@@ -423,7 +423,7 @@ const App: React.FC = () => {
                         setHeroes(profileHeroes);
                         setCompletedMissionIds(new Set(profileMissions));
                         setOmegaCylinders(profileCylinders);
-                        checkGlobalEvents(profileMissions.length);
+                        checkGlobalEvents(new Set(profileMissions)); // CORREGIDO: Pasar Set
                     } else {
                         setHeroes(playerAlignment === 'ZOMBIE' ? INITIAL_ZOMBIE_HEROES : INITIAL_HEROES);
                         setCompletedMissionIds(new Set());
@@ -467,16 +467,22 @@ const App: React.FC = () => {
         }
     }, [playerAlignment, showStory, user, viewMode, isEditorMode]);
 
-    const checkGlobalEvents = (completedCount: number) => {
-        if (completedCount >= 15 && worldStage !== 'GALACTUS') {
+    // --- CORRECCIÓN CLAVE: checkGlobalEvents recibe el Set y verifica si Galactus ya murió ---
+    const checkGlobalEvents = (completedMissions: Set<string>) => {
+        const count = completedMissions.size;
+        
+        // SI GALACTUS YA FUE DERROTADO, NO HACER NADA (EVITA BUCLE)
+        if (completedMissions.has('boss-galactus')) return;
+
+        if (count >= 15 && worldStage !== 'GALACTUS') {
             setActiveGlobalEvent({ stage: 'GALACTUS', title: '', description: '' });
             setWorldStage('GALACTUS');
             handleTickerUpdate("¡ALERTA OMEGA! GALACTUS HA LLEGADO. TODAS LAS MISIONES SECUNDARIAS CANCELADAS.");
-        } else if (completedCount >= 10 && completedCount < 15 && worldStage !== 'SURFER' && worldStage !== 'GALACTUS') {
+        } else if (count >= 10 && count < 15 && worldStage !== 'SURFER' && worldStage !== 'GALACTUS') {
             setActiveGlobalEvent({ stage: 'SURFER', title: '', description: '' });
             setWorldStage('SURFER');
             handleTickerUpdate("OBJETO PLATEADO ENTRANDO EN LA ATMÓSFERA. PREPARAR INTERCEPCIÓN.");
-        } else if (completedCount >= 4 && completedCount < 10 && worldStage === 'NORMAL') {
+        } else if (count >= 4 && count < 10 && worldStage === 'NORMAL') {
             setActiveGlobalEvent({ stage: 'ANOMALY', title: '', description: '' });
             setWorldStage('ANOMALY');
             handleTickerUpdate("LECTURAS DE ENERGÍA ANÓMALAS EN EL ESPACIO PROFUNDO.");
@@ -489,7 +495,7 @@ const App: React.FC = () => {
             newSet.add(`sim_mission_${Date.now()}_${Math.random()}`);
         }
         setCompletedMissionIds(newSet);
-        checkGlobalEvents(newSet.size);
+        checkGlobalEvents(newSet); // CORREGIDO
     };
 
     const handleResetProgress = () => {
@@ -519,7 +525,7 @@ const App: React.FC = () => {
             setActiveGlobalEvent(null);
             handleTickerUpdate("AMENAZA OMEGA NEUTRALIZADA. BUEN TRABAJO, AGENTES.");
         } else {
-            checkGlobalEvents(newSet.size);
+            checkGlobalEvents(newSet); // CORREGIDO: Pasar el Set completo
         }
     };
 
@@ -568,24 +574,20 @@ const App: React.FC = () => {
 
     // --- LÓGICA DE SELECCIÓN DE MISIÓN INTRO ---
     const introMission = useMemo(() => {
-        // 1. Intentar buscar por ID exacto de Firebase
         const dbMissionById = customMissions.find(m => m.id === 'BJOpwXrXDz2soy2yLnSY');
         if (dbMissionById) return dbMissionById;
 
-        // 2. Intentar buscar por título (por si el ID cambia)
         const dbMissionByTitle = customMissions.find(m => m.title.includes("MH0") || m.title.includes("Cadenas Rotas"));
         if (dbMissionByTitle) return dbMissionByTitle;
 
-        // 3. Fallback hardcoded
         return MISSION_ZERO;
     }, [customMissions]);
 
     const allMissions: Mission[] = useMemo(() => {
         const missionMap = new Map<string, Mission>();
         
-        // AÑADIMOS LA MISIÓN 0 (DINÁMICA) A LA LISTA PRINCIPAL
         const DEFAULT_MISSIONS: Mission[] = [
-            introMission, // <--- USAMOS LA MISIÓN CALCULADA
+            introMission, 
             {
                 id: 'm_kraven', title: t.missions.kraven.title, description: t.missions.kraven.description, objectives: t.missions.kraven.objectives,
                 location: { state: 'New York', coordinates: [-74.006, 40.7128] }, threatLevel: 'ALTA', type: 'STANDARD', alignment: 'ALIVE'
@@ -704,7 +706,7 @@ const App: React.FC = () => {
 
     // --- CÁLCULO DE PROGRESO ---
     const totalMissions = useMemo(() => {
-        return customMissions.length + 7; // +7 porque ahora incluimos MISSION_ZERO
+        return customMissions.length + 7; 
     }, [customMissions]);
     
     const progressPercentage = Math.min(100, Math.round((completedMissionIds.size / Math.max(1, totalMissions)) * 100));
@@ -827,7 +829,7 @@ const App: React.FC = () => {
                                                 const isBlocked = worldStage === 'GALACTUS';
                                                 return (
                                                     <div key={zoneKey} className={`mb-1 border border-cyan-900/30 bg-slate-900/30 ${isBlocked ? 'opacity-40 pointer-events-none grayscale' : ''}`}>
-                                                        <button onClick={() => toggleZone(zoneKey)} className="w-full flex justify-between items-center p-1.5 bg-slate-800/80 hover:bg-cyan-900/30 transition-colors border-b border-cyan-900/30">
+                                                        <button onClick={() => toggleZone(zoneKey)} className="w-full flex justify-between items-center p-2 bg-slate-800/80 hover:bg-cyan-900/30 transition-colors border-b border-cyan-900/30">
                                                             <span className="text-[10px] font-bold text-cyan-400 uppercase tracking-widest truncate max-w-[140px]">{factionLabel}</span>
                                                             <div className="flex items-center gap-1"><span className="text-[9px] bg-cyan-900/50 text-cyan-200 px-1 py-0.5 rounded font-mono border border-cyan-700">{missions.length}</span><span className={`text-[8px] text-cyan-500 transform transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`}>▼</span></div>
                                                         </button>
