@@ -199,6 +199,9 @@ const App: React.FC = () => {
     
     const [tickerMessage, setTickerMessage] = useState<string | null>(null);
     
+    // NUEVO ESTADO: Contador de turnos de Silver Surfer
+    const [surferTurnCount, setSurferTurnCount] = useState(0);
+    
     const isDataLoadedRef = useRef(false);
     
     const [isEditorMode, setIsEditorMode] = useState(false);
@@ -423,7 +426,7 @@ const App: React.FC = () => {
                         setHeroes(profileHeroes);
                         setCompletedMissionIds(new Set(profileMissions));
                         setOmegaCylinders(profileCylinders);
-                        checkGlobalEvents(new Set(profileMissions)); // CORREGIDO: Pasar Set
+                        checkGlobalEvents(new Set(profileMissions)); 
                     } else {
                         setHeroes(playerAlignment === 'ZOMBIE' ? INITIAL_ZOMBIE_HEROES : INITIAL_HEROES);
                         setCompletedMissionIds(new Set());
@@ -467,11 +470,9 @@ const App: React.FC = () => {
         }
     }, [playerAlignment, showStory, user, viewMode, isEditorMode]);
 
-    // --- CORRECCIÓN CLAVE: checkGlobalEvents recibe el Set y verifica si Galactus ya murió ---
     const checkGlobalEvents = (completedMissions: Set<string>) => {
         const count = completedMissions.size;
         
-        // SI GALACTUS YA FUE DERROTADO, NO HACER NADA (EVITA BUCLE)
         if (completedMissions.has('boss-galactus')) return;
 
         if (count >= 15 && worldStage !== 'GALACTUS') {
@@ -481,6 +482,7 @@ const App: React.FC = () => {
         } else if (count >= 10 && count < 15 && worldStage !== 'SURFER' && worldStage !== 'GALACTUS') {
             setActiveGlobalEvent({ stage: 'SURFER', title: '', description: '' });
             setWorldStage('SURFER');
+            setSurferTurnCount(0); // REINICIAMOS CONTADOR AL LLEGAR
             handleTickerUpdate("OBJETO PLATEADO ENTRANDO EN LA ATMÓSFERA. PREPARAR INTERCEPCIÓN.");
         } else if (count >= 4 && count < 10 && worldStage === 'NORMAL') {
             setActiveGlobalEvent({ stage: 'ANOMALY', title: '', description: '' });
@@ -495,7 +497,7 @@ const App: React.FC = () => {
             newSet.add(`sim_mission_${Date.now()}_${Math.random()}`);
         }
         setCompletedMissionIds(newSet);
-        checkGlobalEvents(newSet); // CORREGIDO
+        checkGlobalEvents(newSet); 
     };
 
     const handleResetProgress = () => {
@@ -510,6 +512,12 @@ const App: React.FC = () => {
         newSet.add(id);
         setCompletedMissionIds(newSet);
         setSelectedMission(null);
+
+        // LÓGICA SURFER: Si estamos en etapa SURFER, incrementamos su contador
+        if (worldStage === 'SURFER') {
+            setSurferTurnCount(prev => prev + 1);
+        }
+
         if (user && playerAlignment) {
             setIsSaving(true);
             try {
@@ -525,7 +533,7 @@ const App: React.FC = () => {
             setActiveGlobalEvent(null);
             handleTickerUpdate("AMENAZA OMEGA NEUTRALIZADA. BUEN TRABAJO, AGENTES.");
         } else {
-            checkGlobalEvents(newSet); // CORREGIDO: Pasar el Set completo
+            checkGlobalEvents(newSet); 
         }
     };
 
@@ -882,7 +890,20 @@ const App: React.FC = () => {
                         </aside>
 
                         <main className="flex-1 relative bg-slate-950 overflow-hidden">
-                            {viewMode === 'map' && (<USAMap language={lang} missions={visibleMissions} completedMissionIds={completedMissionIds} onMissionComplete={handleMissionComplete} onMissionSelect={handleMissionSelectWrapper} onBunkerClick={() => setViewMode('bunker')} factionStates={FACTION_STATES} playerAlignment={playerAlignment} worldStage={worldStage} />)}
+                            {viewMode === 'map' && (
+                                <USAMap 
+                                    language={lang} 
+                                    missions={visibleMissions} 
+                                    completedMissionIds={completedMissionIds} 
+                                    onMissionComplete={handleMissionComplete} 
+                                    onMissionSelect={handleMissionSelectWrapper} 
+                                    onBunkerClick={() => setViewMode('bunker')} 
+                                    factionStates={FACTION_STATES} 
+                                    playerAlignment={playerAlignment} 
+                                    worldStage={worldStage}
+                                    surferTurnCount={surferTurnCount} // <--- PASAMOS LA NUEVA PROP
+                                />
+                            )}
                             {viewMode === 'bunker' && (
                                 <BunkerInterior 
                                     heroes={heroes} 
