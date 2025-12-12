@@ -20,9 +20,9 @@ import { NewsTicker } from './components/NewsTicker';
 
 import { Mission, Hero, WorldStage, GlobalEvent, HeroTemplate } from './types';
 
-// --- MISIÓN DE RESPALDO (Solo se usa si no carga la de Firebase) ---
-const MISSION_ZERO_FALLBACK: Mission = {
-    id: 'm_intro_0_fallback',
+// --- DEFINICIÓN DE LA MISIÓN 0 (GLOBAL) ---
+const MISSION_ZERO: Mission = {
+    id: 'm_intro_0',
     title: "MH0: CADENAS ROTAS",
     description: [
         "SITUACIÓN CRÍTICA: El transporte ha sido neutralizado. Estamos heridos, desorientados y en territorio hostil.",
@@ -567,7 +567,6 @@ const App: React.FC = () => {
     };
 
     // --- LÓGICA DE SELECCIÓN DE MISIÓN INTRO ---
-    // Buscamos la misión en la DB o usamos el fallback
     const introMission = useMemo(() => {
         // 1. Intentar buscar por ID exacto de Firebase
         const dbMissionById = customMissions.find(m => m.id === 'BJOpwXrXDz2soy2yLnSY');
@@ -578,7 +577,7 @@ const App: React.FC = () => {
         if (dbMissionByTitle) return dbMissionByTitle;
 
         // 3. Fallback hardcoded
-        return MISSION_ZERO_FALLBACK;
+        return MISSION_ZERO;
     }, [customMissions]);
 
     const allMissions: Mission[] = useMemo(() => {
@@ -673,7 +672,7 @@ const App: React.FC = () => {
         };
         
         activeMissions.forEach(m => {
-            if (m.type === 'GALACTUS' || (m.type === 'BOSS' && worldStage === 'GALACTUS')) {
+            if (m.type === 'GALACTUS') {
                 groups.galactus.push(m);
             } else {
                 const faction = getFactionForState(m.location.state);
@@ -705,7 +704,7 @@ const App: React.FC = () => {
 
     // --- CÁLCULO DE PROGRESO ---
     const totalMissions = useMemo(() => {
-        return customMissions.length + 6; 
+        return customMissions.length + 7; // +7 porque ahora incluimos MISSION_ZERO
     }, [customMissions]);
     
     const progressPercentage = Math.min(100, Math.round((completedMissionIds.size / Math.max(1, totalMissions)) * 100));
