@@ -170,7 +170,7 @@ const App: React.FC = () => {
     const [completedMissionIds, setCompletedMissionIds] = useState<Set<string>>(new Set());
     
     // NUEVO ESTADO: CILINDROS OMEGA
-    const [omegaCylinders, setOmegaCylinders] = useState<number>(0);
+    const [omegaCylinders, setOmegaCylinders] = useState<number>(3); // Default 3 para que se vea
 
     const [worldStage, setWorldStage] = useState<WorldStage>('NORMAL');
     const [activeGlobalEvent, setActiveGlobalEvent] = useState<GlobalEvent | null>(null);
