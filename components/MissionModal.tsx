@@ -44,14 +44,23 @@ export const MissionModal: React.FC<MissionModalProps> = ({ mission, isOpen, onC
       setReporting(false);
       setReportSuccess(true);
       
-      const t2 = setTimeout(() => {
-         onComplete(mission.id);
-         onClose();
-      }, 1500);
-      timeoutsRef.current.push(t2);
+      // CAMBIO: Si hay texto de desenlace, NO cerramos automáticamente.
+      // Esperamos a que el usuario lea y cierre manualmente.
+      if (!mission.outcomeText) {
+          const t2 = setTimeout(() => {
+             onComplete(mission.id);
+             onClose();
+          }, 1500);
+          timeoutsRef.current.push(t2);
+      }
       
     }, 3000);
     timeoutsRef.current.push(t1);
+  };
+
+  const handleManualCloseReport = () => {
+      onComplete(mission.id);
+      onClose();
   };
 
   const handleReactivateClick = () => {
@@ -60,6 +69,9 @@ export const MissionModal: React.FC<MissionModalProps> = ({ mission, isOpen, onC
           onClose();
       }
   };
+
+  // Determinar si estamos mostrando el desenlace
+  const showOutcome = reportSuccess && mission.outcomeText;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -75,7 +87,7 @@ export const MissionModal: React.FC<MissionModalProps> = ({ mission, isOpen, onC
                 {isCompleted || reportSuccess ? 'MISSION COMPLETE' : t.title}
             </h2>
             <div className="flex gap-2 items-center">
-                {isEditorMode && onEdit && (
+                {isEditorMode && onEdit && !showOutcome && (
                     <button onClick={() => onEdit(mission)} className="bg-blue-600 hover:bg-blue-500 text-white text-[10px] px-2 py-1 font-bold uppercase">EDIT (DB)</button>
                 )}
                 <div className={`font-bold border px-2 py-0.5 text-xs animate-pulse ${isCompleted || reportSuccess ? 'text-emerald-400 border-emerald-500' : 'text-red-500 border-red-500'}`}>
@@ -120,96 +132,122 @@ export const MissionModal: React.FC<MissionModalProps> = ({ mission, isOpen, onC
                 )}
             </div>
 
-            {/* Briefing */}
-            <div className="mb-6">
-                <h4 className={`text-xs font-bold tracking-[0.2em] mb-3 border-l-2 pl-2 uppercase ${isCompleted ? 'text-emerald-500 border-emerald-500' : 'text-cyan-500 border-cyan-500'}`}>
-                    {t.briefing}
-                </h4>
-                <div className="space-y-3 text-sm md:text-base leading-relaxed text-gray-300">
-                    {mission.description.map((paragraph, index) => (
-                        <p key={index}>{paragraph}</p>
-                    ))}
+            {/* VISTA DE DESENLACE (Si aplica) */}
+            {showOutcome ? (
+                <div className="animate-fade-in">
+                    <h4 className="text-xs font-bold tracking-[0.2em] mb-3 border-l-2 pl-2 uppercase text-emerald-500 border-emerald-500">
+                        {t.outcomeTitle}
+                    </h4>
+                    <div className="p-4 bg-emerald-900/20 border border-emerald-800 text-emerald-100 text-sm md:text-base leading-relaxed whitespace-pre-wrap">
+                        {mission.outcomeText}
+                    </div>
                 </div>
-            </div>
-
-            {/* Objectives */}
-            <div className="bg-slate-950/50 border border-cyan-900/50 p-4 rounded-sm mb-6">
-                <h4 className={`text-xs font-bold tracking-[0.2em] mb-4 border-l-2 pl-2 uppercase ${isCompleted ? 'text-emerald-500 border-emerald-500' : 'text-cyan-500 border-cyan-500'}`}>
-                     {t.objectives}
-                </h4>
-                <div className="space-y-4">
-                    {mission.objectives.map((obj, idx) => (
-                        <div key={idx} className="flex gap-3">
-                            <div className={`w-6 h-6 shrink-0 border rounded-full flex items-center justify-center text-xs font-bold ${isCompleted || reportSuccess ? 'bg-emerald-900/30 border-emerald-500 text-emerald-400' : 'bg-red-900/30 border-red-500 text-red-400'}`}>
-                                {isCompleted || reportSuccess ? '✓' : idx + 1}
-                            </div>
-                            <div>
-                                <h5 className={`font-bold text-sm mb-1 ${isCompleted || reportSuccess ? 'text-emerald-300' : 'text-red-300'}`}>{obj.title}</h5>
-                                <p className="text-xs md:text-sm text-gray-400">{obj.desc}</p>
-                            </div>
+            ) : (
+                /* VISTA NORMAL (Briefing + Objetivos) */
+                <>
+                    <div className="mb-6">
+                        <h4 className={`text-xs font-bold tracking-[0.2em] mb-3 border-l-2 pl-2 uppercase ${isCompleted ? 'text-emerald-500 border-emerald-500' : 'text-cyan-500 border-cyan-500'}`}>
+                            {t.briefing}
+                        </h4>
+                        <div className="space-y-3 text-sm md:text-base leading-relaxed text-gray-300">
+                            {mission.description.map((paragraph, index) => (
+                                <p key={index}>{paragraph}</p>
+                            ))}
                         </div>
-                    ))}
-                </div>
-            </div>
+                    </div>
+
+                    <div className="bg-slate-950/50 border border-cyan-900/50 p-4 rounded-sm mb-6">
+                        <h4 className={`text-xs font-bold tracking-[0.2em] mb-4 border-l-2 pl-2 uppercase ${isCompleted ? 'text-emerald-500 border-emerald-500' : 'text-cyan-500 border-cyan-500'}`}>
+                             {t.objectives}
+                        </h4>
+                        <div className="space-y-4">
+                            {mission.objectives.map((obj, idx) => (
+                                <div key={idx} className="flex gap-3">
+                                    <div className={`w-6 h-6 shrink-0 border rounded-full flex items-center justify-center text-xs font-bold ${isCompleted || reportSuccess ? 'bg-emerald-900/30 border-emerald-500 text-emerald-400' : 'bg-red-900/30 border-red-500 text-red-400'}`}>
+                                        {isCompleted || reportSuccess ? '✓' : idx + 1}
+                                    </div>
+                                    <div>
+                                        <h5 className={`font-bold text-sm mb-1 ${isCompleted || reportSuccess ? 'text-emerald-300' : 'text-red-300'}`}>{obj.title}</h5>
+                                        <p className="text-xs md:text-sm text-gray-400">{obj.desc}</p>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </>
+            )}
 
         </div>
 
         {/* Footer Actions */}
         <div className="p-4 border-t border-cyan-800 bg-slate-900/90 flex justify-between items-center gap-4">
-            <button 
-                onClick={onClose}
-                disabled={reporting}
-                className="px-6 py-3 border border-cyan-700 text-cyan-500 text-xs font-bold tracking-widest hover:bg-cyan-900/20 hover:text-cyan-300 transition-colors disabled:opacity-50"
-            >
-                {t.cancel}
-            </button>
-            
-            <div className="flex gap-3">
-                {/* BOTÓN AMARILLO: VER DETALLE (MAPA) */}
-                {mission.layoutUrl && (
+            {showOutcome ? (
+                <div className="w-full flex justify-end">
                     <button 
-                        onClick={() => setShowMap(true)}
-                        className="px-4 py-3 bg-yellow-600 hover:bg-yellow-500 text-black text-xs font-black tracking-widest shadow-[0_0_15px_rgba(234,179,8,0.4)] transition-all flex items-center gap-2"
+                        onClick={handleManualCloseReport}
+                        className="px-6 py-3 bg-emerald-700 hover:bg-emerald-600 text-white text-xs font-bold tracking-widest shadow-[0_0_15px_rgba(16,185,129,0.3)] transition-all"
                     >
-                        <span>🗺️</span> VER DETALLE DE LA MISIÓN
+                        {t.closeReport}
                     </button>
-                )}
-
-                {isCompleted && onReactivate && (
+                </div>
+            ) : (
+                <>
                     <button 
-                        onClick={handleReactivateClick}
-                        className="px-6 py-3 border border-yellow-600 text-yellow-500 text-xs font-bold tracking-widest hover:bg-yellow-900/20 hover:text-yellow-300 transition-colors"
-                    >
-                        {t.reactivate}
-                    </button>
-                )}
-
-                <button 
-                    disabled={isCompleted || reporting || reportSuccess}
-                    className={`px-6 py-3 text-white text-xs font-bold tracking-widest border shadow transition-all
-                        ${isCompleted || reportSuccess
-                            ? 'bg-emerald-900/50 border-emerald-800 text-emerald-500 cursor-not-allowed' 
-                            : 'bg-emerald-700/80 hover:bg-emerald-600 border-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.3)]'}
-                        ${reporting ? 'animate-pulse cursor-wait' : ''}
-                    `}
-                    onClick={() => {
-                        if(!isCompleted) {
-                            handleReportClick();
-                        }
-                    }}
-                >
-                    {reporting ? t.sending : (reportSuccess || isCompleted ? `✓ ${t.sent}` : t.complete)}
-                </button>
-                
-                {!isCompleted && !reporting && !reportSuccess && (
-                    <button 
-                        className="px-6 py-3 bg-red-600 hover:bg-red-500 text-white text-xs font-bold tracking-widest shadow-[0_0_15px_rgba(239,68,68,0.4)] transition-all"
                         onClick={onClose}
+                        disabled={reporting}
+                        className="px-6 py-3 border border-cyan-700 text-cyan-500 text-xs font-bold tracking-widest hover:bg-cyan-900/20 hover:text-cyan-300 transition-colors disabled:opacity-50"
                     >
-                        {t.accept}
+                        {t.cancel}
                     </button>
-                )}
-            </div>
+                    
+                    <div className="flex gap-3">
+                        {/* BOTÓN AMARILLO: VER DETALLE (MAPA) */}
+                        {mission.layoutUrl && (
+                            <button 
+                                onClick={() => setShowMap(true)}
+                                className="px-4 py-3 bg-yellow-600 hover:bg-yellow-500 text-black text-xs font-black tracking-widest shadow-[0_0_15px_rgba(234,179,8,0.4)] transition-all flex items-center gap-2"
+                            >
+                                <span>🗺️</span> VER DETALLE DE LA MISIÓN
+                            </button>
+                        )}
+
+                        {isCompleted && onReactivate && (
+                            <button 
+                                onClick={handleReactivateClick}
+                                className="px-6 py-3 border border-yellow-600 text-yellow-500 text-xs font-bold tracking-widest hover:bg-yellow-900/20 hover:text-yellow-300 transition-colors"
+                            >
+                                {t.reactivate}
+                            </button>
+                        )}
+
+                        <button 
+                            disabled={isCompleted || reporting || reportSuccess}
+                            className={`px-6 py-3 text-white text-xs font-bold tracking-widest border shadow transition-all
+                                ${isCompleted || reportSuccess
+                                    ? 'bg-emerald-900/50 border-emerald-800 text-emerald-500 cursor-not-allowed' 
+                                    : 'bg-emerald-700/80 hover:bg-emerald-600 border-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.3)]'}
+                                ${reporting ? 'animate-pulse cursor-wait' : ''}
+                            `}
+                            onClick={() => {
+                                if(!isCompleted) {
+                                    handleReportClick();
+                                }
+                            }}
+                        >
+                            {reporting ? t.sending : (reportSuccess || isCompleted ? `✓ ${t.sent}` : t.complete)}
+                        </button>
+                        
+                        {!isCompleted && !reporting && !reportSuccess && (
+                            <button 
+                                className="px-6 py-3 bg-red-600 hover:bg-red-500 text-white text-xs font-bold tracking-widest shadow-[0_0_15px_rgba(239,68,68,0.4)] transition-all"
+                                onClick={onClose}
+                            >
+                                {t.accept}
+                            </button>
+                        )}
+                    </div>
+                </>
+            )}
         </div>
 
         {/* --- VISOR DE MAPA (LIGHTBOX) --- */}

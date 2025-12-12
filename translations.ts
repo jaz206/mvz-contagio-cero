@@ -31,7 +31,6 @@ export const translations = {
       bunker: "BÚNKER"
     },
     factions: {
-      // CAMBIO: Nombres actualizados
       magneto: { name: "Edén Roto (Magneto)" },
       kingpin: { name: "Imperio de la Carne" },
       hulk: { name: "Tierras Baldías (Hulk)" },
@@ -63,7 +62,9 @@ export const translations = {
       sending: "ENVIANDO...",
       sent: "INFORME ENVIADO",
       complete: "REPORTAR ÉXITO",
-      accept: "ACEPTAR MISIÓN"
+      accept: "ACEPTAR MISIÓN",
+      outcomeTitle: "INFORME DE DESENLACE",
+      closeReport: "ARCHIVAR INFORME"
     },
     bunker: {
       title: "PUESTO DE MANDO AVANZADO",
@@ -85,6 +86,14 @@ export const translations = {
       noMissions: "NO HAY MISIONES DISPONIBLES",
       cancel: "CANCELAR",
       maxHeroes: "CAPACIDAD MÁXIMA ALCANZADA",
+      omega: {
+          title: "CILINDROS OMEGA",
+          desc: "Nanobots reprogramados capaces de revertir la infección.",
+          empty: "RESERVAS AGOTADAS",
+          find: "BUSCAR SUMINISTROS",
+          found: "¡CILINDRO ENCONTRADO!",
+          notFound: "BÚSQUEDA FALLIDA"
+      },
       rooms: {
           command: "SALA DE GUERRA",
           commandDesc: "Misiones activas y despliegue táctico.",
@@ -118,6 +127,7 @@ export const translations = {
       prereq: "CONTINUACIÓN DE (REQUISITO)",
       pdfUrl: "URL DEL PDF (OPCIONAL)",
       description: "DESCRIPCIÓN",
+      outcome: "DESENLACE (OPCIONAL)",
       objectives: "OBJETIVOS",
       addObjective: "AÑADIR OBJETIVO",
       objTitle: "Título del Objetivo",
@@ -316,7 +326,9 @@ export const translations = {
       sending: "SENDING...",
       sent: "REPORT SENT",
       complete: "REPORT SUCCESS",
-      accept: "ACCEPT MISSION"
+      accept: "ACCEPT MISSION",
+      outcomeTitle: "MISSION DEBRIEF",
+      closeReport: "ARCHIVE REPORT"
     },
     bunker: {
       title: "FORWARD COMMAND POST",
@@ -338,6 +350,14 @@ export const translations = {
       noMissions: "NO MISSIONS AVAILABLE",
       cancel: "CANCEL",
       maxHeroes: "MAXIMUM CAPACITY REACHED",
+      omega: {
+          title: "OMEGA CYLINDERS",
+          desc: "Reprogrammed nanobots capable of reversing the infection.",
+          empty: "RESERVES DEPLETED",
+          find: "SCAVENGE SUPPLIES",
+          found: "CYLINDER FOUND!",
+          notFound: "SEARCH FAILED"
+      },
       rooms: {
           command: "WAR ROOM",
           commandDesc: "Active missions and tactical deployment.",
@@ -360,7 +380,7 @@ export const translations = {
       scanHuman: "SCAN: FRESH MEAT (INFECT)",
       adminSeed: "ADMIN: RESET DB",
       seedSuccess: "DB RESET",
-      submit: "RECRUIT AGENT"
+      submit: "RECLUTAR AGENTE"
     },
     missionEditor: {
       title: "MISSION EDITOR",
@@ -371,6 +391,7 @@ export const translations = {
       prereq: "PREREQUISITE MISSION",
       pdfUrl: "PDF URL (OPTIONAL)",
       description: "DESCRIPTION",
+      outcome: "OUTCOME TEXT (OPTIONAL)",
       objectives: "OBJECTIVES",
       addObjective: "ADD OBJECTIVE",
       objTitle: "Objective Title",

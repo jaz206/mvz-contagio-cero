@@ -58,7 +58,7 @@ export interface Mission {
     threatLevel: string;
     type?: 'STANDARD' | 'SHIELD_BASE' | 'BOSS' | 'GALACTUS';
     
-    // CAMBIO: Define en qué etapa del evento aparece esta misión
+    // Define en qué etapa del evento aparece esta misión
     triggerStage?: WorldStage; 
 
     prereq?: string;       
@@ -69,7 +69,10 @@ export interface Mission {
     requirements?: string[];
     specialRules?: string[];      
     setupInstructions?: string[]; 
-    layoutUrl?: string;           
+    layoutUrl?: string;
+    
+    // NUEVO CAMPO: Texto de desenlace opcional
+    outcomeText?: string;
 }
 
 export interface GlobalEvent {

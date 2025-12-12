@@ -168,6 +168,10 @@ const App: React.FC = () => {
     const [playerAlignment, setPlayerAlignment] = useState<'ALIVE' | 'ZOMBIE' | null>(null);
     const [heroes, setHeroes] = useState<Hero[]>([]);
     const [completedMissionIds, setCompletedMissionIds] = useState<Set<string>>(new Set());
+    
+    // NUEVO ESTADO: CILINDROS OMEGA
+    const [omegaCylinders, setOmegaCylinders] = useState<number>(0);
+
     const [worldStage, setWorldStage] = useState<WorldStage>('NORMAL');
     const [activeGlobalEvent, setActiveGlobalEvent] = useState<GlobalEvent | null>(null);
     const [isGuest, setIsGuest] = useState(false);
@@ -230,6 +234,7 @@ const App: React.FC = () => {
         setViewMode('map');
         setHeroes(INITIAL_HEROES);
         setCompletedMissionIds(new Set());
+        setOmegaCylinders(99); // Editor tiene infinitos
         setWorldStage('NORMAL');
         isDataLoadedRef.current = true;
     };
@@ -267,6 +272,12 @@ const App: React.FC = () => {
     const handleTransformHero = (heroId: string, targetAlignment: 'ALIVE' | 'ZOMBIE') => {
         const currentHero = heroes.find(h => h.id === heroId);
         if (!currentHero) return;
+
+        // LÓGICA DE CONSUMO DE CILINDROS
+        if (targetAlignment === 'ALIVE') {
+            // Si estamos curando, consumimos un cilindro
+            setOmegaCylinders(prev => Math.max(0, prev - 1));
+        }
 
         // LANZAR NOTICIA URGENTE
         const actionText = targetAlignment === 'ALIVE' ? 'CURADO' : 'INFECTADO';
@@ -365,6 +376,7 @@ const App: React.FC = () => {
             if ((user || isGuest) && playerAlignment) {
                 let profileHeroes: Hero[] = [];
                 let profileMissions: string[] = [];
+                let profileCylinders = 3; // Default
                 let dataFound = false;
                 try {
                     const templates = await getHeroTemplates();
@@ -374,6 +386,7 @@ const App: React.FC = () => {
                         if (profile) {
                             profileHeroes = mergeWithLatestContent(profile.heroes, playerAlignment === 'ZOMBIE', templates);
                             profileMissions = profile.completedMissionIds;
+                            profileCylinders = profile.resources?.omegaCylinders ?? 3;
                             dataFound = true;
                         }
                     } else {
@@ -383,16 +396,19 @@ const App: React.FC = () => {
                             const parsed = JSON.parse(saved);
                             profileHeroes = mergeWithLatestContent(parsed.heroes, playerAlignment === 'ZOMBIE', templates);
                             profileMissions = parsed.completedMissionIds || [];
+                            profileCylinders = parsed.resources?.omegaCylinders ?? 3;
                             dataFound = true;
                         }
                     }
                     if (dataFound && profileHeroes.length > 0) {
                         setHeroes(profileHeroes);
                         setCompletedMissionIds(new Set(profileMissions));
+                        setOmegaCylinders(profileCylinders);
                         checkGlobalEvents(profileMissions.length);
                     } else {
                         setHeroes(playerAlignment === 'ZOMBIE' ? INITIAL_ZOMBIE_HEROES : INITIAL_HEROES);
                         setCompletedMissionIds(new Set());
+                        setOmegaCylinders(3);
                     }
                 } catch (e) {
                     console.error("Error loading data:", e);
@@ -411,7 +427,7 @@ const App: React.FC = () => {
         const timeout = setTimeout(async () => {
             setIsSaving(true);
             try {
-                await saveUserProfile(user.uid, playerAlignment, heroes, Array.from(completedMissionIds));
+                await saveUserProfile(user.uid, playerAlignment, heroes, Array.from(completedMissionIds), { omegaCylinders });
             } catch (e) {
                 console.error("Auto-save failed", e);
             } finally {
@@ -419,7 +435,7 @@ const App: React.FC = () => {
             }
         }, 2000);
         return () => clearTimeout(timeout);
-    }, [heroes, completedMissionIds, user, playerAlignment, isEditorMode]);
+    }, [heroes, completedMissionIds, omegaCylinders, user, playerAlignment, isEditorMode]);
 
     useEffect(() => {
         if (!playerAlignment) return;
@@ -461,6 +477,7 @@ const App: React.FC = () => {
         setCompletedMissionIds(new Set());
         setWorldStage('NORMAL');
         setActiveGlobalEvent(null);
+        setOmegaCylinders(3);
     };
 
     const handleMissionComplete = async (id: string) => {
@@ -471,7 +488,7 @@ const App: React.FC = () => {
         if (user && playerAlignment) {
             setIsSaving(true);
             try {
-                await saveUserProfile(user.uid, playerAlignment, heroes, Array.from(newSet));
+                await saveUserProfile(user.uid, playerAlignment, heroes, Array.from(newSet), { omegaCylinders });
             } catch (e) {
                 console.error("Error saving mission progress immediately:", e);
             } finally {
@@ -549,12 +566,10 @@ const App: React.FC = () => {
                 id: 'm_base_alpha', title: t.missions.bases.alpha, description: [t.missions.bases.desc], objectives: [{ title: t.missions.bases.objSecure, desc: t.missions.bases.objRetrieve }],
                 location: { state: 'Colorado', coordinates: [-104.9903, 39.7392] }, threatLevel: 'BAJA', type: 'SHIELD_BASE', alignment: 'BOTH'
             },
-            // CAMBIO: Misión de Silver Surfer (aparece en etapa SURFER)
             {
                 id: 'm_surfer', type: 'GALACTUS', triggerStage: 'SURFER', title: t.events.surfer[playerAlignment === 'ZOMBIE' ? 'zombie' : 'alive'].title, description: [t.events.surfer[playerAlignment === 'ZOMBIE' ? 'zombie' : 'alive'].desc], objectives: [{ title: "Interceptar", desc: "Detener al Heraldo." }],
                 location: { state: 'Kansas', coordinates: [-98.0, 38.0] }, threatLevel: 'OMEGA', alignment: 'BOTH'
             },
-            // CAMBIO: Misión de Galactus (aparece en etapa GALACTUS)
             {
                 id: 'boss-galactus', type: 'GALACTUS', triggerStage: 'GALACTUS', title: t.missions.galactus.title, description: t.missions.galactus.description, objectives: t.missions.galactus.objectives,
                 location: { state: 'Kansas', coordinates: [-98.0, 38.0] }, threatLevel: 'OMEGA++', alignment: 'BOTH'
@@ -611,24 +626,13 @@ const App: React.FC = () => {
     const groupedMissions = useMemo(() => {
         const activeMissions = visibleMissions.filter(m => m && !completedMissionIds.has(m.id));
         
-        // CAMBIO: Estructura de grupos actualizada para incluir variantes de SHIELD
         const groups: Record<string, Mission[]> = { 
             galactus: [], 
-            
-            kingpin: [], 
-            shield_kingpin: [],
-            
-            magneto: [], 
-            shield_magneto: [],
-            
-            hulk: [], 
-            shield_hulk: [],
-            
-            doom: [], 
-            shield_doom: [],
-            
-            neutral: [],
-            shield_neutral: []
+            kingpin: [], shield_kingpin: [],
+            magneto: [], shield_magneto: [],
+            hulk: [], shield_hulk: [],
+            doom: [], shield_doom: [],
+            neutral: [], shield_neutral: []
         };
         
         activeMissions.forEach(m => {
@@ -636,8 +640,6 @@ const App: React.FC = () => {
                 groups.galactus.push(m);
             } else {
                 const faction = getFactionForState(m.location.state);
-                
-                // CAMBIO: Lógica para separar bases de SHIELD en su propio subgrupo
                 if (m.type === 'SHIELD_BASE') {
                     const key = `shield_${faction}`;
                     if (groups[key]) {
@@ -767,8 +769,6 @@ const App: React.FC = () => {
                                     {Object.entries(groupedMissions).map(([zoneKey, missions]) => {
                                         if (zoneKey === 'galactus' || missions.length === 0) return null;
                                         const isExpanded = expandedZones.has(zoneKey);
-                                        
-                                        // CAMBIO: Lógica para mostrar el nombre correcto en el sidebar
                                         const factionLabel = (() => {
                                             if (zoneKey.startsWith('shield_')) {
                                                 const baseFaction = zoneKey.replace('shield_', '');
@@ -832,7 +832,24 @@ const App: React.FC = () => {
                         </aside>
                         <main className="flex-1 relative bg-slate-950 overflow-hidden">
                             {viewMode === 'map' && (<USAMap language={lang} missions={visibleMissions} completedMissionIds={completedMissionIds} onMissionComplete={handleMissionComplete} onMissionSelect={handleMissionSelectWrapper} onBunkerClick={() => setViewMode('bunker')} factionStates={FACTION_STATES} playerAlignment={playerAlignment} worldStage={worldStage} />)}
-                            {viewMode === 'bunker' && (<BunkerInterior heroes={heroes} missions={visibleMissions.filter(m => m && !completedMissionIds.has(m.id))} onAssign={(heroId, missionId) => { const hIndex = heroes.findIndex(h => h.id === heroId); if(hIndex >= 0) { const newHeroes = [...heroes]; newHeroes[hIndex] = { ...newHeroes[hIndex], status: 'DEPLOYED', assignedMissionId: missionId }; setHeroes(newHeroes); return true; } return false; }} onUnassign={(heroId) => { const hIndex = heroes.findIndex(h => h.id === heroId); if(hIndex >= 0) { const newHeroes = [...heroes]; newHeroes[hIndex] = { ...newHeroes[hIndex], status: 'AVAILABLE', assignedMissionId: null }; setHeroes(newHeroes); } }} onAddHero={(hero) => setHeroes([...heroes, hero])} onToggleObjective={handleToggleHeroObjective} onBack={() => setViewMode('map')} language={lang} playerAlignment={playerAlignment} isEditorMode={isEditorMode} onTransformHero={handleTransformHero} onTickerUpdate={handleTickerUpdate} />)}
+                            {viewMode === 'bunker' && (
+                                <BunkerInterior 
+                                    heroes={heroes} 
+                                    missions={visibleMissions.filter(m => m && !completedMissionIds.has(m.id))} 
+                                    onAssign={(heroId, missionId) => { const hIndex = heroes.findIndex(h => h.id === heroId); if(hIndex >= 0) { const newHeroes = [...heroes]; newHeroes[hIndex] = { ...newHeroes[hIndex], status: 'DEPLOYED', assignedMissionId: missionId }; setHeroes(newHeroes); return true; } return false; }} 
+                                    onUnassign={(heroId) => { const hIndex = heroes.findIndex(h => h.id === heroId); if(hIndex >= 0) { const newHeroes = [...heroes]; newHeroes[hIndex] = { ...newHeroes[hIndex], status: 'AVAILABLE', assignedMissionId: null }; setHeroes(newHeroes); } }} 
+                                    onAddHero={(hero) => setHeroes([...heroes, hero])} 
+                                    onToggleObjective={handleToggleHeroObjective} 
+                                    onBack={() => setViewMode('map')} 
+                                    language={lang} 
+                                    playerAlignment={playerAlignment} 
+                                    isEditorMode={isEditorMode} 
+                                    onTransformHero={handleTransformHero} 
+                                    onTickerUpdate={handleTickerUpdate}
+                                    omegaCylinders={omegaCylinders} // PASAMOS EL ESTADO
+                                    onFindCylinder={() => setOmegaCylinders(prev => prev + 1)} // FUNCIÓN PARA ENCONTRAR (DEBUG/GAMEPLAY)
+                                />
+                            )}
                             {viewMode === 'tutorial' && (<div className="absolute inset-0 z-40"><USAMap language={lang} missions={visibleMissions} completedMissionIds={completedMissionIds} onMissionComplete={() => {}} onMissionSelect={() => {}} onBunkerClick={() => {}} factionStates={FACTION_STATES} playerAlignment={playerAlignment} worldStage={worldStage} /><TutorialOverlay language={lang} onComplete={() => { if(user) localStorage.setItem(`shield_tutorial_seen_${user.uid}`, 'true'); setViewMode('map'); }} onStepChange={(stepKey) => { if (['roster', 'file', 'recruit'].includes(stepKey)) { setViewMode('bunker'); } }} /></div>)}
                             <NewsTicker alignment={playerAlignment || 'ALIVE'} worldStage={worldStage} urgentMessage={tickerMessage} />
                         </main>

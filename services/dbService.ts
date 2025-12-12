@@ -110,6 +110,7 @@ export const createHeroTemplateInDB = async (heroData: Omit<HeroTemplate, 'id'>)
 export interface UserProfileData {
     heroes: Hero[];
     completedMissionIds: string[];
+    resources?: { omegaCylinders: number }; // NUEVO CAMPO
     lastUpdated: any;
 }
 
@@ -126,6 +127,7 @@ export const getUserProfile = async (uid: string, campaignMode: 'ALIVE' | 'ZOMBI
                 return {
                     heroes: campaignData.heroes || [],
                     completedMissionIds: campaignData.missions || [],
+                    resources: campaignData.resources || { omegaCylinders: 3 }, // Valor por defecto
                     lastUpdated: data.lastUpdated
                 };
             }
@@ -141,7 +143,8 @@ export const saveUserProfile = async (
     uid: string, 
     campaignMode: 'ALIVE' | 'ZOMBIE', 
     heroes: Hero[], 
-    completedMissionIds: string[]
+    completedMissionIds: string[],
+    resources?: { omegaCylinders: number } // NUEVO PARÁMETRO
 ): Promise<void> => {
     if (!db) return;
     try {
@@ -149,7 +152,8 @@ export const saveUserProfile = async (
         const updateData = {
             [campaignMode]: {
                 heroes: heroes,
-                missions: completedMissionIds
+                missions: completedMissionIds,
+                resources: resources || { omegaCylinders: 0 }
             },
             lastUpdated: Timestamp.now()
         };
@@ -200,7 +204,6 @@ export const updateMissionInDB = async (id: string, missionData: Partial<Mission
     }
 };
 
-// --- NUEVA FUNCIÓN: ELIMINAR MISIÓN ---
 export const deleteMissionInDB = async (id: string): Promise<void> => {
     if (!db) throw new Error("Base de datos no configurada");
     try {

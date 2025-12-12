@@ -53,12 +53,12 @@ export const MissionEditor: React.FC<MissionEditorProps> = ({ isOpen, onClose, o
     
     const [title, setTitle] = useState('');
     const [description, setDescription] = useState('');
+    const [outcomeText, setOutcomeText] = useState(''); // NUEVO ESTADO
     const [locationState, setLocationState] = useState(STATES_LIST[0]);
     const [threatLevel, setThreatLevel] = useState(THREAT_LEVELS[1]); 
     const [type, setType] = useState<'STANDARD' | 'SHIELD_BASE' | 'BOSS' | 'GALACTUS'>('STANDARD');
     const [alignment, setAlignment] = useState<'ALIVE' | 'ZOMBIE' | 'BOTH'>('BOTH');
     
-    // CAMBIO: Estado para triggerStage
     const [triggerStage, setTriggerStage] = useState<WorldStage>('NORMAL');
 
     const [prereqs, setPrereqs] = useState<string[]>([]);
@@ -75,6 +75,7 @@ export const MissionEditor: React.FC<MissionEditorProps> = ({ isOpen, onClose, o
         if (initialData) {
             setTitle(initialData.title);
             setDescription(initialData.description.join('\n'));
+            setOutcomeText(initialData.outcomeText || ''); // CARGAR DATO
             setLocationState(initialData.location.state);
             setThreatLevel(initialData.threatLevel || THREAT_LEVELS[1]);
             setType(initialData.type || 'STANDARD');
@@ -95,6 +96,7 @@ export const MissionEditor: React.FC<MissionEditorProps> = ({ isOpen, onClose, o
         } else {
             setTitle('');
             setDescription('');
+            setOutcomeText('');
             setLocationState(STATES_LIST[0]);
             setThreatLevel(THREAT_LEVELS[1]);
             setType('STANDARD');
@@ -159,11 +161,11 @@ export const MissionEditor: React.FC<MissionEditorProps> = ({ isOpen, onClose, o
         const missionPayload: any = {
             title,
             description: description.split('\n').filter(p => p.trim() !== ''),
+            outcomeText: outcomeText.trim() || null, // GUARDAR DATO
             location: { state: locationState, coordinates: finalCoordinates },
             threatLevel,
             type,
             alignment,
-            // CAMBIO: Guardar triggerStage solo si es tipo GALACTUS, sino null
             triggerStage: type === 'GALACTUS' ? triggerStage : null,
             objectives: objectives.filter(o => o.title && o.desc),
             prereq: prereqs.length > 0 ? prereqs[0] : null, 
@@ -257,7 +259,6 @@ export const MissionEditor: React.FC<MissionEditorProps> = ({ isOpen, onClose, o
                                 </div>
                             </div>
 
-                            {/* CAMBIO: Selector de Etapa de Activación para misiones GALACTUS */}
                             {type === 'GALACTUS' && (
                                 <div className="bg-purple-900/20 border border-purple-500/50 p-2 animate-fade-in">
                                     <label className="text-[10px] text-purple-400 font-bold block mb-1 uppercase">ETAPA DE ACTIVACIÓN</label>
@@ -348,6 +349,18 @@ export const MissionEditor: React.FC<MissionEditorProps> = ({ isOpen, onClose, o
                             <div>
                                 <label className="text-[10px] text-cyan-600 font-bold block mb-1 uppercase">{t.description} (FLAVOR TEXT)</label>
                                 <textarea value={description} onChange={e => setDescription(e.target.value)} rows={8} className="w-full bg-slate-950 border border-cyan-800 p-2 text-cyan-200 text-xs" />
+                            </div>
+
+                            {/* NUEVO CAMPO: TEXTO DE DESENLACE */}
+                            <div>
+                                <label className="text-[10px] text-emerald-600 font-bold block mb-1 uppercase">{t.outcome}</label>
+                                <textarea 
+                                    value={outcomeText} 
+                                    onChange={e => setOutcomeText(e.target.value)} 
+                                    rows={4} 
+                                    placeholder="Texto que aparecerá al completar la misión..."
+                                    className="w-full bg-slate-950 border border-emerald-800 p-2 text-emerald-200 text-xs focus:border-emerald-500 outline-none" 
+                                />
                             </div>
                         </div>
                     </div>
