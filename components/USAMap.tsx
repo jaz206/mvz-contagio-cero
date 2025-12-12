@@ -22,6 +22,10 @@ interface USAMapProps {
   worldStage: WorldStage;
 }
 
+// CONSTANTES VISUALES
+const RADAR_SIZE = 250; 
+const RADAR_OFFSET = RADAR_SIZE / 2;
+
 export const USAMap: React.FC<USAMapProps> = ({ 
     language, 
     missions, 
@@ -44,6 +48,9 @@ export const USAMap: React.FC<USAMapProps> = ({
   const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
   const [tokensReleased, setTokensReleased] = useState(false);
   
+  // ESTADO PARA EL TOOLTIP (Ahora incluye posición exacta del ratón)
+  const [tooltip, setTooltip] = useState<{ x: number, y: number, mission: Mission, factionName: string } | null>(null);
+
   const [hulkLocation, setHulkLocation] = useState<[number, number]>([-98.5, 39.8]); 
   
   const hulkSequenceRef = useRef<{ active: boolean, remainingJumps: number }>({ active: false, remainingJumps: 0 });
@@ -121,25 +128,31 @@ export const USAMap: React.FC<USAMapProps> = ({
       }
   }, [usData, dimensions]);
 
+  // --- HELPER: OBTENER NOMBRE DE FACCIÓN ---
+  const getFactionName = (state: string) => {
+      if (factionStates.magneto.has(state)) return t.factions.magneto.name;
+      if (factionStates.kingpin.has(state)) return t.factions.kingpin.name;
+      if (factionStates.hulk.has(state)) return t.factions.hulk.name;
+      if (factionStates.doom.has(state)) return t.factions.doom.name;
+      return t.factions.neutral.name;
+  };
+
   // --- LÓGICA DE COLORES HÍBRIDA ---
   const getMissionVisuals = (mission: Mission, isCompleted: boolean) => {
-      // 1. Color del NÚCLEO (Estado)
       let coreColor = '#eab308'; // Amarillo (Disponible)
       if (isCompleted) coreColor = '#10b981'; // Verde (Completada)
       else if (mission.type === 'SHIELD_BASE') coreColor = '#3b82f6'; // Azul (Base)
       else if (mission.type === 'BOSS' || mission.type === 'GALACTUS') coreColor = '#9333ea'; // Morado (Jefe)
 
-      // 2. Color del HALO/FACCIÓN (Haz de luz)
       let factionColor = '#94a3b8'; // Gris (Neutral)
       let glowId = 'glow-neutral';
       
       const state = mission.location.state;
-      if (factionStates.magneto.has(state)) { factionColor = '#ef4444'; glowId = 'glow-magneto'; } // Rojo
-      else if (factionStates.kingpin.has(state)) { factionColor = '#d946ef'; glowId = 'glow-kingpin'; } // Rosa
-      else if (factionStates.hulk.has(state)) { factionColor = '#84cc16'; glowId = 'glow-hulk'; } // Lima
-      else if (factionStates.doom.has(state)) { factionColor = '#06b6d4'; glowId = 'glow-doom'; } // Cian
+      if (factionStates.magneto.has(state)) { factionColor = '#ef4444'; glowId = 'glow-magneto'; }
+      else if (factionStates.kingpin.has(state)) { factionColor = '#d946ef'; glowId = 'glow-kingpin'; }
+      else if (factionStates.hulk.has(state)) { factionColor = '#84cc16'; glowId = 'glow-hulk'; }
+      else if (factionStates.doom.has(state)) { factionColor = '#06b6d4'; glowId = 'glow-doom'; }
 
-      // Sobrescritura para Galactus (siempre morado)
       if (mission.type === 'GALACTUS') {
           factionColor = '#9333ea';
           glowId = 'glow-boss';
@@ -204,24 +217,22 @@ export const USAMap: React.FC<USAMapProps> = ({
 
         const defs = svg.append("defs");
         
-        // --- FILTROS DE BRILLO POR FACCIÓN ---
         const createGlowFilter = (id: string, color: string) => {
             const filter = defs.append("filter").attr("id", id).attr("x", "-50%").attr("y", "-50%").attr("width", "200%").attr("height", "200%");
             filter.append("feGaussianBlur").attr("stdDeviation", "3").attr("result", "coloredBlur");
             const feMerge = filter.append("feMerge");
             feMerge.append("feMergeNode").attr("in", "coloredBlur");
             feMerge.append("feMergeNode").attr("in", "SourceGraphic");
-            // Añadimos un drop-shadow del color de la facción
             filter.append("feDropShadow").attr("dx", 0).attr("dy", 0).attr("stdDeviation", 4).attr("flood-color", color).attr("flood-opacity", 0.8);
         };
 
-        createGlowFilter("glow-magneto", "#ef4444"); // Rojo
-        createGlowFilter("glow-kingpin", "#d946ef"); // Rosa
-        createGlowFilter("glow-hulk", "#84cc16");    // Lima
-        createGlowFilter("glow-doom", "#06b6d4");    // Cian
-        createGlowFilter("glow-neutral", "#fbbf24"); // Amarillo
-        createGlowFilter("glow-boss", "#9333ea");    // Morado
-        createGlowFilter("glow-shield", "#3b82f6");  // Azul
+        createGlowFilter("glow-magneto", "#ef4444");
+        createGlowFilter("glow-kingpin", "#d946ef");
+        createGlowFilter("glow-hulk", "#84cc16");
+        createGlowFilter("glow-doom", "#06b6d4");
+        createGlowFilter("glow-neutral", "#fbbf24");
+        createGlowFilter("glow-boss", "#9333ea");
+        createGlowFilter("glow-shield", "#3b82f6");
 
         defs.append("clipPath").attr("id", "bunker-clip").append("circle").attr("cx", 0).attr("cy", 0).attr("r", 12);
         defs.append("clipPath").attr("id", "mission-clip").append("circle").attr("cx", 0).attr("cy", 0).attr("r", 8);
@@ -244,12 +255,11 @@ export const USAMap: React.FC<USAMapProps> = ({
 
             svg.selectAll('.radar-effect').attr('transform', function() {
                 const coords = d3.select(this).attr('data-coords')?.split(',').map(Number) || [0,0];
-                return `translate(${coords[0] - 300},${coords[1] - 300}) scale(1)`; 
+                return `translate(${coords[0] - RADAR_OFFSET},${coords[1] - RADAR_OFFSET}) scale(1)`; 
             });
 
             svg.selectAll('text.label').style('font-size', `${Math.max(6, 10/k)}px`);
 
-            // Lógica de Zoom para Misiones
             if (k >= 2.5) {
                 svg.selectAll('.mission-dot').style('display', 'none');
                 svg.selectAll('.mission-icon').style('display', 'block').attr('transform', `scale(${1/k * 2})`);
@@ -329,7 +339,7 @@ export const USAMap: React.FC<USAMapProps> = ({
       .text((d: any) => d.properties.name ? d.properties.name.toUpperCase() : '')
       .raise();
 
-    // --- RADAR EFFECT ---
+    // --- RADAR EFFECT (TAMAÑO REDUCIDO) ---
     const radarPoints: { id: string, coords: [number, number] }[] = [];
     const bunkerCoords = projection([-82.9, 40.0]);
     if (bunkerCoords) {
@@ -349,8 +359,8 @@ export const USAMap: React.FC<USAMapProps> = ({
         .join(
             enter => enter.insert('foreignObject', ':first-child')
                 .attr('class', 'radar-effect pointer-events-none')
-                .attr('width', 600)
-                .attr('height', 600)
+                .attr('width', RADAR_SIZE)
+                .attr('height', RADAR_SIZE)
                 .attr('x', 0)
                 .attr('y', 0)
                 .html(`
@@ -370,7 +380,7 @@ export const USAMap: React.FC<USAMapProps> = ({
                 `)
         )
         .attr('data-coords', d => `${d.coords[0]},${d.coords[1]}`)
-        .attr('transform', d => `translate(${d.coords[0] - 300}, ${d.coords[1] - 300})`);
+        .attr('transform', d => `translate(${d.coords[0] - RADAR_OFFSET}, ${d.coords[1] - RADAR_OFFSET})`);
 
     if (bunkerCoords && gMap.select('.bunker').empty()) {
         const bunkerGroup = gMap.append('g')
@@ -442,6 +452,23 @@ export const USAMap: React.FC<USAMapProps> = ({
             e.stopPropagation(); 
             if (worldStage === 'GALACTUS' && d.type !== 'BOSS' && d.type !== 'GALACTUS') return;
             onMissionSelect(d); 
+        })
+        // --- EVENTOS DE TOOLTIP (MEJORADOS) ---
+        .on('mouseenter', (event, d) => {
+            const factionName = getFactionName(d.location.state);
+            setTooltip({
+                x: event.clientX, // Usamos clientX para posición fija
+                y: event.clientY, // Usamos clientY para posición fija
+                mission: d,
+                factionName
+            });
+        })
+        .on('mousemove', (event) => {
+            // Actualizamos la posición mientras el ratón se mueve sobre el punto
+            setTooltip(prev => prev ? { ...prev, x: event.clientX, y: event.clientY } : null);
+        })
+        .on('mouseleave', () => {
+            setTooltip(null);
         });
 
       // --- PUNTOS DE MISIÓN (VISTA LEJANA) ---
@@ -450,16 +477,14 @@ export const USAMap: React.FC<USAMapProps> = ({
         .attr('fill', (d) => {
             if (worldStage === 'GALACTUS' && d.type !== 'BOSS' && d.type !== 'GALACTUS') return '#64748b';
             const visuals = getMissionVisuals(d, completedMissionIds.has(d.id));
-            return visuals.coreColor; // Color del NÚCLEO (Estado)
+            return visuals.coreColor;
         })
-        // BORDE DE FACCIÓN (Haz de luz)
         .attr('stroke', (d) => {
             if (worldStage === 'GALACTUS' && d.type !== 'BOSS' && d.type !== 'GALACTUS') return '#475569';
             const visuals = getMissionVisuals(d, completedMissionIds.has(d.id));
             return visuals.factionColor;
         })
         .attr('stroke-width', 2) 
-        // FILTRO DE BRILLO DE FACCIÓN
         .style('filter', (d) => {
             if (worldStage === 'GALACTUS' && d.type !== 'BOSS' && d.type !== 'GALACTUS') return 'none';
             const visuals = getMissionVisuals(d, completedMissionIds.has(d.id));
@@ -486,7 +511,6 @@ export const USAMap: React.FC<USAMapProps> = ({
               const fillColor = isBlocked ? '#1e293b' : '#0f172a';
               const coreColor = isBlocked ? '#64748b' : visuals.coreColor;
 
-              // Círculo base
               sel.append('circle')
                  .attr('r', 10)
                  .attr('fill', fillColor)
@@ -494,23 +518,9 @@ export const USAMap: React.FC<USAMapProps> = ({
                  .attr('stroke-width', 2)
                  .style('filter', isBlocked ? 'none' : `url(#${visuals.glowId})`);
 
-              // Punto central de estado
               sel.append('circle')
                  .attr('r', 3)
                  .attr('fill', coreColor);
-
-              // Símbolo de Facción (Texto centrado)
-              /*
-              if (!isBlocked) {
-                  sel.append('text')
-                     .attr('dy', 4)
-                     .attr('text-anchor', 'middle')
-                     .attr('font-size', '10px')
-                     .attr('font-weight', 'bold')
-                     .attr('fill', strokeColor)
-                     .text(visuals.symbol); // Opcional: Mostrar letra de facción
-              }
-              */
           }
         })
         .style('display', currentZoom < 2.5 ? 'none' : 'block')
@@ -615,6 +625,43 @@ export const USAMap: React.FC<USAMapProps> = ({
         `}</style>
 
         <svg ref={svgRef} className="w-full h-full relative z-10"></svg>
+
+        {/* --- TOOLTIP FLOTANTE (FIXED POSITION) --- */}
+        {tooltip && (
+            <div 
+                className="fixed z-50 pointer-events-none bg-slate-900/95 border border-cyan-500 p-3 shadow-[0_0_20px_rgba(0,0,0,0.8)] rounded-sm min-w-[200px]"
+                style={{ 
+                    left: Math.min(tooltip.x + 15, window.innerWidth - 220), 
+                    top: Math.min(tooltip.y + 15, window.innerHeight - 100) 
+                }}
+            >
+                <div className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1 border-b border-gray-700 pb-1">
+                    {tooltip.factionName}
+                </div>
+                <div className="text-sm font-bold text-white mb-1">
+                    {tooltip.mission.title}
+                </div>
+                <div className="flex gap-2 flex-wrap">
+                    {tooltip.mission.type === 'SHIELD_BASE' && (
+                        <span className="text-[9px] bg-blue-900 text-blue-300 px-1.5 py-0.5 border border-blue-700 rounded">
+                            🛡 MISION ESPECIAL S.H.I.E.L.D.
+                        </span>
+                    )}
+                    {(tooltip.mission.type === 'BOSS' || tooltip.mission.type === 'GALACTUS') && (
+                        <span className="text-[9px] bg-purple-900 text-purple-300 px-1.5 py-0.5 border border-purple-700 rounded">
+                            💀 JEFE FINAL
+                        </span>
+                    )}
+                    <span className={`text-[9px] px-1.5 py-0.5 border rounded ${
+                        tooltip.mission.threatLevel === 'ALTA' ? 'bg-orange-900 text-orange-300 border-orange-700' :
+                        tooltip.mission.threatLevel === 'EXTREMA' ? 'bg-red-900 text-red-300 border-red-700' :
+                        'bg-yellow-900 text-yellow-300 border-yellow-700'
+                    }`}>
+                        {tooltip.mission.threatLevel}
+                    </span>
+                </div>
+            </div>
+        )}
     </div>
   );
 };

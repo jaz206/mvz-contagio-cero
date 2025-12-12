@@ -168,8 +168,6 @@ const App: React.FC = () => {
     const [playerAlignment, setPlayerAlignment] = useState<'ALIVE' | 'ZOMBIE' | null>(null);
     const [heroes, setHeroes] = useState<Hero[]>([]);
     const [completedMissionIds, setCompletedMissionIds] = useState<Set<string>>(new Set());
-    
-    // CAMBIO: Inicializamos en 0
     const [omegaCylinders, setOmegaCylinders] = useState<number>(0);
 
     const [worldStage, setWorldStage] = useState<WorldStage>('NORMAL');
@@ -195,6 +193,9 @@ const App: React.FC = () => {
     const [showTutorial, setShowTutorial] = useState(false);
     
     const [expandedZones, setExpandedZones] = useState<Set<string>>(new Set(['kingpin', 'magneto', 'hulk', 'doom', 'neutral']));
+    
+    // NUEVO ESTADO: Sidebar Colapsado
+    const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
 
     const t = translations[lang];
 
@@ -377,7 +378,7 @@ const App: React.FC = () => {
             if ((user || isGuest) && playerAlignment) {
                 let profileHeroes: Hero[] = [];
                 let profileMissions: string[] = [];
-                let profileCylinders = 0; // CAMBIO: Default 0
+                let profileCylinders = 0; 
                 let dataFound = false;
                 try {
                     const templates = await getHeroTemplates();
@@ -387,7 +388,6 @@ const App: React.FC = () => {
                         if (profile) {
                             profileHeroes = mergeWithLatestContent(profile.heroes, playerAlignment === 'ZOMBIE', templates);
                             profileMissions = profile.completedMissionIds;
-                            // CAMBIO: Fallback a 0
                             profileCylinders = profile.resources?.omegaCylinders ?? 0;
                             dataFound = true;
                         }
@@ -398,7 +398,6 @@ const App: React.FC = () => {
                             const parsed = JSON.parse(saved);
                             profileHeroes = mergeWithLatestContent(parsed.heroes, playerAlignment === 'ZOMBIE', templates);
                             profileMissions = parsed.completedMissionIds || [];
-                            // CAMBIO: Fallback a 0
                             profileCylinders = parsed.resources?.omegaCylinders ?? 0;
                             dataFound = true;
                         }
@@ -411,7 +410,7 @@ const App: React.FC = () => {
                     } else {
                         setHeroes(playerAlignment === 'ZOMBIE' ? INITIAL_ZOMBIE_HEROES : INITIAL_HEROES);
                         setCompletedMissionIds(new Set());
-                        setOmegaCylinders(0); // CAMBIO: Default 0
+                        setOmegaCylinders(0);
                     }
                 } catch (e) {
                     console.error("Error loading data:", e);
@@ -480,7 +479,7 @@ const App: React.FC = () => {
         setCompletedMissionIds(new Set());
         setWorldStage('NORMAL');
         setActiveGlobalEvent(null);
-        setOmegaCylinders(0); // CAMBIO: Reset a 0
+        setOmegaCylinders(0);
     };
 
     const handleMissionComplete = async (id: string) => {
@@ -669,37 +668,27 @@ const App: React.FC = () => {
         setSelectedMission(m);
     };
 
+    // --- CÁLCULO DE PROGRESO ---
+    const totalMissions = useMemo(() => {
+        return customMissions.length + 6; 
+    }, [customMissions]);
+    
+    const progressPercentage = Math.min(100, Math.round((completedMissionIds.size / Math.max(1, totalMissions)) * 100));
+    const circumference = 2 * Math.PI * 18; // Radio 18
+    const strokeDashoffset = circumference - (progressPercentage / 100) * circumference;
+
     if (loading || loadingAuth) return <div className="bg-slate-950 text-cyan-500 h-screen flex items-center justify-center font-mono">LOADING SHIELD OS...</div>;
 
     return (
         <div className={`flex flex-col h-screen w-full bg-slate-950 text-cyan-400 font-mono overflow-hidden relative ${playerAlignment === 'ZOMBIE' ? 'hue-rotate-15 saturate-50' : ''}`}>
             <CharacterEditor isOpen={showCharacterEditor} onClose={() => setShowCharacterEditor(false)} language={lang} />
             <MissionEditor isOpen={showMissionEditor} onClose={() => { setShowMissionEditor(false); setMissionToEdit(null); }} onSave={async (newMission) => { const loaded = await getCustomMissions(); setCustomMissions(loaded); }} language={lang} initialData={missionToEdit} existingMissions={allMissions} />
-            {activeGlobalEvent && (
-                <EventModal 
-                    event={activeGlobalEvent} 
-                    isOpen={!!activeGlobalEvent} 
-                    onAcknowledge={handleEventAcknowledge} 
-                    language={lang} 
-                    playerAlignment={playerAlignment} 
-                />
-            )}
-            {selectedMission && (
-                <MissionModal 
-                    mission={selectedMission} 
-                    isOpen={!!selectedMission} 
-                    onClose={() => setSelectedMission(null)} 
-                    onComplete={handleMissionComplete} 
-                    onReactivate={handleMissionReactivate} 
-                    language={lang} 
-                    isCompleted={completedMissionIds.has(selectedMission.id)} 
-                    isEditorMode={isEditorMode} 
-                    onEdit={(m) => { setMissionToEdit(m); setShowMissionEditor(true); setSelectedMission(null); }} 
-                    onDelete={handleDeleteMission}
-                />
-            )}
+            {activeGlobalEvent && <EventModal event={activeGlobalEvent} isOpen={!!activeGlobalEvent} onAcknowledge={handleEventAcknowledge} language={lang} playerAlignment={playerAlignment} />}
+            {selectedMission && <MissionModal mission={selectedMission} isOpen={!!selectedMission} onClose={() => setSelectedMission(null)} onComplete={handleMissionComplete} onReactivate={handleMissionReactivate} language={lang} isCompleted={completedMissionIds.has(selectedMission.id)} isEditorMode={isEditorMode} onEdit={(m) => { setMissionToEdit(m); setShowMissionEditor(true); setSelectedMission(null); }} onDelete={handleDeleteMission} />}
+            
             {viewMode === 'login' && (<LoginScreen onLogin={handleGuestLogin} onGoogleLogin={() => {}} onEditorLogin={handleEditorLogin} language={lang} setLanguage={setLang} />)}
             {viewMode === 'story' && (<StoryMode language={lang} onComplete={(choice) => { setPlayerAlignment(choice); if(user) localStorage.setItem(`shield_intro_seen_${user.uid}`, 'true'); setViewMode('tutorial'); }} onSkip={() => { setPlayerAlignment('ALIVE'); setViewMode('map'); }} />)}
+            
             {(viewMode === 'map' || viewMode === 'bunker' || viewMode === 'tutorial') && (
                 <>
                     <header className="flex-none h-16 border-b border-cyan-900 bg-slate-900/90 flex items-center justify-between px-6 z-30 relative">
@@ -720,119 +709,126 @@ const App: React.FC = () => {
                             </div>
                         </div>
                     </header>
+                    
                     <div className="flex-1 flex overflow-hidden relative">
-                        <aside className="w-80 flex-none bg-slate-900 border-r border-cyan-900 flex flex-col z-20 shadow-xl overflow-hidden relative">
-                            {isEditorMode && (
-                                <div className="p-4 bg-slate-800 border-b border-cyan-500 overflow-y-auto max-h-[50vh]">
-                                    <h3 className="text-[10px] font-bold text-cyan-300 mb-3 tracking-widest border-b border-cyan-600 pb-1">EDITOR CONTROL</h3>
-                                    <div className="mb-3 p-2 border border-blue-600/50 bg-blue-900/10 rounded space-y-2">
-                                        <div className="text-[8px] text-blue-400 font-bold mb-2 uppercase tracking-wider">CONTENT MANAGEMENT</div>
-                                        <button onClick={() => { setMissionToEdit(null); setShowMissionEditor(true); }} className="w-full py-2 bg-blue-600 hover:bg-blue-500 text-white text-[10px] font-bold uppercase tracking-wider shadow-sm transition-all hover:shadow-blue-500/20">CREATE MISSION</button>
-                                        <button onClick={() => setShowCharacterEditor(true)} className="w-full py-2 bg-purple-600 hover:bg-purple-500 text-white text-[10px] font-bold uppercase tracking-wider shadow-sm transition-all hover:shadow-purple-500/20">CREATE CHARACTER</button>
-                                    </div>
-                                    <div className="p-2 border border-orange-600/50 bg-orange-900/10 rounded">
-                                        <div className="text-[8px] text-orange-400 font-bold mb-2 uppercase tracking-wider">EVENT SIMULATION</div>
-                                        <div className="text-[9px] text-gray-400 mb-2 flex justify-between"><span>COMPLETED: <span className="text-white">{completedMissionIds.size}</span></span><span>STAGE: <span className="text-yellow-400">{worldStage}</span></span></div>
-                                        <div className="grid grid-cols-2 gap-2 mb-2">
-                                            <button onClick={() => handleSimulateProgress(1)} className="py-1 bg-slate-700 border border-orange-500/50 text-orange-200 text-[9px] hover:bg-orange-900/50 hover:text-white transition-colors">+1 MISSION</button>
-                                            <button onClick={() => handleSimulateProgress(5)} className="py-1 bg-slate-700 border border-orange-500/50 text-orange-200 text-[9px] hover:bg-orange-900/50 hover:text-white transition-colors">+5 MISSIONS</button>
+                        {/* SIDEBAR COLAPSABLE */}
+                        <aside className={`flex-none bg-slate-900 border-r border-cyan-900 flex flex-col z-20 shadow-xl overflow-hidden relative transition-all duration-300 ${isSidebarCollapsed ? 'w-12' : 'w-80'}`}>
+                            
+                            {/* BOTÓN DE COLAPSO */}
+                            <button 
+                                onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+                                className="absolute top-1/2 -right-3 w-6 h-12 bg-cyan-900 border border-cyan-600 rounded-l flex items-center justify-center z-50 hover:bg-cyan-800 transition-colors"
+                                style={{ transform: 'translateY(-50%)' }}
+                            >
+                                <span className="text-xs text-cyan-200">{isSidebarCollapsed ? '›' : '‹'}</span>
+                            </button>
+
+                            {!isSidebarCollapsed ? (
+                                <>
+                                    {/* NIVEL DE AMENAZA (REDUCIDO) */}
+                                    <div className="p-4 border-b border-cyan-900 bg-red-950/20 flex justify-between items-center">
+                                        <div className="flex flex-col">
+                                            <span className="text-[9px] font-bold text-red-500 tracking-widest">AMENAZA</span>
+                                            <span className="text-sm font-black text-red-600 tracking-tighter">CRÍTICO</span>
                                         </div>
-                                        <button onClick={handleResetProgress} className="w-full py-1 bg-red-900/50 border border-red-600 text-red-300 text-[9px] hover:bg-red-900 hover:text-white transition-colors">RESET PROGRESS</button>
+                                        {/* GRÁFICO DE PROGRESO CIRCULAR (AUMENTADO) */}
+                                        <div className="relative w-14 h-14 flex items-center justify-center">
+                                            <svg className="w-full h-full transform -rotate-90" viewBox="0 0 44 44">
+                                                <circle cx="22" cy="22" r="18" stroke="#1e293b" strokeWidth="4" fill="transparent" />
+                                                <circle cx="22" cy="22" r="18" stroke="#10b981" strokeWidth="4" fill="transparent" strokeDasharray={circumference} strokeDashoffset={strokeDashoffset} className="transition-all duration-1000 ease-out" />
+                                            </svg>
+                                            <span className="absolute text-[10px] font-bold text-emerald-400">{progressPercentage}%</span>
+                                        </div>
+                                    </div>
+
+                                    {/* BOTÓN BÚNKER */}
+                                    <div className="p-3 border-b border-cyan-900">
+                                        <button id="tutorial-bunker-btn" onClick={() => setViewMode('bunker')} className={`w-full py-3 border-2 flex items-center justify-center gap-2 transition-all duration-300 group relative overflow-hidden ${playerAlignment === 'ZOMBIE' ? 'border-lime-600 bg-lime-900/10 hover:bg-lime-900/30 text-lime-400' : 'border-cyan-500 bg-cyan-900/10 hover:bg-cyan-900/30 text-cyan-300'}`}>
+                                            <div className={`absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 ${playerAlignment === 'ZOMBIE' ? 'bg-[linear-gradient(45deg,transparent_25%,rgba(132,204,22,0.1)_50%,transparent_75%)]' : 'bg-[linear-gradient(45deg,transparent_25%,rgba(6,182,212,0.1)_50%,transparent_75%)]'} bg-[length:250%_250%] animate-[shimmer_2s_linear_infinite]`}></div>
+                                            <span className="text-xl group-hover:scale-110 transition-transform">{playerAlignment === 'ZOMBIE' ? '☣' : '🛡'}</span><span className="font-bold tracking-widest text-[10px]">{playerAlignment === 'ZOMBIE' ? t.sidebar.hiveBtn : t.sidebar.bunkerBtn}</span>
+                                        </button>
+                                    </div>
+
+                                    {/* LISTA DE MISIONES (TEXTO AUMENTADO) */}
+                                    <div id="tutorial-sidebar-missions" className="flex-1 overflow-y-auto p-3 scrollbar-thin scrollbar-thumb-cyan-900">
+                                        <h4 className="text-[10px] font-bold text-cyan-600 uppercase mb-2 tracking-widest border-b border-cyan-900 pb-1">{t.sidebar.activeMissions}</h4>
+                                        <div className="space-y-1">
+                                            {groupedMissions.galactus.length > 0 && (
+                                                <div className="mb-2 border border-purple-600 bg-purple-900/20 animate-pulse">
+                                                    <div className="p-1 bg-purple-900/80 text-white text-[9px] font-black tracking-widest uppercase text-center">⚠ OMEGA ⚠</div>
+                                                    <div className="p-1">
+                                                        {groupedMissions.galactus.map(m => (
+                                                            <div key={m.id} onClick={() => setSelectedMission(m)} className="p-2 bg-purple-600 hover:bg-purple-500 text-white font-bold text-[10px] cursor-pointer text-center shadow-sm border border-purple-400 mb-1">{m.title}</div>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                            )}
+                                            {Object.entries(groupedMissions).map(([zoneKey, missions]) => {
+                                                if (zoneKey === 'galactus' || missions.length === 0) return null;
+                                                const isExpanded = expandedZones.has(zoneKey);
+                                                const factionLabel = (() => {
+                                                    if (zoneKey.startsWith('shield_')) {
+                                                        const baseFaction = zoneKey.replace('shield_', '');
+                                                        const baseName = t.factions[baseFaction as keyof typeof t.factions]?.name || baseFaction.toUpperCase();
+                                                        return `S.H.I.E.L.D. (${baseName})`;
+                                                    }
+                                                    return t.factions[zoneKey as keyof typeof t.factions]?.name || zoneKey.toUpperCase();
+                                                })();
+                                                const isBlocked = worldStage === 'GALACTUS';
+                                                return (
+                                                    <div key={zoneKey} className={`mb-1 border border-cyan-900/30 bg-slate-900/30 ${isBlocked ? 'opacity-40 pointer-events-none grayscale' : ''}`}>
+                                                        <button onClick={() => toggleZone(zoneKey)} className="w-full flex justify-between items-center p-2 bg-slate-800/80 hover:bg-cyan-900/30 transition-colors border-b border-cyan-900/30">
+                                                            <span className="text-[10px] font-bold text-cyan-400 uppercase tracking-widest truncate max-w-[140px]">{factionLabel}</span>
+                                                            <div className="flex items-center gap-1"><span className="text-[9px] bg-cyan-900/50 text-cyan-200 px-1.5 py-0.5 rounded font-mono border border-cyan-700">{missions.length}</span><span className={`text-[10px] text-cyan-500 transform transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`}>▼</span></div>
+                                                        </button>
+                                                        {isExpanded && (
+                                                            <div className="p-1 space-y-1 animate-fade-in bg-slate-950/20">
+                                                                {missions.map(m => {
+                                                                    const isShield = m.type === 'SHIELD_BASE';
+                                                                    const isStartMission = m.id === 'm_kraven' || (m.title && m.title.includes("MH0"));
+                                                                    const isBoss = m.type === 'BOSS';
+                                                                    let borderClass = 'border-yellow-500/30 bg-yellow-900/5 hover:bg-yellow-900/20';
+                                                                    let barClass = 'bg-yellow-500';
+                                                                    let textClass = 'text-yellow-200';
+                                                                    if (isBoss) { borderClass = 'border-purple-500/30 bg-purple-900/20 hover:bg-purple-900/40 animate-pulse'; barClass = 'bg-purple-500'; textClass = 'text-purple-200'; }
+                                                                    else if (isShield) { borderClass = 'border-cyan-500/30 bg-cyan-900/5 hover:bg-cyan-900/20'; barClass = 'bg-cyan-500'; textClass = 'text-cyan-200'; }
+                                                                    else if (isStartMission) { borderClass = 'border-emerald-500/30 bg-emerald-900/5 hover:bg-emerald-900/20'; barClass = 'bg-emerald-500'; textClass = 'text-emerald-200'; }
+                                                                    return (
+                                                                        <div key={m.id} onClick={() => handleMissionSelectWrapper(m)} className={`p-2 border cursor-pointer transition-all group relative overflow-hidden ${borderClass}`}>
+                                                                            <div className={`absolute left-0 top-0 bottom-0 w-1 ${barClass} group-hover:w-1.5 transition-all`}></div>
+                                                                            <div className={`text-xs font-bold ${textClass} group-hover:text-white uppercase tracking-wider pl-2 truncate`}>{m.title || 'UNKNOWN MISSION'}</div>
+                                                                        </div>
+                                                                    );
+                                                                })}
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                    </div>
+                                </>
+                            ) : (
+                                // VERSIÓN COLAPSADA
+                                <div className="flex flex-col items-center py-4 gap-4 h-full">
+                                    <div className="w-8 h-8 rounded-full border-2 border-red-600 flex items-center justify-center bg-red-900/20 animate-pulse" title="Nivel de Amenaza: CRÍTICO">
+                                        <span className="text-xs">⚠</span>
+                                    </div>
+                                    <button onClick={() => setViewMode('bunker')} className="w-8 h-8 rounded border border-cyan-500 flex items-center justify-center hover:bg-cyan-900/50 text-cyan-300" title="Búnker">
+                                        <span className="text-xs">🛡</span>
+                                    </button>
+                                    <div className="flex-1 w-full flex flex-col items-center justify-end pb-4">
+                                        <div className="relative w-8 h-8 flex items-center justify-center" title={`Progreso: ${progressPercentage}%`}>
+                                            <svg className="w-full h-full transform -rotate-90">
+                                                <circle cx="16" cy="16" r="14" stroke="#1e293b" strokeWidth="3" fill="transparent" />
+                                                <circle cx="16" cy="16" r="14" stroke="#10b981" strokeWidth="3" fill="transparent" strokeDasharray={2 * Math.PI * 14} strokeDashoffset={2 * Math.PI * 14 - (progressPercentage / 100) * 2 * Math.PI * 14} />
+                                            </svg>
+                                        </div>
                                     </div>
                                 </div>
                             )}
-                            <div className="p-6 border-b border-cyan-900 bg-red-950/10">
-                                <div className="flex justify-between items-end mb-2"><h3 className="text-xs font-bold text-red-500 tracking-widest">{t.sidebar.threatLevelTitle}</h3><span className="text-3xl font-black text-red-600 tracking-tighter drop-shadow-[0_0_10px_rgba(220,38,38,0.5)]">{t.sidebar.threatLevelValue}</span></div>
-                                <div className="w-full bg-red-900/30 h-1 mt-1"><div className="h-full bg-red-600 w-[95%] animate-pulse"></div></div>
-                                <div className="text-[9px] text-red-400 mt-1 text-right">{t.sidebar.infectionRate}</div>
-                            </div>
-                            <div className="p-4 border-b border-cyan-900">
-                                <button id="tutorial-bunker-btn" onClick={() => setViewMode('bunker')} className={`w-full py-4 border-2 flex items-center justify-center gap-3 transition-all duration-300 group relative overflow-hidden ${playerAlignment === 'ZOMBIE' ? 'border-lime-600 bg-lime-900/10 hover:bg-lime-900/30 text-lime-400' : 'border-cyan-500 bg-cyan-900/10 hover:bg-cyan-900/30 text-cyan-300'}`}>
-                                    <div className={`absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 ${playerAlignment === 'ZOMBIE' ? 'bg-[linear-gradient(45deg,transparent_25%,rgba(132,204,22,0.1)_50%,transparent_75%)]' : 'bg-[linear-gradient(45deg,transparent_25%,rgba(6,182,212,0.1)_50%,transparent_75%)]'} bg-[length:250%_250%] animate-[shimmer_2s_linear_infinite]`}></div>
-                                    <span className="text-2xl group-hover:scale-110 transition-transform">{playerAlignment === 'ZOMBIE' ? '☣' : '🛡'}</span><span className="font-bold tracking-widest text-xs">{playerAlignment === 'ZOMBIE' ? t.sidebar.hiveBtn : t.sidebar.bunkerBtn}</span>
-                                </button>
-                            </div>
-                            <div id="tutorial-sidebar-missions" className="flex-1 overflow-y-auto p-4 scrollbar-thin scrollbar-thumb-cyan-900">
-                                <h4 className="text-[10px] font-bold text-cyan-600 uppercase mb-3 tracking-widest border-b border-cyan-900 pb-1">{t.sidebar.activeMissions}</h4>
-                                <div className="space-y-2">
-                                    {groupedMissions.galactus.length > 0 && (
-                                        <div className="mb-4 border-2 border-purple-600 bg-purple-900/20 animate-pulse">
-                                            <div className="p-2 bg-purple-900/80 text-white text-[10px] font-black tracking-widest uppercase text-center">
-                                                ⚠ AMENAZA OMEGA ⚠
-                                            </div>
-                                            <div className="p-2">
-                                                {groupedMissions.galactus.map(m => (
-                                                    <div key={m.id} onClick={() => setSelectedMission(m)} className="p-3 bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs cursor-pointer text-center shadow-lg border border-purple-400">
-                                                        {m.title}
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        </div>
-                                    )}
-                                    {Object.entries(groupedMissions).map(([zoneKey, missions]) => {
-                                        if (zoneKey === 'galactus' || missions.length === 0) return null;
-                                        const isExpanded = expandedZones.has(zoneKey);
-                                        const factionLabel = (() => {
-                                            if (zoneKey.startsWith('shield_')) {
-                                                const baseFaction = zoneKey.replace('shield_', '');
-                                                const baseName = t.factions[baseFaction as keyof typeof t.factions]?.name || baseFaction.toUpperCase();
-                                                return `S.H.I.E.L.D. (${baseName})`;
-                                            }
-                                            return t.factions[zoneKey as keyof typeof t.factions]?.name || zoneKey.toUpperCase();
-                                        })();
-
-                                        const isBlocked = worldStage === 'GALACTUS';
-                                        return (
-                                            <div key={zoneKey} className={`mb-2 border border-cyan-900/30 bg-slate-900/30 ${isBlocked ? 'opacity-40 pointer-events-none grayscale' : ''}`}>
-                                                <button onClick={() => toggleZone(zoneKey)} className="w-full flex justify-between items-center p-2 bg-slate-800/80 hover:bg-cyan-900/30 transition-colors border-b border-cyan-900/30">
-                                                    <span className="text-[9px] font-bold text-cyan-400 uppercase tracking-widest truncate max-w-[160px]">{factionLabel}</span>
-                                                    <div className="flex items-center gap-2"><span className="text-[9px] bg-cyan-900/50 text-cyan-200 px-1.5 py-0.5 rounded font-mono border border-cyan-700">{missions.length}</span><span className={`text-[10px] text-cyan-500 transform transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`}>▼</span></div>
-                                                </button>
-                                                {isExpanded && (
-                                                    <div className="p-2 space-y-2 animate-fade-in bg-slate-950/20">
-                                                        {missions.map(m => {
-                                                            const isShield = m.type === 'SHIELD_BASE';
-                                                            const isStartMission = m.id === 'm_kraven' || (m.title && m.title.includes("MH0")) || (m.title && m.title.toUpperCase().includes("CADENAS ROTAS"));
-                                                            const isBoss = m.type === 'BOSS';
-                                                            let borderClass = 'border-yellow-500/30 bg-yellow-900/5 hover:bg-yellow-900/20';
-                                                            let barClass = 'bg-yellow-500';
-                                                            let textClass = 'text-yellow-200';
-                                                            let subTextClass = 'text-yellow-500/70';
-                                                            if (isBoss) { borderClass = 'border-purple-500/30 bg-purple-900/20 hover:bg-purple-900/40 animate-pulse'; barClass = 'bg-purple-500'; textClass = 'text-purple-200'; subTextClass = 'text-purple-500/70'; }
-                                                            else if (isShield) { borderClass = 'border-cyan-500/30 bg-cyan-900/5 hover:bg-cyan-900/20'; barClass = 'bg-cyan-500'; textClass = 'text-cyan-200'; subTextClass = 'text-cyan-500/70'; }
-                                                            else if (isStartMission) { borderClass = 'border-emerald-500/30 bg-emerald-900/5 hover:bg-emerald-900/20'; barClass = 'bg-emerald-500'; textClass = 'text-emerald-200'; subTextClass = 'text-emerald-500/70'; }
-                                                            return (
-                                                                <div key={m.id} onClick={() => handleMissionSelectWrapper(m)} className={`p-2 border cursor-pointer transition-all group relative overflow-hidden ${borderClass}`}>
-                                                                    <div className={`absolute left-0 top-0 bottom-0 w-1 ${barClass} group-hover:w-1.5 transition-all`}></div>
-                                                                    <div className="flex justify-between items-start pl-2"><div className={`text-[9px] font-bold ${textClass} group-hover:text-white uppercase tracking-wider leading-tight`}>{m.title || 'UNKNOWN MISSION'}</div></div>
-                                                                    <div className={`pl-2 mt-0.5 text-[8px] ${subTextClass}`}>LOC: {m.location?.state || 'UNKNOWN'}</div>
-                                                                </div>
-                                                            );
-                                                        })}
-                                                    </div>
-                                                )}
-                                            </div>
-                                        );
-                                    })}
-                                    {Object.values(groupedMissions).every(g => g.length === 0) && (<div className="text-center text-[10px] text-gray-600 italic py-4">{t.sidebar.noMissions}</div>)}
-                                    {Array.from(completedMissionIds).length > 0 && (
-                                        <>
-                                            <div className="my-4 border-t border-cyan-900/50 pt-2"><h5 className="text-[9px] font-bold text-emerald-700/70 mb-2 uppercase tracking-widest pl-1">COMPLETED ARCHIVES</h5></div>
-                                            {visibleMissions.filter(m => m && completedMissionIds.has(m.id)).map(m => (
-                                                <div key={m.id} onClick={() => setSelectedMission(m)} className="p-2 border border-emerald-900/30 bg-emerald-900/5 hover:bg-emerald-900/10 cursor-pointer opacity-70 hover:opacity-100 transition-all pl-3 mb-1">
-                                                    <div className="flex justify-between items-center"><div className="text-[9px] font-bold text-emerald-400 line-through decoration-emerald-600 truncate">{m.title || 'COMPLETED MISSION'}</div><div className="text-[10px] text-emerald-600">✓</div></div>
-                                                </div>
-                                            ))}
-                                        </>
-                                    )}
-                                </div>
-                            </div>
-                            <div className="p-4 border-t border-cyan-900 bg-slate-900 text-center">
-                                <button onClick={() => setViewMode('story')} className="text-[9px] text-cyan-800 hover:text-cyan-500 uppercase tracking-widest transition-colors flex items-center justify-center gap-2 w-full">
-                                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>{t.sidebar.replayStory}
-                                </button>
-                            </div>
                         </aside>
+
                         <main className="flex-1 relative bg-slate-950 overflow-hidden">
                             {viewMode === 'map' && (<USAMap language={lang} missions={visibleMissions} completedMissionIds={completedMissionIds} onMissionComplete={handleMissionComplete} onMissionSelect={handleMissionSelectWrapper} onBunkerClick={() => setViewMode('bunker')} factionStates={FACTION_STATES} playerAlignment={playerAlignment} worldStage={worldStage} />)}
                             {viewMode === 'bunker' && (
@@ -849,8 +845,8 @@ const App: React.FC = () => {
                                     isEditorMode={isEditorMode} 
                                     onTransformHero={handleTransformHero} 
                                     onTickerUpdate={handleTickerUpdate}
-                                    omegaCylinders={omegaCylinders} // PASAMOS EL ESTADO
-                                    onFindCylinder={() => setOmegaCylinders(prev => prev + 1)} // FUNCIÓN PARA ENCONTRAR (DEBUG/GAMEPLAY)
+                                    omegaCylinders={omegaCylinders} 
+                                    onFindCylinder={() => setOmegaCylinders(prev => prev + 1)} 
                                 />
                             )}
                             {viewMode === 'tutorial' && (<div className="absolute inset-0 z-40"><USAMap language={lang} missions={visibleMissions} completedMissionIds={completedMissionIds} onMissionComplete={() => {}} onMissionSelect={() => {}} onBunkerClick={() => {}} factionStates={FACTION_STATES} playerAlignment={playerAlignment} worldStage={worldStage} /><TutorialOverlay language={lang} onComplete={() => { if(user) localStorage.setItem(`shield_tutorial_seen_${user.uid}`, 'true'); setViewMode('map'); }} onStepChange={(stepKey) => { if (['roster', 'file', 'recruit'].includes(stepKey)) { setViewMode('bunker'); } }} /></div>)}
