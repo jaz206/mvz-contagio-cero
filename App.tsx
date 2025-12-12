@@ -8,6 +8,7 @@ import { logout } from './services/authService';
 
 import { LoginScreen } from './components/LoginScreen';
 import { StoryMode } from './components/StoryMode';
+import { IntroSequence } from './components/IntroSequence';
 import { TutorialOverlay } from './components/TutorialOverlay';
 import { USAMap } from './components/USAMap';
 import { BunkerInterior } from './components/BunkerInterior';
@@ -18,6 +19,27 @@ import { CharacterEditor } from './components/CharacterEditor';
 import { NewsTicker } from './components/NewsTicker';
 
 import { Mission, Hero, WorldStage, GlobalEvent, HeroTemplate } from './types';
+
+// --- DATOS DE LA MISIÓN 0 (INTRODUCCIÓN) ---
+const MISSION_ZERO: Mission = {
+    id: 'm_intro_0',
+    title: "MH0: CADENAS ROTAS",
+    description: [
+        "SITUACIÓN CRÍTICA: El transporte ha sido neutralizado. Estamos heridos, desorientados y en territorio hostil.",
+        "Black Widow ha establecido un perímetro temporal, pero el humo del accidente es una baliza para los infectados.",
+        "OBJETIVO: No morir hoy. Debemos movernos hacia el búnker de seguridad antes de que la horda converja en nuestra posición."
+    ],
+    objectives: [
+        { title: "Sobrevivir al Impacto", desc: "Recuperar el conocimiento y evaluar heridas." },
+        { title: "Romper el Cerco", desc: "Abrirse paso a través de la primera oleada de infectados." },
+        { title: "Llegar al Búnker", desc: "Alcanzar las coordenadas seguras en Ohio." }
+    ],
+    location: { state: 'Ohio', coordinates: [-82.5, 40.2] }, // Cerca del búnker
+    threatLevel: "INMINENTE",
+    type: 'STANDARD',
+    alignment: 'BOTH',
+    outcomeText: "Lo logramos. Las puertas del búnker se han sellado tras nosotros. Estamos a salvo... por ahora. S.H.I.E.L.D. OS se está reiniciando."
+};
 
 const FACTION_STATES = {
     magneto: new Set(['Washington', 'Oregon', 'California', 'Nevada', 'Idaho', 'Montana', 'Wyoming', 'Utah', 'Arizona', 'Colorado', 'Alaska', 'Hawaii']),
@@ -163,7 +185,8 @@ const App: React.FC = () => {
     const [loading, setLoading] = useState(true);
     const [loadingAuth, setLoadingAuth] = useState(true);
     const [lang, setLang] = useState<Language>('es');
-    const [viewMode, setViewMode] = useState<'login' | 'story' | 'tutorial' | 'map' | 'bunker'>('login');
+    // AÑADIDO 'mission0' AL TIPO DE ESTADO
+    const [viewMode, setViewMode] = useState<'login' | 'story' | 'intro' | 'mission0' | 'tutorial' | 'map' | 'bunker'>('login');
     
     const [playerAlignment, setPlayerAlignment] = useState<'ALIVE' | 'ZOMBIE' | null>(null);
     const [heroes, setHeroes] = useState<Hero[]>([]);
@@ -194,7 +217,6 @@ const App: React.FC = () => {
     
     const [expandedZones, setExpandedZones] = useState<Set<string>>(new Set(['kingpin', 'magneto', 'hulk', 'doom', 'neutral']));
     
-    // NUEVO ESTADO: Sidebar Colapsado
     const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
 
     const t = translations[lang];
@@ -235,7 +257,7 @@ const App: React.FC = () => {
         setViewMode('map');
         setHeroes(INITIAL_HEROES);
         setCompletedMissionIds(new Set());
-        setOmegaCylinders(99); // Editor tiene infinitos
+        setOmegaCylinders(99); 
         setWorldStage('NORMAL');
         isDataLoadedRef.current = true;
     };
@@ -265,7 +287,6 @@ const App: React.FC = () => {
         setViewMode('map');
     };
 
-    // --- FUNCIÓN PARA ACTUALIZAR NOTICIAS ---
     const handleTickerUpdate = (message: string) => {
         setTickerMessage(message);
     };
@@ -274,14 +295,11 @@ const App: React.FC = () => {
         const currentHero = heroes.find(h => h.id === heroId);
         if (!currentHero) return;
 
-        // LÓGICA DE CONSUMO DE CILINDROS
         if (targetAlignment === 'ALIVE') {
-            // Si estamos curando, consumimos un cilindro
-            if (omegaCylinders <= 0) return; // Safety check
+            if (omegaCylinders <= 0) return; 
             setOmegaCylinders(prev => Math.max(0, prev - 1));
         }
 
-        // LANZAR NOTICIA URGENTE
         const actionText = targetAlignment === 'ALIVE' ? 'CURADO' : 'INFECTADO';
         handleTickerUpdate(`SUJETO ${currentHero.alias} ${actionText} - BASE DE DATOS ACTUALIZADA`);
 
@@ -687,8 +705,24 @@ const App: React.FC = () => {
             {selectedMission && <MissionModal mission={selectedMission} isOpen={!!selectedMission} onClose={() => setSelectedMission(null)} onComplete={handleMissionComplete} onReactivate={handleMissionReactivate} language={lang} isCompleted={completedMissionIds.has(selectedMission.id)} isEditorMode={isEditorMode} onEdit={(m) => { setMissionToEdit(m); setShowMissionEditor(true); setSelectedMission(null); }} onDelete={handleDeleteMission} />}
             
             {viewMode === 'login' && (<LoginScreen onLogin={handleGuestLogin} onGoogleLogin={() => {}} onEditorLogin={handleEditorLogin} language={lang} setLanguage={setLang} />)}
-            {viewMode === 'story' && (<StoryMode language={lang} onComplete={(choice) => { setPlayerAlignment(choice); if(user) localStorage.setItem(`shield_intro_seen_${user.uid}`, 'true'); setViewMode('tutorial'); }} onSkip={() => { setPlayerAlignment('ALIVE'); setViewMode('map'); }} />)}
-            
+            {viewMode === 'story' && (<StoryMode language={lang} onComplete={(choice) => { setPlayerAlignment(choice); if(user) localStorage.setItem(`shield_intro_seen_${user.uid}`, 'true'); setViewMode('intro'); }} onSkip={() => { setPlayerAlignment('ALIVE'); setViewMode('map'); }} />)}
+            {viewMode === 'intro' && playerAlignment && (<IntroSequence language={lang} playerAlignment={playerAlignment} onComplete={() => setViewMode('mission0')} />)}
+
+            {/* MODAL DE MISIÓN 0 (INTRODUCCIÓN) */}
+            {viewMode === 'mission0' && (
+                <MissionModal 
+                    mission={MISSION_ZERO} 
+                    isOpen={true} 
+                    onClose={() => setViewMode('tutorial')} // Si cierran, van al tutorial
+                    onComplete={() => {
+                        handleMissionComplete('m_intro_0');
+                        setViewMode('tutorial');
+                    }}
+                    language={lang}
+                    isCompleted={false}
+                />
+            )}
+
             {(viewMode === 'map' || viewMode === 'bunker' || viewMode === 'tutorial') && (
                 <>
                     <header className="flex-none h-16 border-b border-cyan-900 bg-slate-900/90 flex items-center justify-between px-6 z-30 relative">
@@ -777,9 +811,9 @@ const App: React.FC = () => {
                                                 const isBlocked = worldStage === 'GALACTUS';
                                                 return (
                                                     <div key={zoneKey} className={`mb-1 border border-cyan-900/30 bg-slate-900/30 ${isBlocked ? 'opacity-40 pointer-events-none grayscale' : ''}`}>
-                                                        <button onClick={() => toggleZone(zoneKey)} className="w-full flex justify-between items-center p-2 bg-slate-800/80 hover:bg-cyan-900/30 transition-colors border-b border-cyan-900/30">
+                                                        <button onClick={() => toggleZone(zoneKey)} className="w-full flex justify-between items-center p-1.5 bg-slate-800/80 hover:bg-cyan-900/30 transition-colors border-b border-cyan-900/30">
                                                             <span className="text-[10px] font-bold text-cyan-400 uppercase tracking-widest truncate max-w-[140px]">{factionLabel}</span>
-                                                            <div className="flex items-center gap-1"><span className="text-[9px] bg-cyan-900/50 text-cyan-200 px-1.5 py-0.5 rounded font-mono border border-cyan-700">{missions.length}</span><span className={`text-[10px] text-cyan-500 transform transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`}>▼</span></div>
+                                                            <div className="flex items-center gap-1"><span className="text-[9px] bg-cyan-900/50 text-cyan-200 px-1 py-0.5 rounded font-mono border border-cyan-700">{missions.length}</span><span className={`text-[8px] text-cyan-500 transform transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`}>▼</span></div>
                                                         </button>
                                                         {isExpanded && (
                                                             <div className="p-1 space-y-1 animate-fade-in bg-slate-950/20">

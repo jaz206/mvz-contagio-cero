@@ -251,6 +251,11 @@ export const translations = {
         prev: "ANTERIOR",
         next: "SIGUIENTE"
     },
+    introSequence: {
+        slide1: "El zumbido en tus oídos es lo único que ahoga los gritos de los moribundos. Sientes sabor a cobre; sangre. El transporte blindado de la Tríada, esa jaula con ruedas que os llevaba al matadero, es ahora un amasijo de metal retorcido y carne quemada. Iban a venderos, a usaros como cobayas o entretenimiento... pero el destino ha tirado los dados.",
+        slide2: "Te tocas el cuello. El piloto LED del collar inhibidor está apagado. El impacto ha frito los circuitos. Estáis libres. Pero en este mundo, la libertad tiene un precio: ahora sois presas. El humo negro es una baliza; el ruido del choque, una campana de cena para cada mordedor hambriento en cinco kilómetros a la redonda.",
+        slide3: "Una figura aparece recortada por las llamas. No lleva el uniforme de la Tríada. Os tiende una mano llena de cicatrices y grasa. “Podéis quedaros ahí tirados y ser el aperitivo, o podéis levantaros y ser los que aprietan el gatillo. El refugio está cerca… pero el asfalto se va a teñir de rojo antes de que lleguemos.”"
+    },
     tutorial: {
         welcome: { title: "BIENVENIDO A SHIELD", text: "El mundo ha caído, pero la resistencia continúa. Esta es tu interfaz de mando." },
         map_zones: { title: "ZONAS DE CONTROL", text: "El mapa muestra los territorios controlados por las facciones. Ten cuidado al desplegar tus agentes." },
@@ -516,6 +521,11 @@ export const translations = {
         skip: "SKIP",
         prev: "PREV",
         next: "NEXT"
+    },
+    introSequence: {
+        slide1: "The ringing in your ears drowns out the screams. You taste copper; blood. The Triad's armored transport, that cage taking you to the slaughterhouse, is now a twisted wreck. They were going to sell you... but fate rolled the dice.",
+        slide2: "You touch your neck. The inhibitor collar is dead. The crash fried the circuits. You are free, but the black smoke is a beacon. The crash noise is a dinner bell for every biter within five kilometers.",
+        slide3: "A figure appears silhouetted by the flames. Not Triad. She extends a scarred hand. 'You can stay there and be the appetizer, or get up and be the ones pulling the trigger. The shelter is close... but the asphalt will run red before we get there.'"
     },
     tutorial: {
         welcome: { title: "WELCOME TO SHIELD", text: "The world has fallen, but the resistance continues. This is your command interface." },
