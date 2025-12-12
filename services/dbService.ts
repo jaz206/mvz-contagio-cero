@@ -127,7 +127,7 @@ export const getUserProfile = async (uid: string, campaignMode: 'ALIVE' | 'ZOMBI
                 return {
                     heroes: campaignData.heroes || [],
                     completedMissionIds: campaignData.missions || [],
-                    resources: campaignData.resources || { omegaCylinders: 3 }, // Valor por defecto
+                    resources: campaignData.resources || { omegaCylinders: 0 }, // CAMBIO: Default 0
                     lastUpdated: data.lastUpdated
                 };
             }

@@ -16,13 +16,12 @@ interface BunkerInteriorProps {
   isEditorMode?: boolean;
   onTransformHero?: (heroId: string, targetAlignment: 'ALIVE' | 'ZOMBIE') => void;
   onTickerUpdate?: (message: string) => void;
-  omegaCylinders?: number; // Recibimos la cantidad de cilindros
-  onFindCylinder?: () => void; // Función para encontrar más (debug/gameplay)
+  omegaCylinders?: number; 
+  onFindCylinder?: () => void;
 }
 
-// ... (StatBar, HeroListCard, MissionListCard, CerebroScanner, TransformationModal se mantienen igual)
-// COPIA AQUÍ LOS SUB-COMPONENTES DEL CÓDIGO ANTERIOR SI LOS NECESITAS, O MANTÉN LOS QUE YA TIENES.
-// POR BREVEDAD, PONGO EL COMPONENTE PRINCIPAL QUE ES DONDE ESTÁ EL CAMBIO VISUAL.
+// ... (StatBar, HeroListCard, MissionListCard, CerebroScanner se mantienen igual por brevedad)
+// COPIA LOS SUB-COMPONENTES DEL CÓDIGO ANTERIOR AQUÍ SI LOS NECESITAS
 
 const StatBar: React.FC<{ label: string; value: number; colorClass: string }> = ({ label, value, colorClass }) => (
   <div className="flex items-center gap-2 text-[9px]">
@@ -154,10 +153,17 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
     setShowRecruitModal(false); setIsEditingExisting(false); resetRecruitForm();
   };
 
+  // --- LÓGICA DE BLOQUEO DE CURA ---
   const handleCureHero = (heroId: string) => {
       const hero = heroes.find(h => h.id === heroId);
       if (!hero) return;
-      if (playerAlignment === 'ALIVE' && omegaCylinders <= 0) { alert(t.bunker.omega.empty); return; }
+      
+      // SI ERES 'ALIVE' Y NO TIENES CILINDROS, SE BLOQUEA
+      if (playerAlignment === 'ALIVE' && omegaCylinders <= 0) {
+          alert(t.bunker.omega.empty); // Muestra "RESERVAS AGOTADAS"
+          return; // DETIENE LA EJECUCIÓN
+      }
+
       const actionType = playerAlignment === 'ZOMBIE' ? 'INFECTING' : 'CURING';
       setProcessingHero({ id: heroId, name: hero.alias, type: actionType });
   };
@@ -240,20 +246,19 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
                     </div>
                 </div>
 
-                {/* 4. MEDBAY / CONTENCIÓN (AQUÍ ESTÁ EL CAMBIO VISUAL) */}
+                {/* 4. MEDBAY / CONTENCIÓN */}
                 <div className="bg-slate-900/40 border border-red-900/50 flex flex-col relative overflow-hidden group md:col-span-2 lg:col-span-1">
                     <div className="p-3 bg-slate-900/80 border-b border-red-900 flex justify-between items-center">
                         <div><h3 className="text-sm font-bold text-red-300 tracking-widest uppercase">{t.bunker.rooms.medbay}</h3><div className="text-[9px] text-red-500/70">{t.bunker.rooms.medbayDesc}</div></div>
                          <div className="text-xs font-bold text-red-400 bg-red-900/20 px-2 py-0.5 rounded border border-red-900">{capturedHeroes.length}</div>
                     </div>
                     
-                    {/* --- SECCIÓN DE CILINDROS OMEGA (VISUAL MEJORADO) --- */}
+                    {/* --- SECCIÓN DE CILINDROS OMEGA --- */}
                     <div className={`px-4 py-3 border-b flex justify-between items-center transition-all ${playerAlignment === 'ALIVE' ? 'bg-cyan-950/50 border-cyan-500/50 shadow-[inset_0_0_20px_rgba(6,182,212,0.2)]' : 'bg-gray-900/50 border-gray-700 opacity-50 grayscale'}`}>
                         <div className="flex items-center gap-3">
                             {/* Icono Cilindro */}
                             <div className={`w-8 h-12 rounded border-2 flex flex-col justify-end p-0.5 relative overflow-hidden ${playerAlignment === 'ALIVE' ? 'border-cyan-400 bg-slate-900 shadow-[0_0_15px_#06b6d4]' : 'border-gray-600 bg-slate-900'}`}>
                                 <div className={`w-full transition-all duration-500 ${playerAlignment === 'ALIVE' ? 'bg-cyan-400 animate-pulse' : 'bg-gray-600'}`} style={{ height: `${Math.min(100, (omegaCylinders / 5) * 100)}%` }}></div>
-                                {/* Brillo interno */}
                                 {playerAlignment === 'ALIVE' && <div className="absolute inset-0 bg-gradient-to-t from-cyan-500/50 to-transparent pointer-events-none"></div>}
                             </div>
                             
@@ -285,7 +290,7 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
             </div>
         </div>
 
-      {/* MODAL DETALLE HÉROE (Sin cambios visuales mayores, solo lógica) */}
+      {/* MODAL DETALLE HÉROE */}
       {selectedHeroId && selectedHero && (
         <div className="absolute inset-0 z-[60] bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4 md:p-12 animate-fade-in" onClick={() => setSelectedHeroId(null)}>
           <div className="w-full max-w-4xl bg-slate-900 border-2 border-cyan-500 shadow-[0_0_50px_rgba(6,182,212,0.2)] flex flex-col max-h-full overflow-hidden relative" onClick={(e) => e.stopPropagation()}>
@@ -312,7 +317,17 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
                 <div className="text-xs text-cyan-600">ID: {selectedHero.id}</div>
                 <div>
                   {selectedHero.status === "DEPLOYED" ? <button onClick={() => onUnassign(selectedHero.id)} className="px-6 py-2 bg-red-900/50 border border-red-900 text-red-500 hover:bg-red-900/20 text-xs font-bold tracking-widest transition-colors">{t.bunker.unassign}</button> : selectedHero.status === "CAPTURED" ? 
-                      <button onClick={() => handleCureHero(selectedHero.id)} className={`px-6 py-2 border text-xs font-bold tracking-widest transition-colors ${playerAlignment === 'ALIVE' && omegaCylinders <= 0 ? 'bg-gray-800 border-gray-600 text-gray-500 cursor-not-allowed' : 'bg-emerald-900/50 border-emerald-600 text-emerald-400 hover:bg-emerald-800'}`} title={playerAlignment === 'ALIVE' && omegaCylinders <= 0 ? t.bunker.omega.empty : ''}>{playerAlignment === 'ZOMBIE' ? 'INFECTAR' : 'CURAR'}</button> 
+                      <button 
+                          onClick={() => handleCureHero(selectedHero.id)} 
+                          className={`px-6 py-2 border text-xs font-bold tracking-widest transition-colors 
+                              ${playerAlignment === 'ALIVE' && omegaCylinders <= 0 
+                                  ? 'bg-gray-800 border-gray-600 text-gray-500 cursor-not-allowed' 
+                                  : 'bg-emerald-900/50 border-emerald-600 text-emerald-400 hover:bg-emerald-800'}
+                          `} 
+                          title={playerAlignment === 'ALIVE' && omegaCylinders <= 0 ? t.bunker.omega.empty : ''}
+                      >
+                          {playerAlignment === 'ZOMBIE' ? 'INFECTAR' : 'CURAR'}
+                      </button> 
                   : <button disabled={selectedHero.status === "INJURED"} onClick={() => { setAssignError(null); setShowAssignModal(true); }} className={`px-6 py-2 font-bold text-xs tracking-widest border transition-all ${selectedHero.status === "INJURED" ? "bg-gray-800 border-gray-600 text-gray-500 cursor-not-allowed" : "bg-cyan-700 border-cyan-500 text-white hover:bg-cyan-600 shadow-[0_0_15px_rgba(6,182,212,0.4)]"}`}>{t.bunker.assign}</button>}
                 </div>
               </div>

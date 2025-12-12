@@ -169,8 +169,8 @@ const App: React.FC = () => {
     const [heroes, setHeroes] = useState<Hero[]>([]);
     const [completedMissionIds, setCompletedMissionIds] = useState<Set<string>>(new Set());
     
-    // NUEVO ESTADO: CILINDROS OMEGA
-    const [omegaCylinders, setOmegaCylinders] = useState<number>(3); // Default 3 para que se vea
+    // CAMBIO: Inicializamos en 0
+    const [omegaCylinders, setOmegaCylinders] = useState<number>(0);
 
     const [worldStage, setWorldStage] = useState<WorldStage>('NORMAL');
     const [activeGlobalEvent, setActiveGlobalEvent] = useState<GlobalEvent | null>(null);
@@ -276,6 +276,7 @@ const App: React.FC = () => {
         // LÓGICA DE CONSUMO DE CILINDROS
         if (targetAlignment === 'ALIVE') {
             // Si estamos curando, consumimos un cilindro
+            if (omegaCylinders <= 0) return; // Safety check
             setOmegaCylinders(prev => Math.max(0, prev - 1));
         }
 
@@ -376,7 +377,7 @@ const App: React.FC = () => {
             if ((user || isGuest) && playerAlignment) {
                 let profileHeroes: Hero[] = [];
                 let profileMissions: string[] = [];
-                let profileCylinders = 3; // Default
+                let profileCylinders = 0; // CAMBIO: Default 0
                 let dataFound = false;
                 try {
                     const templates = await getHeroTemplates();
@@ -386,7 +387,8 @@ const App: React.FC = () => {
                         if (profile) {
                             profileHeroes = mergeWithLatestContent(profile.heroes, playerAlignment === 'ZOMBIE', templates);
                             profileMissions = profile.completedMissionIds;
-                            profileCylinders = profile.resources?.omegaCylinders ?? 3;
+                            // CAMBIO: Fallback a 0
+                            profileCylinders = profile.resources?.omegaCylinders ?? 0;
                             dataFound = true;
                         }
                     } else {
@@ -396,7 +398,8 @@ const App: React.FC = () => {
                             const parsed = JSON.parse(saved);
                             profileHeroes = mergeWithLatestContent(parsed.heroes, playerAlignment === 'ZOMBIE', templates);
                             profileMissions = parsed.completedMissionIds || [];
-                            profileCylinders = parsed.resources?.omegaCylinders ?? 3;
+                            // CAMBIO: Fallback a 0
+                            profileCylinders = parsed.resources?.omegaCylinders ?? 0;
                             dataFound = true;
                         }
                     }
@@ -408,7 +411,7 @@ const App: React.FC = () => {
                     } else {
                         setHeroes(playerAlignment === 'ZOMBIE' ? INITIAL_ZOMBIE_HEROES : INITIAL_HEROES);
                         setCompletedMissionIds(new Set());
-                        setOmegaCylinders(3);
+                        setOmegaCylinders(0); // CAMBIO: Default 0
                     }
                 } catch (e) {
                     console.error("Error loading data:", e);
@@ -477,7 +480,7 @@ const App: React.FC = () => {
         setCompletedMissionIds(new Set());
         setWorldStage('NORMAL');
         setActiveGlobalEvent(null);
-        setOmegaCylinders(3);
+        setOmegaCylinders(0); // CAMBIO: Reset a 0
     };
 
     const handleMissionComplete = async (id: string) => {
