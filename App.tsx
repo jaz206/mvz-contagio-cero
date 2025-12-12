@@ -505,6 +505,7 @@ const App: React.FC = () => {
         setWorldStage('NORMAL');
         setActiveGlobalEvent(null);
         setOmegaCylinders(0);
+        setSurferTurnCount(0);
     };
 
     const handleMissionComplete = async (id: string) => {
@@ -891,18 +892,61 @@ const App: React.FC = () => {
 
                         <main className="flex-1 relative bg-slate-950 overflow-hidden">
                             {viewMode === 'map' && (
-                                <USAMap 
-                                    language={lang} 
-                                    missions={visibleMissions} 
-                                    completedMissionIds={completedMissionIds} 
-                                    onMissionComplete={handleMissionComplete} 
-                                    onMissionSelect={handleMissionSelectWrapper} 
-                                    onBunkerClick={() => setViewMode('bunker')} 
-                                    factionStates={FACTION_STATES} 
-                                    playerAlignment={playerAlignment} 
-                                    worldStage={worldStage}
-                                    surferTurnCount={surferTurnCount} // <--- PASAMOS LA NUEVA PROP
-                                />
+                                <>
+                                    <USAMap 
+                                        language={lang} 
+                                        missions={visibleMissions} 
+                                        completedMissionIds={completedMissionIds} 
+                                        onMissionComplete={handleMissionComplete} 
+                                        onMissionSelect={handleMissionSelectWrapper} 
+                                        onBunkerClick={() => setViewMode('bunker')} 
+                                        factionStates={FACTION_STATES} 
+                                        playerAlignment={playerAlignment} 
+                                        worldStage={worldStage}
+                                        surferTurnCount={surferTurnCount} 
+                                    />
+                                    
+                                    {/* --- PANEL DE CONTROL DEL EDITOR (RESTAURADO) --- */}
+                                    {isEditorMode && (
+                                        <div className="absolute top-4 right-4 z-50 flex flex-col gap-2 bg-slate-900/95 p-4 border border-cyan-500 shadow-[0_0_20px_rgba(6,182,212,0.3)] rounded-sm min-w-[200px]">
+                                            <h3 className="text-xs font-bold text-cyan-400 border-b border-cyan-800 pb-1 mb-2 tracking-widest uppercase">EDITOR TOOLS</h3>
+                                            
+                                            <button 
+                                                onClick={() => setShowMissionEditor(true)} 
+                                                className="bg-cyan-900/50 hover:bg-cyan-800 text-cyan-200 text-[10px] font-bold py-2 px-3 border border-cyan-700 uppercase tracking-wider transition-colors"
+                                            >
+                                                + CREAR MISIÓN
+                                            </button>
+                                            
+                                            <button 
+                                                onClick={() => setShowCharacterEditor(true)} 
+                                                className="bg-blue-900/50 hover:bg-blue-800 text-blue-200 text-[10px] font-bold py-2 px-3 border border-blue-700 uppercase tracking-wider transition-colors"
+                                            >
+                                                + CREAR PERSONAJE
+                                            </button>
+                                            
+                                            <div className="h-px bg-cyan-900 my-1"></div>
+                                            
+                                            <button 
+                                                onClick={() => handleSimulateProgress(5)} 
+                                                className="bg-emerald-900/50 hover:bg-emerald-800 text-emerald-200 text-[10px] font-bold py-2 px-3 border border-emerald-700 uppercase tracking-wider transition-colors"
+                                            >
+                                                +5 MISIONES (SIM)
+                                            </button>
+                                            
+                                            <button 
+                                                onClick={handleResetProgress} 
+                                                className="bg-red-900/50 hover:bg-red-800 text-red-200 text-[10px] font-bold py-2 px-3 border border-red-700 uppercase tracking-wider transition-colors"
+                                            >
+                                                RESET PROGRESO
+                                            </button>
+
+                                            <div className="mt-2 text-[9px] text-gray-500 font-mono text-center border-t border-gray-800 pt-2">
+                                                SURFER TURN: <span className="text-white font-bold">{surferTurnCount}</span>
+                                            </div>
+                                        </div>
+                                    )}
+                                </>
                             )}
                             {viewMode === 'bunker' && (
                                 <BunkerInterior 
