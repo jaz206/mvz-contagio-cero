@@ -112,7 +112,6 @@ export const USAMap: React.FC<USAMapProps> = ({
       }
       try {
           const statesFeatureCollection = feature(usData as any, usData.objects.states as any);
-          
           const proj = d3.geoAlbersUsa().fitSize([dimensions.width, dimensions.height], statesFeatureCollection as any);
           const path = d3.geoPath().projection(proj);
           return { projection: proj, pathGenerator: path };
@@ -122,6 +121,34 @@ export const USAMap: React.FC<USAMapProps> = ({
       }
   }, [usData, dimensions]);
 
+  // --- LÓGICA DE COLORES HÍBRIDA ---
+  const getMissionVisuals = (mission: Mission, isCompleted: boolean) => {
+      // 1. Color del NÚCLEO (Estado)
+      let coreColor = '#eab308'; // Amarillo (Disponible)
+      if (isCompleted) coreColor = '#10b981'; // Verde (Completada)
+      else if (mission.type === 'SHIELD_BASE') coreColor = '#3b82f6'; // Azul (Base)
+      else if (mission.type === 'BOSS' || mission.type === 'GALACTUS') coreColor = '#9333ea'; // Morado (Jefe)
+
+      // 2. Color del HALO/FACCIÓN (Haz de luz)
+      let factionColor = '#94a3b8'; // Gris (Neutral)
+      let glowId = 'glow-neutral';
+      
+      const state = mission.location.state;
+      if (factionStates.magneto.has(state)) { factionColor = '#ef4444'; glowId = 'glow-magneto'; } // Rojo
+      else if (factionStates.kingpin.has(state)) { factionColor = '#d946ef'; glowId = 'glow-kingpin'; } // Rosa
+      else if (factionStates.hulk.has(state)) { factionColor = '#84cc16'; glowId = 'glow-hulk'; } // Lima
+      else if (factionStates.doom.has(state)) { factionColor = '#06b6d4'; glowId = 'glow-doom'; } // Cian
+
+      // Sobrescritura para Galactus (siempre morado)
+      if (mission.type === 'GALACTUS') {
+          factionColor = '#9333ea';
+          glowId = 'glow-boss';
+      }
+
+      return { coreColor, factionColor, glowId };
+  };
+
+  // Lógica de Hulk (Movimiento)
   useEffect(() => {
       if (!tokensReleased || !usData || !pathGenerator || !projection) return;
       const getDistance = (a: [number, number], b: [number, number]) => Math.sqrt(Math.pow(a[0] - b[0], 2) + Math.pow(a[1] - b[1], 2));
@@ -166,6 +193,7 @@ export const USAMap: React.FC<USAMapProps> = ({
       return () => clearTimeout(initialTimer);
   }, [tokensReleased, usData, pathGenerator, projection, factionStates, hulkLocation]);
 
+  // Renderizado del Mapa
   useEffect(() => {
     if (!usData || !svgRef.current || !projection || !pathGenerator) return;
 
@@ -175,11 +203,25 @@ export const USAMap: React.FC<USAMapProps> = ({
         svg.selectAll('*').remove();
 
         const defs = svg.append("defs");
-        const filter = defs.append("filter").attr("id", "glow").attr("x", "-50%").attr("y", "-50%").attr("width", "200%").attr("height", "200%");
-        filter.append("feGaussianBlur").attr("stdDeviation", "2.5").attr("result", "coloredBlur");
-        const feMerge = filter.append("feMerge");
-        feMerge.append("feMergeNode").attr("in", "coloredBlur");
-        feMerge.append("feMergeNode").attr("in", "SourceGraphic");
+        
+        // --- FILTROS DE BRILLO POR FACCIÓN ---
+        const createGlowFilter = (id: string, color: string) => {
+            const filter = defs.append("filter").attr("id", id).attr("x", "-50%").attr("y", "-50%").attr("width", "200%").attr("height", "200%");
+            filter.append("feGaussianBlur").attr("stdDeviation", "3").attr("result", "coloredBlur");
+            const feMerge = filter.append("feMerge");
+            feMerge.append("feMergeNode").attr("in", "coloredBlur");
+            feMerge.append("feMergeNode").attr("in", "SourceGraphic");
+            // Añadimos un drop-shadow del color de la facción
+            filter.append("feDropShadow").attr("dx", 0).attr("dy", 0).attr("stdDeviation", 4).attr("flood-color", color).attr("flood-opacity", 0.8);
+        };
+
+        createGlowFilter("glow-magneto", "#ef4444"); // Rojo
+        createGlowFilter("glow-kingpin", "#d946ef"); // Rosa
+        createGlowFilter("glow-hulk", "#84cc16");    // Lima
+        createGlowFilter("glow-doom", "#06b6d4");    // Cian
+        createGlowFilter("glow-neutral", "#fbbf24"); // Amarillo
+        createGlowFilter("glow-boss", "#9333ea");    // Morado
+        createGlowFilter("glow-shield", "#3b82f6");  // Azul
 
         defs.append("clipPath").attr("id", "bunker-clip").append("circle").attr("cx", 0).attr("cy", 0).attr("r", 12);
         defs.append("clipPath").attr("id", "mission-clip").append("circle").attr("cx", 0).attr("cy", 0).attr("r", 8);
@@ -200,7 +242,6 @@ export const USAMap: React.FC<USAMapProps> = ({
                  return `translate(${coords[0]},${coords[1]}) scale(${1/k})`;
             });
 
-            // Actualizar transformación de TODOS los radares
             svg.selectAll('.radar-effect').attr('transform', function() {
                 const coords = d3.select(this).attr('data-coords')?.split(',').map(Number) || [0,0];
                 return `translate(${coords[0] - 300},${coords[1] - 300}) scale(1)`; 
@@ -208,6 +249,7 @@ export const USAMap: React.FC<USAMapProps> = ({
 
             svg.selectAll('text.label').style('font-size', `${Math.max(6, 10/k)}px`);
 
+            // Lógica de Zoom para Misiones
             if (k >= 2.5) {
                 svg.selectAll('.mission-dot').style('display', 'none');
                 svg.selectAll('.mission-icon').style('display', 'block').attr('transform', `scale(${1/k * 2})`);
@@ -241,7 +283,8 @@ export const USAMap: React.FC<USAMapProps> = ({
         if (factionStates.magneto.has(stateName)) return 'fill-red-900/60 stroke-red-500 stroke-[1px] hover:fill-red-700 hover:stroke-red-300 hover:stroke-[2px]';
         if (factionStates.kingpin.has(stateName)) return 'fill-purple-900/60 stroke-purple-500 stroke-[1px] hover:fill-purple-700 hover:stroke-purple-300 hover:stroke-[2px]';
         if (factionStates.hulk.has(stateName)) return 'fill-lime-900/40 stroke-lime-700 stroke-[1px] hover:fill-lime-900/70 hover:stroke-lime-400 hover:stroke-[2px]';
-        return 'fill-emerald-900/60 stroke-emerald-600 stroke-[1px] hover:fill-emerald-800 hover:stroke-emerald-300 hover:stroke-[2px]';
+        if (factionStates.doom.has(stateName)) return 'fill-cyan-900/40 stroke-cyan-700 stroke-[1px] hover:fill-cyan-900/70 hover:stroke-cyan-400 hover:stroke-[2px]';
+        return 'fill-slate-800/60 stroke-slate-600 stroke-[1px] hover:fill-slate-700 hover:stroke-slate-400 hover:stroke-[2px]';
     };
 
     gMap.selectAll('path.state')
@@ -286,17 +329,12 @@ export const USAMap: React.FC<USAMapProps> = ({
       .text((d: any) => d.properties.name ? d.properties.name.toUpperCase() : '')
       .raise();
 
-    // --- RADAR EFFECT DINÁMICO ---
-    // 1. Recopilar todos los puntos que deben tener radar
+    // --- RADAR EFFECT ---
     const radarPoints: { id: string, coords: [number, number] }[] = [];
-
-    // A. Búnker Principal (Siempre activo)
     const bunkerCoords = projection([-82.9, 40.0]);
     if (bunkerCoords) {
         radarPoints.push({ id: 'main-bunker', coords: bunkerCoords });
     }
-
-    // B. Bases SHIELD completadas
     missions.forEach(m => {
         if (m.type === 'SHIELD_BASE' && completedMissionIds.has(m.id)) {
             const coords = projection(m.location.coordinates);
@@ -306,8 +344,6 @@ export const USAMap: React.FC<USAMapProps> = ({
         }
     });
 
-    // 2. Renderizar Radares usando D3 Data Join
-    // Usamos insert con :first-child para que queden al fondo (detrás de los estados y misiones)
     gMap.selectAll('.radar-effect')
         .data(radarPoints, (d: any) => d.id)
         .join(
@@ -336,7 +372,6 @@ export const USAMap: React.FC<USAMapProps> = ({
         .attr('data-coords', d => `${d.coords[0]},${d.coords[1]}`)
         .attr('transform', d => `translate(${d.coords[0] - 300}, ${d.coords[1] - 300})`);
 
-    // 3. Renderizar Icono del Búnker Principal (Siempre visible)
     if (bunkerCoords && gMap.select('.bunker').empty()) {
         const bunkerGroup = gMap.append('g')
             .attr('class', 'bunker cursor-pointer hover:opacity-100')
@@ -354,6 +389,7 @@ export const USAMap: React.FC<USAMapProps> = ({
 
   }, [usData, dimensions, projection, pathGenerator, factionStates, missions, completedMissionIds]); 
 
+  // Renderizado de Misiones y Tokens
   useEffect(() => {
       if (!projection || !gMissionsRef.current || !gTokensRef.current || !svgRef.current) return;
       
@@ -363,9 +399,7 @@ export const USAMap: React.FC<USAMapProps> = ({
 
       const validMissions = missions.filter(m => m && m.id && m.location && m.location.coordinates);
 
-      // CAMBIO: Lógica para dibujar múltiples líneas de conexión
       const connections: { source: string, target: string }[] = [];
-      
       validMissions.forEach(m => {
           if (m.prereqs && m.prereqs.length > 0) {
               m.prereqs.forEach(pid => connections.push({ source: pid, target: m.id }));
@@ -381,14 +415,10 @@ export const USAMap: React.FC<USAMapProps> = ({
         .attr('d', (d) => {
             const startMission = missions.find(m => m.id === d.source);
             const endMission = missions.find(m => m.id === d.target);
-            
             if (!startMission || !endMission) return null;
-            
             const start = projection(startMission.location.coordinates);
             const end = projection(endMission.location.coordinates);
-            
             if (!start || !end) return null;
-            
             const dr = Math.sqrt(Math.pow(end[0]-start[0], 2) + Math.pow(end[1]-start[1], 2));
             return `M${start[0]},${start[1]}A${dr},${dr} 0 0,1 ${end[0]},${end[1]}`;
         })
@@ -410,28 +440,35 @@ export const USAMap: React.FC<USAMapProps> = ({
         })
         .on('click', (e, d) => { 
             e.stopPropagation(); 
-            // BLOQUEO DE CLIC EN MAPA SI ES GALACTUS
             if (worldStage === 'GALACTUS' && d.type !== 'BOSS' && d.type !== 'GALACTUS') return;
             onMissionSelect(d); 
         });
 
+      // --- PUNTOS DE MISIÓN (VISTA LEJANA) ---
       missionGroups.select('.mission-dot')
-        .attr('r', (d) => completedMissionIds.has(d.id) ? 6 : 4.5)
+        .attr('r', (d) => completedMissionIds.has(d.id) ? 6 : 5)
         .attr('fill', (d) => {
-            // SI ES GALACTUS, LAS OTRAS SE VEN GRISES
-            if (worldStage === 'GALACTUS' && d.type !== 'BOSS' && d.type !== 'GALACTUS') return '#64748b'; // Slate-500
-            
-            if (completedMissionIds.has(d.id)) return '#10b981'; 
-            if (d.type === 'SHIELD_BASE') return '#06b6d4'; 
-            if (d.type === 'BOSS') return '#9333ea'; 
-            // CAMBIO: Color para misiones GALACTUS
-            if (d.type === 'GALACTUS') return '#9333ea'; 
-            return '#eab308';
+            if (worldStage === 'GALACTUS' && d.type !== 'BOSS' && d.type !== 'GALACTUS') return '#64748b';
+            const visuals = getMissionVisuals(d, completedMissionIds.has(d.id));
+            return visuals.coreColor; // Color del NÚCLEO (Estado)
         })
-        .attr('stroke', 'white').attr('stroke-width', 0.5).style('filter', 'url(#glow)')
+        // BORDE DE FACCIÓN (Haz de luz)
+        .attr('stroke', (d) => {
+            if (worldStage === 'GALACTUS' && d.type !== 'BOSS' && d.type !== 'GALACTUS') return '#475569';
+            const visuals = getMissionVisuals(d, completedMissionIds.has(d.id));
+            return visuals.factionColor;
+        })
+        .attr('stroke-width', 2) 
+        // FILTRO DE BRILLO DE FACCIÓN
+        .style('filter', (d) => {
+            if (worldStage === 'GALACTUS' && d.type !== 'BOSS' && d.type !== 'GALACTUS') return 'none';
+            const visuals = getMissionVisuals(d, completedMissionIds.has(d.id));
+            return `url(#${visuals.glowId})`;
+        })
         .style('display', currentZoom >= 2.5 ? 'none' : 'block')
         .attr('transform', `scale(${1/Math.sqrt(currentZoom)})`);
 
+      // --- ICONOS DE MISIÓN (VISTA ZOOM) ---
       missionGroups.select('.mission-icon')
         .each(function(d) {
           const sel = d3.select(this);
@@ -444,31 +481,36 @@ export const USAMap: React.FC<USAMapProps> = ({
               sel.selectAll('*').remove();
               sel.attr('data-status', newStatus);
               
-              const strokeColor = isBlocked ? '#64748b' : (isCompleted ? '#10b981' : '#eab308');
+              const visuals = getMissionVisuals(d, isCompleted);
+              const strokeColor = isBlocked ? '#64748b' : visuals.factionColor;
               const fillColor = isBlocked ? '#1e293b' : '#0f172a';
+              const coreColor = isBlocked ? '#64748b' : visuals.coreColor;
 
-              if (d.type === 'SHIELD_BASE' && !isCompleted) {
-                 sel.append('circle').attr('r', 9).attr('fill', fillColor).attr('stroke', isBlocked ? '#64748b' : '#06b6d4').attr('stroke-width', 1);
-                 if (!isBlocked) {
-                     sel.append('image')
-                        .attr('href', 'https://i.pinimg.com/736x/63/1e/3a/631e3a68228c97963e78381ad11bf3bb.jpg')
-                        .attr('x', -8).attr('y', -8)
-                        .attr('width', 16).attr('height', 16)
-                        .attr('clip-path', 'url(#mission-clip)');
-                 }
-              } else {
-                  sel.append('circle').attr('r', 8).attr('fill', fillColor).attr('stroke', strokeColor);
-                  if (isCompleted) {
-                      sel.append('path').attr('d', "M-3,0 L0,3 L5,-4").attr('stroke', strokeColor).attr('stroke-width', 2).attr('fill', 'none');
-                  } else if (d.type === 'BOSS' || d.type === 'GALACTUS') {
-                      // CAMBIO: Icono para BOSS y GALACTUS
-                      sel.append('text').attr('dy', 4).attr('text-anchor', 'middle').attr('font-size', '10px').text('💀').attr('fill', '#9333ea');
-                  } else {
-                      if (!isBlocked) {
-                          sel.append('path').attr('d', "M-4,-4 L4,4 M-4,4 L4,-4").attr('stroke', strokeColor).attr('stroke-width', 1.5);
-                      }
-                  }
+              // Círculo base
+              sel.append('circle')
+                 .attr('r', 10)
+                 .attr('fill', fillColor)
+                 .attr('stroke', strokeColor)
+                 .attr('stroke-width', 2)
+                 .style('filter', isBlocked ? 'none' : `url(#${visuals.glowId})`);
+
+              // Punto central de estado
+              sel.append('circle')
+                 .attr('r', 3)
+                 .attr('fill', coreColor);
+
+              // Símbolo de Facción (Texto centrado)
+              /*
+              if (!isBlocked) {
+                  sel.append('text')
+                     .attr('dy', 4)
+                     .attr('text-anchor', 'middle')
+                     .attr('font-size', '10px')
+                     .attr('font-weight', 'bold')
+                     .attr('fill', strokeColor)
+                     .text(visuals.symbol); // Opcional: Mostrar letra de facción
               }
+              */
           }
         })
         .style('display', currentZoom < 2.5 ? 'none' : 'block')
@@ -484,7 +526,7 @@ export const USAMap: React.FC<USAMapProps> = ({
                       .attr('class', 'token-group hulk-token cursor-pointer')
                       .attr('transform', `translate(${hulkCoords[0]}, ${hulkCoords[1]}) scale(${1/currentZoom})`);
                   
-                  hulkGroup.append('circle').attr('r', 15).attr('fill', '#65a30d').attr('stroke', '#365314').attr('stroke-width', 2).style('filter', 'url(#glow)');
+                  hulkGroup.append('circle').attr('r', 15).attr('fill', '#65a30d').attr('stroke', '#365314').attr('stroke-width', 2).style('filter', 'url(#glow-hulk)');
                   hulkGroup.append('text').text('HULK').attr('dy', 4).attr('text-anchor', 'middle').attr('font-size', '8px').attr('font-weight', 'bold').attr('fill', 'white');
               } else {
                   const currentTransform = hulkGroup.attr('transform');
@@ -536,16 +578,11 @@ export const USAMap: React.FC<USAMapProps> = ({
 
   return (
     <div ref={containerRef} className="w-full h-full relative bg-transparent overflow-hidden group">
-        {/* Fondo de rejilla */}
         <div className="absolute inset-0 z-0 pointer-events-none" style={{backgroundImage: 'radial-gradient(circle, #0e7490 1px, transparent 1px)', backgroundSize: '20px 20px', opacity: 0.2}}></div>
         
-        {/* SOMBRA DE GALACTUS MEJORADA */}
         {worldStage === 'GALACTUS' && (
             <div className="absolute inset-0 z-30 pointer-events-none overflow-hidden flex items-center justify-center">
-                {/* 1. Tinte atmosférico global */}
                 <div className="absolute inset-0 bg-purple-900/30 mix-blend-overlay animate-pulse-slow"></div>
-                
-                {/* 2. La Sombra (con máscara radial para suavizar bordes) */}
                 <div 
                     className="w-[120%] h-[120%] absolute animate-breathing opacity-60"
                     style={{
@@ -553,13 +590,11 @@ export const USAMap: React.FC<USAMapProps> = ({
                         backgroundSize: 'contain',
                         backgroundPosition: 'center',
                         backgroundRepeat: 'no-repeat',
-                        mixBlendMode: 'hard-light', // Esto hace que los colores brillen sobre el oscuro
+                        mixBlendMode: 'hard-light',
                         maskImage: 'radial-gradient(circle, black 40%, transparent 80%)',
                         WebkitMaskImage: 'radial-gradient(circle, black 40%, transparent 80%)'
                     }}
                 ></div>
-
-                {/* 3. Ojos brillantes (Efecto extra) */}
                 <div className="absolute top-[30%] left-[45%] w-4 h-4 bg-purple-400 rounded-full blur-md animate-pulse shadow-[0_0_20px_#a855f7]"></div>
                 <div className="absolute top-[30%] right-[45%] w-4 h-4 bg-purple-400 rounded-full blur-md animate-pulse shadow-[0_0_20px_#a855f7]"></div>
             </div>
