@@ -20,9 +20,9 @@ import { NewsTicker } from './components/NewsTicker';
 
 import { Mission, Hero, WorldStage, GlobalEvent, HeroTemplate } from './types';
 
-// --- DATOS DE LA MISIÓN 0 (INTRODUCCIÓN) ---
+// --- DEFINICIÓN DE LA MISIÓN 0 (GLOBAL) ---
 const MISSION_ZERO: Mission = {
-    id: 'm_intro_0',
+    id: 'm_intro_0', // ID ÚNICO IMPORTANTE
     title: "MH0: CADENAS ROTAS",
     description: [
         "SITUACIÓN CRÍTICA: El transporte ha sido neutralizado. Estamos heridos, desorientados y en territorio hostil.",
@@ -34,7 +34,7 @@ const MISSION_ZERO: Mission = {
         { title: "Romper el Cerco", desc: "Abrirse paso a través de la primera oleada de infectados." },
         { title: "Llegar al Búnker", desc: "Alcanzar las coordenadas seguras en Ohio." }
     ],
-    location: { state: 'Ohio', coordinates: [-82.5, 40.2] }, // Cerca del búnker
+    location: { state: 'Ohio', coordinates: [-82.5, 40.2] },
     threatLevel: "INMINENTE",
     type: 'STANDARD',
     alignment: 'BOTH',
@@ -185,7 +185,6 @@ const App: React.FC = () => {
     const [loading, setLoading] = useState(true);
     const [loadingAuth, setLoadingAuth] = useState(true);
     const [lang, setLang] = useState<Language>('es');
-    // AÑADIDO 'mission0' AL TIPO DE ESTADO
     const [viewMode, setViewMode] = useState<'login' | 'story' | 'intro' | 'mission0' | 'tutorial' | 'map' | 'bunker'>('login');
     
     const [playerAlignment, setPlayerAlignment] = useState<'ALIVE' | 'ZOMBIE' | null>(null);
@@ -569,7 +568,10 @@ const App: React.FC = () => {
 
     const allMissions: Mission[] = useMemo(() => {
         const missionMap = new Map<string, Mission>();
+        
+        // AÑADIMOS LA MISIÓN 0 A LA LISTA PRINCIPAL
         const DEFAULT_MISSIONS: Mission[] = [
+            MISSION_ZERO, // <--- AQUÍ ESTÁ LA CLAVE
             {
                 id: 'm_kraven', title: t.missions.kraven.title, description: t.missions.kraven.description, objectives: t.missions.kraven.objectives,
                 location: { state: 'New York', coordinates: [-74.006, 40.7128] }, threatLevel: 'ALTA', type: 'STANDARD', alignment: 'ALIVE'
@@ -688,7 +690,7 @@ const App: React.FC = () => {
 
     // --- CÁLCULO DE PROGRESO ---
     const totalMissions = useMemo(() => {
-        return customMissions.length + 6; 
+        return customMissions.length + 7; // +7 porque ahora incluimos MISSION_ZERO
     }, [customMissions]);
     
     const progressPercentage = Math.min(100, Math.round((completedMissionIds.size / Math.max(1, totalMissions)) * 100));
@@ -713,7 +715,7 @@ const App: React.FC = () => {
                 <MissionModal 
                     mission={MISSION_ZERO} 
                     isOpen={true} 
-                    onClose={() => setViewMode('tutorial')} // Si cierran, van al tutorial
+                    onClose={() => setViewMode('tutorial')} 
                     onComplete={() => {
                         handleMissionComplete('m_intro_0');
                         setViewMode('tutorial');
