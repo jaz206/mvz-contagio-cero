@@ -12,12 +12,16 @@ export const StoryMode: React.FC<StoryModeProps> = ({ language, onComplete, onSk
   const [currentIndex, setCurrentIndex] = useState(0);
   const [pageTurn, setPageTurn] = useState(''); 
   
-  // Nuevo estado para manejar la animación de firma/sangre
+  // NUEVO: Estado para bloquear clics rápidos
+  const [isAnimating, setIsAnimating] = useState(false);
+  
   const [selection, setSelection] = useState<'ALIVE' | 'ZOMBIE' | null>(null);
   
   const t = translations[language].story;
   const slides = t.slides;
-  const isChoiceScreen = currentIndex === slides.length;
+  
+  // CORRECCIÓN: Aseguramos que si el índice se pasa, se quede en la pantalla de elección
+  const isChoiceScreen = currentIndex >= slides.length;
 
   useEffect(() => {
       const timer = setTimeout(() => setIsFolderOpen(true), 800);
@@ -25,26 +29,39 @@ export const StoryMode: React.FC<StoryModeProps> = ({ language, onComplete, onSk
   }, []);
 
   const handleNext = () => {
+    // BLOQUEO: Si ya se está animando o estamos al final, ignorar clic
+    if (isAnimating || isChoiceScreen) return;
+
+    setIsAnimating(true);
     setPageTurn('turning-next');
+    
     setTimeout(() => {
-        if (currentIndex < slides.length) {
-            setCurrentIndex(prev => prev + 1);
-            setPageTurn('');
-        }
+        setCurrentIndex(prev => {
+            // Doble seguridad para no pasarnos del array
+            const next = prev + 1;
+            return next > slides.length ? slides.length : next;
+        });
+        setPageTurn('');
+        setIsAnimating(false);
     }, 600);
   };
 
   const handlePrev = () => {
-    if (currentIndex > 0) {
-        setPageTurn('turning-prev');
-        setTimeout(() => {
-            setCurrentIndex(prev => prev - 1);
-            setPageTurn('');
-        }, 600);
-    }
+    // BLOQUEO: Si ya se está animando o estamos al principio
+    if (isAnimating || currentIndex === 0) return;
+
+    setIsAnimating(true);
+    setPageTurn('turning-prev');
+    
+    setTimeout(() => {
+        setCurrentIndex(prev => Math.max(0, prev - 1));
+        setPageTurn('');
+        setIsAnimating(false);
+    }, 600);
   };
 
   const handleChoice = (choice: 'ALIVE' | 'ZOMBIE') => {
+      if (selection) return; // Evitar doble selección
       setSelection(choice);
       setTimeout(() => {
           onComplete(choice);
@@ -120,8 +137,10 @@ export const StoryMode: React.FC<StoryModeProps> = ({ language, onComplete, onSk
           );
       }
 
+      // SEGURIDAD: Si por alguna razón el índice falla, no renderizar nada para evitar crash
       const slide = slides[currentIndex];
-      // Rotación aleatoria sutil basada en el índice para que parezca natural
+      if (!slide) return null;
+
       const rotation = currentIndex % 2 === 0 ? '-rotate-2' : 'rotate-1';
 
       return (
@@ -207,10 +226,6 @@ export const StoryMode: React.FC<StoryModeProps> = ({ language, onComplete, onSk
           0% { opacity: 0; transform: scale(2) rotate(-15deg); }
           100% { opacity: 0.8; transform: scale(1) rotate(-15deg); }
         }
-        @keyframes splatter {
-          0% { opacity: 0; transform: scale(0.5); }
-          100% { opacity: 0.9; transform: scale(1.2); }
-        }
       `}</style>
 
       {/* Mesa de fondo */}
@@ -247,7 +262,7 @@ export const StoryMode: React.FC<StoryModeProps> = ({ language, onComplete, onSk
               <div className="absolute -bottom-16 w-full flex justify-center gap-4">
                   <button 
                       onClick={handlePrev}
-                      disabled={currentIndex === 0}
+                      disabled={currentIndex === 0 || isAnimating}
                       className={`w-12 h-12 rounded-full bg-slate-800 border border-slate-600 flex items-center justify-center text-white hover:bg-cyan-600 transition-all ${currentIndex === 0 ? 'opacity-30 cursor-not-allowed' : ''}`}
                   >
                       ←
@@ -257,6 +272,7 @@ export const StoryMode: React.FC<StoryModeProps> = ({ language, onComplete, onSk
                   </div>
                   <button 
                       onClick={handleNext}
+                      disabled={isAnimating}
                       className="w-12 h-12 rounded-full bg-slate-800 border border-slate-600 flex items-center justify-center text-white hover:bg-cyan-600 transition-all"
                   >
                       →

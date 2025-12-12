@@ -10,43 +10,55 @@ interface IntroSequenceProps {
 export const IntroSequence: React.FC<IntroSequenceProps> = ({ language, onComplete, playerAlignment }) => {
     const [currentIndex, setCurrentIndex] = useState(0);
     const [fadeIn, setFadeIn] = useState(true);
+    
+    // NUEVO: Estado para bloquear clics rápidos (spam click)
+    const [isAnimating, setIsAnimating] = useState(false);
+
     const t = translations[language].introSequence;
 
     // DEFINICIÓN DE LAS DIAPOSITIVAS
     const slides = [
         {
             id: 'transport',
-            // GIF 1: Transporte Blindado
             image: "https://i.postimg.cc/s2krL4L6/Video-con-humo-llamas-y-nubes-1.gif", 
             text: t.slide1
         },
         {
             id: 'heroes',
-            // GIF 2: Héroes Heridos (URL ACTUALIZADA)
-            image: "https://i.postimg.cc/FHdhNV6n/Image-to-Video.gif", 
+            image: "https://i.postimg.cc/YCytwW0H/Pix-Verse-V5-5-Image-Text-720P-quiero-una-anima-(online-video-cutter-com).gif", 
             text: t.slide2
         },
         {
             id: 'widow',
-            // GIF 3: Black Widow (URL ACTUALIZADA)
             image: "https://i.postimg.cc/4xpjWHtk/Mind-Video-20251212162510-850.gif", 
             text: t.slide3
         }
     ];
 
     const handleNext = () => {
-        setFadeIn(false);
+        // BLOQUEO: Si ya se está animando, ignoramos el clic
+        if (isAnimating) return;
+
+        setIsAnimating(true); // Bloqueamos
+        setFadeIn(false);     // Iniciamos transición visual
+
         setTimeout(() => {
             if (currentIndex < slides.length - 1) {
+                // Si hay más diapositivas, avanzamos
                 setCurrentIndex(prev => prev + 1);
                 setFadeIn(true);
+                setIsAnimating(false); // Desbloqueamos para el siguiente clic
             } else {
+                // Si es la última, terminamos
                 onComplete();
+                // No hace falta desbloquear porque el componente se desmontará
             }
         }, 500);
     };
 
+    // SEGURIDAD: Si por algún error el índice se pasa, no renderizamos nada para evitar crash
     const currentSlide = slides[currentIndex];
+    if (!currentSlide) return null;
 
     return (
         <div className="fixed inset-0 z-[100] bg-black flex flex-col items-center justify-center overflow-hidden font-mono">
@@ -55,8 +67,6 @@ export const IntroSequence: React.FC<IntroSequenceProps> = ({ language, onComple
             <div className={`absolute inset-0 transition-opacity duration-1000 ease-in-out ${fadeIn ? 'opacity-100' : 'opacity-0'}`}>
                 <div 
                     className="absolute inset-0 bg-no-repeat bg-center transform scale-105 animate-[drift_20s_linear_infinite]"
-                    // CAMBIO CLAVE: Usamos 'bg-contain' para que se vea toda la imagen sin recortar
-                    // Y añadimos un fondo negro de respaldo
                     style={{ 
                         backgroundImage: `url('${currentSlide.image}')`,
                         backgroundSize: 'contain', 
@@ -64,7 +74,7 @@ export const IntroSequence: React.FC<IntroSequenceProps> = ({ language, onComple
                     }}
                 ></div>
                 
-                {/* Gradiente inferior para que el texto se lea bien sobre cualquier imagen */}
+                {/* Gradiente inferior */}
                 <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent"></div>
                 
                 {/* Efecto de Scanlines */}
@@ -77,7 +87,7 @@ export const IntroSequence: React.FC<IntroSequenceProps> = ({ language, onComple
                 <div className="flex items-center gap-4 mb-4">
                     <div className="h-px flex-1 bg-cyan-900"></div>
                     <span className="text-cyan-500 text-xs font-bold tracking-[0.3em] uppercase">
-                        ARCHIVO: MH0 // SECUENCIA {currentIndex + 1} DE 3
+                        ARCHIVO: MH0 // SECUENCIA {currentIndex + 1} DE {slides.length}
                     </span>
                     <div className="h-px flex-1 bg-cyan-900"></div>
                 </div>
@@ -89,12 +99,20 @@ export const IntroSequence: React.FC<IntroSequenceProps> = ({ language, onComple
                 <div className="mt-8 flex justify-center">
                     <button 
                         onClick={handleNext}
-                        className="group relative px-8 py-3 bg-cyan-900/30 border border-cyan-500 text-cyan-400 font-bold tracking-widest hover:bg-cyan-500 hover:text-black transition-all duration-300"
+                        // Deshabilitamos visualmente el botón si está animando
+                        disabled={isAnimating}
+                        className={`group relative px-8 py-3 border font-bold tracking-widest transition-all duration-300
+                            ${isAnimating 
+                                ? 'bg-gray-800 border-gray-600 text-gray-500 cursor-wait' 
+                                : 'bg-cyan-900/30 border-cyan-500 text-cyan-400 hover:bg-cyan-500 hover:text-black'}
+                        `}
                     >
                         <span className="relative z-10">
                             {currentIndex === slides.length - 1 ? "INICIAR MISIÓN" : "SIGUIENTE >>"}
                         </span>
-                        <div className="absolute inset-0 bg-cyan-500 transform scale-x-0 group-hover:scale-x-100 transition-transform origin-left duration-300 -z-0"></div>
+                        {!isAnimating && (
+                            <div className="absolute inset-0 bg-cyan-500 transform scale-x-0 group-hover:scale-x-100 transition-transform origin-left duration-300 -z-0"></div>
+                        )}
                     </button>
                 </div>
             </div>
