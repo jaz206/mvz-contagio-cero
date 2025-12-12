@@ -1,4 +1,3 @@
-// translations.ts
 export type Language = 'es' | 'en';
 
 export const translations = {
@@ -221,6 +220,21 @@ export const translations = {
         thor: { alias: "THOR", bio: "Dios del Trueno. Posee el poder de Mjolnir." },
         storm: { alias: "STORM", bio: "Controla el clima. Una diosa entre mortales." }
     },
+    // --- AQUÍ ESTÁ LA ESTRUCTURA CORRECTA PARA LA INTRO ---
+    introSequence: [
+        {
+            text: "El zumbido en tus oídos es lo único que ahoga los gritos de los moribundos. Sientes sabor a cobre; sangre. El transporte blindado de la Tríada, esa jaula con ruedas que os llevaba al matadero, es ahora un amasijo de metal retorcido y carne quemada. Iban a venderos, a usaros como cobayas o entretenimiento... pero el destino ha tirado los dados.",
+            image: "https://i.postimg.cc/s2krL4L6/Video-con-humo-llamas-y-nubes-1.gif"
+        },
+        {
+            text: "Te tocas el cuello. El piloto LED del collar inhibidor está apagado. El impacto ha frito los circuitos. Estáis libres. Pero en este mundo, la libertad tiene un precio: ahora sois presas. El humo negro es una baliza; el ruido del choque, una campana de cena para cada mordedor hambriento en cinco kilómetros a la redonda. Ya puedes oír sus gruñidos mezclándose con sirenas distantes.",
+            image: "https://i.postimg.cc/FHdhNV6n/Image-to-Video.gif"
+        },
+        {
+            text: "Una figura aparece recortada por las llamas. No lleva el uniforme de la Tríada. Os tiende una mano llena de cicatrices y grasa. “Podéis quedaros ahí tirados y ser el aperitivo, o podéis levantaros y ser los que aprietan el gatillo. El refugio está cerca… pero el asfalto se va a teñir de rojo antes de que lleguemos.”",
+            image: "https://i.postimg.cc/4xpjWHtk/Mind-Video-20251212162510-850.gif"
+        }
+    ],
     story: {
         loading: {
             line1: "INICIALIZANDO...",
@@ -250,11 +264,6 @@ export const translations = {
         skip: "OMITIR",
         prev: "ANTERIOR",
         next: "SIGUIENTE"
-    },
-    introSequence: {
-        slide1: "El zumbido en tus oídos es lo único que ahoga los gritos de los moribundos. Sientes sabor a cobre; sangre. El transporte blindado de la Tríada, esa jaula con ruedas que os llevaba al matadero, es ahora un amasijo de metal retorcido y carne quemada. Iban a venderos, a usaros como cobayas o entretenimiento... pero el destino ha tirado los dados.",
-        slide2: "Te tocas el cuello. El piloto LED del collar inhibidor está apagado. El impacto ha frito los circuitos. Estáis libres. Pero en este mundo, la libertad tiene un precio: ahora sois presas. El humo negro es una baliza; el ruido del choque, una campana de cena para cada mordedor hambriento en cinco kilómetros a la redonda.",
-        slide3: "Una figura aparece recortada por las llamas. No lleva el uniforme de la Tríada. Os tiende una mano llena de cicatrices y grasa. “Podéis quedaros ahí tirados y ser el aperitivo, o podéis levantaros y ser los que aprietan el gatillo. El refugio está cerca… pero el asfalto se va a teñir de rojo antes de que lleguemos.”"
     },
     tutorial: {
         welcome: { title: "BIENVENIDO A SHIELD", text: "El mundo ha caído, pero la resistencia continúa. Esta es tu interfaz de mando." },
@@ -490,6 +499,21 @@ export const translations = {
         thor: { alias: "THOR", bio: "God of Thunder. Wields the power of Mjolnir." },
         storm: { alias: "STORM", bio: "Controls the weather. A goddess among mortals." }
     },
+    // --- ESTRUCTURA ACTUALIZADA: ARRAY DE OBJETOS (TRADUCCIÓN FIEL) ---
+    introSequence: [
+        {
+            text: "The ringing in your ears is the only thing drowning out the screams of the dying. You taste copper; blood. The Triad's armored transport, that cage on wheels taking you to the slaughterhouse, is now a twisted mass of metal and burnt flesh. They were going to sell you, use you as guinea pigs or entertainment... but fate has rolled the dice.",
+            image: "https://i.postimg.cc/s2krL4L6/Video-con-humo-llamas-y-nubes-1.gif"
+        },
+        {
+            text: "You touch your neck. The inhibitor collar's LED is off. The impact fried the circuits. You are free. But in this world, freedom comes at a price: now you are prey. The black smoke is a beacon; the crash noise, a dinner bell for every hungry biter within five kilometers. You can already hear their growls mixing with distant sirens.",
+            image: "https://i.postimg.cc/FHdhNV6n/Image-to-Video.gif"
+        },
+        {
+            text: "A figure appears silhouetted by the flames. She doesn't wear the Triad uniform. She extends a hand covered in scars and grease. 'You can stay there lying down and be the appetizer, or you can get up and be the ones pulling the trigger. The shelter is close... but the asphalt is going to run red before we get there.'",
+            image: "https://i.postimg.cc/4xpjWHtk/Mind-Video-20251212162510-850.gif"
+        }
+    ],
     story: {
         loading: {
             line1: "INITIALIZING...",
@@ -498,34 +522,27 @@ export const translations = {
             line4: "SYSTEM READY"
         },
         slides: [
-            { text: "The world ended yesterday.", image: "https://i.pinimg.com/736x/8a/9b/8c/8a9b8c9d7e6f5a4b3c2d1e0f9a8b7c6d.jpg" },
-            { text: "There were no nuclear explosions. No alien invasion.", image: "https://i.pinimg.com/736x/1a/2b/3c/1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d.jpg" },
-            { text: "There was only... hunger.", image: "https://i.pinimg.com/736x/0f/1e/2d/0f1e2d3c4b5a69788910111213141516.jpg" },
-            { text: "We built it ourselves. Here. At home.\nOr rather, they built it.", image: "https://i.pinimg.com/1200x/71/06/7d/71067db72856dfd6ca03d0d51a679bd6.jpg" },
-            { text: "It was in a sterile lab. Three men met there: Doom, Magneto, and Fisk.\nThey decided humanity was too chaotic. Their solution was cold science: The Nullifier Pulse.", image: "https://i.pinimg.com/1200x/71/06/7d/71067db72856dfd6ca03d0d51a679bd6.jpg" },
-            { text: "They needed bodies to fine-tune the formula. They used Jamie Madrox. They used the Reavers. And it worked.", image: "https://i.pinimg.com/1200x/99/80/1e/99801e7603e4a770127ce29530f13f87.jpg" },
-            { text: "But arrogance is a loaded gun that always points backward.", image: "https://i.pinimg.com/1200x/19/26/53/1926533335a2b27c4a79c9d2632ec83d.jpg" },
-            { text: "They decided to test their masterpiece on Bruce Banner. They sought infinite energy; they got a biological bomb.", image: "https://i.pinimg.com/1200x/b2/06/15/b20615925dfa53cdf9622fb596cdd5e3.jpg" },
-            { text: "When the virus touched the gamma blood, it didn't die. It raged. Banner didn't fall. The thing that woke up had no one at the wheel.", image: "https://i.pinimg.com/1200x/a8/e9/b7/a8e9b76d6a9a87de0cfba509d5fef534.jpg" },
-            { text: "The outbreak wasn't fire, it was contagion. Hulk roared, and in that roar traveled extinction.", image: "https://i.pinimg.com/1200x/eb/db/e8/ebdbe8d5738acd105654dc8ddad8216f.jpg" },
-            { text: "In hours, New York was a slaughterhouse. The Avengers fell first, torn apart by the friends they tried to save.", image: "https://i.pinimg.com/1200x/b9/0a/18/b90a18369639b131f91273f019b699cd.jpg" },
-            { text: "And the Triad? Doom, Magneto, and Fisk were caught by their own creation. But fate has a cruel sense of humor.", image: "https://i.pinimg.com/1200x/e1/02/86/e102864e130bfa5b5f2ffc5a9d9ed9c0.jpg" },
-            { text: "They didn't lose their minds. Their bodies rotted, but their intellect remained intact. Now they sit on thrones of bone.", image: "https://i.pinimg.com/1200x/e2/5c/3a/e25c3ac26e5fc65f9119b6073912e856.jpg" },
-            { text: "But something else is out there. S.H.I.E.L.D. remains active. Not an agency, but a weaponized ghost. A paranoid AI.", image: "https://i.pinimg.com/1200x/39/c8/cd/39c8cde0a5b56acc78b41c4eecf91f0a.jpg" },
-            { text: "So here you are. Standing on the ashes. It's no longer about saving the world. It's about who's left standing.", image: "https://i.pinimg.com/1200x/45/7d/c5/457dc515c61d470eb26cf1727ebd67ea.jpg" },
-            { text: "Tell me, survivor... in this new era of monsters and machines: WHAT ARE YOU?", image: "https://i.pinimg.com/1200x/18/85/ee/1885ee42132b6976d36896a81f33ad8c.jpg" }
-        ],
+    { text: "There were no trumpets. No red skies or ancient prophecies being fulfilled. The end of the world didn't come from outer space, nor from a dark dimension.", image: "https://i.pinimg.com/1200x/18/99/ec/1899ec756f8731e015eb941d7122fbec.jpg" },
+    { text: "We built it. Here. At home.\nOr rather, *they* built it.", image: "https://i.pinimg.com/1200x/71/06/7d/71067db72856dfd6ca03d0d51a679bd6.jpg" },
+    { text: "It happened in a sterile laboratory. Three men met there: Victor Von Doom, Magneto, and Wilson Fisk.\nThey decided that humanity was too chaotic. Their solution was cold, hard science: the Nullifier Pulse.", image: "https://i.pinimg.com/1200x/71/06/7d/71067db72856dfd6ca03d0d51a679bd6.jpg" },
+    { text: "They needed bodies to fine-tune the formula. They used Jamie Madrox to see how the infection multiplied. They used the Reavers to see if metal could get sick. And it worked.", image: "https://i.pinimg.com/1200x/99/80/1e/99801e7603e4a770127ce29530f13f87.jpg" },
+    { text: "But arrogance is a loaded gun that always points back at you.", image: "https://i.pinimg.com/1200x/19/26/53/1926533335a2b27c4a79c9d2632ec83d.jpg" },
+    { text: "They decided to test their masterpiece on Bruce Banner. They sought an infinite power source; what they got was a biological bomb.", image: "https://i.pinimg.com/1200x/b2/06/15/b20615925dfa53cdf9622fb596cdd5e3.jpg" },
+    { text: "When the virus touched the gamma blood, it didn't die. It became enraged. Banner didn't fall. The thing that woke up had no one at the wheel anymore.", image: "https://i.pinimg.com/1200x/a8/e9/b7/a8e9b76d6a9a87de0cfba509d5fef534.jpg" },
+    { text: "The blast wasn't fire, it was contagion. Hulk roared, and extinction traveled in that roar.", image: "https://i.pinimg.com/1200x/eb/db/e8/ebdbe8d5738acd105654dc8ddad8216f.jpg" },
+    { text: "In a matter of hours, New York was a slaughterhouse. The Avengers fell first, torn apart by the friends they were trying to save.", image: "https://i.pinimg.com/1200x/b9/0a/18/b90a18369639b131f91273f019b699cd.jpg" },
+    { text: "And the Triad? Doom, Magneto, and Fisk were caught by their own creation. But fate has a cruel sense of humor.", image: "https://i.pinimg.com/1200x/e1/02/86/e102864e130bfa5b5f2ffc5a9d9ed9c0.jpg" },
+    { text: "They didn't lose their minds. Their bodies rotted, but their intellect remained intact. Now they sit on thrones of bone, ruling nightmare factions.", image: "https://i.pinimg.com/1200x/e2/5c/3a/e25c3ac26e5fc65f9119b6073912e856.jpg" },
+    { text: "But there is something else out there. S.H.I.E.L.D. is still active. It is not an agency; it is a weaponized ghost. A paranoid AI that has decided the only way to maintain order is to eliminate everything that moves.", image: "https://i.pinimg.com/1200x/39/c8/cd/39c8cde0a5b56acc78b41c4eecf91f0a.jpg" },
+    { text: "So here you are. Standing on the ashes. It's no longer about saving the world. It's about seeing who is left standing.", image: "https://i.pinimg.com/1200x/45/7d/c5/457dc515c61d470eb26cf1727ebd67ea.jpg" },
+    { text: "Tell me, survivor... in this new era of monsters and machines: WHAT ARE YOU?", image: "https://i.pinimg.com/1200x/18/85/ee/1885ee42132b6976d36896a81f33ad8c.jpg" }
+],
         choose: "CHOOSE YOUR DESTINY",
         optionA: "SURVIVOR",
         optionB: "ZOMBIE",
         skip: "SKIP",
         prev: "PREV",
         next: "NEXT"
-    },
-    introSequence: {
-        slide1: "The ringing in your ears drowns out the screams. You taste copper; blood. The Triad's armored transport, that cage taking you to the slaughterhouse, is now a twisted wreck. They were going to sell you... but fate rolled the dice.",
-        slide2: "You touch your neck. The inhibitor collar is dead. The crash fried the circuits. You are free, but the black smoke is a beacon. The crash noise is a dinner bell for every biter within five kilometers.",
-        slide3: "A figure appears silhouetted by the flames. Not Triad. She extends a scarred hand. 'You can stay there and be the appetizer, or get up and be the ones pulling the trigger. The shelter is close... but the asphalt will run red before we get there.'"
     },
     tutorial: {
         welcome: { title: "WELCOME TO SHIELD", text: "The world has fallen, but the resistance continues. This is your command interface." },

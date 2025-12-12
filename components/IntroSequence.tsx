@@ -11,52 +11,30 @@ export const IntroSequence: React.FC<IntroSequenceProps> = ({ language, onComple
     const [currentIndex, setCurrentIndex] = useState(0);
     const [fadeIn, setFadeIn] = useState(true);
     
-    // NUEVO: Estado para bloquear clics rápidos (spam click)
+    // Estado para bloquear clics rápidos (spam click)
     const [isAnimating, setIsAnimating] = useState(false);
 
-    const t = translations[language].introSequence;
-
-    // DEFINICIÓN DE LAS DIAPOSITIVAS
-    const slides = [
-        {
-            id: 'transport',
-            image: "https://i.postimg.cc/s2krL4L6/Video-con-humo-llamas-y-nubes-1.gif", 
-            text: t.slide1
-        },
-        {
-            id: 'heroes',
-            image: "https://i.postimg.cc/YCytwW0H/Pix-Verse-V5-5-Image-Text-720P-quiero-una-anima-(online-video-cutter-com).gif", 
-            text: t.slide2
-        },
-        {
-            id: 'widow',
-            image: "https://i.postimg.cc/4xpjWHtk/Mind-Video-20251212162510-850.gif", 
-            text: t.slide3
-        }
-    ];
+    // AHORA LEEMOS LOS SLIDES DIRECTAMENTE DE LAS TRADUCCIONES
+    // Esto asegura que las imágenes estén presentes en ambos idiomas
+    const slides = translations[language].introSequence;
 
     const handleNext = () => {
-        // BLOQUEO: Si ya se está animando, ignoramos el clic
         if (isAnimating) return;
 
-        setIsAnimating(true); // Bloqueamos
-        setFadeIn(false);     // Iniciamos transición visual
+        setIsAnimating(true); 
+        setFadeIn(false);     
 
         setTimeout(() => {
             if (currentIndex < slides.length - 1) {
-                // Si hay más diapositivas, avanzamos
                 setCurrentIndex(prev => prev + 1);
                 setFadeIn(true);
-                setIsAnimating(false); // Desbloqueamos para el siguiente clic
+                setIsAnimating(false); 
             } else {
-                // Si es la última, terminamos
                 onComplete();
-                // No hace falta desbloquear porque el componente se desmontará
             }
         }, 500);
     };
 
-    // SEGURIDAD: Si por algún error el índice se pasa, no renderizamos nada para evitar crash
     const currentSlide = slides[currentIndex];
     if (!currentSlide) return null;
 
@@ -99,7 +77,6 @@ export const IntroSequence: React.FC<IntroSequenceProps> = ({ language, onComple
                 <div className="mt-8 flex justify-center">
                     <button 
                         onClick={handleNext}
-                        // Deshabilitamos visualmente el botón si está animando
                         disabled={isAnimating}
                         className={`group relative px-8 py-3 border font-bold tracking-widest transition-all duration-300
                             ${isAnimating 
