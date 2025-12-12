@@ -20,8 +20,7 @@ interface BunkerInteriorProps {
   onFindCylinder?: () => void;
 }
 
-// ... (StatBar, HeroListCard, MissionListCard, CerebroScanner se mantienen igual por brevedad)
-// COPIA LOS SUB-COMPONENTES DEL CÓDIGO ANTERIOR AQUÍ SI LOS NECESITAS
+// --- SUB-COMPONENTS ---
 
 const StatBar: React.FC<{ label: string; value: number; colorClass: string }> = ({ label, value, colorClass }) => (
   <div className="flex items-center gap-2 text-[9px]">
@@ -90,6 +89,7 @@ const TransformationModal: React.FC<{ isOpen: boolean; type: 'CURING' | 'INFECTI
     );
 };
 
+// --- MAIN COMPONENT ---
 export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
   heroes, missions, onAssign, onUnassign, onAddHero, onToggleObjective, onBack, language, playerAlignment, isEditorMode, onTransformHero, onTickerUpdate, omegaCylinders = 0, onFindCylinder
 }) => {
@@ -109,6 +109,9 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
   const [isEditingExisting, setIsEditingExisting] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [recruitForm, setRecruitForm] = useState({ templateId: "", name: "", alias: "", class: "BRAWLER" as HeroClass, bio: "", currentStory: "", objectives: [] as string[], imageUrl: "", characterSheetUrl: "", str: 5, agi: 5, int: 5, alignment: "ALIVE" as "ALIVE" | "ZOMBIE" });
+  
+  // NUEVO ESTADO PARA LA ALERTA TEMÁTICA
+  const [showOmegaWarning, setShowOmegaWarning] = useState(false);
 
   const t = translations[language];
   const selectedHero = heroes.find((h) => h.id === selectedHeroId);
@@ -153,15 +156,16 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
     setShowRecruitModal(false); setIsEditingExisting(false); resetRecruitForm();
   };
 
-  // --- LÓGICA DE BLOQUEO DE CURA ---
   const handleCureHero = (heroId: string) => {
       const hero = heroes.find(h => h.id === heroId);
       if (!hero) return;
       
-      // SI ERES 'ALIVE' Y NO TIENES CILINDROS, SE BLOQUEA
+      // VALIDACIÓN TEMÁTICA DE CILINDROS OMEGA
       if (playerAlignment === 'ALIVE' && omegaCylinders <= 0) {
-          alert(t.bunker.omega.empty); // Muestra "RESERVAS AGOTADAS"
-          return; // DETIENE LA EJECUCIÓN
+          setShowOmegaWarning(true);
+          // Auto-ocultar después de 3 segundos
+          setTimeout(() => setShowOmegaWarning(false), 3000);
+          return;
       }
 
       const actionType = playerAlignment === 'ZOMBIE' ? 'INFECTING' : 'CURING';
@@ -192,8 +196,32 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
 
   return (
     <div className="w-full h-full bg-slate-950 font-mono relative overflow-hidden select-none flex flex-col">
-        <style>{`@keyframes stamp { 0% { opacity: 0; transform: scale(3); } 50% { opacity: 1; transform: scale(0.8); } 100% { opacity: 1; transform: scale(1) rotate(-15deg); } }`}</style>
+        <style>{`
+            @keyframes stamp { 0% { opacity: 0; transform: scale(3); } 50% { opacity: 1; transform: scale(0.8); } 100% { opacity: 1; transform: scale(1) rotate(-15deg); } }
+            @keyframes shrink { from { width: 100%; } to { width: 0%; } }
+        `}</style>
+        
         <TransformationModal isOpen={!!processingHero} type={processingHero?.type || 'CURING'} heroName={processingHero?.name || ''} onComplete={handleTransformationComplete} />
+
+        {/* --- MODAL DE ALERTA OMEGA (TEMÁTICO) --- */}
+        {showOmegaWarning && (
+            <div className="fixed inset-0 z-[120] flex items-center justify-center bg-black/60 backdrop-blur-sm animate-fade-in" onClick={() => setShowOmegaWarning(false)}>
+                <div className="bg-slate-900 border-2 border-red-600 p-8 shadow-[0_0_50px_rgba(220,38,38,0.5)] flex flex-col items-center max-w-sm w-full relative overflow-hidden">
+                    {/* Scanlines decorativas */}
+                    <div className="absolute inset-0 pointer-events-none opacity-10 bg-[linear-gradient(transparent_50%,rgba(220,38,38,0.5)_50%)] bg-[length:100%_4px]"></div>
+                    
+                    <div className="text-5xl mb-4 animate-pulse">⚠</div>
+                    <h2 className="text-2xl font-black text-red-500 tracking-widest mb-2 text-center uppercase">ERROR DE SISTEMA</h2>
+                    <div className="w-full h-px bg-red-800 mb-4"></div>
+                    <p className="text-red-300 font-mono text-sm tracking-wider text-center mb-6">{t.bunker.omega.empty}</p>
+                    
+                    <div className="w-full bg-red-950 border border-red-800 h-2 rounded-full overflow-hidden">
+                        <div className="h-full bg-red-500 animate-[shrink_3s_linear_forwards]"></div>
+                    </div>
+                    <div className="text-[9px] text-red-600 mt-1 font-bold">CERRANDO VENTANA...</div>
+                </div>
+            </div>
+        )}
 
         {/* Header */}
         <div className="flex items-center justify-between p-4 bg-slate-900 border-b border-cyan-900 shrink-0 z-20">
@@ -336,6 +364,7 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
         </div>
       )}
 
+      {/* ... (Resto de modales: Assign, Squad, Recruit, Zoom, Sheet) ... */}
       {showAssignModal && (
         <div className="absolute inset-0 z-[60] flex items-center justify-center bg-slate-950/90 backdrop-blur-sm p-4">
           <div className="w-full max-w-lg bg-slate-900 border border-cyan-500 shadow-[0_0_50px_rgba(6,182,212,0.3)]">
