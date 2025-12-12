@@ -20,7 +20,7 @@ interface USAMapProps {
   };
   playerAlignment?: 'ALIVE' | 'ZOMBIE' | null;
   worldStage: WorldStage;
-  surferTurnCount?: number; // <--- NUEVA PROP
+  surferTurnCount?: number;
 }
 
 const RADAR_SIZE = 250; 
@@ -34,7 +34,7 @@ export const USAMap: React.FC<USAMapProps> = ({
     onBunkerClick, 
     factionStates, 
     worldStage,
-    surferTurnCount = 0 // Default 0
+    surferTurnCount = 0
 }) => {
   const svgRef = useRef<SVGSVGElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -52,8 +52,6 @@ export const USAMap: React.FC<USAMapProps> = ({
   const [tooltip, setTooltip] = useState<{ x: number, y: number, mission: Mission, factionName: string } | null>(null);
 
   const [hulkLocation, setHulkLocation] = useState<[number, number]>([-98.5, 39.8]); 
-  
-  // ESTADO PARA SURFER
   const [surferLocation, setSurferLocation] = useState<[number, number] | null>(null);
 
   const hulkSequenceRef = useRef<{ active: boolean, remainingJumps: number }>({ active: false, remainingJumps: 0 });
@@ -70,10 +68,12 @@ export const USAMap: React.FC<USAMapProps> = ({
       return id;
   };
 
+  // Reiniciar tokens al cambiar de etapa
   useEffect(() => {
       if (worldStage === 'SURFER') {
           setTokensReleased(false);
-          addTimeout(() => setTokensReleased(true), 5000);
+          // Pequeña pausa dramática antes de soltar los tokens
+          addTimeout(() => setTokensReleased(true), 1000);
       } else {
           setTokensReleased(true);
       }
@@ -83,6 +83,7 @@ export const USAMap: React.FC<USAMapProps> = ({
       };
   }, [worldStage]);
 
+  // Carga de datos TopoJSON
   useEffect(() => {
     const loadData = async () => {
       try {
@@ -99,6 +100,7 @@ export const USAMap: React.FC<USAMapProps> = ({
     loadData();
   }, []);
 
+  // Resize Observer
   useEffect(() => {
     if (!containerRef.current) return;
     const observer = new ResizeObserver(entries => {
@@ -111,6 +113,7 @@ export const USAMap: React.FC<USAMapProps> = ({
     return () => observer.disconnect();
   }, []);
 
+  // Proyección D3
   const { projection, pathGenerator } = useMemo(() => {
       if (!usData || !usData.objects || !usData.objects.states || dimensions.width === 0 || dimensions.height === 0) {
           return { projection: null, pathGenerator: null };
@@ -153,14 +156,18 @@ export const USAMap: React.FC<USAMapProps> = ({
       return { coreColor, factionColor, glowId };
   };
 
-  // --- LÓGICA DE HULK (MOVIMIENTO) ---
+  // --- LÓGICA DE HULK (MOVIMIENTO CONTINUO) ---
   useEffect(() => {
       if (!tokensReleased || !usData || !pathGenerator || !projection) return;
+      
+      // Limpieza de seguridad para evitar que se congele
+      hulkSequenceRef.current.active = false;
+
       const getDistance = (a: [number, number], b: [number, number]) => Math.sqrt(Math.pow(a[0] - b[0], 2) + Math.pow(a[1] - b[1], 2));
 
       const executeHulkLogic = () => {
           if (hulkSequenceRef.current.active) return;
-          const jumpsToDo = Math.floor(Math.random() * 3) + 1;
+          const jumpsToDo = Math.floor(Math.random() * 2) + 1; // 1 o 2 saltos
           hulkSequenceRef.current = { active: true, remainingJumps: jumpsToDo };
           performJumpStep();
       };
@@ -182,30 +189,47 @@ export const USAMap: React.FC<USAMapProps> = ({
                   }
               });
               candidates.sort((a, b) => a.dist - b.dist);
+              // Elegir entre los 4 más cercanos para que no salte de punta a punta siempre
               const poolSize = Math.min(candidates.length, 4);
+              
               if (poolSize > 0) {
                   const randomIndex = Math.floor(Math.random() * poolSize);
                   setHulkLocation(candidates[randomIndex].coords);
+                  
                   hulkSequenceRef.current.remainingJumps -= 1;
-                  if (hulkSequenceRef.current.remainingJumps > 0) addTimeout(performJumpStep, 2500); 
-                  else addTimeout(() => { hulkSequenceRef.current.active = false; executeHulkLogic(); }, 10000);
+                  
+                  if (hulkSequenceRef.current.remainingJumps > 0) {
+                      addTimeout(performJumpStep, 3000); 
+                  } else {
+                      addTimeout(() => { 
+                          hulkSequenceRef.current.active = false; 
+                          executeHulkLogic(); 
+                      }, 8000); // Espera 8s antes de la siguiente secuencia
+                  }
               } else {
-                  addTimeout(() => { hulkSequenceRef.current.active = false; executeHulkLogic(); }, 5000);
+                  // Si no hay candidatos, reintentar pronto
+                  addTimeout(() => { 
+                      hulkSequenceRef.current.active = false; 
+                      executeHulkLogic(); 
+                  }, 4000);
               }
           }
       };
+      
       const initialTimer = addTimeout(executeHulkLogic, 2000);
-      return () => clearTimeout(initialTimer);
+      return () => {
+          clearTimeout(initialTimer);
+          hulkSequenceRef.current.active = false; // Reset crítico
+      };
   }, [tokensReleased, usData, pathGenerator, projection, factionStates, hulkLocation]);
 
-  // --- LÓGICA DE SILVER SURFER (NUEVA) ---
+  // --- LÓGICA DE SILVER SURFER (SECUENCIA CINEMÁTICA) ---
   useEffect(() => {
       if (worldStage !== 'SURFER' || !usData || !pathGenerator || !projection) {
           setSurferLocation(null);
           return;
       }
 
-      // Función para obtener coordenadas aleatorias de un estado
       const getRandomStateCoords = () => {
           const statesFeatureCollection = feature(usData as any, usData!.objects.states as any) as any;
           const randomFeature = statesFeatureCollection.features[Math.floor(Math.random() * statesFeatureCollection.features.length)];
@@ -216,32 +240,32 @@ export const USAMap: React.FC<USAMapProps> = ({
           return [-98.5, 39.8] as [number, number];
       };
 
-      // LÓGICA DE SECUENCIA
       if (surferTurnCount === 0) {
           // FASE 1: ENTRADA -> IR A HULK
-          // Empezamos fuera del mapa (Pacífico)
           if (!surferLocation) {
-              setSurferLocation([-130, 50]); // Coordenada inicial fuera de pantalla
-              // Pequeño delay para que renderice y luego anime hacia Hulk
+              // Coordenada inicial muy lejos (Arriba a la izquierda, espacio)
+              setSurferLocation([-130, 60]); 
+              
+              // Iniciar el viaje hacia Hulk
               addTimeout(() => {
-                  setSurferLocation(hulkLocation); // Ir a donde está Hulk
-              }, 100);
+                  setSurferLocation(hulkLocation); 
+              }, 500);
           } else {
-              // Asegurar que sigue a Hulk si Hulk se mueve en el turno 0
+              // Si ya entró, perseguir a Hulk si este se mueve
               setSurferLocation(hulkLocation);
           }
       } else if (surferTurnCount > 0 && surferTurnCount <= 2) {
           // FASE 2: RECORRER EL MAPA (2 MISIONES)
-          // Solo cambiamos si la ubicación actual es la de Hulk o null
-          // (Esto es simplificado, idealmente chequearíamos si ya se movió este turno)
+          // Generamos una nueva ubicación aleatoria cada vez que cambia el turno
+          // Usamos un timeout pequeño para asegurar que el render detecte el cambio si las coords son similares
           const newCoords = getRandomStateCoords();
           setSurferLocation(newCoords);
       } else if (surferTurnCount > 2) {
-          // FASE 3: SALIDA (BUSCAR A GALACTUS)
-          setSurferLocation([-60, 30]); // Atlántico / Espacio
+          // FASE 3: SALIDA
+          setSurferLocation([-60, 20]); // Atlántico / Espacio
       }
 
-  }, [worldStage, surferTurnCount, usData, pathGenerator, projection]); // Dependencia clave: surferTurnCount
+  }, [worldStage, surferTurnCount, usData, pathGenerator, projection]); // Dependencias clave
 
   // --- RENDERIZADO D3 ---
   useEffect(() => {
@@ -249,11 +273,11 @@ export const USAMap: React.FC<USAMapProps> = ({
 
     const svg = d3.select(svgRef.current);
     
+    // Inicialización de capas (solo una vez)
     if (svg.select('g.layer-map').empty()) {
         svg.selectAll('*').remove();
         const defs = svg.append("defs");
         
-        // Filtros de brillo
         const createGlowFilter = (id: string, color: string) => {
             const filter = defs.append("filter").attr("id", id).attr("x", "-50%").attr("y", "-50%").attr("width", "200%").attr("height", "200%");
             filter.append("feGaussianBlur").attr("stdDeviation", "3").attr("result", "coloredBlur");
@@ -270,7 +294,7 @@ export const USAMap: React.FC<USAMapProps> = ({
         createGlowFilter("glow-neutral", "#fbbf24");
         createGlowFilter("glow-boss", "#9333ea");
         createGlowFilter("glow-shield", "#3b82f6");
-        createGlowFilter("glow-surfer", "#e2e8f0"); // NUEVO GLOW PLATEADO
+        createGlowFilter("glow-surfer", "#e2e8f0");
 
         defs.append("clipPath").attr("id", "bunker-clip").append("circle").attr("cx", 0).attr("cy", 0).attr("r", 12);
         
@@ -285,7 +309,6 @@ export const USAMap: React.FC<USAMapProps> = ({
             gMain.attr('transform', event.transform.toString());
             const k = event.transform.k;
             
-            // Ajuste de escala para elementos
             svg.selectAll('.bunker').attr('transform', function() {
                  const coords = d3.select(this).attr('data-coords')?.split(',').map(Number) || [0,0];
                  return `translate(${coords[0]},${coords[1]}) scale(${1/k})`;
@@ -304,7 +327,6 @@ export const USAMap: React.FC<USAMapProps> = ({
                 svg.selectAll('.mission-dot').style('display', 'block').attr('transform', `scale(${1/Math.sqrt(k)})`);
             }
             
-            // Escalar tokens (Hulk y Surfer)
             svg.selectAll('.token-group').each(function() {
                 const sel = d3.select(this);
                 const transform = sel.attr('transform');
@@ -323,7 +345,7 @@ export const USAMap: React.FC<USAMapProps> = ({
     const gMap = gMapRef.current;
     if (!gMap) return;
 
-    // ... (Renderizado de estados y etiquetas se mantiene igual) ...
+    // Renderizado de Estados (Mapa Base)
     const statesFeatureCollection = feature(usData as any, usData.objects.states as any) as any;
     const statesFeatures = statesFeatureCollection.features;
 
@@ -354,7 +376,6 @@ export const USAMap: React.FC<USAMapProps> = ({
           svg.transition().duration(750).call(svg.zoom().transform, d3.zoomIdentity.translate(translate[0], translate[1]).scale(scale));
       });
 
-    // ... (Renderizado de etiquetas y radar se mantiene igual) ...
     gMap.selectAll('text.label')
       .data(statesFeatures)
       .join('text')
@@ -372,7 +393,6 @@ export const USAMap: React.FC<USAMapProps> = ({
       .text((d: any) => d.properties.name ? d.properties.name.toUpperCase() : '')
       .raise();
 
-    // ... (Bunker render se mantiene igual) ...
     const bunkerCoords = projection([-82.9, 40.0]);
     if (bunkerCoords && gMap.select('.bunker').empty()) {
         const bunkerGroup = gMap.append('g')
@@ -389,7 +409,7 @@ export const USAMap: React.FC<USAMapProps> = ({
 
   }, [usData, dimensions, projection, pathGenerator, factionStates]); 
 
-  // --- RENDERIZADO DE TOKENS (HULK Y SURFER) ---
+  // --- RENDERIZADO DE TOKENS Y MISIONES ---
   useEffect(() => {
       if (!projection || !gMissionsRef.current || !gTokensRef.current || !svgRef.current) return;
       
@@ -397,7 +417,7 @@ export const USAMap: React.FC<USAMapProps> = ({
       const gTokens = gTokensRef.current;
       const currentZoom = d3.zoomTransform(svgRef.current).k || 1;
 
-      // ... (Renderizado de misiones se mantiene igual) ...
+      // ... (Renderizado de misiones estándar) ...
       const validMissions = missions.filter(m => m && m.id && m.location && m.location.coordinates);
       const connections: { source: string, target: string }[] = [];
       validMissions.forEach(m => {
@@ -492,98 +512,106 @@ export const USAMap: React.FC<USAMapProps> = ({
         .style('display', currentZoom < 2.5 ? 'none' : 'block')
         .attr('transform', `scale(${1/currentZoom * 2})`);
 
+      // --- CÁLCULO DE COLISIÓN VISUAL ---
+      let hulkRenderCoords = projection(hulkLocation);
+      let surferRenderCoords = surferLocation ? projection(surferLocation) : null;
+
+      if (hulkRenderCoords && surferRenderCoords) {
+          const dist = Math.sqrt(Math.pow(hulkRenderCoords[0] - surferRenderCoords[0], 2) + Math.pow(hulkRenderCoords[1] - surferRenderCoords[1], 2));
+          
+          // Si están muy cerca (mismo estado), los separamos visualmente
+          if (dist < 15) {
+              hulkRenderCoords = [hulkRenderCoords[0] - 12, hulkRenderCoords[1]];
+              surferRenderCoords = [surferRenderCoords[0] + 12, surferRenderCoords[1]];
+          }
+      }
+
       // --- RENDERIZADO DE HULK ---
-      if (tokensReleased) {
-          const hulkCoords = projection(hulkLocation);
-          if (hulkCoords) {
-              let hulkGroup = gTokens.select('.hulk-token');
-              if (hulkGroup.empty()) {
-                  hulkGroup = gTokens.append('g').attr('class', 'token-group hulk-token cursor-pointer').attr('transform', `translate(${hulkCoords[0]}, ${hulkCoords[1]}) scale(${1/currentZoom})`);
-                  hulkGroup.append('circle').attr('r', 15).attr('fill', '#65a30d').attr('stroke', '#365314').attr('stroke-width', 2).style('filter', 'url(#glow-hulk)');
-                  hulkGroup.append('text').text('HULK').attr('dy', 4).attr('text-anchor', 'middle').attr('font-size', '8px').attr('font-weight', 'bold').attr('fill', 'white');
+      if (tokensReleased && hulkRenderCoords) {
+          let hulkGroup = gTokens.select('.hulk-token');
+          if (hulkGroup.empty()) {
+              hulkGroup = gTokens.append('g').attr('class', 'token-group hulk-token cursor-pointer').attr('transform', `translate(${hulkRenderCoords[0]}, ${hulkRenderCoords[1]}) scale(${1/currentZoom})`);
+              hulkGroup.append('circle').attr('r', 15).attr('fill', '#65a30d').attr('stroke', '#365314').attr('stroke-width', 2).style('filter', 'url(#glow-hulk)');
+              hulkGroup.append('text').text('HULK').attr('dy', 4).attr('text-anchor', 'middle').attr('font-size', '8px').attr('font-weight', 'bold').attr('fill', 'white');
+          } else {
+              const currentTransform = hulkGroup.attr('transform');
+              const currentCoords = currentTransform.match(/translate\(([^)]+)\)/);
+              const [oldX, oldY] = currentCoords ? currentCoords[1].split(',').map(Number) : [0,0];
+              const dist = Math.sqrt(Math.pow(hulkRenderCoords[0] - oldX, 2) + Math.pow(hulkRenderCoords[1] - oldY, 2));
+              
+              if (dist > 10) { 
+                  const iX = d3.interpolateNumber(oldX, hulkRenderCoords[0]);
+                  const iY = d3.interpolateNumber(oldY, hulkRenderCoords[1]);
+                  const baseScale = 1/currentZoom;
+                  hulkGroup.transition().duration(2000).ease(d3.easeQuadInOut).attrTween("transform", function() {
+                          return function(t) {
+                              const x = iX(t);
+                              const y = iY(t);
+                              const jumpHeight = Math.sin(t * Math.PI) * 2; 
+                              const currentScale = baseScale * (1 + jumpHeight);
+                              return `translate(${x},${y}) scale(${currentScale})`;
+                          };
+                      })
+                      .on("end", function() {
+                          d3.select(this).attr('transform', `translate(${hulkRenderCoords![0]}, ${hulkRenderCoords![1]}) scale(${baseScale})`);
+                          d3.select(this).append("circle").attr("r", 15).attr("fill", "none").attr("stroke", "#65a30d").attr("stroke-width", 3).attr("opacity", 1).transition().duration(600).attr("r", 60).attr("opacity", 0).remove();
+                      });
               } else {
-                  const currentTransform = hulkGroup.attr('transform');
-                  const currentCoords = currentTransform.match(/translate\(([^)]+)\)/);
-                  const [oldX, oldY] = currentCoords ? currentCoords[1].split(',').map(Number) : [0,0];
-                  const dist = Math.sqrt(Math.pow(hulkCoords[0] - oldX, 2) + Math.pow(hulkCoords[1] - oldY, 2));
-                  if (dist > 10) { 
-                      const iX = d3.interpolateNumber(oldX, hulkCoords[0]);
-                      const iY = d3.interpolateNumber(oldY, hulkCoords[1]);
-                      const baseScale = 1/currentZoom;
-                      hulkGroup.transition().duration(2000).ease(d3.easeQuadInOut).attrTween("transform", function() {
-                              return function(t) {
-                                  const x = iX(t);
-                                  const y = iY(t);
-                                  const jumpHeight = Math.sin(t * Math.PI) * 2; 
-                                  const currentScale = baseScale * (1 + jumpHeight);
-                                  return `translate(${x},${y}) scale(${currentScale})`;
-                              };
-                          })
-                          .on("end", function() {
-                              d3.select(this).attr('transform', `translate(${hulkCoords[0]}, ${hulkCoords[1]}) scale(${baseScale})`);
-                              d3.select(this).append("circle").attr("r", 15).attr("fill", "none").attr("stroke", "#65a30d").attr("stroke-width", 3).attr("opacity", 1).transition().duration(600).attr("r", 60).attr("opacity", 0).remove();
-                          });
-                  } else {
-                      hulkGroup.attr('transform', `translate(${hulkCoords[0]}, ${hulkCoords[1]}) scale(${1/currentZoom})`);
-                  }
+                  hulkGroup.attr('transform', `translate(${hulkRenderCoords[0]}, ${hulkRenderCoords[1]}) scale(${1/currentZoom})`);
               }
           }
       } else {
           gTokens.selectAll('.hulk-token').remove();
       }
 
-      // --- RENDERIZADO DE SILVER SURFER (NUEVO) ---
-      if (surferLocation) {
-          const surferCoords = projection(surferLocation);
-          if (surferCoords) {
-              let surferGroup = gTokens.select('.surfer-token');
-              if (surferGroup.empty()) {
-                  // Inicialización
-                  surferGroup = gTokens.append('g')
-                      .attr('class', 'token-group surfer-token cursor-pointer')
-                      .attr('transform', `translate(${surferCoords[0]}, ${surferCoords[1]}) scale(${1/currentZoom})`);
-                  
-                  // Diseño Plateado
-                  surferGroup.append('circle').attr('r', 12).attr('fill', '#e2e8f0').attr('stroke', '#94a3b8').attr('stroke-width', 2).style('filter', 'url(#glow-surfer)');
-                  surferGroup.append('text').text('SURFER').attr('dy', 4).attr('text-anchor', 'middle').attr('font-size', '6px').attr('font-weight', 'bold').attr('fill', '#1e293b');
-              } else {
-                  // Animación de movimiento
-                  const currentTransform = surferGroup.attr('transform');
-                  const currentCoords = currentTransform.match(/translate\(([^)]+)\)/);
-                  const [oldX, oldY] = currentCoords ? currentCoords[1].split(',').map(Number) : [0,0];
-                  
-                  const dist = Math.sqrt(Math.pow(surferCoords[0] - oldX, 2) + Math.pow(surferCoords[1] - oldY, 2));
-                  
-                  if (dist > 5) { 
-                      const iX = d3.interpolateNumber(oldX, surferCoords[0]);
-                      const iY = d3.interpolateNumber(oldY, surferCoords[1]);
-                      const baseScale = 1/currentZoom;
+      // --- RENDERIZADO DE SILVER SURFER ---
+      if (surferRenderCoords) {
+          let surferGroup = gTokens.select('.surfer-token');
+          if (surferGroup.empty()) {
+              surferGroup = gTokens.append('g')
+                  .attr('class', 'token-group surfer-token cursor-pointer')
+                  .attr('transform', `translate(${surferRenderCoords[0]}, ${surferRenderCoords[1]}) scale(${1/currentZoom})`);
+              
+              surferGroup.append('circle').attr('r', 12).attr('fill', '#e2e8f0').attr('stroke', '#94a3b8').attr('stroke-width', 2).style('filter', 'url(#glow-surfer)');
+              surferGroup.append('text').text('SURFER').attr('dy', 4).attr('text-anchor', 'middle').attr('font-size', '6px').attr('font-weight', 'bold').attr('fill', '#1e293b');
+          } else {
+              const currentTransform = surferGroup.attr('transform');
+              const currentCoords = currentTransform.match(/translate\(([^)]+)\)/);
+              const [oldX, oldY] = currentCoords ? currentCoords[1].split(',').map(Number) : [0,0];
+              
+              const dist = Math.sqrt(Math.pow(surferRenderCoords[0] - oldX, 2) + Math.pow(surferRenderCoords[1] - oldY, 2));
+              
+              if (dist > 5) { 
+                  const iX = d3.interpolateNumber(oldX, surferRenderCoords[0]);
+                  const iY = d3.interpolateNumber(oldY, surferRenderCoords[1]);
+                  const baseScale = 1/currentZoom;
 
-                      surferGroup.transition()
-                          .duration(3000) // Movimiento más lento y majestuoso
-                          .ease(d3.easeCubicInOut)
-                          .attrTween("transform", function() {
-                              return function(t) {
-                                  const x = iX(t);
-                                  const y = iY(t);
-                                  return `translate(${x},${y}) scale(${baseScale})`;
-                              };
-                          })
-                          .on("end", function() {
-                              d3.select(this).attr('transform', `translate(${surferCoords[0]}, ${surferCoords[1]}) scale(${baseScale})`);
-                          });
-                  } else {
-                      surferGroup.attr('transform', `translate(${surferCoords[0]}, ${surferCoords[1]}) scale(${1/currentZoom})`);
-                  }
+                  // Si la distancia es muy grande (entrada inicial), hacemos la animación más lenta
+                  const duration = dist > 200 ? 5000 : 3000;
+
+                  surferGroup.transition()
+                      .duration(duration)
+                      .ease(d3.easeCubicInOut)
+                      .attrTween("transform", function() {
+                          return function(t) {
+                              const x = iX(t);
+                              const y = iY(t);
+                              return `translate(${x},${y}) scale(${baseScale})`;
+                          };
+                      })
+                      .on("end", function() {
+                          d3.select(this).attr('transform', `translate(${surferRenderCoords![0]}, ${surferRenderCoords![1]}) scale(${baseScale})`);
+                      });
+              } else {
+                  surferGroup.attr('transform', `translate(${surferRenderCoords[0]}, ${surferRenderCoords[1]}) scale(${1/currentZoom})`);
               }
           }
       } else {
           gTokens.selectAll('.surfer-token').remove();
       }
 
-  }, [missions, completedMissionIds, worldStage, tokensReleased, projection, hulkLocation, surferLocation]); // Añadido surferLocation
+  }, [missions, completedMissionIds, worldStage, tokensReleased, projection, hulkLocation, surferLocation]);
 
-  // ... (Resto del componente igual) ...
   if (loading) return <div ref={containerRef} className="flex flex-col items-center justify-center w-full h-full text-cyan-500 font-mono"><div className="animate-spin text-4xl">✇</div><div>{t.map.loading}</div></div>;
   if (error) return <div ref={containerRef} className="flex flex-col items-center justify-center w-full h-full text-red-500 font-mono border border-red-900 bg-red-900/20 p-4"><div className="text-2xl mb-2">⚠ SYSTEM FAILURE</div><div className="text-xs">{error}</div></div>;
 
