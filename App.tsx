@@ -17,8 +17,10 @@ import { EventModal } from './components/EventModal';
 import { MissionEditor } from './components/MissionEditor';
 import { CharacterEditor } from './components/CharacterEditor';
 import { NewsTicker } from './components/NewsTicker';
+import { ExpansionSelector } from './components/ExpansionSelector';
 
 import { Mission, Hero, WorldStage, GlobalEvent, HeroTemplate } from './types';
+import { GAME_EXPANSIONS } from './data/gameContent';
 
 // --- DEFINICIÓN DE LA MISIÓN 0 (GLOBAL) ---
 const MISSION_ZERO: Mission = {
@@ -56,136 +58,13 @@ const getFactionForState = (state: string) => {
     return 'neutral';
 };
 
-const INITIAL_HEROES: Hero[] = [
-    {
-        id: 'h1', templateId: 'spiderman', name: 'Peter Parker', alias: 'SPIDER-MAN', status: 'AVAILABLE', class: 'SCOUT',
-        bio: 'Former Avenger. High agility and spider-sense make him an ideal scout for infected zones.',
-        currentStory: "Peter no hace chistes. La máscara está sucia y huele a sangre seca. El día del brote, Peter tuvo que tomar una decisión en fracciones de segundo: detener un camión cisterna fuera de control o llegar a casa de Tía May. Salvó el camión. Cuando llegó a Queens, la casa estaba en silencio. Encontró a May sentada en su sillón, ya transformada. Peter no pudo matarla; la envolvió en una crisálida de telaraña reforzada y selló la puerta. Ella sigue allí. De MJ solo tiene un rastro digital. Le regaló un reloj con rastreador de Stark Industries. La señal sigue activa en los túneles del metro.",
-        objectives: ['El Fantasma de Queens: Peter debe volver a su casa y enfrentarse a lo que queda de Tía May.', 'Rastro Fantasma: Triangular la señal del reloj Stark en los túneles del metro.'],
-        completedObjectiveIndices: [], imageUrl: 'https://i.pinimg.com/736x/97/f1/96/97f1965bf162c5eb2f7aa8cb4be4bf97.jpg',
-        characterSheetUrl: 'https://i.pinimg.com/736x/c2/61/0a/c2610afec3022fc70a882e1452e167b8.jpg', stats: { strength: 8, agility: 10, intellect: 9 }, assignedMissionId: null
-    },
-    {
-        id: 'h2', templateId: 'sabretooth', name: 'Victor Creed', alias: 'SABRETOOTH', status: 'AVAILABLE', class: 'BRAWLER',
-        bio: 'Driven by pure predatory instinct. S.H.I.E.L.D. keeps him on a short leash.',
-        currentStory: "Víctor Creed fue el primer experimento. Antes de capturar a Banner, la Tríada necesitaba probar la resistencia del tejido al virus. Capturaron a Creed y lo ataron en el \"Laboratorio X\". Lo infectaban, esperaban a que la carne se pudriera, y luego cortaban los trozos podridos mientras su factor de curación regeneraba tejido nuevo. Escapó el día que Hulk estalló. Ahora, su factor de curación está sobrecargado, luchando perpetuamente contra residuos del virus.",
-        objectives: ['Venganza en Frío: Localizar y destruir el "Laboratorio X".', 'Cosecha Sangrienta: Eliminar a los científicos responsables.'],
-        completedObjectiveIndices: [], imageUrl: 'https://i.pinimg.com/736x/31/eb/4c/31eb4c0f0dba5c96c80da093a4d83a50.jpg',
-        characterSheetUrl: 'https://i.pinimg.com/736x/c3/07/13/c307131f0f570d9768fd017eae400a39.jpg', stats: { strength: 9, agility: 7, intellect: 4 }, assignedMissionId: null
-    },
-    {
-        id: 'h3', templateId: 'blackwidow', name: 'Natasha Romanoff', alias: 'BLACK WIDOW', status: 'AVAILABLE', class: 'SCOUT',
-        bio: 'Expert spy and assassin. Her skills are crucial for infiltration missions.',
-        currentStory: "Natasha no es una víctima. Ella fue quien colocó los explosivos en la carretera para volcar el transporte de la Tríada. Ha pasado meses rastreando prisioneros útiles para formar la Iniciativa Lázaro. S.H.I.E.L.D. cayó, pero Natasha sobrevivió. Su frialdad es una armadura. Sin embargo, ha interceptado una señal analógica, un código Morse antiguo que solo dos personas conocen. Clint Barton (Hawkeye) está vivo, retenido por Kingpin.",
-        objectives: ['Código Morse: Triangular la señal analógica de Clint Barton.', 'Extracción Letal: Infiltrarse en la torre de Kingpin y extraer a Hawkeye.'],
-        completedObjectiveIndices: [], imageUrl: 'https://i.pinimg.com/736x/a5/8f/e9/a58fe99516a31f494c1d4dcb22231c46.jpg',
-        characterSheetUrl: 'https://i.pinimg.com/736x/13/4c/e4/134ce4e1ef6112ad48a0883e1c5e4f23.jpg', stats: { strength: 5, agility: 9, intellect: 8 }, assignedMissionId: null
-    },
-    {
-        id: 'h4', templateId: 'emmafrost', name: 'Emma Frost', alias: 'WHITE QUEEN', status: 'AVAILABLE', class: 'TACTICIAN',
-        bio: 'Telépata de clase Omega. Su piel de diamante la hace inmune a las mordeduras.',
-        currentStory: "Emma estaba dando clase cuando la infección brotó. Fueron sus 'Cucos'. La mente colmena de las niñas se infectó al unísono. Emma tuvo que adoptar su forma de diamante un segundo antes de que los dientes de Sophie rompieran su garganta. Tuvo que romperles el cuello, una a una, mientras sus mentes moribundas le transmitían telepáticamente la imagen de cómo sabría el cerebro de su propia 'madre'. Emma no ha vuelto a su forma humana desde entonces.",
-        objectives: ['Santuario de Cristal: Establecer un perímetro psíquico seguro en Genosha.', 'El Destino de Scott: Localizar a Cyclops.'],
-        completedObjectiveIndices: [], imageUrl: 'https://i.pinimg.com/736x/36/73/8b/36738b0e8995b32aafd5493f0174807f.jpg',
-        characterSheetUrl: 'https://i.pinimg.com/736x/8d/60/a3/8d60a340788644365735165842813583.jpg', stats: { strength: 4, agility: 5, intellect: 10 }, assignedMissionId: null
-    },
-    {
-        id: 'h5', templateId: 'reed', name: 'Reed Richards', alias: 'MR. FANTASTIC', status: 'AVAILABLE', class: 'TACTICIAN',
-        bio: 'The smartest man alive, struggling to find a cure.',
-        currentStory: "Reed no habla de ese día. La horda irrumpió en el Edificio Baxter. Johnny Storm se lanzó con una 'Supernova' desesperada. Ben Grimm no huyó. Sue Storm empujó a Reed y a los niños a la cámara de estasis y selló el acceso con un campo de fuerza desde fuera. Reed, impotente, vio por última vez a Sue mientras su figura se volvía invisible entre los infectados. Sin cuerpos confirmados, Reed vive en una tortura constante.",
-        objectives: ['Cero Absoluto: Recuperar núcleos de criogenización.', 'Informe de Bajas: Localizar a Sue, Johnny y Ben.'],
-        completedObjectiveIndices: [], imageUrl: 'https://i.pinimg.com/736x/58/3c/d3/583cd39457c96e1858ecfbab1db06cce.jpg',
-        characterSheetUrl: 'https://i.pinimg.com/736x/b8/33/d5/b833d599d8b2049ff72014182c1d98ea.jpg', stats: { strength: 5, agility: 6, intellect: 10 }, assignedMissionId: null
-    },
-    {
-        id: 'h6', templateId: 'shehulk', name: 'Jennifer Walters', alias: 'SHE-HULK', status: 'AVAILABLE', class: 'BRAWLER',
-        bio: 'A lawyer who can lift a tank. Retains her intelligence while transformed.',
-        currentStory: "Jennifer intentó detenerlos legalmente, pero la Tríada secuestró a Bruce. Lo querían como cobaya. Jennifer asaltó el laboratorio, pero llegó tarde. Vio el momento exacto en que le inyectaron el virus y cómo la sangre Gamma reaccionó. Ella sobrevivió a la explosión gracias a su piel; Bruce se convirtió en el Monstruo Infinito. Ahora Jennifer sabe que el Apocalipsis tiene nombres y apellidos.",
-        objectives: ['Juicio Sumario: Eliminar a los lugartenientes clave.', 'Paz Gamma: Localizar a Hulk y neutralizarlo.'],
-        completedObjectiveIndices: [], imageUrl: 'https://i.pinimg.com/736x/bb/2a/f6/bb2af63dbdbf782daf9af337915489c0.jpg',
-        characterSheetUrl: 'https://i.pinimg.com/736x/c4/e0/c2/c4e0c25246a050d9cd276228ccb3f8ba.jpg', stats: { strength: 10, agility: 5, intellect: 7 }, assignedMissionId: null
-    }
-];
-
-const INITIAL_ZOMBIE_HEROES: Hero[] = [
-    {
-        id: 'z_cap', templateId: 'Captain_America', name: 'Steve Rogers', alias: 'Captain America', status: 'AVAILABLE', class: 'TACTICIAN',
-        bio: 'El antiguo símbolo de la libertad, ahora con el cráneo expuesto.',
-        currentStory: "Steve ya no siente lealtad a la bandera, solo al Hambre. Mantiene su intelecto táctico intacto.",
-        objectives: ["Consumir cerebros estratégicos", "Liderar la Horda"], completedObjectiveIndices: [],
-        imageUrl: 'https://i.pinimg.com/736x/be/82/49/be8249c6a34eb0a40c3429cca8504bab.jpg', stats: { strength: 8, agility: 8, intellect: 8 }, assignedMissionId: null
-    },
-    {
-        id: 'z_marvel', templateId: 'cap_marvel_z', name: 'Carol Danvers', alias: 'CAPTAIN MARVEL', status: 'AVAILABLE', class: 'BLASTER',
-        bio: 'Poder cósmico corrompido.',
-        currentStory: "Carol es la artillería pesada. Disfruta cazando presas en vuelo.",
-        objectives: ["Derribar el Helicarrier", "Cazar supervivientes aéreos"], completedObjectiveIndices: [],
-        imageUrl: 'https://i.pinimg.com/736x/b2/89/d4/b289d415b0b846ffc85a7956d576915b.jpg', stats: { strength: 10, agility: 8, intellect: 6 }, assignedMissionId: null
-    },
-    {
-        id: 'z_deadpool', templateId: 'deadpool_z', name: 'Wade Wilson', alias: 'DEADPOOL', status: 'AVAILABLE', class: 'BRAWLER',
-        bio: 'El mercenario que muerde.',
-        currentStory: "Wade piensa que todo esto es una broma muy larga.",
-        objectives: ["Encontrar salsa picante", "Hacer amigos (y comerlos)"], completedObjectiveIndices: [],
-        imageUrl: 'https://i.pinimg.com/736x/26/e3/38/26e3385c44cd7c8023c1ddf62d3d954a.jpg', stats: { strength: 7, agility: 9, intellect: 4 }, assignedMissionId: null
-    },
-    {
-        id: 'z_ironman', templateId: 'ironman_z', name: 'Tony Stark', alias: 'IRON MAN', status: 'AVAILABLE', class: 'TACTICIAN',
-        bio: 'Tecnología punta al servicio del canibalismo.',
-        currentStory: "Tony está obsesionado con encontrar una cura... para el hecho de que la carne se acaba.",
-        objectives: ["Reparar armadura con huesos", "Optimizar la cosecha"], completedObjectiveIndices: [],
-        imageUrl: 'https://i.pinimg.com/736x/3a/ad/5b/3aad5b8a9b89b928e33bd8e71a047de1.jpg', stats: { strength: 7, agility: 7, intellect: 10 }, assignedMissionId: null
-    },
-    {
-        id: 'z_wasp', templateId: 'wasp_z', name: 'Janet Van Dyne', alias: 'WASP', status: 'AVAILABLE', class: 'SCOUT',
-        bio: 'Pequeña, rápida y letal.',
-        currentStory: "Janet perdió la cabeza cuando Hank Pym fue devorado (por ella).",
-        objectives: ["Infiltración microscópica", "Enjambre"], completedObjectiveIndices: [],
-        imageUrl: 'https://i.pinimg.com/736x/5c/e8/83/5ce883dd3030f0b7f85a847bcaf47486.jpg', stats: { strength: 4, agility: 10, intellect: 6 }, assignedMissionId: null
-    },
-    {
-        id: 'z_cyclops', templateId: 'cyclops_z', name: 'Scott Summers', alias: 'CYCLOPS', status: 'AVAILABLE', class: 'BLASTER',
-        bio: 'Sin su visor, sus ojos podridos disparan energía incontrolable.',
-        currentStory: "Scott se comió a Jean. Es lo único que recuerda.",
-        objectives: ["Liderar mutantes caídos", "Visión letal"], completedObjectiveIndices: [],
-        imageUrl: 'https://i.pinimg.com/736x/c0/b5/d5/c0b5d511f39d428725dd24e5d883a548.jpg', stats: { strength: 6, agility: 7, intellect: 9 }, assignedMissionId: null
-    },
-    {
-        id: 'z_phoenix', templateId: 'phoenix_z', name: 'Jean Grey', alias: 'DARK PHOENIX', status: 'AVAILABLE', class: 'BLASTER',
-        bio: 'Nivel Omega. El Fénix y el Hambre se han fusionado.',
-        currentStory: "La entidad Fénix está agonizando dentro del cuerpo podrido de Jean.",
-        objectives: ["Consumir estrellas", "Quemar la resistencia"], completedObjectiveIndices: [],
-        imageUrl: 'https://i.pinimg.com/736x/77/26/00/772600dfc2f3599608a19f4618aedcb8.jpg', stats: { strength: 10, agility: 7, intellect: 8 }, assignedMissionId: null
-    },
-    {
-        id: 'z_iceman', templateId: 'iceman_z', name: 'Bobby Drake', alias: 'ICEMAN', status: 'AVAILABLE', class: 'BLASTER',
-        bio: 'Su hielo ya no es transparente, es turbio y está lleno de sangre.',
-        currentStory: "Bobby ha perdido su humor. Es una estatua de hielo necrótico.",
-        objectives: ["Congelar suministros", "Cero absoluto"], completedObjectiveIndices: [],
-        imageUrl: 'https://i.pinimg.com/736x/e6/bf/cb/e6bfcb7bc171610a028f1f2bbda38e29.jpg', stats: { strength: 6, agility: 8, intellect: 5 }, assignedMissionId: null
-    },
-    {
-        id: 'z_juggernaut', templateId: 'juggernaut_z', name: 'Cain Marko', alias: 'JUGGERNAUT', status: 'AVAILABLE', class: 'BRAWLER',
-        bio: 'Imparable. Inmortal. Hambriento.',
-        currentStory: "La gema de Cyttorak lo mantiene vivo a pesar de que le falta la mitad del torso.",
-        objectives: ["Aplastar defensas", "Carga imparable"], completedObjectiveIndices: [],
-        imageUrl: 'https://i.pinimg.com/736x/ec/e9/87/ece98736e0cca78734ed0d4a29e222b1.jpg', stats: { strength: 10, agility: 4, intellect: 3 }, assignedMissionId: null
-    },
-    {
-        id: 'z_psylocke', templateId: 'psylocke_z', name: 'Betsy Braddock', alias: 'PSYLOCKE', status: 'AVAILABLE', class: 'SCOUT',
-        bio: 'Su cuchillo psíquico ahora induce el dolor de ser devorado vivo.',
-        currentStory: "Betsy usa su telepatía para atraer a los supervivientes.",
-        objectives: ["Trampa mental", "Asesinato psíquico"], completedObjectiveIndices: [],
-        imageUrl: 'https://i.pinimg.com/736x/3d/04/bd/3d04bd41a1f395cf2bf4324729734f1e.jpg', stats: { strength: 6, agility: 9, intellect: 7 }, assignedMissionId: null
-    }
-];
-
 const App: React.FC = () => {
     const [user, setUser] = useState<User | null>(null);
     const [loading, setLoading] = useState(true);
     const [loadingAuth, setLoadingAuth] = useState(true);
     const [lang, setLang] = useState<Language>('es');
-    const [viewMode, setViewMode] = useState<'login' | 'story' | 'intro' | 'mission0' | 'tutorial' | 'map' | 'bunker'>('login');
+    
+    const [viewMode, setViewMode] = useState<'login' | 'story' | 'setup' | 'intro' | 'mission0' | 'tutorial' | 'map' | 'bunker'>('login');
     
     const [playerAlignment, setPlayerAlignment] = useState<'ALIVE' | 'ZOMBIE' | null>(null);
     const [heroes, setHeroes] = useState<Hero[]>([]);
@@ -198,9 +77,10 @@ const App: React.FC = () => {
     const [isSaving, setIsSaving] = useState(false);
     
     const [tickerMessage, setTickerMessage] = useState<string | null>(null);
-    
-    // NUEVO ESTADO: Contador de turnos de Silver Surfer
     const [surferTurnCount, setSurferTurnCount] = useState(0);
+    
+    // NUEVO ESTADO: Controla si la historia empieza por el final (elección)
+    const [startStoryAtChoice, setStartStoryAtChoice] = useState(false);
     
     const isDataLoadedRef = useRef(false);
     
@@ -238,6 +118,7 @@ const App: React.FC = () => {
                 const hasSeenIntro = localStorage.getItem(`shield_intro_seen_${currentUser.uid}`);
                 if (!hasSeenIntro) {
                     setShowStory(true);
+                    setStartStoryAtChoice(false); // Empezar historia desde el principio
                     setViewMode('story');
                 } else {
                     setViewMode('map');
@@ -257,7 +138,10 @@ const App: React.FC = () => {
         setShowStory(false);
         setShowTutorial(false);
         setViewMode('map');
-        setHeroes(INITIAL_HEROES);
+        
+        const core = GAME_EXPANSIONS.find(e => e.id === 'core_box');
+        setHeroes(core ? core.heroes : []);
+        
         setCompletedMissionIds(new Set());
         setOmegaCylinders(99); 
         setWorldStage('NORMAL');
@@ -266,9 +150,20 @@ const App: React.FC = () => {
 
     const handleGuestLogin = () => {
         setIsGuest(true);
-        setPlayerAlignment('ALIVE');
+        setPlayerAlignment('ALIVE'); 
         setShowStory(true);
+        setStartStoryAtChoice(false); // Empezar historia desde el principio
         setViewMode('story');
+    };
+
+    const handleExpansionConfirm = (selectedHeroes: Hero[]) => {
+        if (!playerAlignment) return;
+
+        setHeroes(selectedHeroes);
+        
+        if(user) localStorage.setItem(`shield_intro_seen_${user.uid}`, 'true');
+        
+        setViewMode('intro');
     };
 
     const handleLogout = async () => {
@@ -283,9 +178,12 @@ const App: React.FC = () => {
     const toggleDimension = () => {
         const newAlignment = playerAlignment === 'ALIVE' ? 'ZOMBIE' : 'ALIVE';
         setPlayerAlignment(newAlignment);
-        if (isEditorMode) {
-            setHeroes(newAlignment === 'ZOMBIE' ? INITIAL_ZOMBIE_HEROES : INITIAL_HEROES);
+        
+        const core = GAME_EXPANSIONS.find(e => e.id === 'core_box');
+        if (core) {
+            setHeroes(newAlignment === 'ZOMBIE' ? core.zombieHeroes : core.heroes);
         }
+        
         setViewMode('map');
     };
 
@@ -306,8 +204,16 @@ const App: React.FC = () => {
         handleTickerUpdate(`SUJETO ${currentHero.alias} ${actionText} - BASE DE DATOS ACTUALIZADA`);
 
         const normalize = (str: string) => str ? str.replace(/['"]/g, '').trim().toLowerCase() : '';
-        const hardcodedTargetList = targetAlignment === 'ALIVE' ? INITIAL_HEROES : INITIAL_ZOMBIE_HEROES;
-        let counterpart: any = hardcodedTargetList.find(h => normalize(h.alias) === normalize(currentHero.alias));
+        let counterpart: any = null;
+
+        for (const exp of GAME_EXPANSIONS) {
+            const targetList = targetAlignment === 'ALIVE' ? exp.heroes : exp.zombieHeroes;
+            const found = targetList.find(h => normalize(h.alias) === normalize(currentHero.alias));
+            if (found) {
+                counterpart = found;
+                break;
+            }
+        }
 
         if (!counterpart) {
             const dbCounterpart = dbTemplates.find(t => 
@@ -367,9 +273,15 @@ const App: React.FC = () => {
     };
 
     const mergeWithLatestContent = (savedHeroes: Hero[], isZombie: boolean, templates: HeroTemplate[]): Hero[] => {
-        const baseList = isZombie ? INITIAL_ZOMBIE_HEROES : INITIAL_HEROES;
         return savedHeroes.map(savedHero => {
-            const codeHero = baseList.find(h => (h.templateId && h.templateId === savedHero.templateId) || (h.alias === savedHero.alias));
+            let codeHero: Hero | undefined;
+            
+            for (const exp of GAME_EXPANSIONS) {
+                const list = isZombie ? exp.zombieHeroes : exp.heroes;
+                codeHero = list.find(h => (h.templateId && h.templateId === savedHero.templateId) || (h.alias === savedHero.alias));
+                if (codeHero) break;
+            }
+
             if (codeHero) {
                 return { ...savedHero, currentStory: codeHero.currentStory, objectives: codeHero.objectives, bio: codeHero.bio, imageUrl: codeHero.imageUrl, characterSheetUrl: codeHero.characterSheetUrl };
             }
@@ -428,13 +340,17 @@ const App: React.FC = () => {
                         setOmegaCylinders(profileCylinders);
                         checkGlobalEvents(new Set(profileMissions)); 
                     } else {
-                        setHeroes(playerAlignment === 'ZOMBIE' ? INITIAL_ZOMBIE_HEROES : INITIAL_HEROES);
+                        if (viewMode !== 'setup' && viewMode !== 'story') {
+                             const core = GAME_EXPANSIONS.find(e => e.id === 'core_box');
+                             if (core) setHeroes(playerAlignment === 'ZOMBIE' ? core.zombieHeroes : core.heroes);
+                        }
                         setCompletedMissionIds(new Set());
                         setOmegaCylinders(0);
                     }
                 } catch (e) {
                     console.error("Error loading data:", e);
-                    setHeroes(playerAlignment === 'ZOMBIE' ? INITIAL_ZOMBIE_HEROES : INITIAL_HEROES);
+                    const core = GAME_EXPANSIONS.find(e => e.id === 'core_box');
+                    if (core) setHeroes(playerAlignment === 'ZOMBIE' ? core.zombieHeroes : core.heroes);
                 } finally {
                     isDataLoadedRef.current = true;
                 }
@@ -482,7 +398,7 @@ const App: React.FC = () => {
         } else if (count >= 10 && count < 15 && worldStage !== 'SURFER' && worldStage !== 'GALACTUS') {
             setActiveGlobalEvent({ stage: 'SURFER', title: '', description: '' });
             setWorldStage('SURFER');
-            setSurferTurnCount(0); // REINICIAMOS CONTADOR AL LLEGAR
+            setSurferTurnCount(0); 
             handleTickerUpdate("OBJETO PLATEADO ENTRANDO EN LA ATMÓSFERA. PREPARAR INTERCEPCIÓN.");
         } else if (count >= 4 && count < 10 && worldStage === 'NORMAL') {
             setActiveGlobalEvent({ stage: 'ANOMALY', title: '', description: '' });
@@ -514,7 +430,6 @@ const App: React.FC = () => {
         setCompletedMissionIds(newSet);
         setSelectedMission(null);
 
-        // LÓGICA SURFER: Si estamos en etapa SURFER, incrementamos su contador
         if (worldStage === 'SURFER') {
             setSurferTurnCount(prev => prev + 1);
         }
@@ -581,7 +496,6 @@ const App: React.FC = () => {
         setExpandedZones(newSet);
     };
 
-    // --- LÓGICA DE SELECCIÓN DE MISIÓN INTRO ---
     const introMission = useMemo(() => {
         const dbMissionById = customMissions.find(m => m.id === 'BJOpwXrXDz2soy2yLnSY');
         if (dbMissionById) return dbMissionById;
@@ -713,13 +627,12 @@ const App: React.FC = () => {
         setSelectedMission(m);
     };
 
-    // --- CÁLCULO DE PROGRESO ---
     const totalMissions = useMemo(() => {
         return customMissions.length + 7; 
     }, [customMissions]);
     
     const progressPercentage = Math.min(100, Math.round((completedMissionIds.size / Math.max(1, totalMissions)) * 100));
-    const circumference = 2 * Math.PI * 18; // Radio 18
+    const circumference = 2 * Math.PI * 18; 
     const strokeDashoffset = circumference - (progressPercentage / 100) * circumference;
 
     if (loading || loadingAuth) return <div className="bg-slate-950 text-cyan-500 h-screen flex items-center justify-center font-mono">LOADING SHIELD OS...</div>;
@@ -732,17 +645,46 @@ const App: React.FC = () => {
             {selectedMission && <MissionModal mission={selectedMission} isOpen={!!selectedMission} onClose={() => setSelectedMission(null)} onComplete={handleMissionComplete} onReactivate={handleMissionReactivate} language={lang} isCompleted={completedMissionIds.has(selectedMission.id)} isEditorMode={isEditorMode} onEdit={(m) => { setMissionToEdit(m); setShowMissionEditor(true); setSelectedMission(null); }} onDelete={handleDeleteMission} />}
             
             {viewMode === 'login' && (<LoginScreen onLogin={handleGuestLogin} onGoogleLogin={() => {}} onEditorLogin={handleEditorLogin} language={lang} setLanguage={setLang} />)}
-            {viewMode === 'story' && (<StoryMode language={lang} onComplete={(choice) => { setPlayerAlignment(choice); if(user) localStorage.setItem(`shield_intro_seen_${user.uid}`, 'true'); setViewMode('intro'); }} onSkip={() => { setPlayerAlignment('ALIVE'); setViewMode('map'); }} />)}
+            
+            {viewMode === 'story' && (
+                <StoryMode 
+                    language={lang} 
+                    onComplete={(choice) => { 
+                        setPlayerAlignment(choice); 
+                        setViewMode('setup'); 
+                    }} 
+                    onSkip={() => { 
+                        setPlayerAlignment('ALIVE'); 
+                        const core = GAME_EXPANSIONS.find(e => e.id === 'core_box');
+                        if (core) setHeroes(core.heroes);
+                        setViewMode('map'); 
+                    }}
+                    startAtChoice={startStoryAtChoice} // <--- NUEVA PROP
+                />
+            )}
+
+            {viewMode === 'setup' && playerAlignment && (
+                <ExpansionSelector 
+                    language={lang} 
+                    playerAlignment={playerAlignment} 
+                    onConfirm={handleExpansionConfirm} 
+                    onBack={() => {
+                        setPlayerAlignment(null);
+                        setStartStoryAtChoice(true); // <--- ACTIVAR MODO ELECCIÓN DIRECTA
+                        setViewMode('story');
+                    }}
+                />
+            )}
+
             {viewMode === 'intro' && playerAlignment && (<IntroSequence language={lang} playerAlignment={playerAlignment} onComplete={() => setViewMode('mission0')} />)}
 
-            {/* MODAL DE MISIÓN 0 (INTRODUCCIÓN) */}
             {viewMode === 'mission0' && (
                 <MissionModal 
-                    mission={introMission} // USAMOS LA MISIÓN DINÁMICA
+                    mission={introMission} 
                     isOpen={true} 
                     onClose={() => setViewMode('tutorial')} 
                     onComplete={() => {
-                        handleMissionComplete(introMission.id); // COMPLETAMOS EL ID CORRECTO
+                        handleMissionComplete(introMission.id); 
                         setViewMode('tutorial');
                     }}
                     language={lang}
@@ -772,10 +714,8 @@ const App: React.FC = () => {
                     </header>
                     
                     <div className="flex-1 flex overflow-hidden relative">
-                        {/* SIDEBAR COLAPSABLE */}
                         <aside className={`flex-none bg-slate-900 border-r border-cyan-900 flex flex-col z-20 shadow-xl overflow-hidden relative transition-all duration-300 ${isSidebarCollapsed ? 'w-12' : 'w-80'}`}>
                             
-                            {/* BOTÓN DE COLAPSO */}
                             <button 
                                 onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
                                 className="absolute top-1/2 -right-3 w-6 h-12 bg-cyan-900 border border-cyan-600 rounded-l flex items-center justify-center z-50 hover:bg-cyan-800 transition-colors"
@@ -786,13 +726,11 @@ const App: React.FC = () => {
 
                             {!isSidebarCollapsed ? (
                                 <>
-                                    {/* NIVEL DE AMENAZA (REDUCIDO) */}
                                     <div className="p-4 border-b border-cyan-900 bg-red-950/20 flex justify-between items-center">
                                         <div className="flex flex-col">
                                             <span className="text-[9px] font-bold text-red-500 tracking-widest">AMENAZA</span>
                                             <span className="text-sm font-black text-red-600 tracking-tighter">CRÍTICO</span>
                                         </div>
-                                        {/* GRÁFICO DE PROGRESO CIRCULAR (AUMENTADO) */}
                                         <div className="relative w-14 h-14 flex items-center justify-center">
                                             <svg className="w-full h-full transform -rotate-90" viewBox="0 0 44 44">
                                                 <circle cx="22" cy="22" r="18" stroke="#1e293b" strokeWidth="4" fill="transparent" />
@@ -802,7 +740,6 @@ const App: React.FC = () => {
                                         </div>
                                     </div>
 
-                                    {/* BOTÓN BÚNKER */}
                                     <div className="p-3 border-b border-cyan-900">
                                         <button id="tutorial-bunker-btn" onClick={() => setViewMode('bunker')} className={`w-full py-3 border-2 flex items-center justify-center gap-2 transition-all duration-300 group relative overflow-hidden ${playerAlignment === 'ZOMBIE' ? 'border-lime-600 bg-lime-900/10 hover:bg-lime-900/30 text-lime-400' : 'border-cyan-500 bg-cyan-900/10 hover:bg-cyan-900/30 text-cyan-300'}`}>
                                             <div className={`absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 ${playerAlignment === 'ZOMBIE' ? 'bg-[linear-gradient(45deg,transparent_25%,rgba(132,204,22,0.1)_50%,transparent_75%)]' : 'bg-[linear-gradient(45deg,transparent_25%,rgba(6,182,212,0.1)_50%,transparent_75%)]'} bg-[length:250%_250%] animate-[shimmer_2s_linear_infinite]`}></div>
@@ -810,7 +747,6 @@ const App: React.FC = () => {
                                         </button>
                                     </div>
 
-                                    {/* LISTA DE MISIONES (TEXTO AUMENTADO) */}
                                     <div id="tutorial-sidebar-missions" className="flex-1 overflow-y-auto p-3 scrollbar-thin scrollbar-thumb-cyan-900">
                                         <h4 className="text-[10px] font-bold text-cyan-600 uppercase mb-2 tracking-widest border-b border-cyan-900 pb-1">{t.sidebar.activeMissions}</h4>
                                         <div className="space-y-1">
@@ -870,7 +806,6 @@ const App: React.FC = () => {
                                     </div>
                                 </>
                             ) : (
-                                // VERSIÓN COLAPSADA
                                 <div className="flex flex-col items-center py-4 gap-4 h-full">
                                     <div className="w-8 h-8 rounded-full border-2 border-red-600 flex items-center justify-center bg-red-900/20 animate-pulse" title="Nivel de Amenaza: CRÍTICO">
                                         <span className="text-xs">⚠</span>
@@ -906,7 +841,6 @@ const App: React.FC = () => {
                                         surferTurnCount={surferTurnCount} 
                                     />
                                     
-                                    {/* --- PANEL DE CONTROL DEL EDITOR (RESTAURADO) --- */}
                                     {isEditorMode && (
                                         <div className="absolute top-4 right-4 z-50 flex flex-col gap-2 bg-slate-900/95 p-4 border border-cyan-500 shadow-[0_0_20px_rgba(6,182,212,0.3)] rounded-sm min-w-[200px]">
                                             <h3 className="text-xs font-bold text-cyan-400 border-b border-cyan-800 pb-1 mb-2 tracking-widest uppercase">EDITOR TOOLS</h3>

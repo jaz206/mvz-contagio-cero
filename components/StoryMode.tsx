@@ -5,22 +5,22 @@ interface StoryModeProps {
   language: Language;
   onComplete: (choice: 'ALIVE' | 'ZOMBIE') => void;
   onSkip: () => void;
+  startAtChoice?: boolean; // <--- NUEVA PROP
 }
 
-export const StoryMode: React.FC<StoryModeProps> = ({ language, onComplete, onSkip }) => {
-  const [isFolderOpen, setIsFolderOpen] = useState(false);
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const [pageTurn, setPageTurn] = useState(''); 
-  
-  // NUEVO: Estado para bloquear clics rápidos
-  const [isAnimating, setIsAnimating] = useState(false);
-  
-  const [selection, setSelection] = useState<'ALIVE' | 'ZOMBIE' | null>(null);
-  
+export const StoryMode: React.FC<StoryModeProps> = ({ language, onComplete, startAtChoice = false }) => {
   const t = translations[language].story;
   const slides = t.slides;
+
+  // Si startAtChoice es true, iniciamos con un índice alto para forzar la pantalla de elección
+  const [currentIndex, setCurrentIndex] = useState(startAtChoice ? slides.length : 0);
   
-  // CORRECCIÓN: Aseguramos que si el índice se pasa, se quede en la pantalla de elección
+  const [isFolderOpen, setIsFolderOpen] = useState(false);
+  const [pageTurn, setPageTurn] = useState(''); 
+  const [isAnimating, setIsAnimating] = useState(false);
+  const [selection, setSelection] = useState<'ALIVE' | 'ZOMBIE' | null>(null);
+  
+  // Lógica para determinar si estamos en la pantalla de elección
   const isChoiceScreen = currentIndex >= slides.length;
 
   useEffect(() => {
@@ -28,8 +28,11 @@ export const StoryMode: React.FC<StoryModeProps> = ({ language, onComplete, onSk
       return () => clearTimeout(timer);
   }, []);
 
+  const handleSkipToChoice = () => {
+      setCurrentIndex(slides.length);
+  };
+
   const handleNext = () => {
-    // BLOQUEO: Si ya se está animando o estamos al final, ignorar clic
     if (isAnimating || isChoiceScreen) return;
 
     setIsAnimating(true);
@@ -37,7 +40,6 @@ export const StoryMode: React.FC<StoryModeProps> = ({ language, onComplete, onSk
     
     setTimeout(() => {
         setCurrentIndex(prev => {
-            // Doble seguridad para no pasarnos del array
             const next = prev + 1;
             return next > slides.length ? slides.length : next;
         });
@@ -47,7 +49,6 @@ export const StoryMode: React.FC<StoryModeProps> = ({ language, onComplete, onSk
   };
 
   const handlePrev = () => {
-    // BLOQUEO: Si ya se está animando o estamos al principio
     if (isAnimating || currentIndex === 0) return;
 
     setIsAnimating(true);
@@ -61,7 +62,7 @@ export const StoryMode: React.FC<StoryModeProps> = ({ language, onComplete, onSk
   };
 
   const handleChoice = (choice: 'ALIVE' | 'ZOMBIE') => {
-      if (selection) return; // Evitar doble selección
+      if (selection) return;
       setSelection(choice);
       setTimeout(() => {
           onComplete(choice);
@@ -137,7 +138,6 @@ export const StoryMode: React.FC<StoryModeProps> = ({ language, onComplete, onSk
           );
       }
 
-      // SEGURIDAD: Si por alguna razón el índice falla, no renderizar nada para evitar crash
       const slide = slides[currentIndex];
       if (!slide) return null;
 
@@ -146,46 +146,26 @@ export const StoryMode: React.FC<StoryModeProps> = ({ language, onComplete, onSk
       return (
           <div className="flex flex-col md:flex-row h-full w-full bg-white shadow-inner">
               
-              {/* IZQUIERDA: SUPERFICIE DE LA CARPETA CON FOTO SUJETA */}
+              {/* IZQUIERDA: FOTO */}
               <div className="w-full md:w-[55%] h-1/2 md:h-full relative bg-[#2d3748] border-r border-slate-400 flex items-center justify-center overflow-hidden shadow-[inset_-10px_0_20px_rgba(0,0,0,0.3)]">
-                  
-                  {/* Textura de la carpeta interior */}
                   <div className="absolute inset-0 opacity-10 bg-[url('https://www.transparenttextures.com/patterns/leather.png')]"></div>
-
-                  {/* CONTENEDOR DE LA FOTO (POLAROID / PAPEL FOTOGRÁFICO) */}
                   <div className={`relative bg-white p-3 pb-8 shadow-2xl transform transition-all duration-500 ease-out hover:rotate-0 hover:scale-105 cursor-zoom-in group ${rotation} max-w-[85%] max-h-[85%] flex flex-col`}>
-                      
-                      {/* CLIP METÁLICO (CSS PURO) */}
                       <div className="absolute -top-4 left-1/2 -translate-x-1/2 w-8 h-16 rounded-full border-4 border-gray-300 z-20 shadow-md bg-transparent pointer-events-none"></div>
-                      <div className="absolute -top-4 left-1/2 -translate-x-1/2 w-8 h-10 bg-[#2d3748] z-10 pointer-events-none"></div> {/* Tapa la parte trasera del clip */}
-
-                      {/* IMAGEN */}
+                      <div className="absolute -top-4 left-1/2 -translate-x-1/2 w-8 h-10 bg-[#2d3748] z-10 pointer-events-none"></div>
                       <div className="relative overflow-hidden border border-gray-200 bg-black">
-                          <img 
-                            src={slide.image} 
-                            alt="Evidence" 
-                            className="w-full h-full object-contain max-h-[60vh]" 
-                          />
-                          
-                          {/* Efecto Glossy (Brillo de papel fotográfico) */}
+                          <img src={slide.image} alt="Evidence" className="w-full h-full object-contain max-h-[60vh]" />
                           <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/10 to-transparent opacity-0 group-hover:opacity-40 transition-opacity pointer-events-none"></div>
                       </div>
-
-                      {/* PIE DE FOTO (Escrito a mano o máquina) */}
                       <div className="mt-3 flex justify-between items-end px-2">
                           <div className="font-mono text-[10px] text-gray-500">FIG. {currentIndex + 1}A</div>
-                          <div className="font-handwriting text-sm text-blue-900 rotate-[-1deg]" style={{ fontFamily: '"Courier New", monospace' }}>
-                              Evidence #{1024 + currentIndex}
-                          </div>
+                          <div className="font-handwriting text-sm text-blue-900 rotate-[-1deg]" style={{ fontFamily: '"Courier New", monospace' }}>Evidence #{1024 + currentIndex}</div>
                       </div>
                   </div>
               </div>
 
-              {/* DERECHA: INFORME MECANOGRAFIADO */}
+              {/* DERECHA: INFORME */}
               <div className="w-full md:w-[45%] h-1/2 md:h-full p-6 md:p-10 flex flex-col bg-[#fdfbf7] relative">
-                  {/* Textura de papel */}
                   <div className="absolute inset-0 opacity-40 pointer-events-none" style={{backgroundImage: 'linear-gradient(#e5e7eb 1px, transparent 1px)', backgroundSize: '100% 2rem'}}></div>
-
                   <div className="relative z-10 flex-1 overflow-y-auto pr-2">
                       <div className="flex justify-between items-end border-b-2 border-slate-800 pb-2 mb-6">
                           <div>
@@ -197,21 +177,13 @@ export const StoryMode: React.FC<StoryModeProps> = ({ language, onComplete, onSk
                               <div className="text-xs font-bold text-red-700 border-2 border-red-700 px-1 inline-block mt-1 rotate-[-2deg] opacity-80">TOP SECRET</div>
                           </div>
                       </div>
-
                       <div className="font-mono text-sm md:text-base text-slate-900 leading-relaxed space-y-4 text-justify font-medium">
-                          {slide.text.split('\n').map((line, i) => (
-                              <p key={i}>{line}</p>
-                          ))}
+                          {slide.text.split('\n').map((line, i) => <p key={i}>{line}</p>)}
                       </div>
                   </div>
-
                   <div className="mt-4 pt-4 border-t border-slate-300 flex justify-between items-center">
-                      <div className="text-[10px] font-bold text-slate-400 tracking-widest">
-                          S.H.I.E.L.D. ARCHIVES // DO NOT COPY
-                      </div>
-                      <div className="text-xs font-mono text-slate-500">
-                          PG. {currentIndex + 1}
-                      </div>
+                      <div className="text-[10px] font-bold text-slate-400 tracking-widest">S.H.I.E.L.D. ARCHIVES // DO NOT COPY</div>
+                      <div className="text-xs font-mono text-slate-500">PG. {currentIndex + 1}</div>
                   </div>
               </div>
           </div>
@@ -220,63 +192,35 @@ export const StoryMode: React.FC<StoryModeProps> = ({ language, onComplete, onSk
 
   return (
     <div className="fixed inset-0 z-[60] bg-[#0f172a] flex items-center justify-center perspective-[1500px] overflow-hidden">
-      
-      <style>{`
-        @keyframes stamp {
-          0% { opacity: 0; transform: scale(2) rotate(-15deg); }
-          100% { opacity: 0.8; transform: scale(1) rotate(-15deg); }
-        }
-      `}</style>
+      <style>{`@keyframes stamp { 0% { opacity: 0; transform: scale(2) rotate(-15deg); } 100% { opacity: 0.8; transform: scale(1) rotate(-15deg); } }`}</style>
 
-      {/* Mesa de fondo */}
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_#1e293b_0%,_#020617_100%)]"></div>
       <div className="absolute inset-0 opacity-20" style={{backgroundImage: 'linear-gradient(#334155 1px, transparent 1px), linear-gradient(90deg, #334155 1px, transparent 1px)', backgroundSize: '40px 40px'}}></div>
 
-      <button 
-        onClick={onSkip} 
-        className="absolute top-8 right-8 z-50 text-cyan-500 text-xs font-bold tracking-[0.2em] hover:text-white transition-colors border border-cyan-900 px-4 py-2 bg-slate-900/80 backdrop-blur"
-      >
-        SKIP INTRO &gt;&gt;
-      </button>
+      {!isChoiceScreen && (
+          <button 
+            onClick={handleSkipToChoice} 
+            className="absolute top-8 right-8 z-50 text-cyan-500 text-xs font-bold tracking-[0.2em] hover:text-white transition-colors border border-cyan-900 px-4 py-2 bg-slate-900/80 backdrop-blur"
+          >
+            SKIP INTRO &gt;&gt;
+          </button>
+      )}
 
-      {/* CARPETA PRINCIPAL */}
-      <div 
-        className={`relative w-[95%] h-[85%] max-w-6xl bg-[#d1d5db] shadow-[0_20px_50px_rgba(0,0,0,0.6)] transition-all duration-1000 ease-out transform-style-3d rounded-r-md border-l-8 border-slate-400
-            ${isFolderOpen ? 'rotate-x-0 translate-y-0 opacity-100' : 'rotate-x-20 translate-y-[100px] opacity-0'}
-        `}
-      >
-          {/* Pestaña de la carpeta */}
+      <div className={`relative w-[95%] h-[85%] max-w-6xl bg-[#d1d5db] shadow-[0_20px_50px_rgba(0,0,0,0.6)] transition-all duration-1000 ease-out transform-style-3d rounded-r-md border-l-8 border-slate-400 ${isFolderOpen ? 'rotate-x-0 translate-y-0 opacity-100' : 'rotate-x-20 translate-y-[100px] opacity-0'}`}>
           <div className="absolute -top-6 left-0 w-48 h-8 bg-[#9ca3af] rounded-t-lg border-t border-x border-white/20 flex items-center px-4 shadow-inner">
               <span className="text-[10px] font-bold text-slate-800 tracking-widest">PROJECT: LAZARUS</span>
           </div>
 
           <div className="w-full h-full bg-white relative overflow-hidden flex rounded-r-sm">
               {renderContent()}
-              
-              {pageTurn && (
-                  <div className={`absolute inset-0 bg-black/10 z-50 transition-opacity duration-500 ${pageTurn ? 'opacity-100' : 'opacity-0'}`}></div>
-              )}
+              {pageTurn && <div className={`absolute inset-0 bg-black/10 z-50 transition-opacity duration-500 ${pageTurn ? 'opacity-100' : 'opacity-0'}`}></div>}
           </div>
 
           {!isChoiceScreen && isFolderOpen && (
               <div className="absolute -bottom-16 w-full flex justify-center gap-4">
-                  <button 
-                      onClick={handlePrev}
-                      disabled={currentIndex === 0 || isAnimating}
-                      className={`w-12 h-12 rounded-full bg-slate-800 border border-slate-600 flex items-center justify-center text-white hover:bg-cyan-600 transition-all ${currentIndex === 0 ? 'opacity-30 cursor-not-allowed' : ''}`}
-                  >
-                      ←
-                  </button>
-                  <div className="h-12 px-6 bg-slate-900/90 border border-slate-700 rounded-full flex items-center justify-center text-cyan-400 font-mono text-xs tracking-widest shadow-lg">
-                      SLIDE {currentIndex + 1} / {slides.length}
-                  </div>
-                  <button 
-                      onClick={handleNext}
-                      disabled={isAnimating}
-                      className="w-12 h-12 rounded-full bg-slate-800 border border-slate-600 flex items-center justify-center text-white hover:bg-cyan-600 transition-all"
-                  >
-                      →
-                  </button>
+                  <button onClick={handlePrev} disabled={currentIndex === 0 || isAnimating} className={`w-12 h-12 rounded-full bg-slate-800 border border-slate-600 flex items-center justify-center text-white hover:bg-cyan-600 transition-all ${currentIndex === 0 ? 'opacity-30 cursor-not-allowed' : ''}`}>←</button>
+                  <div className="h-12 px-6 bg-slate-900/90 border border-slate-700 rounded-full flex items-center justify-center text-cyan-400 font-mono text-xs tracking-widest shadow-lg">SLIDE {currentIndex + 1} / {slides.length}</div>
+                  <button onClick={handleNext} disabled={isAnimating} className="w-12 h-12 rounded-full bg-slate-800 border border-slate-600 flex items-center justify-center text-white hover:bg-cyan-600 transition-all">→</button>
               </div>
           )}
       </div>
