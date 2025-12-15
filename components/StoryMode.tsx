@@ -5,22 +5,19 @@ interface StoryModeProps {
   language: Language;
   onComplete: (choice: 'ALIVE' | 'ZOMBIE') => void;
   onSkip: () => void;
-  startAtChoice?: boolean; // <--- NUEVA PROP
+  startAtChoice?: boolean;
 }
 
 export const StoryMode: React.FC<StoryModeProps> = ({ language, onComplete, startAtChoice = false }) => {
   const t = translations[language].story;
   const slides = t.slides;
 
-  // Si startAtChoice es true, iniciamos con un índice alto para forzar la pantalla de elección
   const [currentIndex, setCurrentIndex] = useState(startAtChoice ? slides.length : 0);
-  
   const [isFolderOpen, setIsFolderOpen] = useState(false);
   const [pageTurn, setPageTurn] = useState(''); 
   const [isAnimating, setIsAnimating] = useState(false);
   const [selection, setSelection] = useState<'ALIVE' | 'ZOMBIE' | null>(null);
   
-  // Lógica para determinar si estamos en la pantalla de elección
   const isChoiceScreen = currentIndex >= slides.length;
 
   useEffect(() => {
@@ -66,7 +63,7 @@ export const StoryMode: React.FC<StoryModeProps> = ({ language, onComplete, star
       setSelection(choice);
       setTimeout(() => {
           onComplete(choice);
-      }, 2000);
+      }, 2500); // Un poco más de tiempo para apreciar la firma
   };
 
   const renderContent = () => {
@@ -79,7 +76,7 @@ export const StoryMode: React.FC<StoryModeProps> = ({ language, onComplete, star
                   <div className="w-24 h-1 bg-red-600 mb-8"></div>
                   
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-8 w-full max-w-4xl z-10">
-                      {/* ALIVE */}
+                      {/* ALIVE - S.H.I.E.L.D. */}
                       <button 
                           onClick={() => handleChoice('ALIVE')}
                           disabled={selection !== null}
@@ -97,17 +94,34 @@ export const StoryMode: React.FC<StoryModeProps> = ({ language, onComplete, star
                           <div className="p-3 bg-slate-50 border-t border-slate-200 w-full text-center">
                               <span className="text-[10px] font-bold text-blue-700 tracking-widest">AUTHORIZE DEPLOYMENT</span>
                           </div>
+                          
+                          {/* --- SELLO DE NICK FURY CORREGIDO --- */}
                           {selection === 'ALIVE' && (
-                              <div className="absolute inset-0 flex items-center justify-center z-50 bg-white/10 backdrop-blur-[1px]">
-                                  <div className="border-4 border-blue-900 text-blue-900 rounded-full w-40 h-40 flex flex-col items-center justify-center rotate-[-15deg] opacity-0 animate-[stamp_0.3s_ease-in_forwards] shadow-xl" style={{maskImage: 'url(https://www.transparenttextures.com/patterns/grunge-wall.png)'}}>
-                                      <span className="text-3xl font-black tracking-tighter">APPROVED</span>
-                                      <span className="text-[10px] font-bold tracking-widest mt-1">DIRECTOR FURY</span>
+                              <div className="absolute inset-0 flex items-center justify-center z-50 bg-white/80 backdrop-blur-[2px]">
+                                  <div 
+                                    className="border-[6px] border-blue-900 text-blue-900 p-6 flex flex-col items-center justify-center shadow-2xl relative overflow-hidden bg-blue-50 stamp-enter" 
+                                    style={{
+                                        maskImage: 'url(https://www.transparenttextures.com/patterns/grunge-wall.png)',
+                                        WebkitMaskImage: 'url(https://www.transparenttextures.com/patterns/grunge-wall.png)'
+                                    }}
+                                  >
+                                      {/* Marca de agua del águila */}
+                                      <div className="absolute inset-0 flex items-center justify-center opacity-10 text-8xl pointer-events-none select-none">🦅</div>
+                                      
+                                      <div className="text-xs font-black tracking-[0.4em] border-b-4 border-blue-900 mb-2 w-full text-center pb-1">S.H.I.E.L.D.</div>
+                                      <span className="text-4xl font-black tracking-tighter text-blue-900 uppercase">AUTHORIZED</span>
+                                      <span className="text-[9px] font-mono tracking-widest mt-2 uppercase font-bold">Clearance: Level 10 // OMEGA</span>
+                                      
+                                      {/* Firma de Nick Fury */}
+                                      <div className="mt-4 text-3xl text-blue-800 transform -rotate-6 font-bold" style={{ fontFamily: '"Brush Script MT", "Comic Sans MS", cursive' }}>
+                                          Nick Fury
+                                      </div>
                                   </div>
                               </div>
                           )}
                       </button>
 
-                      {/* ZOMBIE */}
+                      {/* ZOMBIE - THE HUNGER */}
                       <button 
                            onClick={() => handleChoice('ZOMBIE')}
                            disabled={selection !== null}
@@ -125,9 +139,11 @@ export const StoryMode: React.FC<StoryModeProps> = ({ language, onComplete, star
                           <div className="p-3 bg-slate-50 border-t border-slate-200 w-full text-center">
                               <span className="text-[10px] font-bold text-green-700 tracking-widest">UNLEASH PATHOGEN</span>
                           </div>
+                          
+                          {/* SELLO ZOMBIE */}
                           {selection === 'ZOMBIE' && (
                               <div className="absolute inset-0 z-50 flex items-center justify-center pointer-events-none">
-                                  <div className="absolute text-4xl font-black text-red-900 tracking-widest rotate-12 border-4 border-red-900 p-4 opacity-0 animate-[stamp_0.3s_ease-in_0.2s_forwards]">
+                                  <div className="absolute text-5xl font-black text-red-900 tracking-widest border-[6px] border-red-900 p-4 stamp-enter-zombie bg-red-900/10" style={{maskImage: 'url(https://www.transparenttextures.com/patterns/grunge-wall.png)'}}>
                                       INFECTED
                                   </div>
                               </div>
@@ -192,7 +208,25 @@ export const StoryMode: React.FC<StoryModeProps> = ({ language, onComplete, star
 
   return (
     <div className="fixed inset-0 z-[60] bg-[#0f172a] flex items-center justify-center perspective-[1500px] overflow-hidden">
-      <style>{`@keyframes stamp { 0% { opacity: 0; transform: scale(2) rotate(-15deg); } 100% { opacity: 0.8; transform: scale(1) rotate(-15deg); } }`}</style>
+      <style>{`
+        /* ANIMACIÓN PARA EL SELLO DE SHIELD */
+        .stamp-enter {
+            animation: stamp-blue 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+        }
+        @keyframes stamp-blue {
+            0% { opacity: 0; transform: scale(3) rotate(5deg); }
+            100% { opacity: 1; transform: scale(1) rotate(-12deg); }
+        }
+
+        /* ANIMACIÓN PARA EL SELLO ZOMBIE */
+        .stamp-enter-zombie {
+            animation: stamp-red 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+        }
+        @keyframes stamp-red {
+            0% { opacity: 0; transform: scale(3) rotate(-5deg); }
+            100% { opacity: 1; transform: scale(1) rotate(12deg); }
+        }
+      `}</style>
 
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_#1e293b_0%,_#020617_100%)]"></div>
       <div className="absolute inset-0 opacity-20" style={{backgroundImage: 'linear-gradient(#334155 1px, transparent 1px), linear-gradient(90deg, #334155 1px, transparent 1px)', backgroundSize: '40px 40px'}}></div>
