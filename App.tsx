@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { translations, Language } from './translations';
 import { User } from 'firebase/auth';
 import { auth } from './firebaseConfig';
@@ -18,6 +18,7 @@ import { MissionEditor } from './components/MissionEditor';
 import { CharacterEditor } from './components/CharacterEditor';
 import { NewsTicker } from './components/NewsTicker';
 import { ExpansionSelector } from './components/ExpansionSelector';
+import { ExpansionConfigModal } from './components/ExpansionConfigModal'; // <--- NUEVO COMPONENTE
 
 import { Mission, Hero, WorldStage, GlobalEvent, HeroTemplate } from './types';
 import { GAME_EXPANSIONS } from './data/gameContent';
@@ -79,7 +80,6 @@ const App: React.FC = () => {
     const [tickerMessage, setTickerMessage] = useState<string | null>(null);
     const [surferTurnCount, setSurferTurnCount] = useState(0);
     
-    // NUEVO ESTADO: Controla si la historia empieza por el final (elección)
     const [startStoryAtChoice, setStartStoryAtChoice] = useState(false);
     
     const isDataLoadedRef = useRef(false);
@@ -101,8 +101,47 @@ const App: React.FC = () => {
     
     const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
 
+    // --- NUEVOS ESTADOS PARA GESTIÓN DE EXPANSIONES ---
+    const [ownedExpansions, setOwnedExpansions] = useState<Set<string>>(new Set(['core_box']));
+    const [showExpansionConfig, setShowExpansionConfig] = useState(false);
+
     const t = translations[lang];
 
+    // Cargar expansiones guardadas localmente al inicio
+    useEffect(() => {
+        const savedExp = localStorage.getItem('shield_owned_expansions');
+        if (savedExp) {
+            try {
+                setOwnedExpansions(new Set(JSON.parse(savedExp)));
+            } catch (e) {
+                console.error("Error loading saved expansions", e);
+            }
+        }
+    }, []);
+
+    // Helpers para gestionar expansiones
+    const updateOwnedExpansions = (newSet: Set<string>) => {
+        setOwnedExpansions(newSet);
+        localStorage.setItem('shield_owned_expansions', JSON.stringify(Array.from(newSet)));
+    };
+
+    const toggleExpansion = (id: string) => {
+        const newSet = new Set(ownedExpansions);
+        if (newSet.has(id)) newSet.delete(id);
+        else newSet.add(id);
+        updateOwnedExpansions(newSet);
+    };
+
+    const toggleAllExpansions = (select: boolean) => {
+        if (select) {
+            const allIds = GAME_EXPANSIONS.map(e => e.id);
+            updateOwnedExpansions(new Set(allIds));
+        } else {
+            updateOwnedExpansions(new Set(['core_box'])); // Siempre mantener Core Box
+        }
+    };
+
+    // Auth Effect (Corregido para estabilidad)
     useEffect(() => {
         if (!auth) {
             console.log("Modo sin conexión/invitado activado (Firebase no configurado)");
@@ -118,7 +157,7 @@ const App: React.FC = () => {
                 const hasSeenIntro = localStorage.getItem(`shield_intro_seen_${currentUser.uid}`);
                 if (!hasSeenIntro) {
                     setShowStory(true);
-                    setStartStoryAtChoice(false); // Empezar historia desde el principio
+                    setStartStoryAtChoice(false); 
                     setViewMode('story');
                 } else {
                     setViewMode('map');
@@ -152,7 +191,7 @@ const App: React.FC = () => {
         setIsGuest(true);
         setPlayerAlignment('ALIVE'); 
         setShowStory(true);
-        setStartStoryAtChoice(false); // Empezar historia desde el principio
+        setStartStoryAtChoice(false); 
         setViewMode('story');
     };
 
@@ -359,21 +398,38 @@ const App: React.FC = () => {
         loadData();
     }, [user, isGuest, playerAlignment, isEditorMode]);
 
-    useEffect(() => {
+    // Función de guardado centralizada y debounced (CORREGIDA)
+    const saveData = useCallback(async (
+        currentHeroes: Hero[], 
+        currentMissions: Set<string>, 
+        currentCylinders: number
+    ) => {
         if (isEditorMode || !user || !playerAlignment || !isDataLoadedRef.current) return;
+        
+        setIsSaving(true);
+        try {
+            await saveUserProfile(
+                user.uid, 
+                playerAlignment, 
+                currentHeroes, 
+                Array.from(currentMissions), 
+                { omegaCylinders: currentCylinders }
+            );
+        } catch (e) {
+            console.error("Auto-save failed", e);
+        } finally {
+            setTimeout(() => setIsSaving(false), 1000);
+        }
+    }, [user, playerAlignment, isEditorMode]);
+
+    // Efecto de Auto-Guardado
+    useEffect(() => {
         if (heroes.length === 0) return;
-        const timeout = setTimeout(async () => {
-            setIsSaving(true);
-            try {
-                await saveUserProfile(user.uid, playerAlignment, heroes, Array.from(completedMissionIds), { omegaCylinders });
-            } catch (e) {
-                console.error("Auto-save failed", e);
-            } finally {
-                setTimeout(() => setIsSaving(false), 1000);
-            }
+        const timeout = setTimeout(() => {
+            saveData(heroes, completedMissionIds, omegaCylinders);
         }, 2000);
         return () => clearTimeout(timeout);
-    }, [heroes, completedMissionIds, omegaCylinders, user, playerAlignment, isEditorMode]);
+    }, [heroes, completedMissionIds, omegaCylinders, saveData]);
 
     useEffect(() => {
         if (!playerAlignment) return;
@@ -435,14 +491,7 @@ const App: React.FC = () => {
         }
 
         if (user && playerAlignment) {
-            setIsSaving(true);
-            try {
-                await saveUserProfile(user.uid, playerAlignment, heroes, Array.from(newSet), { omegaCylinders });
-            } catch (e) {
-                console.error("Error saving mission progress immediately:", e);
-            } finally {
-                setTimeout(() => setIsSaving(false), 500);
-            }
+            saveData(heroes, newSet, omegaCylinders);
         }
         if (id === 'boss-galactus') {
             setWorldStage('NORMAL');
@@ -547,15 +596,29 @@ const App: React.FC = () => {
             return m.alignment === playerAlignment;
         });
 
+        // --- FILTRO DE REQUISITOS (EXPANSIONES) ---
+        const expansionFiltered = alignmentFiltered.filter(m => {
+            // Si la misión no tiene requisitos, pasa
+            if (!m.requirements || m.requirements.length === 0) return true;
+            
+            // Verificamos si tenemos TODAS las expansiones requeridas
+            return m.requirements.every(reqName => {
+                // Buscar el ID correspondiente al nombre
+                const expansionObj = GAME_EXPANSIONS.find(ge => ge.name === reqName);
+                if (!expansionObj) return true; // Si no encontramos la expansión en la DB, asumimos que es válida o custom
+                return ownedExpansions.has(expansionObj.id);
+            });
+        });
+
         if (isEditorMode) {
-            return alignmentFiltered;
+            return expansionFiltered;
         }
 
         if (worldStage === 'GALACTUS') {
-            return alignmentFiltered;
+            return expansionFiltered;
         }
 
-        return alignmentFiltered.filter(m => {
+        return expansionFiltered.filter(m => {
             if (!m) return false;
             const isCompleted = completedMissionIds.has(m.id);
             
@@ -582,7 +645,7 @@ const App: React.FC = () => {
 
             return isCompleted || prereqMet;
         });
-    }, [allMissions, completedMissionIds, isEditorMode, worldStage, playerAlignment]);
+    }, [allMissions, completedMissionIds, isEditorMode, worldStage, playerAlignment, ownedExpansions]); // <--- AÑADIR ownedExpansions
 
     const groupedMissions = useMemo(() => {
         const activeMissions = visibleMissions.filter(m => m && !completedMissionIds.has(m.id));
@@ -644,6 +707,16 @@ const App: React.FC = () => {
             {activeGlobalEvent && <EventModal event={activeGlobalEvent} isOpen={!!activeGlobalEvent} onAcknowledge={handleEventAcknowledge} language={lang} playerAlignment={playerAlignment} />}
             {selectedMission && <MissionModal mission={selectedMission} isOpen={!!selectedMission} onClose={() => setSelectedMission(null)} onComplete={handleMissionComplete} onReactivate={handleMissionReactivate} language={lang} isCompleted={completedMissionIds.has(selectedMission.id)} isEditorMode={isEditorMode} onEdit={(m) => { setMissionToEdit(m); setShowMissionEditor(true); setSelectedMission(null); }} onDelete={handleDeleteMission} />}
             
+            {/* NUEVO MODAL DE CONFIGURACIÓN */}
+            <ExpansionConfigModal 
+                isOpen={showExpansionConfig} 
+                onClose={() => setShowExpansionConfig(false)}
+                ownedExpansions={ownedExpansions}
+                onToggle={toggleExpansion}
+                onToggleAll={toggleAllExpansions}
+                language={lang}
+            />
+
             {viewMode === 'login' && (<LoginScreen onLogin={handleGuestLogin} onGoogleLogin={() => {}} onEditorLogin={handleEditorLogin} language={lang} setLanguage={setLang} />)}
             
             {viewMode === 'story' && (
@@ -659,7 +732,7 @@ const App: React.FC = () => {
                         if (core) setHeroes(core.heroes);
                         setViewMode('map'); 
                     }}
-                    startAtChoice={startStoryAtChoice} // <--- NUEVA PROP
+                    startAtChoice={startStoryAtChoice} 
                 />
             )}
 
@@ -670,9 +743,13 @@ const App: React.FC = () => {
                     onConfirm={handleExpansionConfirm} 
                     onBack={() => {
                         setPlayerAlignment(null);
-                        setStartStoryAtChoice(true); // <--- ACTIVAR MODO ELECCIÓN DIRECTA
+                        setStartStoryAtChoice(true); 
                         setViewMode('story');
                     }}
+                    // PASAR NUEVAS PROPS
+                    ownedExpansions={ownedExpansions}
+                    onToggleExpansion={toggleExpansion}
+                    onToggleAllExpansions={toggleAllExpansions}
                 />
             )}
 
@@ -704,6 +781,16 @@ const App: React.FC = () => {
                                 <span className="text-lg">{playerAlignment === 'ZOMBIE' ? '🧟' : '🛡️'}</span>
                                 <div className="flex flex-col items-start leading-none"><span className="text-[8px] font-bold tracking-widest opacity-70">DIMENSION</span><span className="text-[10px] font-bold">{playerAlignment === 'ZOMBIE' ? 'EARTH-Z' : 'EARTH-616'}</span></div>
                             </button>
+                            
+                            {/* NUEVO BOTÓN DE CONFIGURACIÓN DE EXPANSIONES */}
+                            <button 
+                                onClick={() => setShowExpansionConfig(true)}
+                                className="hidden md:flex items-center gap-2 px-3 py-1 border border-cyan-700 bg-slate-900/50 text-cyan-400 hover:bg-cyan-900/80 rounded transition-colors"
+                                title="Configurar Expansiones"
+                            >
+                                <span className="text-lg">📦</span>
+                            </button>
+
                             <div className="text-right hidden lg:block"><div className="text-[10px] text-cyan-600 font-bold">{t.header.biohazard}</div><div className="text-xs text-cyan-300 tracking-widest">{t.header.clearance}</div></div>
                             <div className="flex items-center gap-3 border-l border-cyan-900 pl-6">
                                 <div className="flex flex-col items-end mr-2">{isSaving ? <div className="text-[9px] font-bold tracking-widest text-yellow-500 animate-pulse">{t.header.saving}</div> : <div className="text-[9px] font-bold tracking-widest text-emerald-500/80">{t.header.saved}</div>}</div>

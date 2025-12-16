@@ -1,16 +1,24 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { GAME_EXPANSIONS } from '../data/gameContent';
 import { Language } from '../translations';
 import { Hero } from '../types';
 
 interface ExpansionSelectorProps {
     onConfirm: (selectedHeroes: Hero[]) => void;
-    onBack: () => void; // <--- NUEVA PROP
+    onBack: () => void;
     language: Language;
     playerAlignment: 'ALIVE' | 'ZOMBIE';
+    
+    // NUEVAS PROPS PARA GESTIONAR PROPIEDAD
+    ownedExpansions: Set<string>;
+    onToggleExpansion: (id: string) => void;
+    onToggleAllExpansions: (select: boolean) => void;
 }
 
-export const ExpansionSelector: React.FC<ExpansionSelectorProps> = ({ onConfirm, onBack, language, playerAlignment }) => {
+export const ExpansionSelector: React.FC<ExpansionSelectorProps> = ({ 
+    onConfirm, onBack, language, playerAlignment,
+    ownedExpansions, onToggleExpansion, onToggleAllExpansions
+}) => {
     const [selectedHeroes, setSelectedHeroes] = useState<Hero[]>([]);
     const [expandedBoxes, setExpandedBoxes] = useState<Set<string>>(new Set(['core_box'])); 
     const [searchTerm, setSearchTerm] = useState('');
@@ -37,7 +45,7 @@ export const ExpansionSelector: React.FC<ExpansionSelectorProps> = ({ onConfirm,
                 ...exp,
                 heroesToShow: matchingHeroes
             };
-        }).filter(exp => exp.heroesToShow.length > 0); 
+        }); 
     }, [isZombie, searchTerm]);
 
     const toggleBox = (id: string) => {
@@ -75,11 +83,9 @@ export const ExpansionSelector: React.FC<ExpansionSelectorProps> = ({ onConfirm,
             {/* HEADER */}
             <div className={`p-4 border-b-2 ${borderColor} bg-slate-900 z-20 shadow-2xl flex flex-col md:flex-row justify-between items-center gap-4 relative`}>
                 <div className="flex items-center gap-4 w-full md:w-auto">
-                    {/* BOTÓN VOLVER */}
                     <button 
                         onClick={onBack}
                         className={`w-10 h-10 flex items-center justify-center border-2 ${borderColor} text-white hover:bg-white/10 transition-colors font-bold text-xl`}
-                        title={language === 'es' ? "Volver a selección de bando" : "Back to faction selection"}
                     >
                         ←
                     </button>
@@ -90,21 +96,31 @@ export const ExpansionSelector: React.FC<ExpansionSelectorProps> = ({ onConfirm,
                             {language === 'es' ? 'RECLUTAMIENTO' : 'RECRUITMENT'}
                         </h2>
                         <p className="text-xs text-white font-bold tracking-widest mt-1">
-                            {language === 'es' ? 'SELECCIONA TU EQUIPO (MÁX 6)' : 'SELECT YOUR SQUAD (MAX 6)'}
+                            {language === 'es' ? 'SELECCIONA TU EQUIPO Y EXPANSIONES' : 'SELECT YOUR SQUAD AND EXPANSIONS'}
                         </p>
                     </div>
                 </div>
                 
+                {/* BOTONES DE SELECCIÓN RÁPIDA DE EXPANSIONES */}
+                <div className="flex gap-2">
+                    <button onClick={() => onToggleAllExpansions(true)} className="text-[9px] bg-white/10 hover:bg-white/20 text-white px-2 py-1 border border-white/30 rounded uppercase">
+                        {language === 'es' ? 'MARCAR TODAS' : 'CHECK ALL'}
+                    </button>
+                    <button onClick={() => onToggleAllExpansions(false)} className="text-[9px] bg-black/30 hover:bg-black/50 text-gray-400 px-2 py-1 border border-white/10 rounded uppercase">
+                        {language === 'es' ? 'DESMARCAR TODAS' : 'UNCHECK ALL'}
+                    </button>
+                </div>
+
                 {/* SEARCH BAR */}
-                <div className="relative w-full md:w-72">
+                <div className="relative w-full md:w-64">
                     <input 
                         type="text" 
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
                         placeholder={language === 'es' ? "BUSCAR AGENTE..." : "SEARCH AGENT..."}
-                        className={`w-full bg-black border-2 ${borderColor} p-3 pl-10 text-sm text-white placeholder-gray-500 focus:outline-none focus:bg-slate-900 transition-colors uppercase font-bold shadow-inner`}
+                        className={`w-full bg-black border-2 ${borderColor} p-2 pl-8 text-xs text-white placeholder-gray-500 focus:outline-none focus:bg-slate-900 transition-colors uppercase font-bold shadow-inner`}
                     />
-                    <span className="absolute left-3 top-3 text-white font-bold">🔍</span>
+                    <span className="absolute left-2 top-2 text-white font-bold text-xs">🔍</span>
                 </div>
             </div>
 
@@ -113,30 +129,39 @@ export const ExpansionSelector: React.FC<ExpansionSelectorProps> = ({ onConfirm,
                 <div className="max-w-5xl mx-auto space-y-6">
                     {filteredData.map((exp) => {
                         const isOpen = expandedBoxes.has(exp.id) || searchTerm.length > 0;
+                        const isOwned = ownedExpansions.has(exp.id);
                         
                         return (
-                            <div key={exp.id} className={`border-2 ${borderColor} bg-slate-900 shadow-lg transition-all duration-300`}>
+                            <div key={exp.id} className={`border-2 ${isOwned ? borderColor : 'border-slate-700'} bg-slate-900 shadow-lg transition-all duration-300 ${!isOwned ? 'opacity-70' : ''}`}>
                                 {/* Box Header */}
-                                <button 
-                                    onClick={() => toggleBox(exp.id)}
-                                    className={`w-full flex justify-between items-center p-5 transition-colors ${isOpen ? `bg-slate-800 border-b-2 ${borderColor}` : 'bg-slate-900 hover:bg-slate-800'}`}
-                                >
-                                    <div className="flex items-center gap-4">
-                                        <div className={`w-8 h-8 flex items-center justify-center border-2 ${borderColor} ${textColor} font-black text-lg bg-black`}>
-                                            {isOpen ? '▼' : '▶'}
+                                <div className={`w-full flex justify-between items-center p-3 transition-colors ${isOpen ? `bg-slate-800 border-b-2 ${isOwned ? borderColor : 'border-slate-700'}` : 'bg-slate-900'}`}>
+                                    
+                                    <div className="flex items-center gap-4 flex-1">
+                                        {/* CHECKBOX DE PROPIEDAD */}
+                                        <div 
+                                            onClick={(e) => { e.stopPropagation(); onToggleExpansion(exp.id); }}
+                                            className={`w-6 h-6 border-2 flex items-center justify-center cursor-pointer transition-all ${isOwned ? `${borderColor} bg-black text-white` : 'border-slate-600 bg-slate-800'}`}
+                                            title={language === 'es' ? "Marcar si tienes esta expansión" : "Check if you own this expansion"}
+                                        >
+                                            {isOwned && '✓'}
                                         </div>
-                                        <span className={`text-sm md:text-lg font-black tracking-widest uppercase text-white drop-shadow-md text-left`}>
-                                            {exp.name}
-                                        </span>
+
+                                        <button onClick={() => toggleBox(exp.id)} className="flex items-center gap-3 flex-1 text-left">
+                                            <span className={`text-sm md:text-lg font-black tracking-widest uppercase ${isOwned ? 'text-white' : 'text-gray-500'} drop-shadow-md`}>
+                                                {exp.name}
+                                            </span>
+                                            {!isOwned && <span className="text-[9px] bg-slate-700 text-gray-400 px-2 py-0.5 rounded">NOT OWNED</span>}
+                                        </button>
                                     </div>
-                                    <span className={`text-xs font-bold px-3 py-1.5 rounded border ${borderColor} ${textColor} bg-black shrink-0 ml-2`}>
-                                        {exp.heroesToShow.length}
-                                    </span>
-                                </button>
+
+                                    <button onClick={() => toggleBox(exp.id)} className={`text-xs font-bold px-3 py-1.5 rounded border ${isOwned ? `${borderColor} ${textColor}` : 'border-slate-600 text-slate-500'} bg-black shrink-0 ml-2`}>
+                                        {isOpen ? '▲' : '▼'} {exp.heroesToShow.length}
+                                    </button>
+                                </div>
 
                                 {/* Hero Grid */}
                                 {isOpen && (
-                                    <div className="p-4 bg-black/40 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 animate-fade-in">
+                                    <div className={`p-4 bg-black/40 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 animate-fade-in ${!isOwned ? 'grayscale opacity-50 pointer-events-none' : ''}`}>
                                         {exp.heroesToShow.map(hero => {
                                             const isSelected = selectedHeroes.some(h => h.id === hero.id);
                                             const isDisabled = !isSelected && selectedHeroes.length >= 6;
@@ -179,12 +204,6 @@ export const ExpansionSelector: React.FC<ExpansionSelectorProps> = ({ onConfirm,
                             </div>
                         );
                     })}
-                    
-                    {filteredData.length === 0 && (
-                        <div className="text-center p-12 border-2 border-dashed border-slate-600 rounded bg-slate-900">
-                            <p className="text-white text-lg font-bold">{language === 'es' ? 'NO SE ENCONTRARON AGENTES.' : 'NO AGENTS FOUND.'}</p>
-                        </div>
-                    )}
                 </div>
             </div>
 
