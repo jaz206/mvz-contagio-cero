@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { translations, Language } from '../translations';
 import { Mission, Objective, WorldStage } from '../types';
 import { createMissionInDB, updateMissionInDB } from '../services/dbService';
+// IMPORTANTE: Importamos la lista real de expansiones
+import { GAME_EXPANSIONS } from '../data/gameContent';
 
 interface MissionEditorProps {
     isOpen: boolean;
@@ -37,23 +39,12 @@ const THREAT_LEVELS = [
     "Apocalipsis Gamma (Muy difícil)"
 ];
 
-const GAME_EXPANSIONS = [
-    "Core Box (Marvel Zombies)",
-    "X-Men Resistance",
-    "Fantastic 4: Under Siege",
-    "Hydra Resurrection",
-    "Clash of the Sinister Six",
-    "Guardians of the Galaxy Set",
-    "Galactus the Devourer",
-    "Stretch Goals (Promos)"
-];
-
 export const MissionEditor: React.FC<MissionEditorProps> = ({ isOpen, onClose, onSave, language, initialData, existingMissions = [] }) => {
     const t = translations[language].missionEditor;
     
     const [title, setTitle] = useState('');
     const [description, setDescription] = useState('');
-    const [outcomeText, setOutcomeText] = useState(''); // NUEVO ESTADO
+    const [outcomeText, setOutcomeText] = useState('');
     const [locationState, setLocationState] = useState(STATES_LIST[0]);
     const [threatLevel, setThreatLevel] = useState(THREAT_LEVELS[1]); 
     const [type, setType] = useState<'STANDARD' | 'SHIELD_BASE' | 'BOSS' | 'GALACTUS'>('STANDARD');
@@ -65,17 +56,19 @@ export const MissionEditor: React.FC<MissionEditorProps> = ({ isOpen, onClose, o
     const [selectedPrereqToAdd, setSelectedPrereqToAdd] = useState('');
 
     const [objectives, setObjectives] = useState<Objective[]>([{ title: '', desc: '' }]);
+    
+    // Aquí guardaremos IDs (ej: 'xmen_resistance'), no nombres
     const [requirements, setRequirements] = useState<string[]>([]);
-    const [selectedExpansion, setSelectedExpansion] = useState(GAME_EXPANSIONS[0]);
+    const [selectedExpansionId, setSelectedExpansionId] = useState(GAME_EXPANSIONS[0].id);
+    
     const [layoutUrl, setLayoutUrl] = useState('');
-
     const [saving, setSaving] = useState(false);
 
     useEffect(() => {
         if (initialData) {
             setTitle(initialData.title);
             setDescription(initialData.description.join('\n'));
-            setOutcomeText(initialData.outcomeText || ''); // CARGAR DATO
+            setOutcomeText(initialData.outcomeText || '');
             setLocationState(initialData.location.state);
             setThreatLevel(initialData.threatLevel || THREAT_LEVELS[1]);
             setType(initialData.type || 'STANDARD');
@@ -122,13 +115,13 @@ export const MissionEditor: React.FC<MissionEditorProps> = ({ isOpen, onClose, o
     };
 
     const handleAddRequirement = () => {
-        if (!requirements.includes(selectedExpansion)) {
-            setRequirements([...requirements, selectedExpansion]);
+        if (!requirements.includes(selectedExpansionId)) {
+            setRequirements([...requirements, selectedExpansionId]);
         }
     };
 
-    const handleRemoveRequirement = (reqToRemove: string) => {
-        setRequirements(requirements.filter(r => r !== reqToRemove));
+    const handleRemoveRequirement = (reqIdToRemove: string) => {
+        setRequirements(requirements.filter(r => r !== reqIdToRemove));
     };
 
     const handleAddPrereq = () => {
@@ -161,7 +154,7 @@ export const MissionEditor: React.FC<MissionEditorProps> = ({ isOpen, onClose, o
         const missionPayload: any = {
             title,
             description: description.split('\n').filter(p => p.trim() !== ''),
-            outcomeText: outcomeText.trim() || null, // GUARDAR DATO
+            outcomeText: outcomeText.trim() || null,
             location: { state: locationState, coordinates: finalCoordinates },
             threatLevel,
             type,
@@ -170,7 +163,7 @@ export const MissionEditor: React.FC<MissionEditorProps> = ({ isOpen, onClose, o
             objectives: objectives.filter(o => o.title && o.desc),
             prereq: prereqs.length > 0 ? prereqs[0] : null, 
             prereqs: prereqs,
-            requirements,
+            requirements, // Ahora contiene IDs como 'xmen_resistance'
             layoutUrl: layoutUrl.trim() || null,
         };
 
@@ -200,6 +193,12 @@ export const MissionEditor: React.FC<MissionEditorProps> = ({ isOpen, onClose, o
         if (mAlign === 'BOTH') return true;
         return mAlign === alignment;
     });
+
+    // Helper para mostrar el nombre bonito en la lista de seleccionados
+    const getExpansionName = (id: string) => {
+        const exp = GAME_EXPANSIONS.find(e => e.id === id);
+        return exp ? exp.name : id;
+    };
 
     return (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/90 backdrop-blur-sm p-4">
@@ -316,19 +315,21 @@ export const MissionEditor: React.FC<MissionEditorProps> = ({ isOpen, onClose, o
                                 <label className="text-[10px] text-blue-400 font-bold block mb-2 uppercase">REQUISITOS (EXPANSIONES)</label>
                                 <div className="flex gap-2 mb-2">
                                     <select 
-                                        value={selectedExpansion} 
-                                        onChange={e => setSelectedExpansion(e.target.value)} 
+                                        value={selectedExpansionId} 
+                                        onChange={e => setSelectedExpansionId(e.target.value)} 
                                         className="flex-1 bg-slate-950 border border-blue-800 p-2 text-xs text-blue-200"
                                     >
-                                        {GAME_EXPANSIONS.map(exp => <option key={exp} value={exp}>{exp}</option>)}
+                                        {GAME_EXPANSIONS.map(exp => (
+                                            <option key={exp.id} value={exp.id}>{exp.name}</option>
+                                        ))}
                                     </select>
                                     <button type="button" onClick={handleAddRequirement} className="bg-blue-900/50 border border-blue-600 text-blue-300 px-3 py-1 text-[10px] font-bold uppercase">+ AÑADIR</button>
                                 </div>
                                 <div className="flex flex-wrap gap-2">
-                                    {requirements.map((req, idx) => (
+                                    {requirements.map((reqId, idx) => (
                                         <div key={idx} className="flex items-center gap-2 bg-blue-950 border border-blue-800 px-2 py-1 rounded">
-                                            <span className="text-[10px] text-blue-300">{req}</span>
-                                            <button type="button" onClick={() => handleRemoveRequirement(req)} className="text-red-400 font-bold">×</button>
+                                            <span className="text-[10px] text-blue-300">{getExpansionName(reqId)}</span>
+                                            <button type="button" onClick={() => handleRemoveRequirement(reqId)} className="text-red-400 font-bold">×</button>
                                         </div>
                                     ))}
                                 </div>
@@ -351,7 +352,6 @@ export const MissionEditor: React.FC<MissionEditorProps> = ({ isOpen, onClose, o
                                 <textarea value={description} onChange={e => setDescription(e.target.value)} rows={8} className="w-full bg-slate-950 border border-cyan-800 p-2 text-cyan-200 text-xs" />
                             </div>
 
-                            {/* NUEVO CAMPO: TEXTO DE DESENLACE */}
                             <div>
                                 <label className="text-[10px] text-emerald-600 font-bold block mb-1 uppercase">{t.outcome}</label>
                                 <textarea 

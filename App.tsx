@@ -18,7 +18,7 @@ import { MissionEditor } from './components/MissionEditor';
 import { CharacterEditor } from './components/CharacterEditor';
 import { NewsTicker } from './components/NewsTicker';
 import { ExpansionSelector } from './components/ExpansionSelector';
-import { ExpansionConfigModal } from './components/ExpansionConfigModal'; // <--- NUEVO COMPONENTE
+import { ExpansionConfigModal } from './components/ExpansionConfigModal';
 
 import { Mission, Hero, WorldStage, GlobalEvent, HeroTemplate } from './types';
 import { GAME_EXPANSIONS } from './data/gameContent';
@@ -398,7 +398,7 @@ const App: React.FC = () => {
         loadData();
     }, [user, isGuest, playerAlignment, isEditorMode]);
 
-    // Función de guardado centralizada y debounced (CORREGIDA)
+    // Función de guardado centralizada y debounced
     const saveData = useCallback(async (
         currentHeroes: Hero[], 
         currentMissions: Set<string>, 
@@ -602,11 +602,16 @@ const App: React.FC = () => {
             if (!m.requirements || m.requirements.length === 0) return true;
             
             // Verificamos si tenemos TODAS las expansiones requeridas
-            return m.requirements.every(reqName => {
-                // Buscar el ID correspondiente al nombre
-                const expansionObj = GAME_EXPANSIONS.find(ge => ge.name === reqName);
-                if (!expansionObj) return true; // Si no encontramos la expansión en la DB, asumimos que es válida o custom
-                return ownedExpansions.has(expansionObj.id);
+            return m.requirements.every(reqId => {
+                // 1. Comprobación directa de ID (Lo ideal)
+                if (ownedExpansions.has(reqId)) return true;
+
+                // 2. Fallback de compatibilidad (Por si hay misiones viejas guardadas con Nombres)
+                // Intentamos buscar si el 'reqId' es en realidad un nombre y si tenemos el ID correspondiente
+                const expansionObj = GAME_EXPANSIONS.find(ge => ge.name === reqId);
+                if (expansionObj && ownedExpansions.has(expansionObj.id)) return true;
+
+                return false;
             });
         });
 
@@ -645,7 +650,7 @@ const App: React.FC = () => {
 
             return isCompleted || prereqMet;
         });
-    }, [allMissions, completedMissionIds, isEditorMode, worldStage, playerAlignment, ownedExpansions]); // <--- AÑADIR ownedExpansions
+    }, [allMissions, completedMissionIds, isEditorMode, worldStage, playerAlignment, ownedExpansions]);
 
     const groupedMissions = useMemo(() => {
         const activeMissions = visibleMissions.filter(m => m && !completedMissionIds.has(m.id));
