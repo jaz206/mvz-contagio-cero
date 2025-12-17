@@ -31,8 +31,9 @@ import { DatabaseManager } from './components/DatabaseManager';
 import { Mission, Hero, WorldStage, GlobalEvent, HeroTemplate } from './types';
 import { GAME_EXPANSIONS } from './data/gameContent';
 
-// --- DEFINICIÓN DE LA MISIÓN 0 (GLOBAL) ---
-const MISSION_ZERO: Mission = {
+// Mantenemos esta constante SOLO como fallback de seguridad para la intro
+// y para la función de subida, pero no se usará en el mapa si existe en la BBDD.
+const MISSION_ZERO_TEMPLATE: Mission = {
     id: 'm_intro_0',
     title: "MH0: CADENAS ROTAS",
     description: [
@@ -205,11 +206,12 @@ const App: React.FC = () => {
         loadMissions();
     }, [isEditorMode]);
 
+    // --- FUNCIÓN DE SUBIDA (Mantiene la definición local SOLO para subirla) ---
     const handleUploadLocalMissions = async () => {
         if (!window.confirm("¿Subir las misiones locales a Firebase?")) return;
 
         const localMissionsToUpload: Mission[] = [
-            MISSION_ZERO, 
+            MISSION_ZERO_TEMPLATE, 
             {
                 id: 'm_kraven', title: t.missions.kraven.title, description: t.missions.kraven.description, objectives: t.missions.kraven.objectives,
                 location: { state: 'New York', coordinates: [-74.006, 40.7128] }, threatLevel: 'ALTA', type: 'STANDARD', alignment: 'ALIVE',
@@ -244,33 +246,21 @@ const App: React.FC = () => {
         setCustomMissions(loaded);
     };
 
-    // --- LÓGICA DE MISIONES VISIBLES ---
+    // --- LÓGICA DE MISIONES (SOLO BBDD) ---
     const allMissions: Mission[] = useMemo(() => {
-        const missionMap = new Map<string, Mission>();
-        
-        // 1. Cargamos las locales primero
-        const DEFAULT_MISSIONS: Mission[] = [
-            MISSION_ZERO, 
-            { id: 'm_kraven', title: t.missions.kraven.title, description: t.missions.kraven.description, objectives: t.missions.kraven.objectives, location: { state: 'New York', coordinates: [-74.006, 40.7128] }, threatLevel: 'ALTA', type: 'STANDARD', alignment: 'ALIVE', prereqs: ['m_intro_0'] },
-            { id: 'm_zombie_feast', title: "EL FESTÍN DE LOS MUTANTES", description: ["La Escuela de Xavier está fortificada.", "Cerebro detecta mucha carne fresca dentro."], objectives: [{ title: "Romper las defensas", desc: "Destruir los muros." }], location: { state: 'New York', coordinates: [-73.8, 41.0] }, threatLevel: 'EXTREMA', type: 'STANDARD', alignment: 'ZOMBIE', prereqs: ['m_intro_0'] },
-            { id: 'm_flesh', title: t.missions.fleshSleeps.title, description: t.missions.fleshSleeps.description, objectives: t.missions.fleshSleeps.objectives, location: { state: 'Nevada', coordinates: [-115.1398, 36.1699] }, threatLevel: 'MEDIA', type: 'STANDARD', alignment: 'BOTH', prereqs: ['m_intro_0'] },
-            { id: 'm_base_alpha', title: t.missions.bases.alpha, description: [t.missions.bases.desc], objectives: [{ title: t.missions.bases.objSecure, desc: t.missions.bases.objRetrieve }], location: { state: 'Colorado', coordinates: [-104.9903, 39.7392] }, threatLevel: 'BAJA', type: 'SHIELD_BASE', alignment: 'BOTH' },
-            { id: 'm_surfer', type: 'GALACTUS', triggerStage: 'SURFER', title: t.events.surfer[playerAlignment === 'ZOMBIE' ? 'zombie' : 'alive'].title, description: [t.events.surfer[playerAlignment === 'ZOMBIE' ? 'zombie' : 'alive'].desc], objectives: [{ title: "Interceptar", desc: "Detener al Heraldo." }], location: { state: 'Kansas', coordinates: [-98.0, 38.0] }, threatLevel: 'OMEGA', alignment: 'BOTH' },
-            { id: 'boss-galactus', type: 'GALACTUS', triggerStage: 'GALACTUS', title: t.missions.galactus.title, description: t.missions.galactus.description, objectives: t.missions.galactus.objectives, location: { state: 'Kansas', coordinates: [-98.0, 38.0] }, threatLevel: 'OMEGA++', alignment: 'BOTH' }
-        ];
-        DEFAULT_MISSIONS.forEach(m => missionMap.set(m.id, m));
-        
-        // 2. Las de la BBDD sobrescriben a las locales si tienen el mismo ID
-        customMissions.forEach(m => { if (m && m.id) missionMap.set(m.id, m); });
-        
-        return Array.from(missionMap.values());
-    }, [t, customMissions]);
+        // Si no hay misiones en la BBDD (customMissions vacío), devolvemos al menos la intro local
+        // para que el juego no se rompa y permita usar el botón de "Subir".
+        if (customMissions.length === 0) {
+            return [MISSION_ZERO_TEMPLATE];
+        }
+        // Si hay misiones en la BBDD, usamos EXCLUSIVAMENTE esas.
+        return customMissions;
+    }, [customMissions]);
 
     // --- INTRO MISSION SELECCIONADA ---
     const introMission = useMemo(() => {
-        // Buscamos en la lista final (que ya tiene la mezcla de local + DB)
         const found = allMissions.find(m => m.id === 'm_intro_0');
-        return found || MISSION_ZERO;
+        return found || MISSION_ZERO_TEMPLATE;
     }, [allMissions]);
 
     const visibleMissions = useMemo(() => {

@@ -9,7 +9,6 @@ interface MissionModalProps {
   onComplete: (missionId: string) => void;
   onReactivate?: (missionId: string) => void;
   onEdit?: (mission: Mission) => void; 
-  // AGREGADO: Prop para eliminar
   onDelete?: (missionId: string) => void;
   language: Language;
   isCompleted?: boolean;
@@ -78,9 +77,15 @@ export const MissionModal: React.FC<MissionModalProps> = ({
         {/* Header */}
         <div className={`border-b p-4 flex justify-between items-center relative ${isCompleted || reportSuccess ? 'bg-emerald-900/40 border-emerald-600' : 'bg-cyan-900/40 border-cyan-600'}`}>
             <div className={`absolute top-0 left-0 w-24 h-1 ${isCompleted || reportSuccess ? 'bg-emerald-400' : 'bg-cyan-400'}`}></div>
-            <h2 className={`text-xl md:text-2xl font-bold tracking-widest font-mono uppercase ${isCompleted || reportSuccess ? 'text-emerald-300' : 'text-cyan-300'}`}>
-                {isCompleted || reportSuccess ? 'MISSION COMPLETE' : t.title}
-            </h2>
+            
+            <div className="flex flex-col">
+                <h2 className={`text-xl md:text-2xl font-bold tracking-widest font-mono uppercase ${isCompleted || reportSuccess ? 'text-emerald-300' : 'text-cyan-300'}`}>
+                    {isCompleted || reportSuccess ? 'MISSION COMPLETE' : t.title}
+                </h2>
+                {/* --- NUEVO: ID VISIBLE --- */}
+                <span className="text-[9px] font-mono text-gray-400 tracking-wider">ID: {mission.id}</span>
+            </div>
+
             <div className="flex gap-2 items-center">
                 {/* BOTONES DE EDITOR EN EL HEADER */}
                 {isEditorMode && !showOutcome && (
