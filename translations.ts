@@ -2,7 +2,6 @@ export type Language = 'es' | 'en';
 
 export const translations = {
   es: {
-    // ... (resto de traducciones header, sidebar, map, factions, login, missionModal, bunker, recruit, missionEditor, events, missions, heroes se mantienen igual)
     header: {
       project: "PROYECTO: LÁZARO",
       failure: "FALLO DE CONTENCIÓN",
@@ -241,7 +240,8 @@ export const translations = {
         zombie: [
             {
                 text: "Nosotros no fuimos a pelear una guerra. Fuimos a terminar con una. Jennifer Walters (She-Hulk) nos había llamado a gritos. La Tríada (Doom, Magneto, Fisk) había secuestrado a Bruce Banner. Su plan: usar el 'Pulso Nulificador' para convertir a los superhumanos en esclavos. Nuestra misión era sencilla: infiltrarnos en ese laboratorio de hormigón, liberar a Bruce y desmantelar el arma. Estábamos allí, apretando los dientes, listos para la pelea... Pero no pudimos llegar. El Pulso se activó, y todo fue demasiado rápido. Un segundo de retraso fue nuestra condena. El arma falló.",
-                image: "https://i.postimg.cc/s2krL4L6/Video-con-humo-llamas-y-nubes-1.gif"
+                // IMAGEN ACTUALIZADA PARA ZOMBIE SLIDE 1
+                image: "https://i.pinimg.com/736x/a8/4c/e3/a84ce31bf7d6eb9388981f219a720368.jpg"
             },
             {
                 text: "Cuando las alarmas sonaron, ya estábamos en los pasillos, y el color verde lo inundó todo. El virus nos tocó. Y, en lugar de matarnos, nos despertó. El dolor se desvaneció, y en su lugar llegó el Hambre. No como un grito, sino como un frío constante, un vacío que ningún poder puede apagar. Éramos héroes, y ahora somos el error. El laboratorio es ahora nuestro matadero personal. Y en el corazón del complejo, lo oímos. Hulk no murió. El monstruo despertó. Sin alma, sin freno. Cada latido suyo extiende la plaga Gamma. Ahora entendemos: Hulk es el origen, y lo último que intentamos fue lo que desató la catástrofe.",
@@ -299,7 +299,6 @@ export const translations = {
     }
   },
   en: {
-    // ... (resto de traducciones en inglés se mantienen igual)
     header: {
       project: "PROJECT: LAZARUS",
       failure: "CONTAINMENT FAILURE",
@@ -519,7 +518,6 @@ export const translations = {
         storm: { alias: "STORM", bio: "Controls the weather. A goddess among mortals." }
     },
     
-    // --- ESTRUCTURA ACTUALIZADA PARA INTRO (INGLÉS) ---
     introSequence: {
         alive: [
             {
@@ -538,7 +536,7 @@ export const translations = {
         zombie: [
             {
                 text: "We didn't go to fight a war. We went to end one. Jennifer Walters (She-Hulk) had screamed for us. The Triad (Doom, Magneto, Fisk) had kidnapped Bruce Banner. Their plan: use the 'Nullifier Pulse' to turn superhumans into slaves. Our mission was simple: infiltrate that concrete lab, free Bruce, and dismantle the weapon. We were there, gritting our teeth, ready for the fight... But we couldn't make it. The Pulse activated, and everything happened too fast. A second of delay was our doom. The weapon failed.",
-                image: "https://i.postimg.cc/s2krL4L6/Video-con-humo-llamas-y-nubes-1.gif"
+                image: "https://i.pinimg.com/736x/a8/4c/e3/a84ce31bf7d6eb9388981f219a720368.jpg"
             },
             {
                 text: "When the alarms rang, we were already in the hallways, and the green color flooded everything. The virus touched us. And, instead of killing us, it woke us up. The pain vanished, and in its place came the Hunger. Not like a scream, but like a constant cold, a void that no power can quench. We were heroes, and now we are the mistake. The lab is now our personal slaughterhouse. And in the heart of the complex, we hear him. Hulk didn't die. The monster woke up. Soulless, unrestrained. Every beat of his heart spreads the Gamma plague. Now we understand: Hulk is the origin, and the last thing we tried was what unleashed the catastrophe.",

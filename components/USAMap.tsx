@@ -153,6 +153,12 @@ export const USAMap: React.FC<USAMapProps> = ({
           factionColor = '#9333ea'; 
           glowId = 'glow-boss'; 
       }
+      
+      // Override para Intro: Siempre verde brillante si es intro
+      if (mission.type === 'INTRODUCTORY') {
+          glowId = 'glow-shield'; // Reutilizamos el glow azul/verde brillante
+          factionColor = '#10b981';
+      }
 
       return { coreColor, factionColor, glowId };
   };
@@ -394,7 +400,13 @@ export const USAMap: React.FC<USAMapProps> = ({
       const gTokens = gTokensRef.current;
       const currentZoom = d3.zoomTransform(svgRef.current).k || 1;
 
-      const validMissions = missions.filter(m => m && m.id && m.location && m.location.coordinates);
+      // --- CORRECCIÓN: Asegurar que las misiones tengan coordenadas válidas ---
+      const validMissions = missions.filter(m => {
+          if (!m || !m.id || !m.location || !m.location.coordinates) return false;
+          // Verificar que las coordenadas no sean [0,0] o inválidas
+          const [x, y] = m.location.coordinates;
+          return x !== 0 && y !== 0 && !isNaN(x) && !isNaN(y);
+      });
       
       const connections: { source: string, target: string }[] = [];
       validMissions.forEach(m => {
