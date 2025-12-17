@@ -248,12 +248,22 @@ const App: React.FC = () => {
     }, [allMissions, completedMissionIds, isEditorMode, worldStage, playerAlignment, ownedExpansions]);
 
     const handleMissionComplete = async (id: string) => {
+        console.log("Completando misión:", id); // DEBUG
+        
         const newSet = new Set(completedMissionIds);
         newSet.add(id);
         setCompletedMissionIds(newSet);
         setSelectedMission(null);
-        if (worldStage === 'SURFER') setSurferTurnCount(prev => prev + 1);
-        if (user && playerAlignment) saveData(heroes, newSet, omegaCylinders);
+
+        if (worldStage === 'SURFER') {
+            setSurferTurnCount(prev => prev + 1);
+        }
+
+        if (user && playerAlignment) {
+            // Guardamos inmediatamente para asegurar persistencia
+            await saveData(heroes, newSet, omegaCylinders);
+        }
+
         if (id === 'boss-galactus') {
             setWorldStage('NORMAL');
             setActiveGlobalEvent(null);
@@ -261,6 +271,10 @@ const App: React.FC = () => {
         } else {
             checkGlobalEvents(newSet); 
         }
+        
+        // Forzamos una recarga de misiones visibles para que React se entere
+        const loaded = await getCustomMissions();
+        setCustomMissions(loaded);
     };
 
     const saveData = useCallback(async (currentHeroes: Hero[], currentMissions: Set<string>, currentCylinders: number) => {
@@ -361,7 +375,15 @@ const App: React.FC = () => {
             {viewMode === 'story' && (<StoryMode language={lang} onComplete={(choice) => { setPlayerAlignment(choice); setViewMode('setup'); }} onSkip={() => { setPlayerAlignment('ALIVE'); const core = GAME_EXPANSIONS.find(e => e.id === 'core_box'); if (core) setHeroes(core.heroes); setViewMode('map'); }} startAtChoice={startStoryAtChoice} />)}
             {viewMode === 'setup' && playerAlignment && (<ExpansionSelector language={lang} playerAlignment={playerAlignment} onConfirm={handleExpansionConfirm} onBack={() => { setPlayerAlignment(null); setStartStoryAtChoice(true); setViewMode('story'); }} ownedExpansions={ownedExpansions} onToggleExpansion={toggleExpansion} onToggleAllExpansions={toggleAllExpansions} />)}
             {viewMode === 'intro' && playerAlignment && (<IntroSequence language={lang} playerAlignment={playerAlignment} onComplete={() => setViewMode('mission0')} />)}
-            {viewMode === 'mission0' && introMission ? (<MissionModal mission={introMission} isOpen={true} onClose={() => setViewMode('tutorial')} onComplete={() => { handleMissionComplete(introMission.id); setViewMode('tutorial'); }} language={lang} isCompleted={false} />) : viewMode === 'mission0' && !introMission ? (<div className="absolute inset-0 flex items-center justify-center bg-slate-950 text-red-500 font-bold z-50 flex-col gap-4"><div>ERROR: MISIÓN 'm_intro_0' NO ENCONTRADA EN BBDD</div><button onClick={() => setViewMode('map')} className="border border-red-500 px-4 py-2 hover:bg-red-900/20">SALTAR AL MAPA</button></div>) : null}
+            
+            {viewMode === 'mission0' && introMission ? (
+                <MissionModal mission={introMission} isOpen={true} onClose={() => setViewMode('tutorial')} onComplete={() => { handleMissionComplete(introMission.id); setViewMode('tutorial'); }} language={lang} isCompleted={false} />
+            ) : viewMode === 'mission0' && !introMission ? (
+                <div className="absolute inset-0 flex items-center justify-center bg-slate-950 text-red-500 font-bold z-50 flex-col gap-4">
+                    <div>ERROR: MISIÓN 'm_intro_0' NO ENCONTRADA EN BBDD</div>
+                    <button onClick={() => setViewMode('map')} className="border border-red-500 px-4 py-2 hover:bg-red-900/20">SALTAR AL MAPA</button>
+                </div>
+            ) : null}
 
             {(viewMode === 'map' || viewMode === 'bunker' || viewMode === 'tutorial') && (
                 <>
