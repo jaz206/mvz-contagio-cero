@@ -51,28 +51,22 @@ export const USAMap: React.FC<USAMapProps> = ({
   const [tokensReleased, setTokensReleased] = useState(false);
   const [tooltip, setTooltip] = useState<{ x: number, y: number, mission: Mission, factionName: string } | null>(null);
 
-  // --- ESTADOS DE POSICIÓN ---
   const [hulkLocation, setHulkLocation] = useState<[number, number]>([-98.5, 39.8]); 
   const [surferLocation, setSurferLocation] = useState<[number, number] | null>(null);
 
-  // --- REFS LÓGICOS ---
   const hulkTimerRef = useRef<NodeJS.Timeout | null>(null);
   const surferTimerRef = useRef<NodeJS.Timeout | null>(null);
   const releaseTimerRef = useRef<NodeJS.Timeout | null>(null);
   
   const hulkCurrentLocRef = useRef<[number, number]>([-98.5, 39.8]);
-  
-  // NUEVO: Ref para controlar si están en la "reunión" de 15 segundos
   const meetingInProgressRef = useRef(false);
 
   const t = translations[language];
 
-  // Sincronizar Ref con Estado de Hulk
   useEffect(() => {
       hulkCurrentLocRef.current = hulkLocation;
   }, [hulkLocation]);
 
-  // --- GESTIÓN DE ETAPAS ---
   useEffect(() => {
       if (worldStage === 'SURFER') {
           setTokensReleased(false);
@@ -80,14 +74,13 @@ export const USAMap: React.FC<USAMapProps> = ({
           releaseTimerRef.current = setTimeout(() => setTokensReleased(true), 1500);
       } else {
           setTokensReleased(true);
-          meetingInProgressRef.current = false; // Resetear bloqueo si cambia etapa
+          meetingInProgressRef.current = false;
       }
       return () => {
           if (releaseTimerRef.current) clearTimeout(releaseTimerRef.current);
       };
   }, [worldStage]);
 
-  // --- CARGA DE DATOS ---
   useEffect(() => {
     const loadData = async () => {
       try {
@@ -104,7 +97,6 @@ export const USAMap: React.FC<USAMapProps> = ({
     loadData();
   }, []);
 
-  // --- RESIZE OBSERVER ---
   useEffect(() => {
     if (!containerRef.current) return;
     const observer = new ResizeObserver(entries => {
@@ -117,7 +109,6 @@ export const USAMap: React.FC<USAMapProps> = ({
     return () => observer.disconnect();
   }, []);
 
-  // --- PROYECCIÓN ---
   const { projection, pathGenerator } = useMemo(() => {
       if (!usData || !usData.objects || !usData.objects.states || dimensions.width === 0 || dimensions.height === 0) {
           return { projection: null, pathGenerator: null };
@@ -142,9 +133,12 @@ export const USAMap: React.FC<USAMapProps> = ({
 
   const getMissionVisuals = (mission: Mission, isCompleted: boolean) => {
       let coreColor = '#eab308'; 
+      
       if (isCompleted) coreColor = '#10b981'; 
       else if (mission.type === 'SHIELD_BASE') coreColor = '#3b82f6'; 
-      else if (mission.type === 'BOSS' || mission.type === 'GALACTUS') coreColor = '#9333ea'; 
+      else if (mission.type === 'INTRODUCTORY') coreColor = '#10b981'; 
+      else if (mission.type && mission.type.startsWith('BOSS')) coreColor = '#9333ea'; 
+      else if (mission.type === 'GALACTUS') coreColor = '#9333ea'; 
 
       let factionColor = '#94a3b8'; 
       let glowId = 'glow-neutral';
@@ -155,27 +149,23 @@ export const USAMap: React.FC<USAMapProps> = ({
       else if (factionStates.hulk.has(state)) { factionColor = '#84cc16'; glowId = 'glow-hulk'; }
       else if (factionStates.doom.has(state)) { factionColor = '#06b6d4'; glowId = 'glow-doom'; }
 
-      if (mission.type === 'GALACTUS') { factionColor = '#9333ea'; glowId = 'glow-boss'; }
+      if (mission.type === 'GALACTUS' || (mission.type && mission.type.startsWith('BOSS'))) { 
+          factionColor = '#9333ea'; 
+          glowId = 'glow-boss'; 
+      }
 
       return { coreColor, factionColor, glowId };
   };
 
-  // ==================================================================================
-  // LÓGICA DE HULK (RESPETA LA REUNIÓN)
-  // ==================================================================================
   useEffect(() => {
       if (!tokensReleased || !usData || !pathGenerator || !projection) return;
-
       const getDistance = (a: [number, number], b: [number, number]) => Math.sqrt(Math.pow(a[0] - b[0], 2) + Math.pow(a[1] - b[1], 2));
 
       const jumpHulk = () => {
-          // SI HAY REUNIÓN CON SURFER, HULK ESPERA
           if (meetingInProgressRef.current) {
-              // Revisar de nuevo en 1 segundo
               hulkTimerRef.current = setTimeout(jumpHulk, 1000);
               return;
           }
-
           const statesFeatureCollection = feature(usData as any, usData!.objects.states as any) as any;
           const validStates = statesFeatureCollection.features.filter((f: any) => factionStates.hulk.has(f.properties.name));
 
@@ -200,10 +190,7 @@ export const USAMap: React.FC<USAMapProps> = ({
               if (poolSize > 0) {
                   const randomIndex = Math.floor(Math.random() * poolSize);
                   const newCoords = candidates[randomIndex].coords;
-                  
                   setHulkLocation(newCoords); 
-                  
-                  // Salto normal: Animación 2s + Espera 4s = 6s
                   if (hulkTimerRef.current) clearTimeout(hulkTimerRef.current);
                   hulkTimerRef.current = setTimeout(jumpHulk, 6000);
               } else {
@@ -216,14 +203,9 @@ export const USAMap: React.FC<USAMapProps> = ({
       if (hulkTimerRef.current) clearTimeout(hulkTimerRef.current);
       hulkTimerRef.current = setTimeout(jumpHulk, 2000);
 
-      return () => {
-          if (hulkTimerRef.current) clearTimeout(hulkTimerRef.current);
-      };
+      return () => { if (hulkTimerRef.current) clearTimeout(hulkTimerRef.current); };
   }, [tokensReleased, usData, pathGenerator, projection, factionStates]);
 
-  // ==================================================================================
-  // LÓGICA DE SILVER SURFER (CINEMÁTICA + PAUSA DE 15s)
-  // ==================================================================================
   useEffect(() => {
       if (worldStage !== 'SURFER' || !usData || !pathGenerator || !projection) {
           setSurferLocation(null);
@@ -241,65 +223,35 @@ export const USAMap: React.FC<USAMapProps> = ({
           return [-98.5, 39.8] as [number, number];
       };
 
-      // Limpiar timer anterior
       if (surferTimerRef.current) clearTimeout(surferTimerRef.current);
 
       if (surferTurnCount === 0) {
-          // --- FASE 1: ENTRADA Y REUNIÓN ---
-          
-          // Bloqueamos a Hulk inmediatamente
           meetingInProgressRef.current = true;
-
           if (!surferLocation) {
-              // 1. Aparecer fuera
               setSurferLocation([-130, 60]); 
-              
-              // 2. Ir hacia Hulk
               surferTimerRef.current = setTimeout(() => {
                   setSurferLocation(hulkCurrentLocRef.current); 
-                  
-                  // 3. Esperar 15 segundos (5s viaje + 15s pausa)
-                  // Nota: El viaje dura 5s (definido en renderizado D3 abajo)
-                  // Así que esperamos 5s + 15s = 20s para liberar
                   surferTimerRef.current = setTimeout(() => {
-                      meetingInProgressRef.current = false; // LIBERAR HULK
-                      
-                      // 4. Dispersión inicial (Surfer se va a otro lado)
+                      meetingInProgressRef.current = false; 
                       const scatterCoords = getRandomStateCoords();
                       setSurferLocation(scatterCoords);
-                      
                   }, 20000); 
-
               }, 500);
           } else {
-              // Si ya está en pantalla (ej: resize), asegurar posición
-              // Si estamos en los primeros 20s, mantener bloqueo
               meetingInProgressRef.current = true;
               setSurferLocation(hulkCurrentLocRef.current);
           }
-
       } else if (surferTurnCount > 0 && surferTurnCount <= 2) {
-          // --- FASE 2: MOVIMIENTO ALEATORIO ---
-          meetingInProgressRef.current = false; // Asegurar que Hulk se mueve
+          meetingInProgressRef.current = false; 
           const newCoords = getRandomStateCoords();
           setSurferLocation(newCoords);
-
       } else if (surferTurnCount > 2) {
-          // --- FASE 3: SALIDA ---
           meetingInProgressRef.current = false;
           setSurferLocation([-60, 20]); 
       }
-
-      return () => {
-          if (surferTimerRef.current) clearTimeout(surferTimerRef.current);
-          // No reseteamos meetingInProgressRef aquí para mantener estado entre renders rápidos
-      };
-
+      return () => { if (surferTimerRef.current) clearTimeout(surferTimerRef.current); };
   }, [worldStage, surferTurnCount, usData, pathGenerator, projection]);
 
-  // ==================================================================================
-  // RENDERIZADO D3
-  // ==================================================================================
   useEffect(() => {
     if (!usData || !svgRef.current || !projection || !pathGenerator) return;
 
@@ -343,10 +295,6 @@ export const USAMap: React.FC<USAMapProps> = ({
             svg.selectAll('.bunker').attr('transform', function() {
                  const coords = d3.select(this).attr('data-coords')?.split(',').map(Number) || [0,0];
                  return `translate(${coords[0]},${coords[1]}) scale(${1/k})`;
-            });
-            svg.selectAll('.radar-effect').attr('transform', function() {
-                const coords = d3.select(this).attr('data-coords')?.split(',').map(Number) || [0,0];
-                return `translate(${coords[0] - RADAR_OFFSET},${coords[1] - RADAR_OFFSET}) scale(1)`; 
             });
             svg.selectAll('text.label').style('font-size', `${Math.max(6, 10/k)}px`);
 
@@ -439,7 +387,6 @@ export const USAMap: React.FC<USAMapProps> = ({
 
   }, [usData, dimensions, projection, pathGenerator, factionStates]); 
 
-  // --- RENDERIZADO DE TOKENS Y MISIONES ---
   useEffect(() => {
       if (!projection || !gMissionsRef.current || !gTokensRef.current || !svgRef.current) return;
       
@@ -448,29 +395,40 @@ export const USAMap: React.FC<USAMapProps> = ({
       const currentZoom = d3.zoomTransform(svgRef.current).k || 1;
 
       const validMissions = missions.filter(m => m && m.id && m.location && m.location.coordinates);
+      
       const connections: { source: string, target: string }[] = [];
       validMissions.forEach(m => {
-          if (m.prereqs && m.prereqs.length > 0) {
+          if (m.prereqs && Array.isArray(m.prereqs) && m.prereqs.length > 0) {
               m.prereqs.forEach(pid => connections.push({ source: pid, target: m.id }));
-          } else if (m.prereq) {
+          } 
+          else if (m.prereq) {
               connections.push({ source: m.prereq, target: m.id });
           }
       });
+
       gMissions.selectAll('path.mission-line')
-        .data(connections)
+        .data(connections, (d: any) => `${d.source}-${d.target}`) 
         .join('path')
         .attr('class', 'mission-line')
         .attr('d', (d) => {
             const startMission = missions.find(m => m.id === d.source);
             const endMission = missions.find(m => m.id === d.target);
+            
             if (!startMission || !endMission) return null;
+            
             const start = projection(startMission.location.coordinates);
             const end = projection(endMission.location.coordinates);
+            
             if (!start || !end) return null;
+            
             const dr = Math.sqrt(Math.pow(end[0]-start[0], 2) + Math.pow(end[1]-start[1], 2));
             return `M${start[0]},${start[1]}A${dr},${dr} 0 0,1 ${end[0]},${end[1]}`;
         })
-        .attr('fill', 'none').attr('stroke', '#eab308').attr('stroke-width', 1.5).attr('stroke-dasharray', '4,4').attr('opacity', 0.6);
+        .attr('fill', 'none')
+        .attr('stroke', '#eab308')
+        .attr('stroke-width', 1.5)
+        .attr('stroke-dasharray', '4,4')
+        .attr('opacity', 0.6);
 
       const missionGroups = gMissions.selectAll('g.mission')
         .data(validMissions, (d: any) => d.id) 
@@ -541,22 +499,17 @@ export const USAMap: React.FC<USAMapProps> = ({
         .style('display', currentZoom < 2.5 ? 'none' : 'block')
         .attr('transform', `scale(${1/currentZoom * 2})`);
 
-      // --- CÁLCULO DE COLISIÓN VISUAL (SEPARACIÓN) ---
       let hulkRenderCoords = projection(hulkLocation);
       let surferRenderCoords = surferLocation ? projection(surferLocation) : null;
 
       if (hulkRenderCoords && surferRenderCoords) {
           const dist = Math.sqrt(Math.pow(hulkRenderCoords[0] - surferRenderCoords[0], 2) + Math.pow(hulkRenderCoords[1] - surferRenderCoords[1], 2));
-          
-          // Si están muy cerca (mismo estado), los separamos visualmente
-          // Hulk a la izquierda, Surfer a la derecha
           if (dist < 20) {
               hulkRenderCoords = [hulkRenderCoords[0] - 15, hulkRenderCoords[1]];
               surferRenderCoords = [surferRenderCoords[0] + 15, surferRenderCoords[1]];
           }
       }
 
-      // --- RENDERIZADO DE HULK ---
       if (tokensReleased && hulkRenderCoords) {
           let hulkGroup = gTokens.select('.hulk-token');
           if (hulkGroup.empty()) {
@@ -594,7 +547,6 @@ export const USAMap: React.FC<USAMapProps> = ({
           gTokens.selectAll('.hulk-token').remove();
       }
 
-      // --- RENDERIZADO DE SILVER SURFER ---
       if (surferRenderCoords) {
           let surferGroup = gTokens.select('.surfer-token');
           if (surferGroup.empty()) {
@@ -615,8 +567,6 @@ export const USAMap: React.FC<USAMapProps> = ({
                   const iX = d3.interpolateNumber(oldX, surferRenderCoords[0]);
                   const iY = d3.interpolateNumber(oldY, surferRenderCoords[1]);
                   const baseScale = 1/currentZoom;
-
-                  // Animación lenta si viene de muy lejos (entrada)
                   const duration = dist > 200 ? 5000 : 3000;
 
                   surferGroup.transition()

@@ -8,7 +8,8 @@ import {
     saveUserProfile, 
     getCustomMissions, 
     getHeroTemplates, 
-    deleteMissionInDB
+    deleteMissionInDB,
+    uploadLocalMissionsToDB 
 } from './services/dbService';
 import { logout } from './services/authService';
 
@@ -29,6 +30,7 @@ import { DatabaseManager } from './components/DatabaseManager';
 
 import { Mission, Hero, WorldStage, GlobalEvent, HeroTemplate } from './types';
 import { GAME_EXPANSIONS } from './data/gameContent';
+import { getInitialMissions } from './data/initialMissions';
 
 const FACTION_STATES = {
     magneto: new Set(['Washington', 'Oregon', 'California', 'Nevada', 'Idaho', 'Montana', 'Wyoming', 'Utah', 'Arizona', 'Colorado', 'Alaska', 'Hawaii']),
@@ -183,15 +185,23 @@ const App: React.FC = () => {
         loadMissions();
     }, [isEditorMode]);
 
-    // --- LÓGICA DE MISIONES (SOLO BBDD) ---
-    const allMissions: Mission[] = useMemo(() => {
-        return customMissions;
-    }, [customMissions]);
+    const handleUploadLocalMissions = async () => {
+        if (!window.confirm("¿Subir las misiones locales a Firebase?")) return;
+        const localMissionsToUpload = getInitialMissions(t);
+        await uploadLocalMissionsToDB(localMissionsToUpload);
+        const loaded = await getCustomMissions();
+        setCustomMissions(loaded);
+    };
 
-    // --- INTRO MISSION SELECCIONADA ---
+    const allMissions: Mission[] = useMemo(() => {
+        if (customMissions.length === 0) return getInitialMissions(t);
+        return customMissions;
+    }, [customMissions, t]);
+
     const introMission = useMemo(() => {
-        return allMissions.find(m => m.id === 'm_intro_0') || null;
-    }, [allMissions]);
+        const found = allMissions.find(m => m.id === 'm_intro_0');
+        return found || getInitialMissions(t)[0];
+    }, [allMissions, t]);
 
     const visibleMissions = useMemo(() => {
         const alignmentFiltered = allMissions.filter(m => {
@@ -214,7 +224,10 @@ const App: React.FC = () => {
 
         return expansionFiltered.filter(m => {
             if (!m) return false;
+            
             const isCompleted = completedMissionIds.has(m.id);
+            if (isCompleted) return true;
+
             let prereqMet = true;
             if (m.prereqs && m.prereqs.length > 0) {
                 prereqMet = m.prereqs.every(pid => completedMissionIds.has(pid));
@@ -303,12 +316,10 @@ const App: React.FC = () => {
     const handleTransformHero = (heroId: string, targetAlignment: 'ALIVE' | 'ZOMBIE') => { /* ... lógica existente ... */ };
     const mergeWithLatestContent = (savedHeroes: Hero[], isZombie: boolean, templates: HeroTemplate[]): Hero[] => { return savedHeroes; };
 
-    // --- CORRECCIÓN: TOGGLE ZONE CON ACTUALIZACIÓN FUNCIONAL ---
     const toggleZone = (zone: string) => {
         setExpandedZones(prev => {
             const newSet = new Set(prev);
-            if (newSet.has(zone)) newSet.delete(zone);
-            else newSet.add(zone);
+            if (newSet.has(zone)) newSet.delete(zone); else newSet.add(zone);
             return newSet;
         });
     };
@@ -406,7 +417,7 @@ const App: React.FC = () => {
                                                 return (
                                                     <div key={zoneKey} className={`mb-1 border border-cyan-900/30 bg-slate-900/30 ${isBlocked ? 'opacity-40 pointer-events-none grayscale' : ''}`}>
                                                         <button type="button" onClick={() => toggleZone(zoneKey)} className="w-full flex justify-between items-center p-2 bg-slate-800/80 hover:bg-cyan-900/30 transition-colors border-b border-cyan-900/30"><span className="text-[10px] font-bold text-cyan-400 uppercase tracking-widest truncate max-w-[140px]">{factionLabel}</span><div className="flex items-center gap-1"><span className="text-[9px] bg-cyan-900/50 text-cyan-200 px-1 py-0.5 rounded font-mono border border-cyan-700">{missions.length}</span><span className={`text-[8px] text-cyan-500 transform transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`}>▼</span></div></button>
-                                                        {isExpanded && (<div className="p-1 space-y-1 animate-fade-in bg-slate-950/20">{missions.map(m => { const isShield = m.type === 'SHIELD_BASE'; const isStartMission = m.id === 'm_kraven' || (m.title && m.title.includes("MH0")); const isBoss = m.type === 'BOSS'; let borderClass = 'border-yellow-500/30 bg-yellow-900/5 hover:bg-yellow-900/20'; let barClass = 'bg-yellow-500'; let textClass = 'text-yellow-200'; if (isBoss) { borderClass = 'border-purple-500/30 bg-purple-900/20 hover:bg-purple-900/40 animate-pulse'; barClass = 'bg-purple-500'; textClass = 'text-purple-200'; } else if (isShield) { borderClass = 'border-cyan-500/30 bg-cyan-900/5 hover:bg-cyan-900/20'; barClass = 'bg-cyan-500'; textClass = 'text-cyan-200'; } else if (isStartMission) { borderClass = 'border-emerald-500/30 bg-emerald-900/5 hover:bg-emerald-900/20'; barClass = 'bg-emerald-500'; textClass = 'text-emerald-200'; } return (<div key={m.id} onClick={() => handleMissionSelectWrapper(m)} className={`p-2 border cursor-pointer transition-all group relative overflow-hidden ${borderClass}`}><div className={`absolute left-0 top-0 bottom-0 w-1 ${barClass} group-hover:w-1.5 transition-all`}></div><div className={`text-xs font-bold ${textClass} group-hover:text-white uppercase tracking-wider pl-2 truncate`}>{m.title || 'UNKNOWN MISSION'}</div></div>); })}</div>)}
+                                                        {isExpanded && (<div className="p-1 space-y-1 animate-fade-in bg-slate-950/20">{missions.map(m => { const isShield = m.type === 'SHIELD_BASE'; const isIntro = m.type === 'INTRODUCTORY'; const isBoss = m.type && m.type.startsWith('BOSS'); let borderClass = 'border-yellow-500/30 bg-yellow-900/5 hover:bg-yellow-900/20'; let barClass = 'bg-yellow-500'; let textClass = 'text-yellow-200'; if (isBoss) { borderClass = 'border-purple-500/30 bg-purple-900/20 hover:bg-purple-900/40 animate-pulse'; barClass = 'bg-purple-500'; textClass = 'text-purple-200'; } else if (isShield) { borderClass = 'border-cyan-500/30 bg-cyan-900/5 hover:bg-cyan-900/20'; barClass = 'bg-cyan-500'; textClass = 'text-cyan-200'; } else if (isIntro) { borderClass = 'border-emerald-500/30 bg-emerald-900/5 hover:bg-emerald-900/20'; barClass = 'bg-emerald-500'; textClass = 'text-emerald-200'; } return (<div key={m.id} onClick={() => handleMissionSelectWrapper(m)} className={`p-2 border cursor-pointer transition-all group relative overflow-hidden ${borderClass}`}><div className={`absolute left-0 top-0 bottom-0 w-1 ${barClass} group-hover:w-1.5 transition-all`}></div><div className={`text-xs font-bold ${textClass} group-hover:text-white uppercase tracking-wider pl-2 truncate`}>{m.title || 'UNKNOWN MISSION'}</div></div>); })}</div>)}
                                                     </div>
                                                 );
                                             })}
@@ -429,6 +440,11 @@ const App: React.FC = () => {
                                             <button onClick={() => setShowMissionEditor(true)} className="bg-cyan-900/50 hover:bg-cyan-800 text-cyan-200 text-[10px] font-bold py-2 px-3 border border-cyan-700 uppercase tracking-wider transition-colors">+ CREAR MISIÓN</button>
                                             <button onClick={() => setShowCharacterEditor(true)} className="bg-blue-900/50 hover:bg-blue-800 text-blue-200 text-[10px] font-bold py-2 px-3 border border-blue-700 uppercase tracking-wider transition-colors">+ CREAR PERSONAJE</button>
                                             <button onClick={() => setShowDbManager(true)} className="bg-purple-900/50 hover:bg-purple-800 text-purple-200 text-[10px] font-bold py-2 px-3 border border-purple-700 uppercase tracking-wider transition-colors">⚙ GESTOR BBDD (ADMIN)</button>
+                                            <div className="h-px bg-cyan-900 my-1"></div>
+                                            
+                                            {/* BOTÓN DE SINCRONIZACIÓN */}
+                                            <button onClick={handleUploadLocalMissions} className="bg-orange-900/50 hover:bg-orange-800 text-orange-200 text-[10px] font-bold py-2 px-3 border border-orange-700 uppercase tracking-wider transition-colors" title="Copia las misiones hardcoded a Firebase">☁ SUBIR MISIONES LOCALES</button>
+                                            
                                             <div className="h-px bg-cyan-900 my-1"></div>
                                             <button onClick={() => handleSimulateProgress(5)} className="bg-emerald-900/50 hover:bg-emerald-800 text-emerald-200 text-[10px] font-bold py-2 px-3 border border-emerald-700 uppercase tracking-wider transition-colors">+5 MISIONES (SIM)</button>
                                             <button onClick={handleResetProgress} className="bg-red-900/50 hover:bg-red-800 text-red-200 text-[10px] font-bold py-2 px-3 border border-red-700 uppercase tracking-wider transition-colors">RESET PROGRESO</button>

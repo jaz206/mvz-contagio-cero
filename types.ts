@@ -23,7 +23,6 @@ export interface Hero {
     characterSheetUrl?: string;
     stats: HeroStats;
     assignedMissionId: string | null;
-    // NUEVO CAMPO: ID de la expansión a la que pertenece (Oculto en UI)
     expansionId?: string;
 }
 
@@ -39,7 +38,6 @@ export interface HeroTemplate {
     objectives?: string[];
     characterSheetUrl?: string;
     defaultAlignment?: 'ALIVE' | 'ZOMBIE'; 
-    // NUEVO CAMPO: ID de la expansión a la que pertenece (Oculto en UI)
     expansionId?: string;
 }
 
@@ -53,6 +51,18 @@ export interface Objective {
     desc: string;
 }
 
+// --- ACTUALIZACIÓN DE TIPOS DE MISIÓN ---
+export type MissionType = 
+    | 'STANDARD' 
+    | 'INTRODUCTORY' 
+    | 'SHIELD_BASE' 
+    | 'BOSS' 
+    | 'BOSS_KINGPIN' 
+    | 'BOSS_MAGNETO' 
+    | 'BOSS_DOOM' 
+    | 'BOSS_HULK' 
+    | 'GALACTUS';
+
 export interface Mission {
     id: string;
     title: string;
@@ -60,7 +70,7 @@ export interface Mission {
     objectives: Objective[];
     location: Location;
     threatLevel: string;
-    type?: 'STANDARD' | 'SHIELD_BASE' | 'BOSS' | 'GALACTUS';
+    type?: MissionType; 
     triggerStage?: WorldStage; 
     prereq?: string;       
     prereqs?: string[];    

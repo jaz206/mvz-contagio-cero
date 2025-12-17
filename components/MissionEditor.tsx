@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { translations, Language } from '../translations';
-import { Mission, Objective, WorldStage } from '../types';
+import { Mission, Objective, WorldStage, MissionType } from '../types';
 import { createMissionInDB, updateMissionInDB } from '../services/dbService';
 import { GAME_EXPANSIONS } from '../data/gameContent';
 
@@ -46,7 +46,7 @@ export const MissionEditor: React.FC<MissionEditorProps> = ({ isOpen, onClose, o
     const [outcomeText, setOutcomeText] = useState('');
     const [locationState, setLocationState] = useState(STATES_LIST[0]);
     const [threatLevel, setThreatLevel] = useState(THREAT_LEVELS[1]); 
-    const [type, setType] = useState<'STANDARD' | 'SHIELD_BASE' | 'BOSS' | 'GALACTUS'>('STANDARD');
+    const [type, setType] = useState<MissionType>('STANDARD');
     const [alignment, setAlignment] = useState<'ALIVE' | 'ZOMBIE' | 'BOTH'>('BOTH');
     
     const [triggerStage, setTriggerStage] = useState<WorldStage>('NORMAL');
@@ -234,11 +234,15 @@ export const MissionEditor: React.FC<MissionEditorProps> = ({ isOpen, onClose, o
                             <div className="grid grid-cols-2 gap-2">
                                 <div>
                                     <label className="text-[10px] text-cyan-600 font-bold block mb-1 uppercase">{t.type}</label>
-                                    <select value={type} onChange={e => setType(e.target.value as any)} className="w-full bg-slate-950 border border-cyan-800 p-2 text-cyan-200">
+                                    <select value={type} onChange={e => setType(e.target.value as MissionType)} className="w-full bg-slate-950 border border-cyan-800 p-2 text-cyan-200">
                                         <option value="STANDARD">STANDARD</option>
-                                        <option value="SHIELD_BASE">SHIELD BASE</option>
-                                        <option value="BOSS">BOSS</option>
-                                        <option value="GALACTUS">GALACTUS EVENT</option>
+                                        <option value="INTRODUCTORY">INTRODUCTORIA (VERDE)</option>
+                                        <option value="SHIELD_BASE">BASE S.H.I.E.L.D.</option>
+                                        <option value="BOSS_KINGPIN">BOSS - KINGPIN</option>
+                                        <option value="BOSS_MAGNETO">BOSS - MAGNETO</option>
+                                        <option value="BOSS_DOOM">BOSS - DOOM</option>
+                                        <option value="BOSS_HULK">BOSS - HULK</option>
+                                        <option value="GALACTUS">EVENTO GALACTUS</option>
                                     </select>
                                 </div>
                                 <div>
@@ -275,7 +279,6 @@ export const MissionEditor: React.FC<MissionEditorProps> = ({ isOpen, onClose, o
                             <div className="bg-slate-900/50 border border-cyan-900/30 p-3">
                                 <label className="text-[10px] text-cyan-600 font-bold block mb-2 uppercase">{t.prereq} (MÚLTIPLES)</label>
                                 <div className="flex gap-2 mb-2">
-                                    {/* CORRECCIÓN AQUÍ: min-w-0 para que el select no empuje al botón */}
                                     <select 
                                         value={selectedPrereqToAdd} 
                                         onChange={e => setSelectedPrereqToAdd(e.target.value)} 
@@ -288,7 +291,6 @@ export const MissionEditor: React.FC<MissionEditorProps> = ({ isOpen, onClose, o
                                             </option>
                                         ))}
                                     </select>
-                                    {/* CORRECCIÓN AQUÍ: shrink-0 para que el botón no se aplaste */}
                                     <button 
                                         type="button" 
                                         onClick={handleAddPrereq} 
