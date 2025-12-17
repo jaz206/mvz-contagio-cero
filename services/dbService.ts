@@ -233,12 +233,10 @@ export const deleteMissionInDB = async (id: string): Promise<void> => {
     }
 };
 
-// --- FUNCIÓN DE RESET Y SINCRONIZACIÓN MASIVA ---
+// --- FUNCIÓN DE RESET Y SINCRONIZACIÓN MASIVA DE HÉROES ---
 export const seedExpansionsToDB = async (): Promise<void> => {
     if (!db) throw new Error("Base de datos no configurada");
     try {
-        // 1. PRIMERO BORRAMOS TODO (WIPE)
-        // Firestore no tiene "delete collection", hay que borrar uno a uno
         const snapshot = await getDocs(collection(db, COLLECTION_NAME));
         const deleteBatch = writeBatch(db);
         snapshot.docs.forEach((doc) => {
@@ -247,13 +245,10 @@ export const seedExpansionsToDB = async (): Promise<void> => {
         await deleteBatch.commit();
         console.log("Colección de héroes limpiada.");
 
-        // 2. AHORA SUBIMOS LOS DATOS LIMPIOS
-        // Usamos un nuevo batch porque el anterior ya se commiteó
         const createBatch = writeBatch(db);
         let count = 0;
 
         for (const exp of GAME_EXPANSIONS) {
-            // Procesar Héroes Vivos
             for (const hero of exp.heroes) {
                 const docRef = doc(db, COLLECTION_NAME, hero.id);
                 const templateData: HeroTemplate = {
@@ -267,13 +262,12 @@ export const seedExpansionsToDB = async (): Promise<void> => {
                     defaultAlignment: 'ALIVE',
                     currentStory: '',
                     objectives: [],
-                    expansionId: exp.id // GUARDAMOS EL ID DE LA EXPANSIÓN
+                    expansionId: exp.id
                 };
                 createBatch.set(docRef, templateData);
                 count++;
             }
 
-            // Procesar Héroes Zombies
             for (const zHero of exp.zombieHeroes) {
                 const docRef = doc(db, COLLECTION_NAME, zHero.id);
                 const templateData: HeroTemplate = {
@@ -287,7 +281,7 @@ export const seedExpansionsToDB = async (): Promise<void> => {
                     defaultAlignment: 'ZOMBIE',
                     currentStory: '',
                     objectives: [],
-                    expansionId: exp.id // GUARDAMOS EL ID DE LA EXPANSIÓN
+                    expansionId: exp.id
                 };
                 createBatch.set(docRef, templateData);
                 count++;
@@ -300,6 +294,35 @@ export const seedExpansionsToDB = async (): Promise<void> => {
     } catch (error) {
         console.error("Error seeding expansions:", error);
         alert("ERROR al sincronizar expansiones. Revisa la consola.");
+        throw error;
+    }
+};
+
+// --- NUEVA FUNCIÓN: SUBIR MISIONES LOCALES A BBDD ---
+export const uploadLocalMissionsToDB = async (missions: Mission[]): Promise<void> => {
+    if (!db) throw new Error("Base de datos no configurada");
+    
+    try {
+        const batch = writeBatch(db);
+        let count = 0;
+
+        missions.forEach((mission) => {
+            // Usamos el ID de la misión como ID del documento para evitar duplicados
+            if (mission.id) {
+                const docRef = doc(db, MISSIONS_COLLECTION, mission.id);
+                // Eliminamos campos undefined que puedan romper Firestore usando JSON stringify/parse
+                const cleanMission = JSON.parse(JSON.stringify(mission));
+                batch.set(docRef, cleanMission);
+                count++;
+            }
+        });
+
+        await batch.commit();
+        console.log(`${count} misiones locales subidas a la BBDD.`);
+        alert(`ÉXITO: Se han copiado ${count} misiones locales a la base de datos.`);
+    } catch (error) {
+        console.error("Error subiendo misiones locales:", error);
+        alert("ERROR al subir misiones. Revisa la consola.");
         throw error;
     }
 };

@@ -3,7 +3,14 @@ import { translations, Language } from './translations';
 import { User } from 'firebase/auth';
 import { auth } from './firebaseConfig';
 import { onAuthStateChanged } from 'firebase/auth';
-import { getUserProfile, saveUserProfile, getCustomMissions, getHeroTemplates, deleteMissionInDB } from './services/dbService';
+import { 
+    getUserProfile, 
+    saveUserProfile, 
+    getCustomMissions, 
+    getHeroTemplates, 
+    deleteMissionInDB,
+    uploadLocalMissionsToDB // <--- NUEVO IMPORT
+} from './services/dbService';
 import { logout } from './services/authService';
 
 import { LoginScreen } from './components/LoginScreen';
@@ -19,7 +26,6 @@ import { CharacterEditor } from './components/CharacterEditor';
 import { NewsTicker } from './components/NewsTicker';
 import { ExpansionSelector } from './components/ExpansionSelector';
 import { ExpansionConfigModal } from './components/ExpansionConfigModal';
-// IMPORTAR EL NUEVO COMPONENTE
 import { DatabaseManager } from './components/DatabaseManager';
 
 import { Mission, Hero, WorldStage, GlobalEvent, HeroTemplate } from './types';
@@ -91,7 +97,6 @@ const App: React.FC = () => {
     const [missionToEdit, setMissionToEdit] = useState<Mission | null>(null); 
     
     const [showCharacterEditor, setShowCharacterEditor] = useState(false);
-    // NUEVO ESTADO PARA EL GESTOR DE BBDD
     const [showDbManager, setShowDbManager] = useState(false);
 
     const [customMissions, setCustomMissions] = useState<Mission[]>([]);
@@ -105,13 +110,11 @@ const App: React.FC = () => {
     
     const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
 
-    // --- NUEVOS ESTADOS PARA GESTIÓN DE EXPANSIONES ---
     const [ownedExpansions, setOwnedExpansions] = useState<Set<string>>(new Set(['core_box']));
     const [showExpansionConfig, setShowExpansionConfig] = useState(false);
 
     const t = translations[lang];
 
-    // Cargar expansiones guardadas localmente al inicio
     useEffect(() => {
         const savedExp = localStorage.getItem('shield_owned_expansions');
         if (savedExp) {
@@ -123,7 +126,6 @@ const App: React.FC = () => {
         }
     }, []);
 
-    // Helpers para gestionar expansiones
     const updateOwnedExpansions = (newSet: Set<string>) => {
         setOwnedExpansions(newSet);
         localStorage.setItem('shield_owned_expansions', JSON.stringify(Array.from(newSet)));
@@ -141,11 +143,10 @@ const App: React.FC = () => {
             const allIds = GAME_EXPANSIONS.map(e => e.id);
             updateOwnedExpansions(new Set(allIds));
         } else {
-            updateOwnedExpansions(new Set(['core_box'])); // Siempre mantener Core Box
+            updateOwnedExpansions(new Set(['core_box'])); 
         }
     };
 
-    // Auth Effect (Corregido para estabilidad)
     useEffect(() => {
         if (!auth) {
             console.log("Modo sin conexión/invitado activado (Firebase no configurado)");
@@ -402,7 +403,6 @@ const App: React.FC = () => {
         loadData();
     }, [user, isGuest, playerAlignment, isEditorMode]);
 
-    // Función de guardado centralizada y debounced
     const saveData = useCallback(async (
         currentHeroes: Hero[], 
         currentMissions: Set<string>, 
@@ -426,7 +426,6 @@ const App: React.FC = () => {
         }
     }, [user, playerAlignment, isEditorMode]);
 
-    // Efecto de Auto-Guardado
     useEffect(() => {
         if (heroes.length === 0) return;
         const timeout = setTimeout(() => {
@@ -525,6 +524,49 @@ const App: React.FC = () => {
         }
     };
 
+    // --- NUEVA FUNCIÓN PARA SUBIR MISIONES LOCALES ---
+    const handleUploadLocalMissions = async () => {
+        if (!window.confirm("¿Subir las misiones locales (Hardcoded) a Firebase? Esto sobrescribirá las misiones con el mismo ID en la base de datos.")) {
+            return;
+        }
+
+        // Reconstruimos la lista de misiones locales que tienes en el useMemo
+        // Nota: Al subirlas, se guardarán con el idioma actual seleccionado (t.missions...)
+        const localMissionsToUpload: Mission[] = [
+            MISSION_ZERO, 
+            {
+                id: 'm_kraven', title: t.missions.kraven.title, description: t.missions.kraven.description, objectives: t.missions.kraven.objectives,
+                location: { state: 'New York', coordinates: [-74.006, 40.7128] }, threatLevel: 'ALTA', type: 'STANDARD', alignment: 'ALIVE'
+            },
+            {
+                id: 'm_zombie_feast', title: "EL FESTÍN DE LOS MUTANTES", description: ["La Escuela de Xavier está fortificada.", "Cerebro detecta mucha carne fresca dentro."], objectives: [{ title: "Romper las defensas", desc: "Destruir los muros." }],
+                location: { state: 'New York', coordinates: [-73.8, 41.0] }, threatLevel: 'EXTREMA', type: 'STANDARD', alignment: 'ZOMBIE'
+            },
+            {
+                id: 'm_flesh', title: t.missions.fleshSleeps.title, description: t.missions.fleshSleeps.description, objectives: t.missions.fleshSleeps.objectives,
+                location: { state: 'Nevada', coordinates: [-115.1398, 36.1699] }, threatLevel: 'MEDIA', type: 'STANDARD', alignment: 'BOTH'
+            },
+            {
+                id: 'm_base_alpha', title: t.missions.bases.alpha, description: [t.missions.bases.desc], objectives: [{ title: t.missions.bases.objSecure, desc: t.missions.bases.objRetrieve }],
+                location: { state: 'Colorado', coordinates: [-104.9903, 39.7392] }, threatLevel: 'BAJA', type: 'SHIELD_BASE', alignment: 'BOTH'
+            },
+            {
+                id: 'm_surfer', type: 'GALACTUS', triggerStage: 'SURFER', title: t.events.surfer[playerAlignment === 'ZOMBIE' ? 'zombie' : 'alive'].title, description: [t.events.surfer[playerAlignment === 'ZOMBIE' ? 'zombie' : 'alive'].desc], objectives: [{ title: "Interceptar", desc: "Detener al Heraldo." }],
+                location: { state: 'Kansas', coordinates: [-98.0, 38.0] }, threatLevel: 'OMEGA', alignment: 'BOTH'
+            },
+            {
+                id: 'boss-galactus', type: 'GALACTUS', triggerStage: 'GALACTUS', title: t.missions.galactus.title, description: t.missions.galactus.description, objectives: t.missions.galactus.objectives,
+                location: { state: 'Kansas', coordinates: [-98.0, 38.0] }, threatLevel: 'OMEGA++', alignment: 'BOTH'
+            }
+        ];
+
+        await uploadLocalMissionsToDB(localMissionsToUpload);
+        
+        // Recargamos las misiones custom para ver los cambios reflejados si es necesario
+        const loaded = await getCustomMissions();
+        setCustomMissions(loaded);
+    };
+
     const handleEventAcknowledge = () => setActiveGlobalEvent(null);
     
     const handleToggleHeroObjective = (heroId: string, idx: number) => {
@@ -600,21 +642,13 @@ const App: React.FC = () => {
             return m.alignment === playerAlignment;
         });
 
-        // --- FILTRO DE REQUISITOS (EXPANSIONES) ---
         const expansionFiltered = alignmentFiltered.filter(m => {
-            // Si la misión no tiene requisitos, pasa
             if (!m.requirements || m.requirements.length === 0) return true;
             
-            // Verificamos si tenemos TODAS las expansiones requeridas
             return m.requirements.every(reqId => {
-                // 1. Comprobación directa de ID (Lo ideal)
                 if (ownedExpansions.has(reqId)) return true;
-
-                // 2. Fallback de compatibilidad (Por si hay misiones viejas guardadas con Nombres)
-                // Intentamos buscar si el 'reqId' es en realidad un nombre y si tenemos el ID correspondiente
                 const expansionObj = GAME_EXPANSIONS.find(ge => ge.name === reqId);
                 if (expansionObj && ownedExpansions.has(expansionObj.id)) return true;
-
                 return false;
             });
         });
@@ -716,10 +750,8 @@ const App: React.FC = () => {
             {activeGlobalEvent && <EventModal event={activeGlobalEvent} isOpen={!!activeGlobalEvent} onAcknowledge={handleEventAcknowledge} language={lang} playerAlignment={playerAlignment} />}
             {selectedMission && <MissionModal mission={selectedMission} isOpen={!!selectedMission} onClose={() => setSelectedMission(null)} onComplete={handleMissionComplete} onReactivate={handleMissionReactivate} language={lang} isCompleted={completedMissionIds.has(selectedMission.id)} isEditorMode={isEditorMode} onEdit={(m) => { setMissionToEdit(m); setShowMissionEditor(true); setSelectedMission(null); }} onDelete={handleDeleteMission} />}
             
-            {/* NUEVO COMPONENTE DE GESTIÓN DE BBDD */}
             <DatabaseManager isOpen={showDbManager} onClose={() => setShowDbManager(false)} language={lang} />
 
-            {/* NUEVO MODAL DE CONFIGURACIÓN */}
             <ExpansionConfigModal 
                 isOpen={showExpansionConfig} 
                 onClose={() => setShowExpansionConfig(false)}
@@ -758,7 +790,6 @@ const App: React.FC = () => {
                         setStartStoryAtChoice(true); 
                         setViewMode('story');
                     }}
-                    // PASAR NUEVAS PROPS
                     ownedExpansions={ownedExpansions}
                     onToggleExpansion={toggleExpansion}
                     onToggleAllExpansions={toggleAllExpansions}
@@ -794,7 +825,6 @@ const App: React.FC = () => {
                                 <div className="flex flex-col items-start leading-none"><span className="text-[8px] font-bold tracking-widest opacity-70">DIMENSION</span><span className="text-[10px] font-bold">{playerAlignment === 'ZOMBIE' ? 'EARTH-Z' : 'EARTH-616'}</span></div>
                             </button>
                             
-                            {/* NUEVO BOTÓN DE CONFIGURACIÓN DE EXPANSIONES */}
                             <button 
                                 onClick={() => setShowExpansionConfig(true)}
                                 className="hidden md:flex items-center gap-2 px-3 py-1 border border-cyan-700 bg-slate-900/50 text-cyan-400 hover:bg-cyan-900/80 rounded transition-colors"
@@ -958,12 +988,21 @@ const App: React.FC = () => {
                                                 + CREAR PERSONAJE
                                             </button>
 
-                                            {/* NUEVO BOTÓN DE GESTOR DE BBDD */}
                                             <button 
                                                 onClick={() => setShowDbManager(true)} 
                                                 className="bg-purple-900/50 hover:bg-purple-800 text-purple-200 text-[10px] font-bold py-2 px-3 border border-purple-700 uppercase tracking-wider transition-colors"
                                             >
                                                 ⚙ GESTOR BBDD (ADMIN)
+                                            </button>
+                                            
+                                            <div className="h-px bg-cyan-900 my-1"></div>
+
+                                            <button 
+                                                onClick={handleUploadLocalMissions} 
+                                                className="bg-orange-900/50 hover:bg-orange-800 text-orange-200 text-[10px] font-bold py-2 px-3 border border-orange-700 uppercase tracking-wider transition-colors"
+                                                title="Copia las misiones hardcoded a Firebase"
+                                            >
+                                                ☁ SUBIR MISIONES LOCALES
                                             </button>
                                             
                                             <div className="h-px bg-cyan-900 my-1"></div>
