@@ -137,17 +137,12 @@ export const MissionEditor: React.FC<MissionEditorProps> = ({ isOpen, onClose, o
         e.preventDefault();
         setSaving(true);
 
-        let finalCoordinates: [number, number];
-        const stateChanged = !initialData || initialData.location.state !== locationState;
-
-        if (stateChanged) {
-            const center = STATE_CENTERS[locationState] || [-98.5, 39.8]; 
-            const jitterX = (Math.random() - 0.5) * 2.0; 
-            const jitterY = (Math.random() - 0.5) * 1.5;
-            finalCoordinates = [center[0] + jitterX, center[1] + jitterY];
-        } else {
-            finalCoordinates = initialData.location.coordinates;
-        }
+        // --- CORRECCIÓN: SIEMPRE RECALCULAR COORDENADAS ---
+        // Esto asegura que si el estado cambia o si las coordenadas estaban mal, se arreglen.
+        const center = STATE_CENTERS[locationState] || [-98.5, 39.8]; 
+        const jitterX = (Math.random() - 0.5) * 2.0; 
+        const jitterY = (Math.random() - 0.5) * 1.5;
+        const finalCoordinates: [number, number] = [center[0] + jitterX, center[1] + jitterY];
 
         const missionPayload: any = {
             title,

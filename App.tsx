@@ -29,6 +29,7 @@ import { DatabaseManager } from './components/DatabaseManager';
 
 import { Mission, Hero, WorldStage, GlobalEvent, HeroTemplate } from './types';
 import { GAME_EXPANSIONS } from './data/gameContent';
+import { getInitialMissions } from './data/initialMissions';
 
 const FACTION_STATES = {
     magneto: new Set(['Washington', 'Oregon', 'California', 'Nevada', 'Idaho', 'Montana', 'Wyoming', 'Utah', 'Arizona', 'Colorado', 'Alaska', 'Hawaii']),
@@ -183,15 +184,27 @@ const App: React.FC = () => {
         loadMissions();
     }, [isEditorMode]);
 
-    // --- LÓGICA DE MISIONES (SOLO BBDD) ---
+    // --- LÓGICA DE MISIONES (SOLO BBDD + AUTO-REPARACIÓN) ---
     const allMissions: Mission[] = useMemo(() => {
-        return customMissions;
-    }, [customMissions]);
+        if (customMissions.length === 0) return getInitialMissions(t);
+        
+        // AUTO-REPARACIÓN: Si la intro tiene coordenadas [0,0], las arreglamos temporalmente
+        return customMissions.map(m => {
+            if (m.id === 'm_intro_0') {
+                const [x, y] = m.location.coordinates;
+                if (x === 0 && y === 0) {
+                    // Coordenadas de seguridad (Ohio/Indiana aprox)
+                    return { ...m, location: { ...m.location, coordinates: [-86.1, 40.2] } };
+                }
+            }
+            return m;
+        });
+    }, [customMissions, t]);
 
-    // --- INTRO MISSION SELECCIONADA ---
     const introMission = useMemo(() => {
-        return allMissions.find(m => m.id === 'm_intro_0') || null;
-    }, [allMissions]);
+        const found = allMissions.find(m => m.id === 'm_intro_0');
+        return found || getInitialMissions(t)[0];
+    }, [allMissions, t]);
 
     const visibleMissions = useMemo(() => {
         const alignmentFiltered = allMissions.filter(m => {
@@ -348,15 +361,7 @@ const App: React.FC = () => {
             {viewMode === 'story' && (<StoryMode language={lang} onComplete={(choice) => { setPlayerAlignment(choice); setViewMode('setup'); }} onSkip={() => { setPlayerAlignment('ALIVE'); const core = GAME_EXPANSIONS.find(e => e.id === 'core_box'); if (core) setHeroes(core.heroes); setViewMode('map'); }} startAtChoice={startStoryAtChoice} />)}
             {viewMode === 'setup' && playerAlignment && (<ExpansionSelector language={lang} playerAlignment={playerAlignment} onConfirm={handleExpansionConfirm} onBack={() => { setPlayerAlignment(null); setStartStoryAtChoice(true); setViewMode('story'); }} ownedExpansions={ownedExpansions} onToggleExpansion={toggleExpansion} onToggleAllExpansions={toggleAllExpansions} />)}
             {viewMode === 'intro' && playerAlignment && (<IntroSequence language={lang} playerAlignment={playerAlignment} onComplete={() => setViewMode('mission0')} />)}
-            
-            {viewMode === 'mission0' && introMission ? (
-                <MissionModal mission={introMission} isOpen={true} onClose={() => setViewMode('tutorial')} onComplete={() => { handleMissionComplete(introMission.id); setViewMode('tutorial'); }} language={lang} isCompleted={false} />
-            ) : viewMode === 'mission0' && !introMission ? (
-                <div className="absolute inset-0 flex items-center justify-center bg-slate-950 text-red-500 font-bold z-50 flex-col gap-4">
-                    <div>ERROR: MISIÓN 'm_intro_0' NO ENCONTRADA EN BBDD</div>
-                    <button onClick={() => setViewMode('map')} className="border border-red-500 px-4 py-2 hover:bg-red-900/20">SALTAR AL MAPA</button>
-                </div>
-            ) : null}
+            {viewMode === 'mission0' && introMission ? (<MissionModal mission={introMission} isOpen={true} onClose={() => setViewMode('tutorial')} onComplete={() => { handleMissionComplete(introMission.id); setViewMode('tutorial'); }} language={lang} isCompleted={false} />) : viewMode === 'mission0' && !introMission ? (<div className="absolute inset-0 flex items-center justify-center bg-slate-950 text-red-500 font-bold z-50 flex-col gap-4"><div>ERROR: MISIÓN 'm_intro_0' NO ENCONTRADA EN BBDD</div><button onClick={() => setViewMode('map')} className="border border-red-500 px-4 py-2 hover:bg-red-900/20">SALTAR AL MAPA</button></div>) : null}
 
             {(viewMode === 'map' || viewMode === 'bunker' || viewMode === 'tutorial') && (
                 <>
