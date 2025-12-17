@@ -193,8 +193,23 @@ const App: React.FC = () => {
         setCustomMissions(loaded);
     };
 
+    // --- LÓGICA DE MISIONES CORREGIDA ---
     const allMissions: Mission[] = useMemo(() => {
-        if (customMissions.length === 0) return getInitialMissions(t);
+        // 1. Si no hay nada en BBDD, devolvemos todo el set inicial
+        if (customMissions.length === 0) {
+            return getInitialMissions(t);
+        }
+
+        // 2. Si hay datos, aseguramos que la Intro esté presente
+        // Esto es vital para que el mapa la dibuje y pinte la línea verde
+        const hasIntro = customMissions.some(m => m.id === 'm_intro_0');
+        if (!hasIntro) {
+            const localIntro = getInitialMissions(t).find(m => m.id === 'm_intro_0');
+            if (localIntro) {
+                return [localIntro, ...customMissions];
+            }
+        }
+
         return customMissions;
     }, [customMissions, t]);
 
@@ -225,6 +240,7 @@ const App: React.FC = () => {
         return expansionFiltered.filter(m => {
             if (!m) return false;
             
+            // SIEMPRE MOSTRAR MISIONES COMPLETADAS (Para que MH0 salga en el mapa)
             const isCompleted = completedMissionIds.has(m.id);
             if (isCompleted) return true;
 
