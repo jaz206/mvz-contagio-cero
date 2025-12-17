@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { translations, Language } from '../translations';
 import { Mission, Objective, WorldStage } from '../types';
 import { createMissionInDB, updateMissionInDB } from '../services/dbService';
-// IMPORTANTE: Importamos la lista real de expansiones
 import { GAME_EXPANSIONS } from '../data/gameContent';
 
 interface MissionEditorProps {
@@ -57,7 +56,6 @@ export const MissionEditor: React.FC<MissionEditorProps> = ({ isOpen, onClose, o
 
     const [objectives, setObjectives] = useState<Objective[]>([{ title: '', desc: '' }]);
     
-    // Aquí guardaremos IDs (ej: 'xmen_resistance'), no nombres
     const [requirements, setRequirements] = useState<string[]>([]);
     const [selectedExpansionId, setSelectedExpansionId] = useState(GAME_EXPANSIONS[0].id);
     
@@ -163,7 +161,7 @@ export const MissionEditor: React.FC<MissionEditorProps> = ({ isOpen, onClose, o
             objectives: objectives.filter(o => o.title && o.desc),
             prereq: prereqs.length > 0 ? prereqs[0] : null, 
             prereqs: prereqs,
-            requirements, // Ahora contiene IDs como 'xmen_resistance'
+            requirements, 
             layoutUrl: layoutUrl.trim() || null,
         };
 
@@ -194,7 +192,6 @@ export const MissionEditor: React.FC<MissionEditorProps> = ({ isOpen, onClose, o
         return mAlign === alignment;
     });
 
-    // Helper para mostrar el nombre bonito en la lista de seleccionados
     const getExpansionName = (id: string) => {
         const exp = GAME_EXPANSIONS.find(e => e.id === id);
         return exp ? exp.name : id;
@@ -285,7 +282,10 @@ export const MissionEditor: React.FC<MissionEditorProps> = ({ isOpen, onClose, o
                                     >
                                         <option value="">-- SELECCIONAR MISIÓN --</option>
                                         {validPrereqOptions.map(m => (
-                                            <option key={m.id} value={m.id}>{m.title}</option>
+                                            // --- CAMBIO AQUÍ: MOSTRAR ID EN EL DESPLEGABLE ---
+                                            <option key={m.id} value={m.id}>
+                                                {m.title} (ID: {m.id})
+                                            </option>
                                         ))}
                                     </select>
                                     <button 

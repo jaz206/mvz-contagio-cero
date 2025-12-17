@@ -112,7 +112,6 @@ const App: React.FC = () => {
 
     const t = translations[lang];
 
-    // --- CARGA INICIAL ---
     useEffect(() => {
         const savedExp = localStorage.getItem('shield_owned_expansions');
         if (savedExp) {
@@ -120,7 +119,6 @@ const App: React.FC = () => {
         }
     }, []);
 
-    // --- AUTH ---
     useEffect(() => {
         if (!auth) { setLoadingAuth(false); setLoading(false); return; }
         const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
@@ -136,7 +134,6 @@ const App: React.FC = () => {
         return () => unsubscribe();
     }, [isGuest]);
 
-    // --- HELPERS ---
     const updateOwnedExpansions = (newSet: Set<string>) => {
         setOwnedExpansions(newSet);
         localStorage.setItem('shield_owned_expansions', JSON.stringify(Array.from(newSet)));
@@ -200,7 +197,6 @@ const App: React.FC = () => {
 
     const handleTickerUpdate = (message: string) => setTickerMessage(message);
 
-    // --- CARGA DE DATOS ---
     useEffect(() => {
         const loadMissions = async () => {
             const loaded = await getCustomMissions();
@@ -209,19 +205,15 @@ const App: React.FC = () => {
         loadMissions();
     }, [isEditorMode]);
 
-    // --- NUEVA FUNCIÓN: SUBIR MISIONES LOCALES ---
     const handleUploadLocalMissions = async () => {
-        if (!window.confirm("¿Subir las misiones locales a Firebase? Esto es necesario para que las conexiones funcionen correctamente.")) {
-            return;
-        }
+        if (!window.confirm("¿Subir las misiones locales a Firebase?")) return;
 
-        // Definimos las misiones locales con sus IDs fijos
         const localMissionsToUpload: Mission[] = [
             MISSION_ZERO, 
             {
                 id: 'm_kraven', title: t.missions.kraven.title, description: t.missions.kraven.description, objectives: t.missions.kraven.objectives,
                 location: { state: 'New York', coordinates: [-74.006, 40.7128] }, threatLevel: 'ALTA', type: 'STANDARD', alignment: 'ALIVE',
-                prereqs: ['m_intro_0'] // Aseguramos que el requisito sea el ID
+                prereqs: ['m_intro_0']
             },
             {
                 id: 'm_zombie_feast', title: "EL FESTÍN DE LOS MUTANTES", description: ["La Escuela de Xavier está fortificada.", "Cerebro detecta mucha carne fresca dentro."], objectives: [{ title: "Romper las defensas", desc: "Destruir los muros." }],
@@ -248,22 +240,9 @@ const App: React.FC = () => {
         ];
 
         await uploadLocalMissionsToDB(localMissionsToUpload);
-        
-        // Recargamos
         const loaded = await getCustomMissions();
         setCustomMissions(loaded);
     };
-
-    // --- RESTAURADO: DEFINICIÓN DE INTRO MISSION ---
-    // Esto es lo que faltaba y causaba el error "ReferenceError: introMission is not defined"
-    const introMission = useMemo(() => {
-        // Intentamos buscar la misión en la BBDD primero (por si ha sido editada)
-        const dbMissionById = customMissions.find(m => m.id === MISSION_ZERO.id);
-        if (dbMissionById) return dbMissionById;
-
-        // Si no, usamos la local
-        return MISSION_ZERO;
-    }, [customMissions]);
 
     // --- LÓGICA DE MISIONES VISIBLES ---
     const allMissions: Mission[] = useMemo(() => {
@@ -271,7 +250,7 @@ const App: React.FC = () => {
         
         // 1. Cargamos las locales primero
         const DEFAULT_MISSIONS: Mission[] = [
-            introMission, // Usamos la variable calculada arriba
+            MISSION_ZERO, 
             { id: 'm_kraven', title: t.missions.kraven.title, description: t.missions.kraven.description, objectives: t.missions.kraven.objectives, location: { state: 'New York', coordinates: [-74.006, 40.7128] }, threatLevel: 'ALTA', type: 'STANDARD', alignment: 'ALIVE', prereqs: ['m_intro_0'] },
             { id: 'm_zombie_feast', title: "EL FESTÍN DE LOS MUTANTES", description: ["La Escuela de Xavier está fortificada.", "Cerebro detecta mucha carne fresca dentro."], objectives: [{ title: "Romper las defensas", desc: "Destruir los muros." }], location: { state: 'New York', coordinates: [-73.8, 41.0] }, threatLevel: 'EXTREMA', type: 'STANDARD', alignment: 'ZOMBIE', prereqs: ['m_intro_0'] },
             { id: 'm_flesh', title: t.missions.fleshSleeps.title, description: t.missions.fleshSleeps.description, objectives: t.missions.fleshSleeps.objectives, location: { state: 'Nevada', coordinates: [-115.1398, 36.1699] }, threatLevel: 'MEDIA', type: 'STANDARD', alignment: 'BOTH', prereqs: ['m_intro_0'] },
@@ -285,7 +264,14 @@ const App: React.FC = () => {
         customMissions.forEach(m => { if (m && m.id) missionMap.set(m.id, m); });
         
         return Array.from(missionMap.values());
-    }, [t, customMissions, introMission]);
+    }, [t, customMissions]);
+
+    // --- INTRO MISSION SELECCIONADA ---
+    const introMission = useMemo(() => {
+        // Buscamos en la lista final (que ya tiene la mezcla de local + DB)
+        const found = allMissions.find(m => m.id === 'm_intro_0');
+        return found || MISSION_ZERO;
+    }, [allMissions]);
 
     const visibleMissions = useMemo(() => {
         const alignmentFiltered = allMissions.filter(m => {
@@ -325,61 +311,21 @@ const App: React.FC = () => {
         });
     }, [allMissions, completedMissionIds, isEditorMode, worldStage, playerAlignment, ownedExpansions]);
 
-    useEffect(() => {
-        const loadData = async () => {
-            if (isEditorMode) return; 
-            isDataLoadedRef.current = false;
-            if ((user || isGuest) && playerAlignment) {
-                let profileHeroes: Hero[] = [];
-                let profileMissions: string[] = [];
-                let profileCylinders = 0; 
-                let dataFound = false;
-                try {
-                    const templates = await getHeroTemplates();
-                    setDbTemplates(templates);
-                    if (user) {
-                        const profile = await getUserProfile(user.uid, playerAlignment);
-                        if (profile) {
-                            profileHeroes = mergeWithLatestContent(profile.heroes, playerAlignment === 'ZOMBIE', templates);
-                            profileMissions = profile.completedMissionIds;
-                            profileCylinders = profile.resources?.omegaCylinders ?? 0;
-                            dataFound = true;
-                        }
-                    } else {
-                        const storageKey = `shield_heroes_${isGuest ? 'guest' : user?.uid}_${playerAlignment}`;
-                        const saved = localStorage.getItem(storageKey);
-                        if (saved) {
-                            const parsed = JSON.parse(saved);
-                            profileHeroes = mergeWithLatestContent(parsed.heroes, playerAlignment === 'ZOMBIE', templates);
-                            profileMissions = parsed.completedMissionIds || [];
-                            profileCylinders = parsed.resources?.omegaCylinders ?? 0;
-                            dataFound = true;
-                        }
-                    }
-                    if (dataFound && profileHeroes.length > 0) {
-                        setHeroes(profileHeroes);
-                        setCompletedMissionIds(new Set(profileMissions));
-                        setOmegaCylinders(profileCylinders);
-                        checkGlobalEvents(new Set(profileMissions)); 
-                    } else {
-                        if (viewMode !== 'setup' && viewMode !== 'story') {
-                             const core = GAME_EXPANSIONS.find(e => e.id === 'core_box');
-                             if (core) setHeroes(playerAlignment === 'ZOMBIE' ? core.zombieHeroes : core.heroes);
-                        }
-                        setCompletedMissionIds(new Set());
-                        setOmegaCylinders(0);
-                    }
-                } catch (e) {
-                    console.error("Error loading data:", e);
-                    const core = GAME_EXPANSIONS.find(e => e.id === 'core_box');
-                    if (core) setHeroes(playerAlignment === 'ZOMBIE' ? core.zombieHeroes : core.heroes);
-                } finally {
-                    isDataLoadedRef.current = true;
-                }
-            }
-        };
-        loadData();
-    }, [user, isGuest, playerAlignment, isEditorMode]);
+    const handleMissionComplete = async (id: string) => {
+        const newSet = new Set(completedMissionIds);
+        newSet.add(id);
+        setCompletedMissionIds(newSet);
+        setSelectedMission(null);
+        if (worldStage === 'SURFER') setSurferTurnCount(prev => prev + 1);
+        if (user && playerAlignment) saveData(heroes, newSet, omegaCylinders);
+        if (id === 'boss-galactus') {
+            setWorldStage('NORMAL');
+            setActiveGlobalEvent(null);
+            handleTickerUpdate("AMENAZA OMEGA NEUTRALIZADA. BUEN TRABAJO, AGENTES.");
+        } else {
+            checkGlobalEvents(newSet); 
+        }
+    };
 
     const saveData = useCallback(async (currentHeroes: Hero[], currentMissions: Set<string>, currentCylinders: number) => {
         if (isEditorMode || !user || !playerAlignment || !isDataLoadedRef.current) return;
@@ -420,22 +366,6 @@ const App: React.FC = () => {
             setActiveGlobalEvent({ stage: 'ANOMALY', title: '', description: '' });
             setWorldStage('ANOMALY');
             handleTickerUpdate("LECTURAS DE ENERGÍA ANÓMALAS EN EL ESPACIO PROFUNDO.");
-        }
-    };
-
-    const handleMissionComplete = async (id: string) => {
-        const newSet = new Set(completedMissionIds);
-        newSet.add(id);
-        setCompletedMissionIds(newSet);
-        setSelectedMission(null);
-        if (worldStage === 'SURFER') setSurferTurnCount(prev => prev + 1);
-        if (user && playerAlignment) saveData(heroes, newSet, omegaCylinders);
-        if (id === 'boss-galactus') {
-            setWorldStage('NORMAL');
-            setActiveGlobalEvent(null);
-            handleTickerUpdate("AMENAZA OMEGA NEUTRALIZADA. BUEN TRABAJO, AGENTES.");
-        } else {
-            checkGlobalEvents(newSet); 
         }
     };
 
