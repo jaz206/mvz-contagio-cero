@@ -275,24 +275,25 @@ export const MissionEditor: React.FC<MissionEditorProps> = ({ isOpen, onClose, o
                             <div className="bg-slate-900/50 border border-cyan-900/30 p-3">
                                 <label className="text-[10px] text-cyan-600 font-bold block mb-2 uppercase">{t.prereq} (MÚLTIPLES)</label>
                                 <div className="flex gap-2 mb-2">
+                                    {/* CORRECCIÓN AQUÍ: min-w-0 para que el select no empuje al botón */}
                                     <select 
                                         value={selectedPrereqToAdd} 
                                         onChange={e => setSelectedPrereqToAdd(e.target.value)} 
-                                        className="flex-1 bg-slate-950 border border-cyan-800 p-2 text-xs text-cyan-200"
+                                        className="flex-1 bg-slate-950 border border-cyan-800 p-2 text-xs text-cyan-200 min-w-0"
                                     >
                                         <option value="">-- SELECCIONAR MISIÓN --</option>
                                         {validPrereqOptions.map(m => (
-                                            // --- CAMBIO AQUÍ: MOSTRAR ID EN EL DESPLEGABLE ---
                                             <option key={m.id} value={m.id}>
                                                 {m.title} (ID: {m.id})
                                             </option>
                                         ))}
                                     </select>
+                                    {/* CORRECCIÓN AQUÍ: shrink-0 para que el botón no se aplaste */}
                                     <button 
                                         type="button" 
                                         onClick={handleAddPrereq} 
                                         disabled={!selectedPrereqToAdd}
-                                        className="bg-cyan-900/50 border border-cyan-600 text-cyan-300 px-3 py-1 text-[10px] font-bold uppercase disabled:opacity-50"
+                                        className="bg-cyan-900/50 border border-cyan-600 text-cyan-300 px-3 py-1 text-[10px] font-bold uppercase disabled:opacity-50 shrink-0"
                                     >
                                         + AÑADIR
                                     </button>
@@ -317,13 +318,13 @@ export const MissionEditor: React.FC<MissionEditorProps> = ({ isOpen, onClose, o
                                     <select 
                                         value={selectedExpansionId} 
                                         onChange={e => setSelectedExpansionId(e.target.value)} 
-                                        className="flex-1 bg-slate-950 border border-blue-800 p-2 text-xs text-blue-200"
+                                        className="flex-1 bg-slate-950 border border-blue-800 p-2 text-xs text-blue-200 min-w-0"
                                     >
                                         {GAME_EXPANSIONS.map(exp => (
                                             <option key={exp.id} value={exp.id}>{exp.name}</option>
                                         ))}
                                     </select>
-                                    <button type="button" onClick={handleAddRequirement} className="bg-blue-900/50 border border-blue-600 text-blue-300 px-3 py-1 text-[10px] font-bold uppercase">+ AÑADIR</button>
+                                    <button type="button" onClick={handleAddRequirement} className="bg-blue-900/50 border border-blue-600 text-blue-300 px-3 py-1 text-[10px] font-bold uppercase shrink-0">+ AÑADIR</button>
                                 </div>
                                 <div className="flex flex-wrap gap-2">
                                     {requirements.map((reqId, idx) => (
