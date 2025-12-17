@@ -7,7 +7,7 @@ import {
     deleteMissionInDB, 
     seedExpansionsToDB, 
     updateHeroTemplate,
-    updateMissionInDB // Importamos la función de actualizar misión
+    updateMissionInDB 
 } from '../services/dbService';
 import { CharacterEditor } from './CharacterEditor';
 import { MissionEditor } from './MissionEditor';
@@ -21,20 +21,16 @@ const FACTION_STATES = {
 };
 
 const getFactionForState = (state: string) => {
-    if (FACTION_STATES.magneto.has(state)) return 'magneto';
-    if (FACTION_STATES.kingpin.has(state)) return 'kingpin';
-    if (FACTION_STATES.hulk.has(state)) return 'hulk';
-    if (FACTION_STATES.doom.has(state)) return 'doom';
-    return 'neutral';
+    if (FACTION_STATES.magneto.has(state)) return 'MAGNETO';
+    if (FACTION_STATES.kingpin.has(state)) return 'KINGPIN';
+    if (FACTION_STATES.hulk.has(state)) return 'HULK';
+    if (FACTION_STATES.doom.has(state)) return 'DOOM';
+    return 'NEUTRAL';
 };
 
+// Misiones base mínimas para que aparezcan como opciones de requisito en el editor
 const BASE_GAME_MISSIONS: Mission[] = [
-    { id: 'm_intro_0', title: "MH0: CADENAS ROTAS", description: [], objectives: [], location: { state: 'Ohio', coordinates: [0,0] }, threatLevel: 'N/A' },
-    { id: 'm_kraven', title: "LA CACERÍA DE KRAVEN", description: [], objectives: [], location: { state: 'New York', coordinates: [0,0] }, threatLevel: 'N/A' },
-    { id: 'm_flesh', title: "DONDE DUERME LA CARNE", description: [], objectives: [], location: { state: 'Nevada', coordinates: [0,0] }, threatLevel: 'N/A' },
-    { id: 'm_base_alpha', title: "BASE ALPHA", description: [], objectives: [], location: { state: 'Colorado', coordinates: [0,0] }, threatLevel: 'N/A' },
-    { id: 'm_surfer', title: "LA CAÍDA DEL HERALDO", description: [], objectives: [], location: { state: 'Kansas', coordinates: [0,0] }, threatLevel: 'N/A' },
-    { id: 'boss-galactus', title: "EL JUICIO FINAL", description: [], objectives: [], location: { state: 'Kansas', coordinates: [0,0] }, threatLevel: 'N/A' }
+    { id: 'm_intro_0', title: "MH0: CADENAS ROTAS", description: [], objectives: [], location: { state: 'Ohio', coordinates: [0,0] }, threatLevel: 'N/A' }
 ];
 
 interface DatabaseManagerProps {
@@ -50,8 +46,9 @@ export const DatabaseManager: React.FC<DatabaseManagerProps> = ({ isOpen, onClos
     const [loading, setLoading] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
     
-    // Filtros
+    // Filtros y Estados de UI
     const [heroFilter, setHeroFilter] = useState<'ALL' | 'ALIVE' | 'ZOMBIE'>('ALL');
+    const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set(['ALIVE', 'ZOMBIE', 'BOTH']));
 
     // Edición
     const [editingHero, setEditingHero] = useState<HeroTemplate | null>(null);
@@ -60,8 +57,6 @@ export const DatabaseManager: React.FC<DatabaseManagerProps> = ({ isOpen, onClos
     // Fusión
     const [selectedIds, setSelectedIds] = useState<string[]>([]);
     const [showMergeModal, setShowMergeModal] = useState(false);
-    
-    // Estados de fusión separados para evitar conflictos de tipo
     const [mergedHero, setMergedHero] = useState<HeroTemplate | null>(null);
     const [mergedMission, setMergedMission] = useState<Mission | null>(null);
 
@@ -84,34 +79,36 @@ export const DatabaseManager: React.FC<DatabaseManagerProps> = ({ isOpen, onClos
         if (isOpen) loadData();
     }, [isOpen]);
 
-    // --- LÓGICA DE AGRUPACIÓN DE MISIONES ---
-    const groupedMissions = useMemo(() => {
+    // --- LÓGICA DE AGRUPACIÓN DE MISIONES POR ALINEACIÓN ---
+    const missionsByAlignment = useMemo(() => {
         const groups: Record<string, Mission[]> = {
-            galactus: [],
-            kingpin: [],
-            magneto: [],
-            hulk: [],
-            doom: [],
-            shield: [],
-            neutral: []
+            ALIVE: [],
+            ZOMBIE: [],
+            BOTH: []
         };
 
         const filtered = missions.filter(m => m.title.toLowerCase().includes(searchTerm.toLowerCase()));
 
         filtered.forEach(m => {
-            if (m.type === 'GALACTUS' || m.type === 'BOSS') {
-                groups.galactus.push(m);
-            } else if (m.type === 'SHIELD_BASE') {
-                groups.shield.push(m);
+            const align = m.alignment || 'BOTH';
+            if (groups[align]) {
+                groups[align].push(m);
             } else {
-                const faction = getFactionForState(m.location.state);
-                if (groups[faction]) groups[faction].push(m);
-                else groups.neutral.push(m);
+                groups.BOTH.push(m);
             }
         });
 
         return groups;
     }, [missions, searchTerm]);
+
+    const toggleSection = (section: string) => {
+        setExpandedSections(prev => {
+            const newSet = new Set(prev);
+            if (newSet.has(section)) newSet.delete(section);
+            else newSet.add(section);
+            return newSet;
+        });
+    };
 
     // --- LÓGICA DE FUSIÓN ---
     const toggleSelection = (id: string) => {
@@ -195,8 +192,6 @@ export const DatabaseManager: React.FC<DatabaseManagerProps> = ({ isOpen, onClos
     });
 
     // --- COMPONENTES DE COMPARACIÓN ---
-    
-    // Para Héroes
     const ComparisonRowHero = ({ label, valueA, valueB, fieldKey, subKey }: { label: string, valueA: any, valueB: any, fieldKey: keyof HeroTemplate, subKey?: keyof HeroStats }) => {
         if (!mergedHero) return null;
         let currentValue: any;
@@ -220,12 +215,9 @@ export const DatabaseManager: React.FC<DatabaseManagerProps> = ({ isOpen, onClos
         );
     };
 
-    // Para Misiones (Maneja objetos y arrays complejos)
     const ComparisonRowMission = ({ label, valueA, valueB, fieldKey }: { label: string, valueA: any, valueB: any, fieldKey: keyof Mission }) => {
         if (!mergedMission) return null;
         const currentValue = mergedMission[fieldKey];
-        
-        // Usamos JSON stringify para comparar objetos/arrays
         const isSelectedA = JSON.stringify(currentValue) === JSON.stringify(valueA);
         const isSelectedB = JSON.stringify(currentValue) === JSON.stringify(valueB);
 
@@ -267,7 +259,6 @@ export const DatabaseManager: React.FC<DatabaseManagerProps> = ({ isOpen, onClos
                         </div>
                         <div className="flex-1 overflow-y-auto p-6">
                             
-                            {/* COMPARACIÓN DE HÉROES */}
                             {activeTab === 'HEROES' && mergedHero && (() => {
                                 const heroA = heroes.find(h => h.id === selectedIds[0])!;
                                 const heroB = heroes.find(h => h.id === selectedIds[1])!;
@@ -291,32 +282,26 @@ export const DatabaseManager: React.FC<DatabaseManagerProps> = ({ isOpen, onClos
                                 );
                             })()}
 
-                            {/* COMPARACIÓN DE MISIONES */}
                             {activeTab === 'MISSIONS' && mergedMission && (() => {
                                 const missionA = missions.find(m => m.id === selectedIds[0])!;
                                 const missionB = missions.find(m => m.id === selectedIds[1])!;
                                 return (
                                     <div className="space-y-2">
                                         <div className="grid grid-cols-3 gap-4 mb-4 text-center"><div className="text-xs font-bold text-gray-500">CAMPO</div><div className="text-xs font-bold text-cyan-400 border-b border-cyan-800 pb-1">ORIGEN A ({missionA.id})</div><div className="text-xs font-bold text-orange-400 border-b border-orange-800 pb-1">ORIGEN B ({missionB.id})</div></div>
-                                        
                                         <ComparisonRowMission label="TÍTULO" fieldKey="title" valueA={missionA.title} valueB={missionB.title} />
                                         <ComparisonRowMission label="NIVEL AMENAZA" fieldKey="threatLevel" valueA={missionA.threatLevel} valueB={missionB.threatLevel} />
                                         <ComparisonRowMission label="TIPO" fieldKey="type" valueA={missionA.type} valueB={missionB.type} />
                                         <ComparisonRowMission label="ALINEACIÓN" fieldKey="alignment" valueA={missionA.alignment} valueB={missionB.alignment} />
                                         <ComparisonRowMission label="UBICACIÓN" fieldKey="location" valueA={missionA.location} valueB={missionB.location} />
-                                        
                                         <div className="py-2"><div className="h-px bg-gray-800"></div></div>
-                                        
                                         <div className="grid grid-cols-3 gap-4 py-2"><div className="text-[10px] font-bold text-gray-400 uppercase">DESCRIPCIÓN</div>
                                             <div onClick={() => setMergedMission({...mergedMission, description: missionA.description})} className={`cursor-pointer p-2 border text-[10px] h-24 overflow-y-auto ${JSON.stringify(mergedMission.description) === JSON.stringify(missionA.description) ? 'border-emerald-500 bg-emerald-900/20' : 'border-gray-700 opacity-60'}`}>{missionA.description.join('\n')}</div>
                                             <div onClick={() => setMergedMission({...mergedMission, description: missionB.description})} className={`cursor-pointer p-2 border text-[10px] h-24 overflow-y-auto ${JSON.stringify(mergedMission.description) === JSON.stringify(missionB.description) ? 'border-emerald-500 bg-emerald-900/20' : 'border-gray-700 opacity-60'}`}>{missionB.description.join('\n')}</div>
                                         </div>
-
                                         <div className="grid grid-cols-3 gap-4 py-2"><div className="text-[10px] font-bold text-gray-400 uppercase">OBJETIVOS</div>
                                             <div onClick={() => setMergedMission({...mergedMission, objectives: missionA.objectives})} className={`cursor-pointer p-2 border text-[10px] h-24 overflow-y-auto ${JSON.stringify(mergedMission.objectives) === JSON.stringify(missionA.objectives) ? 'border-emerald-500 bg-emerald-900/20' : 'border-gray-700 opacity-60'}`}>{missionA.objectives.map(o => `• ${o.title}`).join('\n')}</div>
                                             <div onClick={() => setMergedMission({...mergedMission, objectives: missionB.objectives})} className={`cursor-pointer p-2 border text-[10px] h-24 overflow-y-auto ${JSON.stringify(mergedMission.objectives) === JSON.stringify(missionB.objectives) ? 'border-emerald-500 bg-emerald-900/20' : 'border-gray-700 opacity-60'}`}>{missionB.objectives.map(o => `• ${o.title}`).join('\n')}</div>
                                         </div>
-
                                         <ComparisonRowMission label="REQUISITOS" fieldKey="requirements" valueA={missionA.requirements} valueB={missionB.requirements} />
                                         <ComparisonRowMission label="PREREQUISITOS" fieldKey="prereqs" valueA={missionA.prereqs} valueB={missionB.prereqs} />
                                         <ComparisonRowMission label="LAYOUT URL" fieldKey="layoutUrl" valueA={missionA.layoutUrl} valueB={missionB.layoutUrl} />
@@ -399,42 +384,53 @@ export const DatabaseManager: React.FC<DatabaseManagerProps> = ({ isOpen, onClos
                             );
                         })
                     ) : (
-                        // RENDERIZADO AGRUPADO DE MISIONES
-                        Object.entries(groupedMissions).map(([groupKey, groupMissions]) => {
-                            if (groupMissions.length === 0) return null;
+                        // --- RENDERIZADO DE MISIONES AGRUPADAS POR ALINEACIÓN ---
+                        ['ALIVE', 'ZOMBIE', 'BOTH'].map(alignKey => {
+                            const groupMissions = missionsByAlignment[alignKey];
+                            if (!groupMissions || groupMissions.length === 0) return null;
                             
-                            let groupTitle = groupKey.toUpperCase();
-                            let groupColor = "text-gray-400 border-gray-700";
+                            const isExpanded = expandedSections.has(alignKey);
+                            let headerColor = 'bg-gray-800 border-gray-600 text-gray-300';
+                            let title = 'EVENTOS GLOBALES / AMBOS';
                             
-                            if (groupKey === 'galactus') { groupTitle = "EVENTOS OMEGA / BOSSES"; groupColor = "text-purple-400 border-purple-700"; }
-                            else if (groupKey === 'shield') { groupTitle = "BASES S.H.I.E.L.D."; groupColor = "text-blue-400 border-blue-700"; }
-                            else if (groupKey === 'magneto') { groupTitle = "ZONA: MAGNETO"; groupColor = "text-red-400 border-red-700"; }
-                            else if (groupKey === 'kingpin') { groupTitle = "ZONA: KINGPIN"; groupColor = "text-fuchsia-400 border-fuchsia-700"; }
-                            else if (groupKey === 'hulk') { groupTitle = "ZONA: HULK"; groupColor = "text-lime-400 border-lime-700"; }
-                            else if (groupKey === 'doom') { groupTitle = "ZONA: DOOM"; groupColor = "text-cyan-400 border-cyan-700"; }
+                            if (alignKey === 'ALIVE') { headerColor = 'bg-cyan-900/50 border-cyan-600 text-cyan-300'; title = '🛡️ CAMPAÑA DE HÉROES'; }
+                            if (alignKey === 'ZOMBIE') { headerColor = 'bg-lime-900/50 border-lime-600 text-lime-300'; title = '🧟 CAMPAÑA ZOMBIE'; }
 
                             return (
-                                <div key={groupKey} className="col-span-full mb-4">
-                                    <h3 className={`text-xs font-black tracking-widest border-b ${groupColor} mb-2 pb-1`}>{groupTitle}</h3>
-                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                                        {groupMissions.map(m => {
-                                            const isSelected = selectedIds.includes(m.id);
-                                            return (
-                                                <div key={m.id} className={`p-3 border flex flex-col relative group transition-all ${isSelected ? 'border-purple-500 bg-purple-900/20 shadow-[0_0_15px_rgba(168,85,247,0.3)]' : 'border-yellow-900 bg-yellow-950/10'}`}>
-                                                    <div className="absolute top-2 left-2 z-10"><input type="checkbox" checked={isSelected} onChange={() => toggleSelection(m.id)} className="w-4 h-4 cursor-pointer accent-purple-500" /></div>
-                                                    <div className="ml-6">
-                                                        <h4 className="font-bold text-xs text-yellow-500 truncate">{m.title}</h4>
-                                                        <p className="text-[9px] text-gray-400 mt-1">{m.location.state} - {m.threatLevel}</p>
-                                                        <p className="text-[9px] text-gray-600 font-mono mt-1 truncate" title={m.id}>ID: {m.id}</p>
+                                <div key={alignKey} className="col-span-full mb-4 border border-gray-800">
+                                    <button 
+                                        onClick={() => toggleSection(alignKey)}
+                                        className={`w-full p-3 flex justify-between items-center border-b ${headerColor} transition-colors hover:brightness-110`}
+                                    >
+                                        <span className="font-black tracking-widest text-sm">{title} ({groupMissions.length})</span>
+                                        <span className="text-xs">{isExpanded ? '▲' : '▼'}</span>
+                                    </button>
+                                    
+                                    {isExpanded && (
+                                        <div className="p-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 bg-slate-900/50">
+                                            {groupMissions.map(m => {
+                                                const isSelected = selectedIds.includes(m.id);
+                                                const faction = getFactionForState(m.location.state);
+                                                return (
+                                                    <div key={m.id} className={`p-3 border flex flex-col relative group transition-all ${isSelected ? 'border-purple-500 bg-purple-900/20 shadow-[0_0_15px_rgba(168,85,247,0.3)]' : 'border-slate-700 bg-slate-800/50 hover:border-cyan-500'}`}>
+                                                        <div className="absolute top-2 left-2 z-10"><input type="checkbox" checked={isSelected} onChange={() => toggleSelection(m.id)} className="w-4 h-4 cursor-pointer accent-purple-500" /></div>
+                                                        <div className="ml-6">
+                                                            <div className="flex justify-between items-start">
+                                                                <h4 className="font-bold text-xs text-white truncate pr-2">{m.title}</h4>
+                                                                <span className="text-[8px] px-1 border border-gray-600 text-gray-400 rounded">{faction}</span>
+                                                            </div>
+                                                            <p className="text-[9px] text-gray-400 mt-1">{m.location.state} - <span className={m.threatLevel.includes('OMEGA') ? 'text-red-500 font-bold' : 'text-yellow-500'}>{m.threatLevel}</span></p>
+                                                            <p className="text-[9px] text-gray-600 font-mono mt-1 truncate" title={m.id}>ID: {m.id}</p>
+                                                        </div>
+                                                        <div className="absolute right-2 bottom-2 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                            <button onClick={() => setEditingMission(m)} className="bg-blue-900 text-blue-300 px-2 py-1 text-[9px] border border-blue-700 hover:bg-blue-800">EDIT</button>
+                                                            <button onClick={() => handleDeleteMission(m.id)} className="bg-red-900 text-red-300 px-2 py-1 text-[9px] border border-red-700 hover:bg-red-800">DEL</button>
+                                                        </div>
                                                     </div>
-                                                    <div className="absolute right-2 bottom-2 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                        <button onClick={() => setEditingMission(m)} className="bg-blue-900 text-blue-300 px-2 py-1 text-[9px] border border-blue-700 hover:bg-blue-800">EDIT</button>
-                                                        <button onClick={() => handleDeleteMission(m.id)} className="bg-red-900 text-red-300 px-2 py-1 text-[9px] border border-red-700 hover:bg-red-800">DEL</button>
-                                                    </div>
-                                                </div>
-                                            );
-                                        })}
-                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                    )}
                                 </div>
                             );
                         })
