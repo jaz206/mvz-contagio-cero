@@ -8,8 +8,7 @@ import {
     saveUserProfile, 
     getCustomMissions, 
     getHeroTemplates, 
-    deleteMissionInDB,
-    uploadLocalMissionsToDB 
+    deleteMissionInDB
 } from './services/dbService';
 import { logout } from './services/authService';
 
@@ -30,7 +29,6 @@ import { DatabaseManager } from './components/DatabaseManager';
 
 import { Mission, Hero, WorldStage, GlobalEvent, HeroTemplate } from './types';
 import { GAME_EXPANSIONS } from './data/gameContent';
-import { getInitialMissions } from './data/initialMissions';
 
 const FACTION_STATES = {
     magneto: new Set(['Washington', 'Oregon', 'California', 'Nevada', 'Idaho', 'Montana', 'Wyoming', 'Utah', 'Arizona', 'Colorado', 'Alaska', 'Hawaii']),
@@ -185,38 +183,15 @@ const App: React.FC = () => {
         loadMissions();
     }, [isEditorMode]);
 
-    const handleUploadLocalMissions = async () => {
-        if (!window.confirm("¿Subir las misiones locales a Firebase?")) return;
-        const localMissionsToUpload = getInitialMissions(t);
-        await uploadLocalMissionsToDB(localMissionsToUpload);
-        const loaded = await getCustomMissions();
-        setCustomMissions(loaded);
-    };
-
-    // --- LÓGICA DE MISIONES CORREGIDA ---
+    // --- LÓGICA DE MISIONES (SOLO BBDD) ---
     const allMissions: Mission[] = useMemo(() => {
-        // 1. Si no hay nada en BBDD, devolvemos todo el set inicial
-        if (customMissions.length === 0) {
-            return getInitialMissions(t);
-        }
-
-        // 2. Si hay datos, aseguramos que la Intro esté presente
-        // Esto es vital para que el mapa la dibuje y pinte la línea verde
-        const hasIntro = customMissions.some(m => m.id === 'm_intro_0');
-        if (!hasIntro) {
-            const localIntro = getInitialMissions(t).find(m => m.id === 'm_intro_0');
-            if (localIntro) {
-                return [localIntro, ...customMissions];
-            }
-        }
-
         return customMissions;
-    }, [customMissions, t]);
+    }, [customMissions]);
 
+    // --- INTRO MISSION SELECCIONADA ---
     const introMission = useMemo(() => {
-        const found = allMissions.find(m => m.id === 'm_intro_0');
-        return found || getInitialMissions(t)[0];
-    }, [allMissions, t]);
+        return allMissions.find(m => m.id === 'm_intro_0') || null;
+    }, [allMissions]);
 
     const visibleMissions = useMemo(() => {
         const alignmentFiltered = allMissions.filter(m => {
@@ -240,7 +215,6 @@ const App: React.FC = () => {
         return expansionFiltered.filter(m => {
             if (!m) return false;
             
-            // SIEMPRE MOSTRAR MISIONES COMPLETADAS (Para que MH0 salga en el mapa)
             const isCompleted = completedMissionIds.has(m.id);
             if (isCompleted) return true;
 
@@ -456,11 +430,6 @@ const App: React.FC = () => {
                                             <button onClick={() => setShowMissionEditor(true)} className="bg-cyan-900/50 hover:bg-cyan-800 text-cyan-200 text-[10px] font-bold py-2 px-3 border border-cyan-700 uppercase tracking-wider transition-colors">+ CREAR MISIÓN</button>
                                             <button onClick={() => setShowCharacterEditor(true)} className="bg-blue-900/50 hover:bg-blue-800 text-blue-200 text-[10px] font-bold py-2 px-3 border border-blue-700 uppercase tracking-wider transition-colors">+ CREAR PERSONAJE</button>
                                             <button onClick={() => setShowDbManager(true)} className="bg-purple-900/50 hover:bg-purple-800 text-purple-200 text-[10px] font-bold py-2 px-3 border border-purple-700 uppercase tracking-wider transition-colors">⚙ GESTOR BBDD (ADMIN)</button>
-                                            <div className="h-px bg-cyan-900 my-1"></div>
-                                            
-                                            {/* BOTÓN DE SINCRONIZACIÓN */}
-                                            <button onClick={handleUploadLocalMissions} className="bg-orange-900/50 hover:bg-orange-800 text-orange-200 text-[10px] font-bold py-2 px-3 border border-orange-700 uppercase tracking-wider transition-colors" title="Copia las misiones hardcoded a Firebase">☁ SUBIR MISIONES LOCALES</button>
-                                            
                                             <div className="h-px bg-cyan-900 my-1"></div>
                                             <button onClick={() => handleSimulateProgress(5)} className="bg-emerald-900/50 hover:bg-emerald-800 text-emerald-200 text-[10px] font-bold py-2 px-3 border border-emerald-700 uppercase tracking-wider transition-colors">+5 MISIONES (SIM)</button>
                                             <button onClick={handleResetProgress} className="bg-red-900/50 hover:bg-red-800 text-red-200 text-[10px] font-bold py-2 px-3 border border-red-700 uppercase tracking-wider transition-colors">RESET PROGRESO</button>
