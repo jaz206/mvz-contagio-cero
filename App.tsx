@@ -3,8 +3,7 @@ import { translations, Language } from './translations';
 import { User } from 'firebase/auth';
 import { auth } from './firebaseConfig';
 import { onAuthStateChanged } from 'firebase/auth';
-// IMPORTANTE: Añadida la importación de seedExpansionsToDB
-import { getUserProfile, saveUserProfile, getCustomMissions, getHeroTemplates, deleteMissionInDB, seedExpansionsToDB } from './services/dbService';
+import { getUserProfile, saveUserProfile, getCustomMissions, getHeroTemplates, deleteMissionInDB } from './services/dbService';
 import { logout } from './services/authService';
 
 import { LoginScreen } from './components/LoginScreen';
@@ -20,6 +19,8 @@ import { CharacterEditor } from './components/CharacterEditor';
 import { NewsTicker } from './components/NewsTicker';
 import { ExpansionSelector } from './components/ExpansionSelector';
 import { ExpansionConfigModal } from './components/ExpansionConfigModal';
+// IMPORTAR EL NUEVO COMPONENTE
+import { DatabaseManager } from './components/DatabaseManager';
 
 import { Mission, Hero, WorldStage, GlobalEvent, HeroTemplate } from './types';
 import { GAME_EXPANSIONS } from './data/gameContent';
@@ -90,6 +91,8 @@ const App: React.FC = () => {
     const [missionToEdit, setMissionToEdit] = useState<Mission | null>(null); 
     
     const [showCharacterEditor, setShowCharacterEditor] = useState(false);
+    // NUEVO ESTADO PARA EL GESTOR DE BBDD
+    const [showDbManager, setShowDbManager] = useState(false);
 
     const [customMissions, setCustomMissions] = useState<Mission[]>([]);
     const [dbTemplates, setDbTemplates] = useState<HeroTemplate[]>([]);
@@ -713,6 +716,9 @@ const App: React.FC = () => {
             {activeGlobalEvent && <EventModal event={activeGlobalEvent} isOpen={!!activeGlobalEvent} onAcknowledge={handleEventAcknowledge} language={lang} playerAlignment={playerAlignment} />}
             {selectedMission && <MissionModal mission={selectedMission} isOpen={!!selectedMission} onClose={() => setSelectedMission(null)} onComplete={handleMissionComplete} onReactivate={handleMissionReactivate} language={lang} isCompleted={completedMissionIds.has(selectedMission.id)} isEditorMode={isEditorMode} onEdit={(m) => { setMissionToEdit(m); setShowMissionEditor(true); setSelectedMission(null); }} onDelete={handleDeleteMission} />}
             
+            {/* NUEVO COMPONENTE DE GESTIÓN DE BBDD */}
+            <DatabaseManager isOpen={showDbManager} onClose={() => setShowDbManager(false)} language={lang} />
+
             {/* NUEVO MODAL DE CONFIGURACIÓN */}
             <ExpansionConfigModal 
                 isOpen={showExpansionConfig} 
@@ -952,16 +958,12 @@ const App: React.FC = () => {
                                                 + CREAR PERSONAJE
                                             </button>
 
-                                            {/* NUEVO BOTÓN PARA SUBIR EXPANSIONES A DB */}
+                                            {/* NUEVO BOTÓN DE GESTOR DE BBDD */}
                                             <button 
-                                                onClick={() => {
-                                                    if(window.confirm("¿Subir todos los personajes de las expansiones a Firebase? Esto sobrescribirá datos existentes con el mismo ID.")) {
-                                                        seedExpansionsToDB();
-                                                    }
-                                                }} 
+                                                onClick={() => setShowDbManager(true)} 
                                                 className="bg-purple-900/50 hover:bg-purple-800 text-purple-200 text-[10px] font-bold py-2 px-3 border border-purple-700 uppercase tracking-wider transition-colors"
                                             >
-                                                ☁ SYNC EXPANSIONES A DB
+                                                ⚙ GESTOR BBDD (ADMIN)
                                             </button>
                                             
                                             <div className="h-px bg-cyan-900 my-1"></div>

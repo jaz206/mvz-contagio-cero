@@ -2,7 +2,6 @@ import { collection, getDocs, doc, writeBatch, getDoc, setDoc, addDoc, updateDoc
 import { db } from '../firebaseConfig';
 import { HeroTemplate, HeroClass, Hero, Mission } from '../types';
 import { HERO_DATABASE } from '../data/heroDatabase';
-// IMPORTANTE: Importamos los datos locales para poder subirlos
 import { GAME_EXPANSIONS } from '../data/gameContent';
 
 const COLLECTION_NAME = 'heroes';
@@ -105,6 +104,19 @@ export const createHeroTemplateInDB = async (heroData: Omit<HeroTemplate, 'id'>)
         return docRef.id;
     } catch (error) {
         console.error("Error creating hero template:", error);
+        throw error;
+    }
+};
+
+// --- NUEVA FUNCIÓN: Eliminar Héroe ---
+export const deleteHeroInDB = async (id: string): Promise<void> => {
+    if (!db) throw new Error("Base de datos no configurada");
+    try {
+        const docRef = doc(db, COLLECTION_NAME, id);
+        await deleteDoc(docRef);
+        console.log(`Hero ${id} deleted successfully`);
+    } catch (error) {
+        console.error("Error deleting hero:", error);
         throw error;
     }
 };
@@ -218,7 +230,7 @@ export const deleteMissionInDB = async (id: string): Promise<void> => {
     }
 };
 
-// --- NUEVA FUNCIÓN: Subir todos los héroes de las expansiones a la colección 'heroes' ---
+// --- FUNCIÓN DE SINCRONIZACIÓN MASIVA ---
 export const seedExpansionsToDB = async (): Promise<void> => {
     if (!db) throw new Error("Base de datos no configurada");
     try {
@@ -229,7 +241,6 @@ export const seedExpansionsToDB = async (): Promise<void> => {
             // Procesar Héroes Vivos
             for (const hero of exp.heroes) {
                 const docRef = doc(db, COLLECTION_NAME, hero.id);
-                // Convertimos el objeto Hero a HeroTemplate para la DB
                 const templateData: HeroTemplate = {
                     id: hero.id,
                     defaultName: hero.name,

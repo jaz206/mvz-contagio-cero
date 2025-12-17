@@ -1,17 +1,19 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { translations, Language } from '../translations';
 import { HeroTemplate, HeroClass, HeroStats } from '../types';
-import { createHeroTemplateInDB } from '../services/dbService';
+import { createHeroTemplateInDB, updateHeroTemplate } from '../services/dbService';
 
 interface CharacterEditorProps {
     isOpen: boolean;
     onClose: () => void;
     language: Language;
+    initialData?: HeroTemplate | null; // Nuevo prop para editar
+    onSave?: () => void; // Callback para refrescar la lista
 }
 
 const HERO_CLASSES: HeroClass[] = ['BRAWLER', 'SCOUT', 'TACTICIAN', 'BLASTER'];
 
-export const CharacterEditor: React.FC<CharacterEditorProps> = ({ isOpen, onClose, language }) => {
+export const CharacterEditor: React.FC<CharacterEditorProps> = ({ isOpen, onClose, language, initialData, onSave }) => {
     const [name, setName] = useState('');
     const [alias, setAlias] = useState('');
     const [heroClass, setHeroClass] = useState<HeroClass>('BRAWLER');
@@ -21,13 +23,31 @@ export const CharacterEditor: React.FC<CharacterEditorProps> = ({ isOpen, onClos
     const [alignment, setAlignment] = useState<'ALIVE' | 'ZOMBIE'>('ALIVE');
     const [saving, setSaving] = useState(false);
 
+    // Cargar datos si estamos editando
+    useEffect(() => {
+        if (initialData) {
+            setName(initialData.defaultName);
+            setAlias(initialData.alias || '');
+            setHeroClass(initialData.defaultClass);
+            setStats(initialData.defaultStats);
+            setBio(initialData.bio || '');
+            setImageUrl(initialData.imageUrl);
+            setAlignment(initialData.defaultAlignment || 'ALIVE');
+        } else {
+            // Resetear si es nuevo
+            setName(''); setAlias(''); setHeroClass('BRAWLER');
+            setStats({ strength: 5, agility: 5, intellect: 5 });
+            setBio(''); setImageUrl(''); setAlignment('ALIVE');
+        }
+    }, [initialData, isOpen]);
+
     if (!isOpen) return null;
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setSaving(true);
 
-        const newTemplate: Omit<HeroTemplate, 'id'> = {
+        const templateData: any = {
             defaultName: name,
             alias: alias.toUpperCase(),
             defaultClass: heroClass,
@@ -35,29 +55,38 @@ export const CharacterEditor: React.FC<CharacterEditorProps> = ({ isOpen, onClos
             bio,
             imageUrl,
             defaultAlignment: alignment,
-            objectives: [],
-            currentStory: ''
+            objectives: initialData?.objectives || [],
+            currentStory: initialData?.currentStory || ''
         };
 
         try {
-            await createHeroTemplateInDB(newTemplate);
-            alert("CHARACTER CREATED SUCCESSFULLY IN DATABASE");
+            if (initialData && initialData.id) {
+                // MODO EDICIÓN
+                await updateHeroTemplate(initialData.id, templateData);
+                alert("PERSONAJE ACTUALIZADO");
+            } else {
+                // MODO CREACIÓN
+                await createHeroTemplateInDB(templateData);
+                alert("PERSONAJE CREADO");
+            }
+            
+            if (onSave) onSave();
             onClose();
-            // Reset form
-            setName(''); setAlias(''); setBio(''); setImageUrl('');
         } catch (error) {
             console.error(error);
-            alert("ERROR CREATING CHARACTER");
+            alert("ERROR AL GUARDAR");
         } finally {
             setSaving(false);
         }
     };
 
     return (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/90 backdrop-blur-sm p-4">
+        <div className="fixed inset-0 z-[120] flex items-center justify-center bg-slate-950/90 backdrop-blur-sm p-4">
             <div className="w-full max-w-2xl bg-slate-900 border-2 border-cyan-500 shadow-2xl flex flex-col max-h-[90vh]">
                 <div className="bg-cyan-900/40 p-4 border-b border-cyan-600 flex justify-between items-center">
-                    <h3 className="text-cyan-300 font-bold tracking-widest uppercase">CREATE NEW CHARACTER (DB)</h3>
+                    <h3 className="text-cyan-300 font-bold tracking-widest uppercase">
+                        {initialData ? `EDITING: ${initialData.alias}` : 'CREATE NEW CHARACTER (DB)'}
+                    </h3>
                     <button onClick={onClose} className="text-cyan-500 hover:text-white">✕</button>
                 </div>
 
@@ -121,7 +150,7 @@ export const CharacterEditor: React.FC<CharacterEditorProps> = ({ isOpen, onClos
                     <div className="flex justify-end gap-4 pt-4 border-t border-cyan-800">
                         <button type="button" onClick={onClose} className="px-4 py-2 border border-red-900 text-red-500 text-xs font-bold uppercase hover:bg-red-900/20">CANCEL</button>
                         <button type="submit" disabled={saving} className="px-6 py-2 bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-bold uppercase shadow-[0_0_15px_rgba(6,182,212,0.4)] transition-all">
-                            {saving ? 'SAVING...' : 'CREATE CHARACTER'}
+                            {saving ? 'SAVING...' : (initialData ? 'UPDATE CHARACTER' : 'CREATE CHARACTER')}
                         </button>
                     </div>
                 </form>

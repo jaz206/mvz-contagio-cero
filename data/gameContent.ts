@@ -3,37 +3,14 @@ import { Hero, HeroClass } from '../types';
 export interface GameExpansion {
     id: string;
     name: string;
-    heroes: Hero[];       // Héroes Vivos (Supervivientes / "Heroes Mode")
-    zombieHeroes: Hero[]; // Héroes Zombies (Infectados / "Zombie Mode")
+    heroes: Hero[];       
+    zombieHeroes: Hero[]; 
 }
 
-// Helper para crear héroes rápidamente
-const createHero = (
-    id: string, 
-    name: string, 
-    alias: string, 
-    hClass: HeroClass, 
-    bio: string, 
-    img: string, 
-    stats: {s:number, a:number, i:number}
-): Hero => ({
-    id, 
-    templateId: id, 
-    name, 
-    alias, 
-    class: hClass, 
-    bio, 
-    status: 'AVAILABLE', 
-    currentStory: '', 
-    objectives: [], 
-    completedObjectiveIndices: [], 
-    imageUrl: img, 
-    characterSheetUrl: '',
-    stats: { strength: stats.s, agility: stats.a, intellect: stats.i }, 
-    assignedMissionId: null
+const createHero = (id: string, name: string, alias: string, hClass: HeroClass, bio: string, img: string, stats: {s:number, a:number, i:number}): Hero => ({
+    id, templateId: id, name, alias, class: hClass, bio, status: 'AVAILABLE', currentStory: '', objectives: [], completedObjectiveIndices: [], imageUrl: img, characterSheetUrl: '', stats: { strength: stats.s, agility: stats.a, intellect: stats.i }, assignedMissionId: null
 });
 
-// Imagen genérica para cuando no tengamos URL específica
 const GENERIC_IMG = "https://i.pinimg.com/736x/63/1e/3a/631e3a68228c97963e78381ad11bf3bb.jpg";
 
 export const GAME_EXPANSIONS: GameExpansion[] = [
@@ -195,7 +172,7 @@ export const GAME_EXPANSIONS: GameExpansion[] = [
             createHero('h_logan_old', 'Logan', 'OLD MAN LOGAN', 'BRAWLER', 'Viejo y cansado.', GENERIC_IMG, {s:8, a:7, i:6}),
             createHero('h_spidey_art', 'Peter Parker', 'SPIDER-MAN (ARTIST)', 'SCOUT', 'Edición especial.', GENERIC_IMG, {s:7, a:10, i:8})
         ],
-        zombieHeroes: [] // No se especificaron zombies para este set en la lista
+        zombieHeroes: []
     },
     {
         id: 'stretch_goals',
