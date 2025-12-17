@@ -3,7 +3,8 @@ import { translations, Language } from './translations';
 import { User } from 'firebase/auth';
 import { auth } from './firebaseConfig';
 import { onAuthStateChanged } from 'firebase/auth';
-import { getUserProfile, saveUserProfile, getCustomMissions, getHeroTemplates, deleteMissionInDB } from './services/dbService';
+// IMPORTANTE: Añadida la importación de seedExpansionsToDB
+import { getUserProfile, saveUserProfile, getCustomMissions, getHeroTemplates, deleteMissionInDB, seedExpansionsToDB } from './services/dbService';
 import { logout } from './services/authService';
 
 import { LoginScreen } from './components/LoginScreen';
@@ -949,6 +950,18 @@ const App: React.FC = () => {
                                                 className="bg-blue-900/50 hover:bg-blue-800 text-blue-200 text-[10px] font-bold py-2 px-3 border border-blue-700 uppercase tracking-wider transition-colors"
                                             >
                                                 + CREAR PERSONAJE
+                                            </button>
+
+                                            {/* NUEVO BOTÓN PARA SUBIR EXPANSIONES A DB */}
+                                            <button 
+                                                onClick={() => {
+                                                    if(window.confirm("¿Subir todos los personajes de las expansiones a Firebase? Esto sobrescribirá datos existentes con el mismo ID.")) {
+                                                        seedExpansionsToDB();
+                                                    }
+                                                }} 
+                                                className="bg-purple-900/50 hover:bg-purple-800 text-purple-200 text-[10px] font-bold py-2 px-3 border border-purple-700 uppercase tracking-wider transition-colors"
+                                            >
+                                                ☁ SYNC EXPANSIONES A DB
                                             </button>
                                             
                                             <div className="h-px bg-cyan-900 my-1"></div>

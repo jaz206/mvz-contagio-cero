@@ -14,9 +14,8 @@ export const IntroSequence: React.FC<IntroSequenceProps> = ({ language, onComple
     // Estado para bloquear clics rápidos (spam click)
     const [isAnimating, setIsAnimating] = useState(false);
 
-    // AHORA LEEMOS LOS SLIDES DIRECTAMENTE DE LAS TRADUCCIONES
-    // Esto asegura que las imágenes estén presentes en ambos idiomas
-    const slides = translations[language].introSequence;
+    // SELECCIONAR LOS SLIDES CORRECTOS SEGÚN EL BANDO
+    const slides = translations[language].introSequence[playerAlignment === 'ZOMBIE' ? 'zombie' : 'alive'];
 
     const handleNext = () => {
         if (isAnimating) return;
@@ -63,11 +62,11 @@ export const IntroSequence: React.FC<IntroSequenceProps> = ({ language, onComple
             <div className={`relative z-20 w-full max-w-4xl p-8 mt-auto mb-12 transition-all duration-1000 transform ${fadeIn ? 'translate-y-0 opacity-100' : 'translate-y-10 opacity-0'}`}>
                 
                 <div className="flex items-center gap-4 mb-4">
-                    <div className="h-px flex-1 bg-cyan-900"></div>
-                    <span className="text-cyan-500 text-xs font-bold tracking-[0.3em] uppercase">
-                        ARCHIVO: MH0 // SECUENCIA {currentIndex + 1} DE {slides.length}
+                    <div className={`h-px flex-1 ${playerAlignment === 'ZOMBIE' ? 'bg-lime-900' : 'bg-cyan-900'}`}></div>
+                    <span className={`${playerAlignment === 'ZOMBIE' ? 'text-lime-500' : 'text-cyan-500'} text-xs font-bold tracking-[0.3em] uppercase`}>
+                        ARCHIVO: {playerAlignment === 'ZOMBIE' ? 'HUNGER_LOG' : 'MH0'} // SECUENCIA {currentIndex + 1} DE {slides.length}
                     </span>
-                    <div className="h-px flex-1 bg-cyan-900"></div>
+                    <div className={`h-px flex-1 ${playerAlignment === 'ZOMBIE' ? 'bg-lime-900' : 'bg-cyan-900'}`}></div>
                 </div>
 
                 <p className="text-xl md:text-2xl text-gray-200 leading-relaxed font-bold drop-shadow-lg text-center bg-black/30 p-4 rounded backdrop-blur-sm border border-white/10">
@@ -81,14 +80,16 @@ export const IntroSequence: React.FC<IntroSequenceProps> = ({ language, onComple
                         className={`group relative px-8 py-3 border font-bold tracking-widest transition-all duration-300
                             ${isAnimating 
                                 ? 'bg-gray-800 border-gray-600 text-gray-500 cursor-wait' 
-                                : 'bg-cyan-900/30 border-cyan-500 text-cyan-400 hover:bg-cyan-500 hover:text-black'}
+                                : playerAlignment === 'ZOMBIE'
+                                    ? 'bg-lime-900/30 border-lime-500 text-lime-400 hover:bg-lime-500 hover:text-black'
+                                    : 'bg-cyan-900/30 border-cyan-500 text-cyan-400 hover:bg-cyan-500 hover:text-black'}
                         `}
                     >
                         <span className="relative z-10">
                             {currentIndex === slides.length - 1 ? "INICIAR MISIÓN" : "SIGUIENTE >>"}
                         </span>
                         {!isAnimating && (
-                            <div className="absolute inset-0 bg-cyan-500 transform scale-x-0 group-hover:scale-x-100 transition-transform origin-left duration-300 -z-0"></div>
+                            <div className={`absolute inset-0 ${playerAlignment === 'ZOMBIE' ? 'bg-lime-500' : 'bg-cyan-500'} transform scale-x-0 group-hover:scale-x-100 transition-transform origin-left duration-300 -z-0`}></div>
                         )}
                     </button>
                 </div>

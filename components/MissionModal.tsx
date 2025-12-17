@@ -9,26 +9,28 @@ interface MissionModalProps {
   onComplete: (missionId: string) => void;
   onReactivate?: (missionId: string) => void;
   onEdit?: (mission: Mission) => void; 
+  // AGREGADO: Prop para eliminar
+  onDelete?: (missionId: string) => void;
   language: Language;
   isCompleted?: boolean;
   isEditorMode?: boolean; 
 }
 
-export const MissionModal: React.FC<MissionModalProps> = ({ mission, isOpen, onClose, onComplete, onReactivate, onEdit, language, isCompleted, isEditorMode }) => {
+export const MissionModal: React.FC<MissionModalProps> = ({ 
+    mission, isOpen, onClose, onComplete, onReactivate, onEdit, onDelete, 
+    language, isCompleted, isEditorMode 
+}) => {
   const [reporting, setReporting] = useState(false);
   const [reportSuccess, setReportSuccess] = useState(false);
   const [showMap, setShowMap] = useState(false);
   const t = translations[language].missionModal;
   
-  // Ref para limpiar timeouts
   const timeoutsRef = useRef<NodeJS.Timeout[]>([]);
 
   useEffect(() => {
     setReporting(false);
     setReportSuccess(false);
     setShowMap(false);
-    
-    // Limpiar timeouts al cambiar de misión o desmontar
     return () => {
         timeoutsRef.current.forEach(clearTimeout);
         timeoutsRef.current = [];
@@ -39,13 +41,9 @@ export const MissionModal: React.FC<MissionModalProps> = ({ mission, isOpen, onC
 
   const handleReportClick = () => {
     setReporting(true);
-    
     const t1 = setTimeout(() => {
       setReporting(false);
       setReportSuccess(true);
-      
-      // CAMBIO: Si hay texto de desenlace, NO cerramos automáticamente.
-      // Esperamos a que el usuario lea y cierre manualmente.
       if (!mission.outcomeText) {
           const t2 = setTimeout(() => {
              onComplete(mission.id);
@@ -53,7 +51,6 @@ export const MissionModal: React.FC<MissionModalProps> = ({ mission, isOpen, onC
           }, 1500);
           timeoutsRef.current.push(t2);
       }
-      
     }, 3000);
     timeoutsRef.current.push(t1);
   };
@@ -70,14 +67,12 @@ export const MissionModal: React.FC<MissionModalProps> = ({ mission, isOpen, onC
       }
   };
 
-  // Determinar si estamos mostrando el desenlace
   const showOutcome = reportSuccess && mission.outcomeText;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-slate-950/90 backdrop-blur-sm" onClick={onClose}></div>
 
-      {/* Modal Container */}
       <div className={`relative w-full max-w-3xl bg-slate-900 border-2 shadow-[0_0_50px_rgba(0,0,0,0.5)] flex flex-col max-h-[90vh] overflow-hidden ${isCompleted || reportSuccess ? 'border-emerald-600 shadow-emerald-900/20' : 'border-cyan-600 shadow-cyan-900/20'}`}>
         
         {/* Header */}
@@ -87,19 +82,32 @@ export const MissionModal: React.FC<MissionModalProps> = ({ mission, isOpen, onC
                 {isCompleted || reportSuccess ? 'MISSION COMPLETE' : t.title}
             </h2>
             <div className="flex gap-2 items-center">
-                {isEditorMode && onEdit && !showOutcome && (
-                    <button onClick={() => onEdit(mission)} className="bg-blue-600 hover:bg-blue-500 text-white text-[10px] px-2 py-1 font-bold uppercase">EDIT (DB)</button>
+                {/* BOTONES DE EDITOR EN EL HEADER */}
+                {isEditorMode && !showOutcome && (
+                    <div className="flex gap-2">
+                        {onEdit && (
+                            <button onClick={() => onEdit(mission)} className="bg-blue-600 hover:bg-blue-500 text-white text-[10px] px-2 py-1 font-bold uppercase border border-blue-400">
+                                EDITAR
+                            </button>
+                        )}
+                        {onDelete && (
+                            <button 
+                                onClick={() => onDelete(mission.id)} 
+                                className="bg-red-600 hover:bg-red-500 text-white text-[10px] px-2 py-1 font-bold uppercase border border-red-400 animate-pulse"
+                            >
+                                ELIMINAR
+                            </button>
+                        )}
+                    </div>
                 )}
-                <div className={`font-bold border px-2 py-0.5 text-xs animate-pulse ${isCompleted || reportSuccess ? 'text-emerald-400 border-emerald-500' : 'text-red-500 border-red-500'}`}>
+                <div className={`font-bold border px-2 py-0.5 text-xs ${isCompleted || reportSuccess ? 'text-emerald-400 border-emerald-500' : 'text-red-500 border-red-500'}`}>
                     {isCompleted || reportSuccess ? 'ARCHIVED' : 'TOP SECRET'}
                 </div>
             </div>
         </div>
 
-        {/* Content Scrollable Area */}
+        {/* Content */}
         <div className="p-6 overflow-y-auto font-mono text-cyan-100 scrollbar-thin scrollbar-thumb-cyan-700 scrollbar-track-slate-900">
-            
-            {/* Mission Title & Location */}
             <div className="mb-6 border-b border-cyan-800 pb-4">
                 <div className="flex justify-between items-end mb-2">
                     <h3 className="text-2xl md:text-3xl font-bold text-white drop-shadow-[0_0_5px_rgba(255,255,255,0.5)]">
@@ -116,11 +124,9 @@ export const MissionModal: React.FC<MissionModalProps> = ({ mission, isOpen, onC
                     <span className="bg-cyan-900/50 px-2 py-0.5 rounded border border-cyan-800">LOC: {mission.location.state.toUpperCase()}</span>
                     <span className="bg-cyan-900/50 px-2 py-0.5 rounded border border-cyan-800">COORDS: {mission.location.coordinates[1].toFixed(4)}, {mission.location.coordinates[0].toFixed(4)}</span>
                 </div>
-
-                {/* REQUISITOS DE EXPANSIÓN */}
                 {mission.requirements && mission.requirements.length > 0 && (
                     <div className="mt-3">
-                        <div className="text-[9px] text-cyan-600 font-bold uppercase mb-1 tracking-widest">REQUISITOS TÁCTICOS (EXPANSIONES)</div>
+                        <div className="text-[9px] text-cyan-600 font-bold uppercase mb-1 tracking-widest">REQUISITOS TÁCTICOS</div>
                         <div className="flex flex-wrap gap-2">
                             {mission.requirements.map((req, idx) => (
                                 <span key={idx} className="text-[10px] font-bold bg-blue-950 text-blue-300 border border-blue-800 px-2 py-0.5 rounded shadow-sm">
@@ -132,7 +138,6 @@ export const MissionModal: React.FC<MissionModalProps> = ({ mission, isOpen, onC
                 )}
             </div>
 
-            {/* VISTA DE DESENLACE (Si aplica) */}
             {showOutcome ? (
                 <div className="animate-fade-in">
                     <h4 className="text-xs font-bold tracking-[0.2em] mb-3 border-l-2 pl-2 uppercase text-emerald-500 border-emerald-500">
@@ -143,7 +148,6 @@ export const MissionModal: React.FC<MissionModalProps> = ({ mission, isOpen, onC
                     </div>
                 </div>
             ) : (
-                /* VISTA NORMAL (Briefing + Objetivos) */
                 <>
                     <div className="mb-6">
                         <h4 className={`text-xs font-bold tracking-[0.2em] mb-3 border-l-2 pl-2 uppercase ${isCompleted ? 'text-emerald-500 border-emerald-500' : 'text-cyan-500 border-cyan-500'}`}>
@@ -176,46 +180,31 @@ export const MissionModal: React.FC<MissionModalProps> = ({ mission, isOpen, onC
                     </div>
                 </>
             )}
-
         </div>
 
         {/* Footer Actions */}
         <div className="p-4 border-t border-cyan-800 bg-slate-900/90 flex justify-between items-center gap-4">
             {showOutcome ? (
                 <div className="w-full flex justify-end">
-                    <button 
-                        onClick={handleManualCloseReport}
-                        className="px-6 py-3 bg-emerald-700 hover:bg-emerald-600 text-white text-xs font-bold tracking-widest shadow-[0_0_15px_rgba(16,185,129,0.3)] transition-all"
-                    >
+                    <button onClick={handleManualCloseReport} className="px-6 py-3 bg-emerald-700 hover:bg-emerald-600 text-white text-xs font-bold tracking-widest shadow-[0_0_15px_rgba(16,185,129,0.3)] transition-all">
                         {t.closeReport}
                     </button>
                 </div>
             ) : (
                 <>
-                    <button 
-                        onClick={onClose}
-                        disabled={reporting}
-                        className="px-6 py-3 border border-cyan-700 text-cyan-500 text-xs font-bold tracking-widest hover:bg-cyan-900/20 hover:text-cyan-300 transition-colors disabled:opacity-50"
-                    >
+                    <button onClick={onClose} disabled={reporting} className="px-6 py-3 border border-cyan-700 text-cyan-500 text-xs font-bold tracking-widest hover:bg-cyan-900/20 hover:text-cyan-300 transition-colors disabled:opacity-50">
                         {t.cancel}
                     </button>
                     
                     <div className="flex gap-3">
-                        {/* BOTÓN AMARILLO: VER DETALLE (MAPA) */}
                         {mission.layoutUrl && (
-                            <button 
-                                onClick={() => setShowMap(true)}
-                                className="px-4 py-3 bg-yellow-600 hover:bg-yellow-500 text-black text-xs font-black tracking-widest shadow-[0_0_15px_rgba(234,179,8,0.4)] transition-all flex items-center gap-2"
-                            >
-                                <span>🗺️</span> VER DETALLE DE LA MISIÓN
+                            <button onClick={() => setShowMap(true)} className="px-4 py-3 bg-yellow-600 hover:bg-yellow-500 text-black text-xs font-black tracking-widest shadow-[0_0_15px_rgba(234,179,8,0.4)] transition-all flex items-center gap-2">
+                                <span>🗺️</span> MAPA
                             </button>
                         )}
 
                         {isCompleted && onReactivate && (
-                            <button 
-                                onClick={handleReactivateClick}
-                                className="px-6 py-3 border border-yellow-600 text-yellow-500 text-xs font-bold tracking-widest hover:bg-yellow-900/20 hover:text-yellow-300 transition-colors"
-                            >
+                            <button onClick={handleReactivateClick} className="px-6 py-3 border border-yellow-600 text-yellow-500 text-xs font-bold tracking-widest hover:bg-yellow-900/20 hover:text-yellow-300 transition-colors">
                                 {t.reactivate}
                             </button>
                         )}
@@ -228,20 +217,13 @@ export const MissionModal: React.FC<MissionModalProps> = ({ mission, isOpen, onC
                                     : 'bg-emerald-700/80 hover:bg-emerald-600 border-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.3)]'}
                                 ${reporting ? 'animate-pulse cursor-wait' : ''}
                             `}
-                            onClick={() => {
-                                if(!isCompleted) {
-                                    handleReportClick();
-                                }
-                            }}
+                            onClick={() => { if(!isCompleted) handleReportClick(); }}
                         >
                             {reporting ? t.sending : (reportSuccess || isCompleted ? `✓ ${t.sent}` : t.complete)}
                         </button>
                         
                         {!isCompleted && !reporting && !reportSuccess && (
-                            <button 
-                                className="px-6 py-3 bg-red-600 hover:bg-red-500 text-white text-xs font-bold tracking-widest shadow-[0_0_15px_rgba(239,68,68,0.4)] transition-all"
-                                onClick={onClose}
-                            >
+                            <button className="px-6 py-3 bg-red-600 hover:bg-red-500 text-white text-xs font-bold tracking-widest shadow-[0_0_15px_rgba(239,68,68,0.4)] transition-all" onClick={onClose}>
                                 {t.accept}
                             </button>
                         )}
@@ -250,41 +232,18 @@ export const MissionModal: React.FC<MissionModalProps> = ({ mission, isOpen, onC
             )}
         </div>
 
-        {/* --- VISOR DE MAPA (LIGHTBOX) --- */}
+        {/* Visor de Mapa */}
         {showMap && mission.layoutUrl && (
             <div className="fixed inset-0 z-[100] bg-black/95 flex items-center justify-center p-4 backdrop-blur-sm animate-fade-in" onClick={() => setShowMap(false)}>
                 <div className="relative max-w-full max-h-full flex flex-col items-center">
-                    <img 
-                        src={mission.layoutUrl} 
-                        alt="Tactical Map" 
-                        className="max-w-[95vw] max-h-[85vh] object-contain border-2 border-cyan-500 shadow-[0_0_50px_rgba(6,182,212,0.3)]"
-                        onClick={(e) => e.stopPropagation()} 
-                    />
-                    <div className="mt-4 flex gap-4">
-                        <button 
-                            onClick={() => setShowMap(false)}
-                            className="px-6 py-2 bg-red-900/80 text-white font-bold tracking-widest border border-red-600 hover:bg-red-800"
-                        >
-                            CERRAR VISOR
-                        </button>
-                        <a 
-                            href={mission.layoutUrl} 
-                            target="_blank" 
-                            rel="noopener noreferrer"
-                            className="px-6 py-2 bg-cyan-900/80 text-white font-bold tracking-widest border border-cyan-600 hover:bg-cyan-800"
-                            onClick={(e) => e.stopPropagation()}
-                        >
-                            ABRIR ORIGINAL ↗
-                        </a>
-                    </div>
+                    <img src={mission.layoutUrl} alt="Tactical Map" className="max-w-[95vw] max-h-[85vh] object-contain border-2 border-cyan-500 shadow-[0_0_50px_rgba(6,182,212,0.3)]" onClick={(e) => e.stopPropagation()} />
+                    <button onClick={() => setShowMap(false)} className="mt-4 px-6 py-2 bg-red-900/80 text-white font-bold tracking-widest border border-red-600 hover:bg-red-800">CERRAR VISOR</button>
                 </div>
             </div>
         )}
-
-        {/* Decor Lines */}
+        
         <div className={`absolute bottom-2 right-2 w-4 h-4 border-b border-r ${isCompleted || reportSuccess ? 'border-emerald-500' : 'border-cyan-500'}`}></div>
         <div className={`absolute bottom-2 left-2 w-4 h-4 border-b border-l ${isCompleted || reportSuccess ? 'border-emerald-500' : 'border-cyan-500'}`}></div>
-
       </div>
     </div>
   );

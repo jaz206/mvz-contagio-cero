@@ -2,6 +2,8 @@ import { collection, getDocs, doc, writeBatch, getDoc, setDoc, addDoc, updateDoc
 import { db } from '../firebaseConfig';
 import { HeroTemplate, HeroClass, Hero, Mission } from '../types';
 import { HERO_DATABASE } from '../data/heroDatabase';
+// IMPORTANTE: Importamos los datos locales para poder subirlos
+import { GAME_EXPANSIONS } from '../data/gameContent';
 
 const COLLECTION_NAME = 'heroes';
 const USERS_COLLECTION = 'users';
@@ -110,7 +112,7 @@ export const createHeroTemplateInDB = async (heroData: Omit<HeroTemplate, 'id'>)
 export interface UserProfileData {
     heroes: Hero[];
     completedMissionIds: string[];
-    resources?: { omegaCylinders: number }; // NUEVO CAMPO
+    resources?: { omegaCylinders: number };
     lastUpdated: any;
 }
 
@@ -127,7 +129,7 @@ export const getUserProfile = async (uid: string, campaignMode: 'ALIVE' | 'ZOMBI
                 return {
                     heroes: campaignData.heroes || [],
                     completedMissionIds: campaignData.missions || [],
-                    resources: campaignData.resources || { omegaCylinders: 0 }, // CAMBIO: Default 0
+                    resources: campaignData.resources || { omegaCylinders: 0 },
                     lastUpdated: data.lastUpdated
                 };
             }
@@ -144,7 +146,7 @@ export const saveUserProfile = async (
     campaignMode: 'ALIVE' | 'ZOMBIE', 
     heroes: Hero[], 
     completedMissionIds: string[],
-    resources?: { omegaCylinders: number } // NUEVO PARÁMETRO
+    resources?: { omegaCylinders: number }
 ): Promise<void> => {
     if (!db) return;
     try {
@@ -212,6 +214,64 @@ export const deleteMissionInDB = async (id: string): Promise<void> => {
         console.log(`Mission ${id} deleted successfully`);
     } catch (error) {
         console.error("Error deleting mission:", error);
+        throw error;
+    }
+};
+
+// --- NUEVA FUNCIÓN: Subir todos los héroes de las expansiones a la colección 'heroes' ---
+export const seedExpansionsToDB = async (): Promise<void> => {
+    if (!db) throw new Error("Base de datos no configurada");
+    try {
+        const batch = writeBatch(db);
+        let count = 0;
+
+        for (const exp of GAME_EXPANSIONS) {
+            // Procesar Héroes Vivos
+            for (const hero of exp.heroes) {
+                const docRef = doc(db, COLLECTION_NAME, hero.id);
+                // Convertimos el objeto Hero a HeroTemplate para la DB
+                const templateData: HeroTemplate = {
+                    id: hero.id,
+                    defaultName: hero.name,
+                    alias: hero.alias,
+                    defaultClass: hero.class,
+                    bio: hero.bio,
+                    imageUrl: hero.imageUrl || '',
+                    defaultStats: hero.stats,
+                    defaultAlignment: 'ALIVE',
+                    currentStory: '',
+                    objectives: []
+                };
+                batch.set(docRef, templateData);
+                count++;
+            }
+
+            // Procesar Héroes Zombies
+            for (const zHero of exp.zombieHeroes) {
+                const docRef = doc(db, COLLECTION_NAME, zHero.id);
+                const templateData: HeroTemplate = {
+                    id: zHero.id,
+                    defaultName: zHero.name,
+                    alias: zHero.alias,
+                    defaultClass: zHero.class,
+                    bio: zHero.bio,
+                    imageUrl: zHero.imageUrl || '',
+                    defaultStats: zHero.stats,
+                    defaultAlignment: 'ZOMBIE',
+                    currentStory: '',
+                    objectives: []
+                };
+                batch.set(docRef, templateData);
+                count++;
+            }
+        }
+
+        await batch.commit();
+        console.log(`Se han subido ${count} héroes de expansiones a la base de datos.`);
+        alert(`ÉXITO: ${count} personajes sincronizados con Firebase.`);
+    } catch (error) {
+        console.error("Error seeding expansions:", error);
+        alert("ERROR al sincronizar expansiones. Revisa la consola.");
         throw error;
     }
 };
