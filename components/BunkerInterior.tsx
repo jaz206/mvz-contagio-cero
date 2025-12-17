@@ -110,7 +110,6 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
   const [searchTerm, setSearchTerm] = useState("");
   const [recruitForm, setRecruitForm] = useState({ templateId: "", name: "", alias: "", class: "BRAWLER" as HeroClass, bio: "", currentStory: "", objectives: [] as string[], imageUrl: "", characterSheetUrl: "", str: 5, agi: 5, int: 5, alignment: "ALIVE" as "ALIVE" | "ZOMBIE" });
   
-  // NUEVO ESTADO PARA LA ALERTA TEMÁTICA
   const [showOmegaWarning, setShowOmegaWarning] = useState(false);
 
   const t = translations[language];
@@ -160,10 +159,8 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
       const hero = heroes.find(h => h.id === heroId);
       if (!hero) return;
       
-      // VALIDACIÓN TEMÁTICA DE CILINDROS OMEGA
       if (playerAlignment === 'ALIVE' && omegaCylinders <= 0) {
           setShowOmegaWarning(true);
-          // Auto-ocultar después de 3 segundos
           setTimeout(() => setShowOmegaWarning(false), 3000);
           return;
       }
@@ -203,18 +200,14 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
         
         <TransformationModal isOpen={!!processingHero} type={processingHero?.type || 'CURING'} heroName={processingHero?.name || ''} onComplete={handleTransformationComplete} />
 
-        {/* --- MODAL DE ALERTA OMEGA (TEMÁTICO) --- */}
         {showOmegaWarning && (
             <div className="fixed inset-0 z-[120] flex items-center justify-center bg-black/60 backdrop-blur-sm animate-fade-in" onClick={() => setShowOmegaWarning(false)}>
                 <div className="bg-slate-900 border-2 border-red-600 p-8 shadow-[0_0_50px_rgba(220,38,38,0.5)] flex flex-col items-center max-w-sm w-full relative overflow-hidden">
-                    {/* Scanlines decorativas */}
                     <div className="absolute inset-0 pointer-events-none opacity-10 bg-[linear-gradient(transparent_50%,rgba(220,38,38,0.5)_50%)] bg-[length:100%_4px]"></div>
-                    
                     <div className="text-5xl mb-4 animate-pulse">⚠</div>
                     <h2 className="text-2xl font-black text-red-500 tracking-widest mb-2 text-center uppercase">ERROR DE SISTEMA</h2>
                     <div className="w-full h-px bg-red-800 mb-4"></div>
                     <p className="text-red-300 font-mono text-sm tracking-wider text-center mb-6">{t.bunker.omega.empty}</p>
-                    
                     <div className="w-full bg-red-950 border border-red-800 h-2 rounded-full overflow-hidden">
                         <div className="h-full bg-red-500 animate-[shrink_3s_linear_forwards]"></div>
                     </div>
@@ -281,33 +274,18 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
                          <div className="text-xs font-bold text-red-400 bg-red-900/20 px-2 py-0.5 rounded border border-red-900">{capturedHeroes.length}</div>
                     </div>
                     
-                    {/* --- SECCIÓN DE CILINDROS OMEGA --- */}
                     <div className={`px-4 py-3 border-b flex justify-between items-center transition-all ${playerAlignment === 'ALIVE' ? 'bg-cyan-950/50 border-cyan-500/50 shadow-[inset_0_0_20px_rgba(6,182,212,0.2)]' : 'bg-gray-900/50 border-gray-700 opacity-50 grayscale'}`}>
                         <div className="flex items-center gap-3">
-                            {/* Icono Cilindro */}
                             <div className={`w-8 h-12 rounded border-2 flex flex-col justify-end p-0.5 relative overflow-hidden ${playerAlignment === 'ALIVE' ? 'border-cyan-400 bg-slate-900 shadow-[0_0_15px_#06b6d4]' : 'border-gray-600 bg-slate-900'}`}>
                                 <div className={`w-full transition-all duration-500 ${playerAlignment === 'ALIVE' ? 'bg-cyan-400 animate-pulse' : 'bg-gray-600'}`} style={{ height: `${Math.min(100, (omegaCylinders / 5) * 100)}%` }}></div>
                                 {playerAlignment === 'ALIVE' && <div className="absolute inset-0 bg-gradient-to-t from-cyan-500/50 to-transparent pointer-events-none"></div>}
                             </div>
-                            
                             <div>
-                                <div className={`text-[10px] font-black tracking-[0.2em] uppercase ${playerAlignment === 'ALIVE' ? 'text-cyan-300' : 'text-gray-500'}`}>
-                                    {t.bunker.omega.title}
-                                </div>
-                                <div className={`text-xs font-bold ${playerAlignment === 'ALIVE' ? (omegaCylinders > 0 ? 'text-white' : 'text-red-500') : 'text-gray-600'}`}>
-                                    {playerAlignment === 'ALIVE' ? (omegaCylinders > 0 ? `${omegaCylinders} UNIDADES DISPONIBLES` : "⚠ RESERVAS AGOTADAS") : "TECNOLOGÍA INCOMPATIBLE"}
-                                </div>
+                                <div className={`text-[10px] font-black tracking-[0.2em] uppercase ${playerAlignment === 'ALIVE' ? 'text-cyan-300' : 'text-gray-500'}`}>{t.bunker.omega.title}</div>
+                                <div className={`text-xs font-bold ${playerAlignment === 'ALIVE' ? (omegaCylinders > 0 ? 'text-white' : 'text-red-500') : 'text-gray-600'}`}>{playerAlignment === 'ALIVE' ? (omegaCylinders > 0 ? `${omegaCylinders} UNIDADES DISPONIBLES` : "⚠ RESERVAS AGOTADAS") : "TECNOLOGÍA INCOMPATIBLE"}</div>
                             </div>
                         </div>
-
-                        {playerAlignment === 'ALIVE' && onFindCylinder && (
-                            <button 
-                                onClick={onFindCylinder}
-                                className="px-3 py-2 bg-cyan-900/80 hover:bg-cyan-800 border border-cyan-500 text-cyan-200 text-[9px] font-bold uppercase tracking-wider shadow-lg hover:shadow-cyan-500/30 transition-all"
-                            >
-                                + {t.bunker.omega.find}
-                            </button>
-                        )}
+                        {playerAlignment === 'ALIVE' && onFindCylinder && <button onClick={onFindCylinder} className="px-3 py-2 bg-cyan-900/80 hover:bg-cyan-800 border border-cyan-500 text-cyan-200 text-[9px] font-bold uppercase tracking-wider shadow-lg hover:shadow-cyan-500/30 transition-all">+ {t.bunker.omega.find}</button>}
                     </div>
 
                     <div className="flex-1 p-3 flex flex-col gap-2">
@@ -318,33 +296,77 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
             </div>
         </div>
 
-      {/* MODAL DETALLE HÉROE */}
+      {/* MODAL DETALLE HÉROE (ACTUALIZADO) */}
       {selectedHeroId && selectedHero && (
         <div className="absolute inset-0 z-[60] bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4 md:p-12 animate-fade-in" onClick={() => setSelectedHeroId(null)}>
           <div className="w-full max-w-4xl bg-slate-900 border-2 border-cyan-500 shadow-[0_0_50px_rgba(6,182,212,0.2)] flex flex-col max-h-full overflow-hidden relative" onClick={(e) => e.stopPropagation()}>
+            
             {transformationResult && <div className="absolute inset-0 z-[100] flex items-center justify-center pointer-events-none"><div className={`border-8 p-6 text-7xl font-black tracking-widest uppercase ${transformationResult === 'CURED' ? 'border-emerald-500 text-emerald-500 shadow-[0_0_50px_rgba(16,185,129,0.5)]' : 'border-red-600 text-red-600 shadow-[0_0_50px_rgba(220,38,38,0.5)]'}`} style={{ maskImage: 'url(https://www.transparenttextures.com/patterns/grunge-wall.png)', backgroundColor: 'rgba(0,0,0,0.3)', animation: 'stamp 0.4s ease-out forwards' }}>{transformationResult}</div></div>}
-            <div className="p-4 border-b border-cyan-800 bg-cyan-900/20 flex justify-between items-center"><h2 className="text-xl font-bold tracking-[0.2em] text-cyan-200 uppercase">{t.tutorial.file.title} // {selectedHero.alias}</h2><button onClick={() => setSelectedHeroId(null)} className="text-cyan-500 hover:text-white px-2">✕</button></div>
+            
+            <div className="p-4 border-b border-cyan-800 bg-cyan-900/20 flex justify-between items-center">
+                <h2 className="text-xl font-bold tracking-[0.2em] text-cyan-200 uppercase">{t.tutorial.file.title} // {selectedHero.alias}</h2>
+                <button onClick={() => setSelectedHeroId(null)} className="text-cyan-500 hover:text-white px-2">✕</button>
+            </div>
+
             <div className="flex-1 p-6 overflow-y-auto">
               <div className="flex flex-col md:flex-row gap-8">
+                
                 <div className="w-full md:w-64 flex flex-col gap-4 shrink-0">
-                  <div className="w-full aspect-[3/4] bg-slate-950 border-2 border-cyan-700 relative group overflow-hidden shadow-inner cursor-zoom-in" onClick={() => setZoomedImage(selectedHero.imageUrl || "")}>{selectedHero.imageUrl ? <img src={selectedHero.imageUrl || "/placeholder.svg"} className="w-full h-full object-cover" alt="" /> : <div className="w-full h-full flex items-center justify-center text-cyan-900 flex-col gap-2"><span className="text-4xl opacity-50">?</span></div>}</div>
+                  <div className="w-full aspect-[3/4] bg-slate-950 border-2 border-cyan-700 relative group overflow-hidden shadow-inner cursor-zoom-in" onClick={() => setZoomedImage(selectedHero.imageUrl || "")}>
+                      {selectedHero.imageUrl ? <img src={selectedHero.imageUrl || "/placeholder.svg"} className="w-full h-full object-cover" alt="" /> : <div className="w-full h-full flex items-center justify-center text-cyan-900 flex-col gap-2"><span className="text-4xl opacity-50">?</span></div>}
+                  </div>
                   <CerebroScanner status="LOCKED" />
-                  {selectedHero.characterSheetUrl && <button onClick={() => setViewingSheetUrl(selectedHero.characterSheetUrl || null)} className="mt-2 w-full py-3 border-2 border-red-600/50 bg-red-950/20 hover:bg-red-900/40 hover:border-red-500 transition-all group relative overflow-hidden flex items-center justify-center gap-2"><div className="absolute inset-0 bg-[repeating-linear-gradient(45deg,transparent,transparent_5px,rgba(220,38,38,0.1)_5px,rgba(220,38,38,0.1)_10px)] opacity-50"></div><span className="text-red-500 text-xs">🔒</span><span className="text-red-400 font-bold tracking-[0.2em] text-[10px] uppercase group-hover:text-red-200 relative z-10">INFO SECRET // GAME DATA</span></button>}
                   {isEditorMode && selectedHero.templateId && <button onClick={handleEditClick} className="w-full py-2 bg-blue-900/50 hover:bg-blue-800 text-blue-300 text-xs font-bold border border-blue-700 uppercase tracking-wider transition-colors">EDIT DATA (DB)</button>}
                 </div>
+
                 <div className="flex-1 flex flex-col gap-6">
-                  <div className="flex justify-between items-end border-b border-cyan-900 pb-2"><div><div className="text-xs text-cyan-600 font-bold uppercase">{t.recruit.name}</div><div className="text-2xl text-white font-bold tracking-tight leading-none">{selectedHero.name}</div></div><div className="text-right"><div className="text-xs text-cyan-600 font-bold uppercase">{t.bunker.status}</div><div className={`text-lg font-bold ${selectedHero.status === "AVAILABLE" ? "text-emerald-400" : selectedHero.status === "INJURED" ? "text-red-500" : selectedHero.status === "CAPTURED" ? "text-orange-500" : "text-yellow-400"}`}>{selectedHero.status}</div></div></div>
-                  <div className="bg-slate-950/50 p-4 border border-cyan-900 overflow-y-auto max-h-32 scrollbar-thin scrollbar-thumb-cyan-800"><p className="text-sm text-gray-300 leading-relaxed italic">"{selectedHero.bio}"</p></div>
+                  <div className="flex justify-between items-end border-b border-cyan-900 pb-2">
+                      <div>
+                          <div className="text-xs text-cyan-600 font-bold uppercase">{t.recruit.name}</div>
+                          <div className="text-2xl text-white font-bold tracking-tight leading-none">{selectedHero.name}</div>
+                      </div>
+                      <div className="text-right">
+                          <div className="text-xs text-cyan-600 font-bold uppercase">{t.bunker.status}</div>
+                          <div className={`text-lg font-bold ${selectedHero.status === "AVAILABLE" ? "text-emerald-400" : selectedHero.status === "INJURED" ? "text-red-500" : selectedHero.status === "CAPTURED" ? "text-orange-500" : "text-yellow-400"}`}>{selectedHero.status}</div>
+                      </div>
+                  </div>
+
+                  <div className="bg-slate-950/50 p-4 border border-cyan-900 overflow-y-auto max-h-32 scrollbar-thin scrollbar-thumb-cyan-800">
+                      <p className="text-sm text-gray-300 leading-relaxed italic">"{selectedHero.bio}"</p>
+                  </div>
+
                   <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="bg-yellow-900/10 border border-yellow-900/30 p-3 overflow-y-auto"><h4 className="text-xs font-bold text-yellow-500 mb-2 border-b border-yellow-900/30 pb-1">{t.bunker.currentStory}</h4><p className="text-xs text-yellow-100/80 leading-relaxed">{selectedHero.currentStory || "CLASSIFIED"}</p></div>
-                    <div className="bg-emerald-900/10 border border-emerald-900/30 p-3 overflow-y-auto"><h4 className="text-xs font-bold text-emerald-500 mb-2 border-b border-emerald-900/30 pb-1">{t.bunker.objectives}</h4>{selectedHero.objectives && selectedHero.objectives.length > 0 ? <ul className="space-y-2">{selectedHero.objectives.map((obj, i) => <li key={i} className="flex gap-2 items-start"><input type="checkbox" checked={selectedHero.completedObjectiveIndices?.includes(i)} onChange={() => onToggleObjective(selectedHero.id, i)} className="mt-0.5 h-3 w-3 appearance-none border border-emerald-500 bg-slate-900 checked:bg-emerald-500 cursor-pointer shrink-0" /><span className={`text-xs ${selectedHero.completedObjectiveIndices?.includes(i) ? "text-emerald-500 line-through" : "text-emerald-100/90"}`}>{obj}</span></li>)}</ul> : <div className="text-xs text-gray-500 italic">NONE</div>}</div>
+                    <div className="bg-yellow-900/10 border border-yellow-900/30 p-3 overflow-y-auto">
+                        <h4 className="text-xs font-bold text-yellow-500 mb-2 border-b border-yellow-900/30 pb-1">{t.bunker.currentStory}</h4>
+                        <p className="text-xs text-yellow-100/80 leading-relaxed">{selectedHero.currentStory || "CLASSIFIED"}</p>
+                    </div>
+                    
+                    <div className="bg-emerald-900/10 border border-emerald-900/30 p-3 overflow-y-auto">
+                        <h4 className="text-xs font-bold text-emerald-500 mb-2 border-b border-emerald-900/30 pb-1">{t.bunker.objectives}</h4>
+                        {selectedHero.objectives && selectedHero.objectives.length > 0 ? 
+                            <ul className="space-y-2">
+                                {selectedHero.objectives.map((obj, i) => (
+                                    <li key={i} className="flex gap-2 items-start">
+                                        <input type="checkbox" checked={selectedHero.completedObjectiveIndices?.includes(i)} onChange={() => onToggleObjective(selectedHero.id, i)} className="mt-0.5 h-3 w-3 appearance-none border border-emerald-500 bg-slate-900 checked:bg-emerald-500 cursor-pointer shrink-0" />
+                                        <span className={`text-xs ${selectedHero.completedObjectiveIndices?.includes(i) ? "text-emerald-500 line-through" : "text-emerald-100/90"}`}>{obj}</span>
+                                    </li>
+                                ))}
+                            </ul> 
+                        : <div className="text-xs text-gray-500 italic">NONE</div>}
+                    </div>
                   </div>
                 </div>
               </div>
+
               <div className="mt-6 p-4 border-t border-cyan-800 bg-cyan-900/20 flex justify-between items-center">
-                <div className="text-xs text-cyan-600">ID: {selectedHero.id}</div>
+                <div className="text-xs text-cyan-600 font-mono">
+                    {isEditorMode ? `ID: ${selectedHero.id}` : ''}
+                </div>
+                
                 <div>
-                  {selectedHero.status === "DEPLOYED" ? <button onClick={() => onUnassign(selectedHero.id)} className="px-6 py-2 bg-red-900/50 border border-red-900 text-red-500 hover:bg-red-900/20 text-xs font-bold tracking-widest transition-colors">{t.bunker.unassign}</button> : selectedHero.status === "CAPTURED" ? 
+                  {selectedHero.status === "DEPLOYED" ? 
+                      <button onClick={() => onUnassign(selectedHero.id)} className="px-6 py-2 bg-red-900/50 border border-red-900 text-red-500 hover:bg-red-900/20 text-xs font-bold tracking-widest transition-colors">{t.bunker.unassign}</button> 
+                  : selectedHero.status === "CAPTURED" ? 
                       <button 
                           onClick={() => handleCureHero(selectedHero.id)} 
                           className={`px-6 py-2 border text-xs font-bold tracking-widest transition-colors 
@@ -356,7 +378,9 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
                       >
                           {playerAlignment === 'ZOMBIE' ? 'INFECTAR' : 'CURAR'}
                       </button> 
-                  : <button disabled={selectedHero.status === "INJURED"} onClick={() => { setAssignError(null); setShowAssignModal(true); }} className={`px-6 py-2 font-bold text-xs tracking-widest border transition-all ${selectedHero.status === "INJURED" ? "bg-gray-800 border-gray-600 text-gray-500 cursor-not-allowed" : "bg-cyan-700 border-cyan-500 text-white hover:bg-cyan-600 shadow-[0_0_15px_rgba(6,182,212,0.4)]"}`}>{t.bunker.assign}</button>}
+                  : 
+                      <button disabled={selectedHero.status === "INJURED"} onClick={() => { setAssignError(null); setShowAssignModal(true); }} className={`px-6 py-2 font-bold text-xs tracking-widest border transition-all ${selectedHero.status === "INJURED" ? "bg-gray-800 border-gray-600 text-gray-500 cursor-not-allowed" : "bg-cyan-700 border-cyan-500 text-white hover:bg-cyan-600 shadow-[0_0_15px_rgba(6,182,212,0.4)]"}`}>{t.bunker.assign}</button>
+                  }
                 </div>
               </div>
             </div>

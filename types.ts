@@ -23,6 +23,8 @@ export interface Hero {
     characterSheetUrl?: string;
     stats: HeroStats;
     assignedMissionId: string | null;
+    // NUEVO CAMPO: ID de la expansión a la que pertenece (Oculto en UI)
+    expansionId?: string;
 }
 
 export interface HeroTemplate {
@@ -37,6 +39,8 @@ export interface HeroTemplate {
     objectives?: string[];
     characterSheetUrl?: string;
     defaultAlignment?: 'ALIVE' | 'ZOMBIE'; 
+    // NUEVO CAMPO: ID de la expansión a la que pertenece (Oculto en UI)
+    expansionId?: string;
 }
 
 export interface Location {
@@ -57,21 +61,15 @@ export interface Mission {
     location: Location;
     threatLevel: string;
     type?: 'STANDARD' | 'SHIELD_BASE' | 'BOSS' | 'GALACTUS';
-    
-    // Define en qué etapa del evento aparece esta misión
     triggerStage?: WorldStage; 
-
     prereq?: string;       
     prereqs?: string[];    
-    
     pdfUrl?: string;
     alignment?: 'ALIVE' | 'ZOMBIE' | 'BOTH';
     requirements?: string[];
     specialRules?: string[];      
     setupInstructions?: string[]; 
     layoutUrl?: string;
-    
-    // NUEVO CAMPO: Texto de desenlace opcional
     outcomeText?: string;
 }
 

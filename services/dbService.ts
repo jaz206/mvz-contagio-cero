@@ -43,6 +43,9 @@ export const getHeroTemplates = async (): Promise<HeroTemplate[]> => {
       const objectives = findField(data, ['objectives', 'objetivos', 'goals', 'misiones']);
       
       const defaultAlignment = findField(data, ['defaultAlignment', 'alignment', 'bando', 'tipo']);
+      
+      // Recuperamos el campo oculto
+      const expansionId = findField(data, ['expansionId', 'expansion', 'caja']);
 
       templates.push({
           id: doc.id,
@@ -58,7 +61,8 @@ export const getHeroTemplates = async (): Promise<HeroTemplate[]> => {
           alias: alias || '',
           currentStory: currentStory || '',
           objectives: Array.isArray(objectives) ? objectives : [],
-          defaultAlignment: defaultAlignment || 'ALIVE' 
+          defaultAlignment: defaultAlignment || 'ALIVE',
+          expansionId: expansionId || 'unknown'
       });
     });
     return templates;
@@ -108,7 +112,6 @@ export const createHeroTemplateInDB = async (heroData: Omit<HeroTemplate, 'id'>)
     }
 };
 
-// --- NUEVA FUNCIÓN: Eliminar Héroe ---
 export const deleteHeroInDB = async (id: string): Promise<void> => {
     if (!db) throw new Error("Base de datos no configurada");
     try {
@@ -230,11 +233,23 @@ export const deleteMissionInDB = async (id: string): Promise<void> => {
     }
 };
 
-// --- FUNCIÓN DE SINCRONIZACIÓN MASIVA ---
+// --- FUNCIÓN DE RESET Y SINCRONIZACIÓN MASIVA ---
 export const seedExpansionsToDB = async (): Promise<void> => {
     if (!db) throw new Error("Base de datos no configurada");
     try {
-        const batch = writeBatch(db);
+        // 1. PRIMERO BORRAMOS TODO (WIPE)
+        // Firestore no tiene "delete collection", hay que borrar uno a uno
+        const snapshot = await getDocs(collection(db, COLLECTION_NAME));
+        const deleteBatch = writeBatch(db);
+        snapshot.docs.forEach((doc) => {
+            deleteBatch.delete(doc.ref);
+        });
+        await deleteBatch.commit();
+        console.log("Colección de héroes limpiada.");
+
+        // 2. AHORA SUBIMOS LOS DATOS LIMPIOS
+        // Usamos un nuevo batch porque el anterior ya se commiteó
+        const createBatch = writeBatch(db);
         let count = 0;
 
         for (const exp of GAME_EXPANSIONS) {
@@ -251,9 +266,10 @@ export const seedExpansionsToDB = async (): Promise<void> => {
                     defaultStats: hero.stats,
                     defaultAlignment: 'ALIVE',
                     currentStory: '',
-                    objectives: []
+                    objectives: [],
+                    expansionId: exp.id // GUARDAMOS EL ID DE LA EXPANSIÓN
                 };
-                batch.set(docRef, templateData);
+                createBatch.set(docRef, templateData);
                 count++;
             }
 
@@ -270,16 +286,17 @@ export const seedExpansionsToDB = async (): Promise<void> => {
                     defaultStats: zHero.stats,
                     defaultAlignment: 'ZOMBIE',
                     currentStory: '',
-                    objectives: []
+                    objectives: [],
+                    expansionId: exp.id // GUARDAMOS EL ID DE LA EXPANSIÓN
                 };
-                batch.set(docRef, templateData);
+                createBatch.set(docRef, templateData);
                 count++;
             }
         }
 
-        await batch.commit();
+        await createBatch.commit();
         console.log(`Se han subido ${count} héroes de expansiones a la base de datos.`);
-        alert(`ÉXITO: ${count} personajes sincronizados con Firebase.`);
+        alert(`BBDD REINICIADA: ${count} personajes creados correctamente.`);
     } catch (error) {
         console.error("Error seeding expansions:", error);
         alert("ERROR al sincronizar expansiones. Revisa la consola.");
