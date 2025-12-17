@@ -240,12 +240,12 @@ export const translations = {
         zombie: [
             {
                 text: "Nosotros no fuimos a pelear una guerra. Fuimos a terminar con una. Jennifer Walters (She-Hulk) nos había llamado a gritos. La Tríada (Doom, Magneto, Fisk) había secuestrado a Bruce Banner. Su plan: usar el 'Pulso Nulificador' para convertir a los superhumanos en esclavos. Nuestra misión era sencilla: infiltrarnos en ese laboratorio de hormigón, liberar a Bruce y desmantelar el arma. Estábamos allí, apretando los dientes, listos para la pelea... Pero no pudimos llegar. El Pulso se activó, y todo fue demasiado rápido. Un segundo de retraso fue nuestra condena. El arma falló.",
-                image: "https://i.pinimg.com/736x/a8/4c/e3/a84ce31bf7d6eb9388981f219a720368.jpg"
+                image: "https://i.postimg.cc/m2jR0zNC/Animacion-sutil-de-imagen-original.gif"
             },
             {
                 text: "Cuando las alarmas sonaron, ya estábamos en los pasillos, y el color verde lo inundó todo. El virus nos tocó. Y, en lugar de matarnos, nos despertó. El dolor se desvaneció, y en su lugar llegó el Hambre. No como un grito, sino como un frío constante, un vacío que ningún poder puede apagar. Éramos héroes, y ahora somos el error. El laboratorio es ahora nuestro matadero personal. Y en el corazón del complejo, lo oímos. Hulk no murió. El monstruo despertó. Sin alma, sin freno. Cada latido suyo extiende la plaga Gamma. Ahora entendemos: Hulk es el origen, y lo último que intentamos fue lo que desató la catástrofe.",
                 // IMAGEN ACTUALIZADA SLIDE 2
-                image: "https://i.pinimg.com/736x/31/a1/24/31a124c7e30411a4fe906723b7e5ff2d.jpg"
+                image: "https://i.postimg.cc/RhvyRdYX/Animacion-sutil-de-vineta-comica.gif"
             },
             {
                 text: "S.H.I.E.L.D. llegó tarde. Sellaron el complejo, bombardearon las coordenadas. Llaman a nuestra casa 'Zona Perdida'. El mundo exterior aún cree que puede contener esto, que puede revertirlo. No saben que el origen sigue rugiendo. No saben que el virus nos ha otorgado un poder que nunca conocimos. Ya no se trata de salvación. Se trata de expansión. Hemos aprendido a caminar con este vacío. Hemos aprendido a usar esta rabia. El virus aprendió a caminar. Y nosotros... vamos a cazarlo todo.",
