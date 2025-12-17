@@ -1,7 +1,8 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { GAME_EXPANSIONS } from '../data/gameContent';
+import { getHeroTemplates } from '../services/dbService'; // Importamos el servicio
 import { Language } from '../translations';
-import { Hero } from '../types';
+import { Hero, HeroTemplate } from '../types';
 
 interface ExpansionSelectorProps {
     onConfirm: (selectedHeroes: Hero[]) => void;
@@ -20,6 +21,10 @@ export const ExpansionSelector: React.FC<ExpansionSelectorProps> = ({
     const [selectedHeroes, setSelectedHeroes] = useState<Hero[]>([]);
     const [expandedBoxes, setExpandedBoxes] = useState<Set<string>>(new Set(['core_box'])); 
     const [searchTerm, setSearchTerm] = useState('');
+    
+    // Estado para los datos de la BBDD
+    const [dbHeroes, setDbHeroes] = useState<HeroTemplate[]>([]);
+    const [loadingDb, setLoadingDb] = useState(true);
 
     const isZombie = playerAlignment === 'ZOMBIE';
     
@@ -28,15 +33,113 @@ export const ExpansionSelector: React.FC<ExpansionSelectorProps> = ({
     const bgColor = isZombie ? 'bg-lime-600' : 'bg-cyan-600';
     const glowClass = isZombie ? 'shadow-[0_0_15px_rgba(132,204,22,0.5)]' : 'shadow-[0_0_15px_rgba(6,182,212,0.5)]';
 
+    // 1. CARGAR DATOS DE FIREBASE AL INICIAR
+    useEffect(() => {
+        const fetchFromDb = async () => {
+            try {
+                const templates = await getHeroTemplates();
+                setDbHeroes(templates);
+            } catch (e) {
+                console.error("Error cargando héroes de DB", e);
+            } finally {
+                setLoadingDb(false);
+            }
+        };
+        fetchFromDb();
+    }, []);
+
+    // 2. PROCESAR Y MEZCLAR DATOS (LOCAL + BBDD)
     const filteredData = useMemo(() => {
-        return GAME_EXPANSIONS.map(exp => {
-            const availableHeroes = isZombie ? exp.zombieHeroes : exp.heroes;
+        if (loadingDb) return [];
+
+        const processedIds = new Set<string>();
+        const resultBoxes = [];
+
+        // A) PROCESAR CAJAS OFICIALES
+        for (const exp of GAME_EXPANSIONS) {
+            // Seleccionar lista base según bando (del archivo local para saber qué va en cada caja)
+            const baseList = isZombie ? exp.zombieHeroes : exp.heroes;
+
+            // Mapear a datos de la BBDD si existen
+            const heroesInBox = baseList.map(localHero => {
+                const dbVersion = dbHeroes.find(h => h.id === localHero.id);
+                
+                // Marcamos como procesado para no duplicarlo luego
+                processedIds.add(localHero.id);
+
+                if (dbVersion) {
+                    // Si existe en DB, usamos sus datos (stats editados, foto nueva, etc.)
+                    // Pero mantenemos la estructura de objeto 'Hero'
+                    return {
+                        ...localHero,
+                        name: dbVersion.defaultName,
+                        alias: dbVersion.alias,
+                        class: dbVersion.defaultClass,
+                        stats: dbVersion.defaultStats,
+                        imageUrl: dbVersion.imageUrl,
+                        bio: dbVersion.bio || localHero.bio
+                    };
+                }
+                return localHero; // Si no está en DB, usamos el local
+            });
+
+            // Filtrar por búsqueda
             const matchingHeroes = searchTerm 
-                ? availableHeroes.filter(h => h.alias.toLowerCase().includes(searchTerm.toLowerCase()) || h.name.toLowerCase().includes(searchTerm.toLowerCase()))
-                : availableHeroes;
-            return { ...exp, heroesToShow: matchingHeroes };
-        }); 
-    }, [isZombie, searchTerm]);
+                ? heroesInBox.filter(h => h.alias.toLowerCase().includes(searchTerm.toLowerCase()) || h.name.toLowerCase().includes(searchTerm.toLowerCase()))
+                : heroesInBox;
+
+            // Solo añadimos la caja si tiene héroes de este bando
+            if (matchingHeroes.length > 0 || !searchTerm) {
+                resultBoxes.push({
+                    ...exp,
+                    heroesToShow: matchingHeroes
+                });
+            }
+        }
+
+        // B) PROCESAR HÉROES CUSTOM (Creados en el Editor y que no están en cajas oficiales)
+        const customHeroes = dbHeroes.filter(h => {
+            // 1. Que no haya sido procesado ya en una caja oficial
+            const notProcessed = !processedIds.has(h.id);
+            // 2. Que coincida con el bando actual
+            const matchesAlignment = h.defaultAlignment === playerAlignment;
+            // 3. Que coincida con la búsqueda
+            const matchesSearch = searchTerm 
+                ? (h.alias.toLowerCase().includes(searchTerm.toLowerCase()) || h.defaultName.toLowerCase().includes(searchTerm.toLowerCase()))
+                : true;
+
+            return notProcessed && matchesAlignment && matchesSearch;
+        });
+
+        if (customHeroes.length > 0) {
+            // Convertir HeroTemplate a Hero
+            const formattedCustomHeroes: Hero[] = customHeroes.map(h => ({
+                id: h.id,
+                templateId: h.id,
+                name: h.defaultName,
+                alias: h.alias,
+                class: h.defaultClass,
+                bio: h.bio || '',
+                status: 'AVAILABLE',
+                imageUrl: h.imageUrl,
+                stats: h.defaultStats,
+                assignedMissionId: null,
+                objectives: h.objectives || [],
+                currentStory: h.currentStory || ''
+            }));
+
+            resultBoxes.push({
+                id: 'custom_database',
+                name: 'S.H.I.E.L.D. DATABASE (CUSTOM)',
+                heroes: formattedCustomHeroes, // No importa donde lo pongamos, usaremos heroesToShow
+                zombieHeroes: [],
+                heroesToShow: formattedCustomHeroes
+            });
+        }
+
+        return resultBoxes;
+
+    }, [isZombie, searchTerm, dbHeroes, loadingDb, playerAlignment]);
 
     const toggleBox = (id: string) => {
         const newSet = new Set(expandedBoxes);
@@ -69,7 +172,7 @@ export const ExpansionSelector: React.FC<ExpansionSelectorProps> = ({
             {/* FONDO */}
             <div className={`absolute inset-0 opacity-10 pointer-events-none bg-[linear-gradient(0deg,transparent_24%,${isZombie ? '#84cc16' : '#06b6d4'}_25%,${isZombie ? '#84cc16' : '#06b6d4'}_26%,transparent_27%,transparent_74%,${isZombie ? '#84cc16' : '#06b6d4'}_75%,${isZombie ? '#84cc16' : '#06b6d4'}_76%,transparent_77%,transparent),linear-gradient(90deg,transparent_24%,${isZombie ? '#84cc16' : '#06b6d4'}_25%,${isZombie ? '#84cc16' : '#06b6d4'}_26%,transparent_27%,transparent_74%,${isZombie ? '#84cc16' : '#06b6d4'}_75%,${isZombie ? '#84cc16' : '#06b6d4'}_76%,transparent_77%,transparent)] bg-[length:50px_50px]`}></div>
 
-            {/* HEADER (Fijo arriba) */}
+            {/* HEADER */}
             <div className={`flex-none p-4 border-b-2 ${borderColor} bg-slate-900 z-20 shadow-2xl flex flex-col md:flex-row justify-between items-center gap-4 relative`}>
                 <div className="flex items-center gap-4 w-full md:w-auto">
                     <button onClick={onBack} className={`w-10 h-10 flex items-center justify-center border-2 ${borderColor} text-white hover:bg-white/10 transition-colors font-bold text-xl`}>←</button>
@@ -93,59 +196,72 @@ export const ExpansionSelector: React.FC<ExpansionSelectorProps> = ({
                 </div>
             </div>
 
-            {/* MAIN CONTENT (Scrollable) */}
-            {/* flex-1 hace que ocupe todo el espacio disponible entre el header y el footer */}
+            {/* MAIN CONTENT */}
             <div className="flex-1 overflow-y-auto p-4 md:p-8 scrollbar-thin scrollbar-thumb-slate-600 relative z-10">
-                <div className="max-w-5xl mx-auto space-y-6 pb-8">
-                    {filteredData.map((exp) => {
-                        const isOpen = expandedBoxes.has(exp.id) || searchTerm.length > 0;
-                        const isOwned = ownedExpansions.has(exp.id);
-                        
-                        return (
-                            <div key={exp.id} className={`border-2 ${isOwned ? borderColor : 'border-slate-700'} bg-slate-900 shadow-lg transition-all duration-300 ${!isOwned ? 'opacity-70' : ''}`}>
-                                <div className={`w-full flex justify-between items-center p-3 transition-colors ${isOpen ? `bg-slate-800 border-b-2 ${isOwned ? borderColor : 'border-slate-700'}` : 'bg-slate-900'}`}>
-                                    <div className="flex items-center gap-4 flex-1">
-                                        <div onClick={(e) => { e.stopPropagation(); onToggleExpansion(exp.id); }} className={`w-6 h-6 border-2 flex items-center justify-center cursor-pointer transition-all ${isOwned ? `${borderColor} bg-black text-white` : 'border-slate-600 bg-slate-800'}`}>
-                                            {isOwned && '✓'}
+                {loadingDb ? (
+                    <div className="flex flex-col items-center justify-center h-64 gap-4">
+                        <div className={`w-12 h-12 border-4 border-t-transparent rounded-full animate-spin ${borderColor}`}></div>
+                        <div className="text-xs font-bold tracking-widest animate-pulse">SINCRONIZANDO BASE DE DATOS...</div>
+                    </div>
+                ) : (
+                    <div className="max-w-5xl mx-auto space-y-6 pb-8">
+                        {filteredData.map((exp) => {
+                            const isOpen = expandedBoxes.has(exp.id) || searchTerm.length > 0;
+                            // Si es la caja custom, siempre se considera "comprada"
+                            const isOwned = exp.id === 'custom_database' || ownedExpansions.has(exp.id);
+                            
+                            // Si no hay héroes que mostrar en esta caja (por filtro de bando), no la renderizamos
+                            if (exp.heroesToShow.length === 0) return null;
+
+                            return (
+                                <div key={exp.id} className={`border-2 ${isOwned ? borderColor : 'border-slate-700'} bg-slate-900 shadow-lg transition-all duration-300 ${!isOwned ? 'opacity-70' : ''}`}>
+                                    <div className={`w-full flex justify-between items-center p-3 transition-colors ${isOpen ? `bg-slate-800 border-b-2 ${isOwned ? borderColor : 'border-slate-700'}` : 'bg-slate-900'}`}>
+                                        <div className="flex items-center gap-4 flex-1">
+                                            {/* Checkbox de propiedad (oculto para custom) */}
+                                            {exp.id !== 'custom_database' && (
+                                                <div onClick={(e) => { e.stopPropagation(); onToggleExpansion(exp.id); }} className={`w-6 h-6 border-2 flex items-center justify-center cursor-pointer transition-all ${isOwned ? `${borderColor} bg-black text-white` : 'border-slate-600 bg-slate-800'}`}>
+                                                    {isOwned && '✓'}
+                                                </div>
+                                            )}
+                                            <button onClick={() => toggleBox(exp.id)} className="flex items-center gap-3 flex-1 text-left">
+                                                <span className={`text-sm md:text-lg font-black tracking-widest uppercase ${isOwned ? 'text-white' : 'text-gray-500'} drop-shadow-md`}>{exp.name}</span>
+                                                {!isOwned && <span className="text-[9px] bg-slate-700 text-gray-400 px-2 py-0.5 rounded">NOT OWNED</span>}
+                                            </button>
                                         </div>
-                                        <button onClick={() => toggleBox(exp.id)} className="flex items-center gap-3 flex-1 text-left">
-                                            <span className={`text-sm md:text-lg font-black tracking-widest uppercase ${isOwned ? 'text-white' : 'text-gray-500'} drop-shadow-md`}>{exp.name}</span>
-                                            {!isOwned && <span className="text-[9px] bg-slate-700 text-gray-400 px-2 py-0.5 rounded">NOT OWNED</span>}
+                                        <button onClick={() => toggleBox(exp.id)} className={`text-xs font-bold px-3 py-1.5 rounded border ${isOwned ? `${borderColor} ${textColor}` : 'border-slate-600 text-slate-500'} bg-black shrink-0 ml-2`}>
+                                            {isOpen ? '▲' : '▼'} {exp.heroesToShow.length}
                                         </button>
                                     </div>
-                                    <button onClick={() => toggleBox(exp.id)} className={`text-xs font-bold px-3 py-1.5 rounded border ${isOwned ? `${borderColor} ${textColor}` : 'border-slate-600 text-slate-500'} bg-black shrink-0 ml-2`}>
-                                        {isOpen ? '▲' : '▼'} {exp.heroesToShow.length}
-                                    </button>
-                                </div>
 
-                                {isOpen && (
-                                    <div className={`p-4 bg-black/40 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 animate-fade-in ${!isOwned ? 'grayscale opacity-50 pointer-events-none' : ''}`}>
-                                        {exp.heroesToShow.map(hero => {
-                                            const isSelected = selectedHeroes.some(h => h.id === hero.id);
-                                            const isDisabled = !isSelected && selectedHeroes.length >= 6;
-                                            return (
-                                                <div key={hero.id} onClick={() => !isDisabled && toggleHero(hero)} className={`relative group cursor-pointer border-2 transition-all duration-200 overflow-hidden rounded-sm ${isSelected ? `${borderColor} bg-slate-800 ${glowClass} transform scale-105 z-10` : isDisabled ? 'border-slate-700 opacity-30 grayscale cursor-not-allowed' : 'border-slate-600 bg-slate-900 hover:border-white hover:bg-slate-800'}`}>
-                                                    {isSelected && <div className={`absolute top-0 right-0 p-1.5 z-20 ${bgColor} shadow-lg border-l border-b border-black`}><svg className="w-4 h-4 text-black font-bold" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="4"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7"></path></svg></div>}
-                                                    <div className="aspect-[4/5] w-full overflow-hidden relative bg-black">
-                                                        <img src={hero.imageUrl} alt={hero.alias} className={`w-full h-full object-cover transition-transform duration-500 ${isSelected ? 'scale-110' : 'group-hover:scale-110'}`} />
-                                                        <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent opacity-90"></div>
+                                    {isOpen && (
+                                        <div className={`p-4 bg-black/40 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 animate-fade-in ${!isOwned ? 'grayscale opacity-50 pointer-events-none' : ''}`}>
+                                            {exp.heroesToShow.map(hero => {
+                                                const isSelected = selectedHeroes.some(h => h.id === hero.id);
+                                                const isDisabled = !isSelected && selectedHeroes.length >= 6;
+                                                return (
+                                                    <div key={hero.id} onClick={() => !isDisabled && toggleHero(hero)} className={`relative group cursor-pointer border-2 transition-all duration-200 overflow-hidden rounded-sm ${isSelected ? `${borderColor} bg-slate-800 ${glowClass} transform scale-105 z-10` : isDisabled ? 'border-slate-700 opacity-30 grayscale cursor-not-allowed' : 'border-slate-600 bg-slate-900 hover:border-white hover:bg-slate-800'}`}>
+                                                        {isSelected && <div className={`absolute top-0 right-0 p-1.5 z-20 ${bgColor} shadow-lg border-l border-b border-black`}><svg className="w-4 h-4 text-black font-bold" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="4"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7"></path></svg></div>}
+                                                        <div className="aspect-[4/5] w-full overflow-hidden relative bg-black">
+                                                            <img src={hero.imageUrl} alt={hero.alias} className={`w-full h-full object-cover transition-transform duration-500 ${isSelected ? 'scale-110' : 'group-hover:scale-110'}`} />
+                                                            <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent opacity-90"></div>
+                                                        </div>
+                                                        <div className="absolute bottom-0 left-0 right-0 p-2 border-t border-white/20 bg-slate-900/95">
+                                                            <div className={`text-[10px] md:text-xs font-black truncate uppercase ${isSelected ? textColor : 'text-white'}`}>{hero.alias}</div>
+                                                            <div className="text-[9px] text-gray-400 font-mono">{hero.class}</div>
+                                                        </div>
                                                     </div>
-                                                    <div className="absolute bottom-0 left-0 right-0 p-2 border-t border-white/20 bg-slate-900/95">
-                                                        <div className={`text-[10px] md:text-xs font-black truncate uppercase ${isSelected ? textColor : 'text-white'}`}>{hero.alias}</div>
-                                                        <div className="text-[9px] text-gray-400 font-mono">{hero.class}</div>
-                                                    </div>
-                                                </div>
-                                            );
-                                        })}
-                                    </div>
-                                )}
-                            </div>
-                        );
-                    })}
-                </div>
+                                                );
+                                            })}
+                                        </div>
+                                    )}
+                                </div>
+                            );
+                        })}
+                    </div>
+                )}
             </div>
 
-            {/* FOOTER (Fijo abajo, pero ocupando espacio real) */}
+            {/* FOOTER */}
             <div className={`flex-none h-28 border-t-4 ${borderColor} bg-slate-900 z-50 flex items-center px-4 md:px-8 justify-between shadow-[0_-10px_50px_rgba(0,0,0,1)]`}>
                 <div className="flex items-center gap-3 overflow-x-auto flex-1 mr-4 scrollbar-hide py-2">
                     <div className="flex flex-col justify-center mr-4 shrink-0 text-center">
