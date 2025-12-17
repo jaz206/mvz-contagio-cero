@@ -1,10 +1,18 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { HeroTemplate, Mission, HeroStats } from '../types';
-import { getHeroTemplates, getCustomMissions, deleteHeroInDB, deleteMissionInDB, seedExpansionsToDB, updateHeroTemplate } from '../services/dbService';
+import { 
+    getHeroTemplates, 
+    getCustomMissions, 
+    deleteHeroInDB, 
+    deleteMissionInDB, 
+    seedExpansionsToDB, 
+    updateHeroTemplate,
+    updateMissionInDB // Importamos la función de actualizar misión
+} from '../services/dbService';
 import { CharacterEditor } from './CharacterEditor';
 import { MissionEditor } from './MissionEditor';
 
-// --- CONSTANTES DE FACCIONES Y MISIONES BASE (Para contexto del editor) ---
+// --- CONSTANTES DE FACCIONES Y MISIONES BASE ---
 const FACTION_STATES = {
     magneto: new Set(['Washington', 'Oregon', 'California', 'Nevada', 'Idaho', 'Montana', 'Wyoming', 'Utah', 'Arizona', 'Colorado', 'Alaska', 'Hawaii']),
     kingpin: new Set(['Maine', 'New Hampshire', 'Vermont', 'New York', 'Massachusetts', 'Rhode Island', 'Connecticut', 'New Jersey', 'Pennsylvania', 'Delaware', 'Maryland', 'West Virginia', 'Virginia', 'District of Columbia']),
@@ -20,7 +28,6 @@ const getFactionForState = (state: string) => {
     return 'neutral';
 };
 
-// Misiones base mínimas para que aparezcan como opciones de requisito
 const BASE_GAME_MISSIONS: Mission[] = [
     { id: 'm_intro_0', title: "MH0: CADENAS ROTAS", description: [], objectives: [], location: { state: 'Ohio', coordinates: [0,0] }, threatLevel: 'N/A' },
     { id: 'm_kraven', title: "LA CACERÍA DE KRAVEN", description: [], objectives: [], location: { state: 'New York', coordinates: [0,0] }, threatLevel: 'N/A' },
@@ -53,7 +60,10 @@ export const DatabaseManager: React.FC<DatabaseManagerProps> = ({ isOpen, onClos
     // Fusión
     const [selectedIds, setSelectedIds] = useState<string[]>([]);
     const [showMergeModal, setShowMergeModal] = useState(false);
+    
+    // Estados de fusión separados para evitar conflictos de tipo
     const [mergedHero, setMergedHero] = useState<HeroTemplate | null>(null);
+    const [mergedMission, setMergedMission] = useState<Mission | null>(null);
 
     const loadData = async () => {
         setLoading(true);
@@ -103,34 +113,49 @@ export const DatabaseManager: React.FC<DatabaseManagerProps> = ({ isOpen, onClos
         return groups;
     }, [missions, searchTerm]);
 
-    // --- LÓGICA DE FUSIÓN Y EDICIÓN (Igual que antes) ---
+    // --- LÓGICA DE FUSIÓN ---
     const toggleSelection = (id: string) => {
         if (selectedIds.includes(id)) setSelectedIds(selectedIds.filter(sid => sid !== id));
         else if (selectedIds.length < 2) setSelectedIds([...selectedIds, id]);
-        else alert("Solo puedes fusionar 2 personajes a la vez.");
+        else alert("Solo puedes fusionar 2 elementos a la vez.");
     };
 
     const startMerge = () => {
         if (selectedIds.length !== 2) return;
-        const heroA = heroes.find(h => h.id === selectedIds[0]);
-        if (heroA) setMergedHero({ ...heroA });
+        
+        if (activeTab === 'HEROES') {
+            const heroA = heroes.find(h => h.id === selectedIds[0]);
+            if (heroA) setMergedHero({ ...heroA });
+        } else {
+            const missionA = missions.find(m => m.id === selectedIds[0]);
+            if (missionA) setMergedMission({ ...missionA });
+        }
         setShowMergeModal(true);
     };
 
     const executeMerge = async () => {
-        if (!mergedHero || selectedIds.length !== 2) return;
+        if (selectedIds.length !== 2) return;
         const targetId = selectedIds[0]; 
         const idToDelete = selectedIds[1];
-        if (!window.confirm(`ESTA ACCIÓN ES IRREVERSIBLE:\n\n1. Se actualizará el héroe con ID: ${targetId}\n2. Se ELIMINARÁ permanentemente el héroe con ID: ${idToDelete}\n\n¿Proceder?`)) return;
+
+        if (!window.confirm(`ESTA ACCIÓN ES IRREVERSIBLE:\n\n1. Se actualizará el elemento con ID: ${targetId}\n2. Se ELIMINARÁ permanentemente el elemento con ID: ${idToDelete}\n\n¿Proceder?`)) return;
 
         setLoading(true);
         try {
-            const finalData = { ...mergedHero, id: targetId };
-            await updateHeroTemplate(targetId, finalData);
-            await deleteHeroInDB(idToDelete);
+            if (activeTab === 'HEROES' && mergedHero) {
+                const finalData = { ...mergedHero, id: targetId };
+                await updateHeroTemplate(targetId, finalData);
+                await deleteHeroInDB(idToDelete);
+            } else if (activeTab === 'MISSIONS' && mergedMission) {
+                const finalData = { ...mergedMission, id: targetId };
+                await updateMissionInDB(targetId, finalData);
+                await deleteMissionInDB(idToDelete);
+            }
+
             alert("FUSIÓN COMPLETADA CON ÉXITO");
             setShowMergeModal(false);
             setMergedHero(null);
+            setMergedMission(null);
             await loadData();
         } catch (error) {
             console.error(error);
@@ -169,22 +194,60 @@ export const DatabaseManager: React.FC<DatabaseManagerProps> = ({ isOpen, onClos
         return matchesSearch && matchesType;
     });
 
-    const ComparisonRow = ({ label, valueA, valueB, fieldKey, subKey }: { label: string, valueA: any, valueB: any, fieldKey: keyof HeroTemplate, subKey?: keyof HeroStats }) => {
+    // --- COMPONENTES DE COMPARACIÓN ---
+    
+    // Para Héroes
+    const ComparisonRowHero = ({ label, valueA, valueB, fieldKey, subKey }: { label: string, valueA: any, valueB: any, fieldKey: keyof HeroTemplate, subKey?: keyof HeroStats }) => {
         if (!mergedHero) return null;
         let currentValue: any;
         if (subKey && fieldKey === 'defaultStats') currentValue = (mergedHero.defaultStats as any)[subKey];
         else currentValue = mergedHero[fieldKey];
-        const isSelectedA = currentValue === valueA;
-        const isSelectedB = currentValue === valueB;
+        
+        const isSelectedA = JSON.stringify(currentValue) === JSON.stringify(valueA);
+        const isSelectedB = JSON.stringify(currentValue) === JSON.stringify(valueB);
+        
         const handleSelect = (val: any) => {
             if (subKey && fieldKey === 'defaultStats') setMergedHero({ ...mergedHero, defaultStats: { ...mergedHero.defaultStats, [subKey]: val } });
             else setMergedHero({ ...mergedHero, [fieldKey]: val });
         };
+        
         return (
             <div className="grid grid-cols-3 gap-4 py-2 border-b border-gray-800 items-center hover:bg-white/5">
                 <div className="text-[10px] font-bold text-gray-400 uppercase">{label}</div>
                 <div onClick={() => handleSelect(valueA)} className={`cursor-pointer p-2 border text-xs truncate transition-all ${isSelectedA ? 'border-emerald-500 bg-emerald-900/20 text-emerald-300' : 'border-gray-700 text-gray-500 opacity-60'}`}>{String(valueA)}</div>
                 <div onClick={() => handleSelect(valueB)} className={`cursor-pointer p-2 border text-xs truncate transition-all ${isSelectedB ? 'border-emerald-500 bg-emerald-900/20 text-emerald-300' : 'border-gray-700 text-gray-500 opacity-60'}`}>{String(valueB)}</div>
+            </div>
+        );
+    };
+
+    // Para Misiones (Maneja objetos y arrays complejos)
+    const ComparisonRowMission = ({ label, valueA, valueB, fieldKey }: { label: string, valueA: any, valueB: any, fieldKey: keyof Mission }) => {
+        if (!mergedMission) return null;
+        const currentValue = mergedMission[fieldKey];
+        
+        // Usamos JSON stringify para comparar objetos/arrays
+        const isSelectedA = JSON.stringify(currentValue) === JSON.stringify(valueA);
+        const isSelectedB = JSON.stringify(currentValue) === JSON.stringify(valueB);
+
+        const handleSelect = (val: any) => {
+            setMergedMission({ ...mergedMission, [fieldKey]: val });
+        };
+
+        const renderValue = (val: any) => {
+            if (Array.isArray(val)) return `[ARRAY] ${val.length} items`;
+            if (typeof val === 'object' && val !== null) return JSON.stringify(val);
+            return String(val);
+        };
+
+        return (
+            <div className="grid grid-cols-3 gap-4 py-2 border-b border-gray-800 items-center hover:bg-white/5">
+                <div className="text-[10px] font-bold text-gray-400 uppercase">{label}</div>
+                <div onClick={() => handleSelect(valueA)} className={`cursor-pointer p-2 border text-xs overflow-hidden transition-all ${isSelectedA ? 'border-emerald-500 bg-emerald-900/20 text-emerald-300' : 'border-gray-700 text-gray-500 opacity-60'}`}>
+                    <div className="truncate" title={JSON.stringify(valueA, null, 2)}>{renderValue(valueA)}</div>
+                </div>
+                <div onClick={() => handleSelect(valueB)} className={`cursor-pointer p-2 border text-xs overflow-hidden transition-all ${isSelectedB ? 'border-emerald-500 bg-emerald-900/20 text-emerald-300' : 'border-gray-700 text-gray-500 opacity-60'}`}>
+                    <div className="truncate" title={JSON.stringify(valueB, null, 2)}>{renderValue(valueB)}</div>
+                </div>
             </div>
         );
     };
@@ -195,39 +258,75 @@ export const DatabaseManager: React.FC<DatabaseManagerProps> = ({ isOpen, onClos
         <div className="fixed inset-0 z-[100] bg-slate-950 flex flex-col font-mono">
             
             {/* MODAL DE FUSIÓN */}
-            {showMergeModal && mergedHero && selectedIds.length === 2 && (
+            {showMergeModal && selectedIds.length === 2 && (
                 <div className="fixed inset-0 z-[150] bg-black/95 flex items-center justify-center p-4">
                     <div className="w-full max-w-5xl bg-slate-900 border-2 border-purple-500 shadow-2xl flex flex-col max-h-[90vh]">
                         <div className="bg-purple-900/30 p-4 border-b border-purple-600 flex justify-between items-center">
-                            <div><h3 className="text-purple-300 font-bold tracking-widest uppercase text-lg">PROTOCOLO DE FUSIÓN</h3><p className="text-[10px] text-purple-400">SELECCIONA LOS DATOS QUE DESEAS CONSERVAR</p></div>
-                            <button onClick={() => { setShowMergeModal(false); setMergedHero(null); }} className="text-purple-500 hover:text-white font-bold">✕</button>
+                            <div><h3 className="text-purple-300 font-bold tracking-widest uppercase text-lg">PROTOCOLO DE FUSIÓN: {activeTab}</h3><p className="text-[10px] text-purple-400">SELECCIONA LOS DATOS QUE DESEAS CONSERVAR</p></div>
+                            <button onClick={() => { setShowMergeModal(false); setMergedHero(null); setMergedMission(null); }} className="text-purple-500 hover:text-white font-bold">✕</button>
                         </div>
                         <div className="flex-1 overflow-y-auto p-6">
-                            {(() => {
+                            
+                            {/* COMPARACIÓN DE HÉROES */}
+                            {activeTab === 'HEROES' && mergedHero && (() => {
                                 const heroA = heroes.find(h => h.id === selectedIds[0])!;
                                 const heroB = heroes.find(h => h.id === selectedIds[1])!;
                                 return (
                                     <div className="space-y-2">
-                                        <div className="grid grid-cols-3 gap-4 mb-4 text-center"><div className="text-xs font-bold text-gray-500">CAMPO</div><div className="text-xs font-bold text-cyan-400 border-b border-cyan-800 pb-1">ORIGEN A</div><div className="text-xs font-bold text-orange-400 border-b border-orange-800 pb-1">ORIGEN B</div></div>
-                                        <ComparisonRow label="NOMBRE REAL" fieldKey="defaultName" valueA={heroA.defaultName} valueB={heroB.defaultName} />
-                                        <ComparisonRow label="ALIAS" fieldKey="alias" valueA={heroA.alias} valueB={heroB.alias} />
-                                        <ComparisonRow label="CLASE" fieldKey="defaultClass" valueA={heroA.defaultClass} valueB={heroB.defaultClass} />
-                                        <ComparisonRow label="ALINEACIÓN" fieldKey="defaultAlignment" valueA={heroA.defaultAlignment} valueB={heroB.defaultAlignment} />
+                                        <div className="grid grid-cols-3 gap-4 mb-4 text-center"><div className="text-xs font-bold text-gray-500">CAMPO</div><div className="text-xs font-bold text-cyan-400 border-b border-cyan-800 pb-1">ORIGEN A ({heroA.id})</div><div className="text-xs font-bold text-orange-400 border-b border-orange-800 pb-1">ORIGEN B ({heroB.id})</div></div>
+                                        <ComparisonRowHero label="NOMBRE REAL" fieldKey="defaultName" valueA={heroA.defaultName} valueB={heroB.defaultName} />
+                                        <ComparisonRowHero label="ALIAS" fieldKey="alias" valueA={heroA.alias} valueB={heroB.alias} />
+                                        <ComparisonRowHero label="CLASE" fieldKey="defaultClass" valueA={heroA.defaultClass} valueB={heroB.defaultClass} />
+                                        <ComparisonRowHero label="ALINEACIÓN" fieldKey="defaultAlignment" valueA={heroA.defaultAlignment} valueB={heroB.defaultAlignment} />
                                         <div className="py-2"><div className="h-px bg-gray-800"></div></div>
-                                        <ComparisonRow label="STR" fieldKey="defaultStats" subKey="strength" valueA={heroA.defaultStats.strength} valueB={heroB.defaultStats.strength} />
-                                        <ComparisonRow label="AGI" fieldKey="defaultStats" subKey="agility" valueA={heroA.defaultStats.agility} valueB={heroB.defaultStats.agility} />
-                                        <ComparisonRow label="INT" fieldKey="defaultStats" subKey="intellect" valueA={heroA.defaultStats.intellect} valueB={heroB.defaultStats.intellect} />
+                                        <ComparisonRowHero label="STR" fieldKey="defaultStats" subKey="strength" valueA={heroA.defaultStats.strength} valueB={heroB.defaultStats.strength} />
+                                        <ComparisonRowHero label="AGI" fieldKey="defaultStats" subKey="agility" valueA={heroA.defaultStats.agility} valueB={heroB.defaultStats.agility} />
+                                        <ComparisonRowHero label="INT" fieldKey="defaultStats" subKey="intellect" valueA={heroA.defaultStats.intellect} valueB={heroB.defaultStats.intellect} />
                                         <div className="py-2"><div className="h-px bg-gray-800"></div></div>
-                                        <ComparisonRow label="IMAGEN URL" fieldKey="imageUrl" valueA={heroA.imageUrl} valueB={heroB.imageUrl} />
+                                        <ComparisonRowHero label="IMAGEN URL" fieldKey="imageUrl" valueA={heroA.imageUrl} valueB={heroB.imageUrl} />
                                         <div className="grid grid-cols-3 gap-4 py-2 items-center"><div className="text-[10px] font-bold text-gray-400 uppercase">PREVIEW</div><div className="h-20 bg-black flex justify-center"><img src={heroA.imageUrl} className="h-full object-contain" alt="A" /></div><div className="h-20 bg-black flex justify-center"><img src={heroB.imageUrl} className="h-full object-contain" alt="B" /></div></div>
                                         <div className="py-2"><div className="h-px bg-gray-800"></div></div>
                                         <div className="grid grid-cols-3 gap-4 py-2"><div className="text-[10px] font-bold text-gray-400 uppercase">BIO</div><div onClick={() => setMergedHero({...mergedHero, bio: heroA.bio || ''})} className={`cursor-pointer p-2 border text-[10px] h-24 overflow-y-auto ${mergedHero.bio === heroA.bio ? 'border-emerald-500 bg-emerald-900/20' : 'border-gray-700 opacity-60'}`}>{heroA.bio}</div><div onClick={() => setMergedHero({...mergedHero, bio: heroB.bio || ''})} className={`cursor-pointer p-2 border text-[10px] h-24 overflow-y-auto ${mergedHero.bio === heroB.bio ? 'border-emerald-500 bg-emerald-900/20' : 'border-gray-700 opacity-60'}`}>{heroB.bio}</div></div>
                                     </div>
                                 );
                             })()}
+
+                            {/* COMPARACIÓN DE MISIONES */}
+                            {activeTab === 'MISSIONS' && mergedMission && (() => {
+                                const missionA = missions.find(m => m.id === selectedIds[0])!;
+                                const missionB = missions.find(m => m.id === selectedIds[1])!;
+                                return (
+                                    <div className="space-y-2">
+                                        <div className="grid grid-cols-3 gap-4 mb-4 text-center"><div className="text-xs font-bold text-gray-500">CAMPO</div><div className="text-xs font-bold text-cyan-400 border-b border-cyan-800 pb-1">ORIGEN A ({missionA.id})</div><div className="text-xs font-bold text-orange-400 border-b border-orange-800 pb-1">ORIGEN B ({missionB.id})</div></div>
+                                        
+                                        <ComparisonRowMission label="TÍTULO" fieldKey="title" valueA={missionA.title} valueB={missionB.title} />
+                                        <ComparisonRowMission label="NIVEL AMENAZA" fieldKey="threatLevel" valueA={missionA.threatLevel} valueB={missionB.threatLevel} />
+                                        <ComparisonRowMission label="TIPO" fieldKey="type" valueA={missionA.type} valueB={missionB.type} />
+                                        <ComparisonRowMission label="ALINEACIÓN" fieldKey="alignment" valueA={missionA.alignment} valueB={missionB.alignment} />
+                                        <ComparisonRowMission label="UBICACIÓN" fieldKey="location" valueA={missionA.location} valueB={missionB.location} />
+                                        
+                                        <div className="py-2"><div className="h-px bg-gray-800"></div></div>
+                                        
+                                        <div className="grid grid-cols-3 gap-4 py-2"><div className="text-[10px] font-bold text-gray-400 uppercase">DESCRIPCIÓN</div>
+                                            <div onClick={() => setMergedMission({...mergedMission, description: missionA.description})} className={`cursor-pointer p-2 border text-[10px] h-24 overflow-y-auto ${JSON.stringify(mergedMission.description) === JSON.stringify(missionA.description) ? 'border-emerald-500 bg-emerald-900/20' : 'border-gray-700 opacity-60'}`}>{missionA.description.join('\n')}</div>
+                                            <div onClick={() => setMergedMission({...mergedMission, description: missionB.description})} className={`cursor-pointer p-2 border text-[10px] h-24 overflow-y-auto ${JSON.stringify(mergedMission.description) === JSON.stringify(missionB.description) ? 'border-emerald-500 bg-emerald-900/20' : 'border-gray-700 opacity-60'}`}>{missionB.description.join('\n')}</div>
+                                        </div>
+
+                                        <div className="grid grid-cols-3 gap-4 py-2"><div className="text-[10px] font-bold text-gray-400 uppercase">OBJETIVOS</div>
+                                            <div onClick={() => setMergedMission({...mergedMission, objectives: missionA.objectives})} className={`cursor-pointer p-2 border text-[10px] h-24 overflow-y-auto ${JSON.stringify(mergedMission.objectives) === JSON.stringify(missionA.objectives) ? 'border-emerald-500 bg-emerald-900/20' : 'border-gray-700 opacity-60'}`}>{missionA.objectives.map(o => `• ${o.title}`).join('\n')}</div>
+                                            <div onClick={() => setMergedMission({...mergedMission, objectives: missionB.objectives})} className={`cursor-pointer p-2 border text-[10px] h-24 overflow-y-auto ${JSON.stringify(mergedMission.objectives) === JSON.stringify(missionB.objectives) ? 'border-emerald-500 bg-emerald-900/20' : 'border-gray-700 opacity-60'}`}>{missionB.objectives.map(o => `• ${o.title}`).join('\n')}</div>
+                                        </div>
+
+                                        <ComparisonRowMission label="REQUISITOS" fieldKey="requirements" valueA={missionA.requirements} valueB={missionB.requirements} />
+                                        <ComparisonRowMission label="PREREQUISITOS" fieldKey="prereqs" valueA={missionA.prereqs} valueB={missionB.prereqs} />
+                                        <ComparisonRowMission label="LAYOUT URL" fieldKey="layoutUrl" valueA={missionA.layoutUrl} valueB={missionB.layoutUrl} />
+                                    </div>
+                                );
+                            })()}
+
                         </div>
                         <div className="p-4 border-t border-purple-800 bg-slate-900 flex justify-end gap-4">
-                            <button onClick={() => { setShowMergeModal(false); setMergedHero(null); }} className="px-4 py-2 border border-gray-600 text-gray-400 text-xs font-bold hover:text-white">CANCELAR</button>
+                            <button onClick={() => { setShowMergeModal(false); setMergedHero(null); setMergedMission(null); }} className="px-4 py-2 border border-gray-600 text-gray-400 text-xs font-bold hover:text-white">CANCELAR</button>
                             <button onClick={executeMerge} className="px-6 py-2 bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold tracking-widest shadow-[0_0_20px_rgba(147,51,234,0.5)]">CONFIRMAR FUSIÓN</button>
                         </div>
                     </div>
@@ -242,7 +341,6 @@ export const DatabaseManager: React.FC<DatabaseManagerProps> = ({ isOpen, onClos
                     onClose={() => setEditingMission(null)} 
                     language={language} 
                     initialData={editingMission} 
-                    // AQUÍ PASAMOS TODAS LAS MISIONES (BASE + DB) PARA QUE EL SELECTOR FUNCIONE
                     existingMissions={[...BASE_GAME_MISSIONS, ...missions]}
                     onSave={() => { setEditingMission(null); loadData(); }} 
                 />
@@ -253,12 +351,12 @@ export const DatabaseManager: React.FC<DatabaseManagerProps> = ({ isOpen, onClos
                 <div className="flex items-center gap-4">
                     <h2 className="text-xl font-black text-cyan-400 tracking-widest uppercase">DATABASE MANAGER // ADMIN</h2>
                     <div className="flex gap-2">
-                        <button onClick={() => setActiveTab('HEROES')} className={`px-4 py-1 text-xs font-bold border ${activeTab === 'HEROES' ? 'bg-cyan-600 text-white border-cyan-400' : 'text-cyan-600 border-cyan-900'}`}>HÉROES ({heroes.length})</button>
-                        <button onClick={() => setActiveTab('MISSIONS')} className={`px-4 py-1 text-xs font-bold border ${activeTab === 'MISSIONS' ? 'bg-cyan-600 text-white border-cyan-400' : 'text-cyan-600 border-cyan-900'}`}>MISIONES ({missions.length})</button>
+                        <button onClick={() => { setActiveTab('HEROES'); setSelectedIds([]); }} className={`px-4 py-1 text-xs font-bold border ${activeTab === 'HEROES' ? 'bg-cyan-600 text-white border-cyan-400' : 'text-cyan-600 border-cyan-900'}`}>HÉROES ({heroes.length})</button>
+                        <button onClick={() => { setActiveTab('MISSIONS'); setSelectedIds([]); }} className={`px-4 py-1 text-xs font-bold border ${activeTab === 'MISSIONS' ? 'bg-cyan-600 text-white border-cyan-400' : 'text-cyan-600 border-cyan-900'}`}>MISIONES ({missions.length})</button>
                     </div>
                 </div>
                 <div className="flex gap-4">
-                    {activeTab === 'HEROES' && <button onClick={startMerge} disabled={selectedIds.length !== 2} className={`px-4 py-2 text-xs font-bold border transition-all ${selectedIds.length === 2 ? 'bg-purple-600 text-white border-purple-400 animate-pulse' : 'bg-gray-800 text-gray-500 border-gray-700 cursor-not-allowed'}`}>⚡ FUSIONAR ({selectedIds.length}/2)</button>}
+                    <button onClick={startMerge} disabled={selectedIds.length !== 2} className={`px-4 py-2 text-xs font-bold border transition-all ${selectedIds.length === 2 ? 'bg-purple-600 text-white border-purple-400 animate-pulse' : 'bg-gray-800 text-gray-500 border-gray-700 cursor-not-allowed'}`}>⚡ FUSIONAR ({selectedIds.length}/2)</button>
                     <button onClick={handleSync} className="bg-purple-900/50 border border-purple-500 text-purple-300 px-4 py-2 text-xs font-bold hover:bg-purple-800">☁ SYNC LOCAL &rarr; DB</button>
                     <button onClick={onClose} className="bg-red-900/50 border border-red-500 text-red-300 px-4 py-2 text-xs font-bold hover:bg-red-800">CERRAR</button>
                 </div>
@@ -319,17 +417,23 @@ export const DatabaseManager: React.FC<DatabaseManagerProps> = ({ isOpen, onClos
                                 <div key={groupKey} className="col-span-full mb-4">
                                     <h3 className={`text-xs font-black tracking-widest border-b ${groupColor} mb-2 pb-1`}>{groupTitle}</h3>
                                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                                        {groupMissions.map(m => (
-                                            <div key={m.id} className="p-3 border border-yellow-900 bg-yellow-950/10 flex flex-col relative group">
-                                                <h4 className="font-bold text-xs text-yellow-500 truncate">{m.title}</h4>
-                                                <p className="text-[9px] text-gray-400 mt-1">{m.location.state} - {m.threatLevel}</p>
-                                                <p className="text-[9px] text-gray-600 font-mono mt-1">ID: {m.id}</p>
-                                                <div className="absolute right-2 bottom-2 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                    <button onClick={() => setEditingMission(m)} className="bg-blue-900 text-blue-300 px-2 py-1 text-[9px] border border-blue-700 hover:bg-blue-800">EDIT</button>
-                                                    <button onClick={() => handleDeleteMission(m.id)} className="bg-red-900 text-red-300 px-2 py-1 text-[9px] border border-red-700 hover:bg-red-800">DEL</button>
+                                        {groupMissions.map(m => {
+                                            const isSelected = selectedIds.includes(m.id);
+                                            return (
+                                                <div key={m.id} className={`p-3 border flex flex-col relative group transition-all ${isSelected ? 'border-purple-500 bg-purple-900/20 shadow-[0_0_15px_rgba(168,85,247,0.3)]' : 'border-yellow-900 bg-yellow-950/10'}`}>
+                                                    <div className="absolute top-2 left-2 z-10"><input type="checkbox" checked={isSelected} onChange={() => toggleSelection(m.id)} className="w-4 h-4 cursor-pointer accent-purple-500" /></div>
+                                                    <div className="ml-6">
+                                                        <h4 className="font-bold text-xs text-yellow-500 truncate">{m.title}</h4>
+                                                        <p className="text-[9px] text-gray-400 mt-1">{m.location.state} - {m.threatLevel}</p>
+                                                        <p className="text-[9px] text-gray-600 font-mono mt-1 truncate" title={m.id}>ID: {m.id}</p>
+                                                    </div>
+                                                    <div className="absolute right-2 bottom-2 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                        <button onClick={() => setEditingMission(m)} className="bg-blue-900 text-blue-300 px-2 py-1 text-[9px] border border-blue-700 hover:bg-blue-800">EDIT</button>
+                                                        <button onClick={() => handleDeleteMission(m.id)} className="bg-red-900 text-red-300 px-2 py-1 text-[9px] border border-red-700 hover:bg-red-800">DEL</button>
+                                                    </div>
                                                 </div>
-                                            </div>
-                                        ))}
+                                            );
+                                        })}
                                     </div>
                                 </div>
                             );
