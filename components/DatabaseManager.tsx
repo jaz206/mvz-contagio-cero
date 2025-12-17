@@ -109,7 +109,8 @@ export const DatabaseManager: React.FC<DatabaseManagerProps> = ({ isOpen, onClos
                     </div>
                 </div>
                 <div className="flex gap-4">
-                    <button onClick={handleSync} className="bg-purple-900/50 border border-purple-500 text-purple-300 px-4 py-2 text-xs font-bold hover:bg-purple-800">☁ SYNC LOCAL -> DB</button>
+                    {/* CORRECCIÓN AQUÍ: Usamos &rarr; en lugar de -> para evitar error de JSX */}
+                    <button onClick={handleSync} className="bg-purple-900/50 border border-purple-500 text-purple-300 px-4 py-2 text-xs font-bold hover:bg-purple-800">☁ SYNC LOCAL &rarr; DB</button>
                     <button onClick={onClose} className="bg-red-900/50 border border-red-500 text-red-300 px-4 py-2 text-xs font-bold hover:bg-red-800">CERRAR</button>
                 </div>
             </div>
