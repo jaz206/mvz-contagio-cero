@@ -303,6 +303,16 @@ const App: React.FC = () => {
     const handleTransformHero = (heroId: string, targetAlignment: 'ALIVE' | 'ZOMBIE') => { /* ... lógica existente ... */ };
     const mergeWithLatestContent = (savedHeroes: Hero[], isZombie: boolean, templates: HeroTemplate[]): Hero[] => { return savedHeroes; };
 
+    // --- CORRECCIÓN: TOGGLE ZONE CON ACTUALIZACIÓN FUNCIONAL ---
+    const toggleZone = (zone: string) => {
+        setExpandedZones(prev => {
+            const newSet = new Set(prev);
+            if (newSet.has(zone)) newSet.delete(zone);
+            else newSet.add(zone);
+            return newSet;
+        });
+    };
+
     const groupedMissions = useMemo(() => {
         const activeMissions = visibleMissions.filter(m => m && !completedMissionIds.has(m.id));
         const groups: Record<string, Mission[]> = { galactus: [], kingpin: [], shield_kingpin: [], magneto: [], shield_magneto: [], hulk: [], shield_hulk: [], doom: [], shield_doom: [], neutral: [], shield_neutral: [] };
@@ -338,7 +348,6 @@ const App: React.FC = () => {
             {viewMode === 'setup' && playerAlignment && (<ExpansionSelector language={lang} playerAlignment={playerAlignment} onConfirm={handleExpansionConfirm} onBack={() => { setPlayerAlignment(null); setStartStoryAtChoice(true); setViewMode('story'); }} ownedExpansions={ownedExpansions} onToggleExpansion={toggleExpansion} onToggleAllExpansions={toggleAllExpansions} />)}
             {viewMode === 'intro' && playerAlignment && (<IntroSequence language={lang} playerAlignment={playerAlignment} onComplete={() => setViewMode('mission0')} />)}
             
-            {/* RENDERIZADO CONDICIONAL DE LA MISIÓN 0: SOLO SI EXISTE EN DB */}
             {viewMode === 'mission0' && introMission ? (
                 <MissionModal mission={introMission} isOpen={true} onClose={() => setViewMode('tutorial')} onComplete={() => { handleMissionComplete(introMission.id); setViewMode('tutorial'); }} language={lang} isCompleted={false} />
             ) : viewMode === 'mission0' && !introMission ? (
@@ -396,7 +405,7 @@ const App: React.FC = () => {
                                                 const isBlocked = worldStage === 'GALACTUS';
                                                 return (
                                                     <div key={zoneKey} className={`mb-1 border border-cyan-900/30 bg-slate-900/30 ${isBlocked ? 'opacity-40 pointer-events-none grayscale' : ''}`}>
-                                                        <button onClick={() => toggleZone(zoneKey)} className="w-full flex justify-between items-center p-2 bg-slate-800/80 hover:bg-cyan-900/30 transition-colors border-b border-cyan-900/30"><span className="text-[10px] font-bold text-cyan-400 uppercase tracking-widest truncate max-w-[140px]">{factionLabel}</span><div className="flex items-center gap-1"><span className="text-[9px] bg-cyan-900/50 text-cyan-200 px-1 py-0.5 rounded font-mono border border-cyan-700">{missions.length}</span><span className={`text-[8px] text-cyan-500 transform transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`}>▼</span></div></button>
+                                                        <button type="button" onClick={() => toggleZone(zoneKey)} className="w-full flex justify-between items-center p-2 bg-slate-800/80 hover:bg-cyan-900/30 transition-colors border-b border-cyan-900/30"><span className="text-[10px] font-bold text-cyan-400 uppercase tracking-widest truncate max-w-[140px]">{factionLabel}</span><div className="flex items-center gap-1"><span className="text-[9px] bg-cyan-900/50 text-cyan-200 px-1 py-0.5 rounded font-mono border border-cyan-700">{missions.length}</span><span className={`text-[8px] text-cyan-500 transform transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`}>▼</span></div></button>
                                                         {isExpanded && (<div className="p-1 space-y-1 animate-fade-in bg-slate-950/20">{missions.map(m => { const isShield = m.type === 'SHIELD_BASE'; const isStartMission = m.id === 'm_kraven' || (m.title && m.title.includes("MH0")); const isBoss = m.type === 'BOSS'; let borderClass = 'border-yellow-500/30 bg-yellow-900/5 hover:bg-yellow-900/20'; let barClass = 'bg-yellow-500'; let textClass = 'text-yellow-200'; if (isBoss) { borderClass = 'border-purple-500/30 bg-purple-900/20 hover:bg-purple-900/40 animate-pulse'; barClass = 'bg-purple-500'; textClass = 'text-purple-200'; } else if (isShield) { borderClass = 'border-cyan-500/30 bg-cyan-900/5 hover:bg-cyan-900/20'; barClass = 'bg-cyan-500'; textClass = 'text-cyan-200'; } else if (isStartMission) { borderClass = 'border-emerald-500/30 bg-emerald-900/5 hover:bg-emerald-900/20'; barClass = 'bg-emerald-500'; textClass = 'text-emerald-200'; } return (<div key={m.id} onClick={() => handleMissionSelectWrapper(m)} className={`p-2 border cursor-pointer transition-all group relative overflow-hidden ${borderClass}`}><div className={`absolute left-0 top-0 bottom-0 w-1 ${barClass} group-hover:w-1.5 transition-all`}></div><div className={`text-xs font-bold ${textClass} group-hover:text-white uppercase tracking-wider pl-2 truncate`}>{m.title || 'UNKNOWN MISSION'}</div></div>); })}</div>)}
                                                     </div>
                                                 );
