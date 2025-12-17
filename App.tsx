@@ -9,7 +9,7 @@ import {
     getCustomMissions, 
     getHeroTemplates, 
     deleteMissionInDB,
-    uploadLocalMissionsToDB // <--- IMPORTANTE
+    uploadLocalMissionsToDB 
 } from './services/dbService';
 import { logout } from './services/authService';
 
@@ -254,15 +254,30 @@ const App: React.FC = () => {
         setCustomMissions(loaded);
     };
 
+    // --- RESTAURADO: DEFINICIÓN DE INTRO MISSION ---
+    // Esto es lo que faltaba y causaba el error "ReferenceError: introMission is not defined"
+    const introMission = useMemo(() => {
+        // Intentamos buscar la misión en la BBDD primero (por si ha sido editada)
+        const dbMissionById = customMissions.find(m => m.id === MISSION_ZERO.id);
+        if (dbMissionById) return dbMissionById;
+
+        // Si no, usamos la local
+        return MISSION_ZERO;
+    }, [customMissions]);
+
     // --- LÓGICA DE MISIONES VISIBLES ---
     const allMissions: Mission[] = useMemo(() => {
         const missionMap = new Map<string, Mission>();
         
         // 1. Cargamos las locales primero
         const DEFAULT_MISSIONS: Mission[] = [
-            MISSION_ZERO, 
+            introMission, // Usamos la variable calculada arriba
             { id: 'm_kraven', title: t.missions.kraven.title, description: t.missions.kraven.description, objectives: t.missions.kraven.objectives, location: { state: 'New York', coordinates: [-74.006, 40.7128] }, threatLevel: 'ALTA', type: 'STANDARD', alignment: 'ALIVE', prereqs: ['m_intro_0'] },
-            // ... resto de defaults ...
+            { id: 'm_zombie_feast', title: "EL FESTÍN DE LOS MUTANTES", description: ["La Escuela de Xavier está fortificada.", "Cerebro detecta mucha carne fresca dentro."], objectives: [{ title: "Romper las defensas", desc: "Destruir los muros." }], location: { state: 'New York', coordinates: [-73.8, 41.0] }, threatLevel: 'EXTREMA', type: 'STANDARD', alignment: 'ZOMBIE', prereqs: ['m_intro_0'] },
+            { id: 'm_flesh', title: t.missions.fleshSleeps.title, description: t.missions.fleshSleeps.description, objectives: t.missions.fleshSleeps.objectives, location: { state: 'Nevada', coordinates: [-115.1398, 36.1699] }, threatLevel: 'MEDIA', type: 'STANDARD', alignment: 'BOTH', prereqs: ['m_intro_0'] },
+            { id: 'm_base_alpha', title: t.missions.bases.alpha, description: [t.missions.bases.desc], objectives: [{ title: t.missions.bases.objSecure, desc: t.missions.bases.objRetrieve }], location: { state: 'Colorado', coordinates: [-104.9903, 39.7392] }, threatLevel: 'BAJA', type: 'SHIELD_BASE', alignment: 'BOTH' },
+            { id: 'm_surfer', type: 'GALACTUS', triggerStage: 'SURFER', title: t.events.surfer[playerAlignment === 'ZOMBIE' ? 'zombie' : 'alive'].title, description: [t.events.surfer[playerAlignment === 'ZOMBIE' ? 'zombie' : 'alive'].desc], objectives: [{ title: "Interceptar", desc: "Detener al Heraldo." }], location: { state: 'Kansas', coordinates: [-98.0, 38.0] }, threatLevel: 'OMEGA', alignment: 'BOTH' },
+            { id: 'boss-galactus', type: 'GALACTUS', triggerStage: 'GALACTUS', title: t.missions.galactus.title, description: t.missions.galactus.description, objectives: t.missions.galactus.objectives, location: { state: 'Kansas', coordinates: [-98.0, 38.0] }, threatLevel: 'OMEGA++', alignment: 'BOTH' }
         ];
         DEFAULT_MISSIONS.forEach(m => missionMap.set(m.id, m));
         
@@ -270,7 +285,7 @@ const App: React.FC = () => {
         customMissions.forEach(m => { if (m && m.id) missionMap.set(m.id, m); });
         
         return Array.from(missionMap.values());
-    }, [t, customMissions]);
+    }, [t, customMissions, introMission]);
 
     const visibleMissions = useMemo(() => {
         const alignmentFiltered = allMissions.filter(m => {
@@ -294,27 +309,120 @@ const App: React.FC = () => {
         return expansionFiltered.filter(m => {
             if (!m) return false;
             const isCompleted = completedMissionIds.has(m.id);
-            
             let prereqMet = true;
             if (m.prereqs && m.prereqs.length > 0) {
                 prereqMet = m.prereqs.every(pid => completedMissionIds.has(pid));
             } else if (m.prereq) {
                 prereqMet = completedMissionIds.has(m.prereq);
             }
-
             if (m.type === 'GALACTUS') {
                 if (m.triggerStage === 'SURFER') return worldStage === 'SURFER' || worldStage === 'GALACTUS';
                 if (m.triggerStage === 'GALACTUS') return worldStage === 'GALACTUS';
                 return false;
             }
-
             if (worldStage === 'GALACTUS' && !isCompleted && m.type !== 'GALACTUS' && m.type !== 'BOSS') return false;
-
             return isCompleted || prereqMet;
         });
     }, [allMissions, completedMissionIds, isEditorMode, worldStage, playerAlignment, ownedExpansions]);
 
-    // ... (Resto de funciones: handleMissionComplete, etc. se mantienen igual) ...
+    useEffect(() => {
+        const loadData = async () => {
+            if (isEditorMode) return; 
+            isDataLoadedRef.current = false;
+            if ((user || isGuest) && playerAlignment) {
+                let profileHeroes: Hero[] = [];
+                let profileMissions: string[] = [];
+                let profileCylinders = 0; 
+                let dataFound = false;
+                try {
+                    const templates = await getHeroTemplates();
+                    setDbTemplates(templates);
+                    if (user) {
+                        const profile = await getUserProfile(user.uid, playerAlignment);
+                        if (profile) {
+                            profileHeroes = mergeWithLatestContent(profile.heroes, playerAlignment === 'ZOMBIE', templates);
+                            profileMissions = profile.completedMissionIds;
+                            profileCylinders = profile.resources?.omegaCylinders ?? 0;
+                            dataFound = true;
+                        }
+                    } else {
+                        const storageKey = `shield_heroes_${isGuest ? 'guest' : user?.uid}_${playerAlignment}`;
+                        const saved = localStorage.getItem(storageKey);
+                        if (saved) {
+                            const parsed = JSON.parse(saved);
+                            profileHeroes = mergeWithLatestContent(parsed.heroes, playerAlignment === 'ZOMBIE', templates);
+                            profileMissions = parsed.completedMissionIds || [];
+                            profileCylinders = parsed.resources?.omegaCylinders ?? 0;
+                            dataFound = true;
+                        }
+                    }
+                    if (dataFound && profileHeroes.length > 0) {
+                        setHeroes(profileHeroes);
+                        setCompletedMissionIds(new Set(profileMissions));
+                        setOmegaCylinders(profileCylinders);
+                        checkGlobalEvents(new Set(profileMissions)); 
+                    } else {
+                        if (viewMode !== 'setup' && viewMode !== 'story') {
+                             const core = GAME_EXPANSIONS.find(e => e.id === 'core_box');
+                             if (core) setHeroes(playerAlignment === 'ZOMBIE' ? core.zombieHeroes : core.heroes);
+                        }
+                        setCompletedMissionIds(new Set());
+                        setOmegaCylinders(0);
+                    }
+                } catch (e) {
+                    console.error("Error loading data:", e);
+                    const core = GAME_EXPANSIONS.find(e => e.id === 'core_box');
+                    if (core) setHeroes(playerAlignment === 'ZOMBIE' ? core.zombieHeroes : core.heroes);
+                } finally {
+                    isDataLoadedRef.current = true;
+                }
+            }
+        };
+        loadData();
+    }, [user, isGuest, playerAlignment, isEditorMode]);
+
+    const saveData = useCallback(async (currentHeroes: Hero[], currentMissions: Set<string>, currentCylinders: number) => {
+        if (isEditorMode || !user || !playerAlignment || !isDataLoadedRef.current) return;
+        setIsSaving(true);
+        try {
+            await saveUserProfile(user.uid, playerAlignment, currentHeroes, Array.from(currentMissions), { omegaCylinders: currentCylinders });
+        } catch (e) { console.error("Auto-save failed", e); } finally { setTimeout(() => setIsSaving(false), 1000); }
+    }, [user, playerAlignment, isEditorMode]);
+
+    useEffect(() => {
+        if (heroes.length === 0) return;
+        const timeout = setTimeout(() => { saveData(heroes, completedMissionIds, omegaCylinders); }, 2000);
+        return () => clearTimeout(timeout);
+    }, [heroes, completedMissionIds, omegaCylinders, saveData]);
+
+    useEffect(() => {
+        if (!playerAlignment) return;
+        if (showStory) return;
+        if (isEditorMode) return;
+        const tutorialKey = user ? `shield_tutorial_seen_${user.uid}` : 'shield_tutorial_seen_guest';
+        const hasSeenTutorial = localStorage.getItem(tutorialKey);
+        if (!hasSeenTutorial && viewMode === 'map') { setTimeout(() => setShowTutorial(true), 500); }
+    }, [playerAlignment, showStory, user, viewMode, isEditorMode]);
+
+    const checkGlobalEvents = (completedMissions: Set<string>) => {
+        const count = completedMissions.size;
+        if (completedMissions.has('boss-galactus')) return;
+        if (count >= 15 && worldStage !== 'GALACTUS') {
+            setActiveGlobalEvent({ stage: 'GALACTUS', title: '', description: '' });
+            setWorldStage('GALACTUS');
+            handleTickerUpdate("¡ALERTA OMEGA! GALACTUS HA LLEGADO. TODAS LAS MISIONES SECUNDARIAS CANCELADAS.");
+        } else if (count >= 10 && count < 15 && worldStage !== 'SURFER' && worldStage !== 'GALACTUS') {
+            setActiveGlobalEvent({ stage: 'SURFER', title: '', description: '' });
+            setWorldStage('SURFER');
+            setSurferTurnCount(0); 
+            handleTickerUpdate("OBJETO PLATEADO ENTRANDO EN LA ATMÓSFERA. PREPARAR INTERCEPCIÓN.");
+        } else if (count >= 4 && count < 10 && worldStage === 'NORMAL') {
+            setActiveGlobalEvent({ stage: 'ANOMALY', title: '', description: '' });
+            setWorldStage('ANOMALY');
+            handleTickerUpdate("LECTURAS DE ENERGÍA ANÓMALAS EN EL ESPACIO PROFUNDO.");
+        }
+    };
+
     const handleMissionComplete = async (id: string) => {
         const newSet = new Set(completedMissionIds);
         newSet.add(id);
@@ -330,15 +438,6 @@ const App: React.FC = () => {
             checkGlobalEvents(newSet); 
         }
     };
-    
-    // ... (Resto de funciones auxiliares: saveData, checkGlobalEvents, etc.) ...
-    const saveData = useCallback(async (currentHeroes: Hero[], currentMissions: Set<string>, currentCylinders: number) => {
-        if (isEditorMode || !user || !playerAlignment || !isDataLoadedRef.current) return;
-        setIsSaving(true);
-        try {
-            await saveUserProfile(user.uid, playerAlignment, currentHeroes, Array.from(currentMissions), { omegaCylinders: currentCylinders });
-        } catch (e) { console.error("Auto-save failed", e); } finally { setTimeout(() => setIsSaving(false), 1000); }
-    }, [user, playerAlignment, isEditorMode]);
 
     const handleMissionSelectWrapper = (m: Mission) => {
         if (worldStage === 'GALACTUS' && m.type !== 'BOSS' && m.type !== 'GALACTUS') return; 
@@ -350,11 +449,29 @@ const App: React.FC = () => {
     const handleSimulateProgress = (amount: number) => { const newSet = new Set(completedMissionIds); for (let i = 0; i < amount; i++) newSet.add(`sim_${Date.now()}_${Math.random()}`); setCompletedMissionIds(newSet); checkGlobalEvents(newSet); };
     const handleResetProgress = () => { setCompletedMissionIds(new Set()); setWorldStage('NORMAL'); setActiveGlobalEvent(null); setOmegaCylinders(0); setSurferTurnCount(0); };
     const handleEventAcknowledge = () => setActiveGlobalEvent(null);
-    const handleToggleHeroObjective = (heroId: string, idx: number) => { /* ... lógica existente ... */ };
+    const handleToggleHeroObjective = (heroId: string, idx: number) => { const hIndex = heroes.findIndex(h => h.id === heroId); if (hIndex >= 0) { const newHeroes = [...heroes]; const h = newHeroes[hIndex]; const indices = h.completedObjectiveIndices ? [...h.completedObjectiveIndices] : []; if (indices.includes(idx)) { newHeroes[hIndex] = { ...h, completedObjectiveIndices: indices.filter(i => i !== idx) }; } else { newHeroes[hIndex] = { ...h, completedObjectiveIndices: [...indices, idx] }; } setHeroes(newHeroes); } };
     const handleTransformHero = (heroId: string, targetAlignment: 'ALIVE' | 'ZOMBIE') => { /* ... lógica existente ... */ };
-    const mergeWithLatestContent = (savedHeroes: Hero[], isZombie: boolean, templates: HeroTemplate[]): Hero[] => { return savedHeroes; /* Simplificado para el ejemplo, usa tu lógica original */ };
+    const mergeWithLatestContent = (savedHeroes: Hero[], isZombie: boolean, templates: HeroTemplate[]): Hero[] => { return savedHeroes; };
 
-    // --- RENDER ---
+    const groupedMissions = useMemo(() => {
+        const activeMissions = visibleMissions.filter(m => m && !completedMissionIds.has(m.id));
+        const groups: Record<string, Mission[]> = { galactus: [], kingpin: [], shield_kingpin: [], magneto: [], shield_magneto: [], hulk: [], shield_hulk: [], doom: [], shield_doom: [], neutral: [], shield_neutral: [] };
+        activeMissions.forEach(m => {
+            if (m.type === 'GALACTUS') { groups.galactus.push(m); } 
+            else {
+                const faction = getFactionForState(m.location.state);
+                if (m.type === 'SHIELD_BASE') { const key = `shield_${faction}`; if (groups[key]) groups[key].push(m); else groups.shield_neutral.push(m); } 
+                else { if (groups[faction]) groups[faction].push(m); else groups.neutral.push(m); }
+            }
+        });
+        return groups;
+    }, [visibleMissions, completedMissionIds, worldStage]);
+
+    const totalMissions = useMemo(() => customMissions.length + 7, [customMissions]);
+    const progressPercentage = Math.min(100, Math.round((completedMissionIds.size / Math.max(1, totalMissions)) * 100));
+    const circumference = 2 * Math.PI * 18; 
+    const strokeDashoffset = circumference - (progressPercentage / 100) * circumference;
+
     if (loading || loadingAuth) return <div className="bg-slate-950 text-cyan-500 h-screen flex items-center justify-center font-mono">LOADING SHIELD OS...</div>;
 
     return (
