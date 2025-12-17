@@ -8,8 +8,7 @@ import {
     saveUserProfile, 
     getCustomMissions, 
     getHeroTemplates, 
-    deleteMissionInDB,
-    uploadLocalMissionsToDB 
+    deleteMissionInDB
 } from './services/dbService';
 import { logout } from './services/authService';
 
@@ -30,28 +29,6 @@ import { DatabaseManager } from './components/DatabaseManager';
 
 import { Mission, Hero, WorldStage, GlobalEvent, HeroTemplate } from './types';
 import { GAME_EXPANSIONS } from './data/gameContent';
-
-// Mantenemos esta constante SOLO como fallback de seguridad para la intro
-// y para la función de subida, pero no se usará en el mapa si existe en la BBDD.
-const MISSION_ZERO_TEMPLATE: Mission = {
-    id: 'm_intro_0',
-    title: "MH0: CADENAS ROTAS",
-    description: [
-        "SITUACIÓN CRÍTICA: El transporte ha sido neutralizado. Estamos heridos, desorientados y en territorio hostil.",
-        "Black Widow ha establecido un perímetro temporal, pero el humo del accidente es una baliza para los infectados.",
-        "OBJETIVO: No morir hoy. Debemos movernos hacia el búnker de seguridad antes de que la horda converja en nuestra posición."
-    ],
-    objectives: [
-        { title: "Sobrevivir al Impacto", desc: "Recuperar el conocimiento y evaluar heridas." },
-        { title: "Romper el Cerco", desc: "Abrirse paso a través de la primera oleada de infectados." },
-        { title: "Llegar al Búnker", desc: "Alcanzar las coordenadas seguras en Ohio." }
-    ],
-    location: { state: 'Ohio', coordinates: [-82.5, 40.2] },
-    threatLevel: "INMINENTE",
-    type: 'STANDARD',
-    alignment: 'BOTH',
-    outcomeText: "Lo logramos. Las puertas del búnker se han sellado tras nosotros. Estamos a salvo... por ahora. S.H.I.E.L.D. OS se está reiniciando."
-};
 
 const FACTION_STATES = {
     magneto: new Set(['Washington', 'Oregon', 'California', 'Nevada', 'Idaho', 'Montana', 'Wyoming', 'Utah', 'Arizona', 'Colorado', 'Alaska', 'Hawaii']),
@@ -206,61 +183,14 @@ const App: React.FC = () => {
         loadMissions();
     }, [isEditorMode]);
 
-    // --- FUNCIÓN DE SUBIDA (Mantiene la definición local SOLO para subirla) ---
-    const handleUploadLocalMissions = async () => {
-        if (!window.confirm("¿Subir las misiones locales a Firebase?")) return;
-
-        const localMissionsToUpload: Mission[] = [
-            MISSION_ZERO_TEMPLATE, 
-            {
-                id: 'm_kraven', title: t.missions.kraven.title, description: t.missions.kraven.description, objectives: t.missions.kraven.objectives,
-                location: { state: 'New York', coordinates: [-74.006, 40.7128] }, threatLevel: 'ALTA', type: 'STANDARD', alignment: 'ALIVE',
-                prereqs: ['m_intro_0']
-            },
-            {
-                id: 'm_zombie_feast', title: "EL FESTÍN DE LOS MUTANTES", description: ["La Escuela de Xavier está fortificada.", "Cerebro detecta mucha carne fresca dentro."], objectives: [{ title: "Romper las defensas", desc: "Destruir los muros." }],
-                location: { state: 'New York', coordinates: [-73.8, 41.0] }, threatLevel: 'EXTREMA', type: 'STANDARD', alignment: 'ZOMBIE',
-                prereqs: ['m_intro_0']
-            },
-            {
-                id: 'm_flesh', title: t.missions.fleshSleeps.title, description: t.missions.fleshSleeps.description, objectives: t.missions.fleshSleeps.objectives,
-                location: { state: 'Nevada', coordinates: [-115.1398, 36.1699] }, threatLevel: 'MEDIA', type: 'STANDARD', alignment: 'BOTH',
-                prereqs: ['m_intro_0']
-            },
-            {
-                id: 'm_base_alpha', title: t.missions.bases.alpha, description: [t.missions.bases.desc], objectives: [{ title: t.missions.bases.objSecure, desc: t.missions.bases.objRetrieve }],
-                location: { state: 'Colorado', coordinates: [-104.9903, 39.7392] }, threatLevel: 'BAJA', type: 'SHIELD_BASE', alignment: 'BOTH'
-            },
-            {
-                id: 'm_surfer', type: 'GALACTUS', triggerStage: 'SURFER', title: t.events.surfer[playerAlignment === 'ZOMBIE' ? 'zombie' : 'alive'].title, description: [t.events.surfer[playerAlignment === 'ZOMBIE' ? 'zombie' : 'alive'].desc], objectives: [{ title: "Interceptar", desc: "Detener al Heraldo." }],
-                location: { state: 'Kansas', coordinates: [-98.0, 38.0] }, threatLevel: 'OMEGA', alignment: 'BOTH'
-            },
-            {
-                id: 'boss-galactus', type: 'GALACTUS', triggerStage: 'GALACTUS', title: t.missions.galactus.title, description: t.missions.galactus.description, objectives: t.missions.galactus.objectives,
-                location: { state: 'Kansas', coordinates: [-98.0, 38.0] }, threatLevel: 'OMEGA++', alignment: 'BOTH'
-            }
-        ];
-
-        await uploadLocalMissionsToDB(localMissionsToUpload);
-        const loaded = await getCustomMissions();
-        setCustomMissions(loaded);
-    };
-
     // --- LÓGICA DE MISIONES (SOLO BBDD) ---
     const allMissions: Mission[] = useMemo(() => {
-        // Si no hay misiones en la BBDD (customMissions vacío), devolvemos al menos la intro local
-        // para que el juego no se rompa y permita usar el botón de "Subir".
-        if (customMissions.length === 0) {
-            return [MISSION_ZERO_TEMPLATE];
-        }
-        // Si hay misiones en la BBDD, usamos EXCLUSIVAMENTE esas.
         return customMissions;
     }, [customMissions]);
 
     // --- INTRO MISSION SELECCIONADA ---
     const introMission = useMemo(() => {
-        const found = allMissions.find(m => m.id === 'm_intro_0');
-        return found || MISSION_ZERO_TEMPLATE;
+        return allMissions.find(m => m.id === 'm_intro_0') || null;
     }, [allMissions]);
 
     const visibleMissions = useMemo(() => {
@@ -407,7 +337,16 @@ const App: React.FC = () => {
             {viewMode === 'story' && (<StoryMode language={lang} onComplete={(choice) => { setPlayerAlignment(choice); setViewMode('setup'); }} onSkip={() => { setPlayerAlignment('ALIVE'); const core = GAME_EXPANSIONS.find(e => e.id === 'core_box'); if (core) setHeroes(core.heroes); setViewMode('map'); }} startAtChoice={startStoryAtChoice} />)}
             {viewMode === 'setup' && playerAlignment && (<ExpansionSelector language={lang} playerAlignment={playerAlignment} onConfirm={handleExpansionConfirm} onBack={() => { setPlayerAlignment(null); setStartStoryAtChoice(true); setViewMode('story'); }} ownedExpansions={ownedExpansions} onToggleExpansion={toggleExpansion} onToggleAllExpansions={toggleAllExpansions} />)}
             {viewMode === 'intro' && playerAlignment && (<IntroSequence language={lang} playerAlignment={playerAlignment} onComplete={() => setViewMode('mission0')} />)}
-            {viewMode === 'mission0' && (<MissionModal mission={introMission} isOpen={true} onClose={() => setViewMode('tutorial')} onComplete={() => { handleMissionComplete(introMission.id); setViewMode('tutorial'); }} language={lang} isCompleted={false} />)}
+            
+            {/* RENDERIZADO CONDICIONAL DE LA MISIÓN 0: SOLO SI EXISTE EN DB */}
+            {viewMode === 'mission0' && introMission ? (
+                <MissionModal mission={introMission} isOpen={true} onClose={() => setViewMode('tutorial')} onComplete={() => { handleMissionComplete(introMission.id); setViewMode('tutorial'); }} language={lang} isCompleted={false} />
+            ) : viewMode === 'mission0' && !introMission ? (
+                <div className="absolute inset-0 flex items-center justify-center bg-slate-950 text-red-500 font-bold z-50 flex-col gap-4">
+                    <div>ERROR: MISIÓN 'm_intro_0' NO ENCONTRADA EN BBDD</div>
+                    <button onClick={() => setViewMode('map')} className="border border-red-500 px-4 py-2 hover:bg-red-900/20">SALTAR AL MAPA</button>
+                </div>
+            ) : null}
 
             {(viewMode === 'map' || viewMode === 'bunker' || viewMode === 'tutorial') && (
                 <>
@@ -481,11 +420,6 @@ const App: React.FC = () => {
                                             <button onClick={() => setShowMissionEditor(true)} className="bg-cyan-900/50 hover:bg-cyan-800 text-cyan-200 text-[10px] font-bold py-2 px-3 border border-cyan-700 uppercase tracking-wider transition-colors">+ CREAR MISIÓN</button>
                                             <button onClick={() => setShowCharacterEditor(true)} className="bg-blue-900/50 hover:bg-blue-800 text-blue-200 text-[10px] font-bold py-2 px-3 border border-blue-700 uppercase tracking-wider transition-colors">+ CREAR PERSONAJE</button>
                                             <button onClick={() => setShowDbManager(true)} className="bg-purple-900/50 hover:bg-purple-800 text-purple-200 text-[10px] font-bold py-2 px-3 border border-purple-700 uppercase tracking-wider transition-colors">⚙ GESTOR BBDD (ADMIN)</button>
-                                            <div className="h-px bg-cyan-900 my-1"></div>
-                                            
-                                            {/* BOTÓN DE SINCRONIZACIÓN */}
-                                            <button onClick={handleUploadLocalMissions} className="bg-orange-900/50 hover:bg-orange-800 text-orange-200 text-[10px] font-bold py-2 px-3 border border-orange-700 uppercase tracking-wider transition-colors" title="Copia las misiones hardcoded a Firebase">☁ SUBIR MISIONES LOCALES</button>
-                                            
                                             <div className="h-px bg-cyan-900 my-1"></div>
                                             <button onClick={() => handleSimulateProgress(5)} className="bg-emerald-900/50 hover:bg-emerald-800 text-emerald-200 text-[10px] font-bold py-2 px-3 border border-emerald-700 uppercase tracking-wider transition-colors">+5 MISIONES (SIM)</button>
                                             <button onClick={handleResetProgress} className="bg-red-900/50 hover:bg-red-800 text-red-200 text-[10px] font-bold py-2 px-3 border border-red-700 uppercase tracking-wider transition-colors">RESET PROGRESO</button>
