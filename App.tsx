@@ -7,7 +7,6 @@ import {
     getUserProfile, 
     saveUserProfile, 
     getCustomMissions, 
-    getHeroTemplates, 
     deleteMissionInDB
 } from './services/dbService';
 import { logout } from './services/authService';
@@ -77,7 +76,6 @@ const App: React.FC = () => {
     const [showDbManager, setShowDbManager] = useState(false);
 
     const [customMissions, setCustomMissions] = useState<Mission[]>([]);
-    const [dbTemplates, setDbTemplates] = useState<HeroTemplate[]>([]);
 
     const [selectedMission, setSelectedMission] = useState<Mission | null>(null);
     const [showStory, setShowStory] = useState(false);
@@ -184,19 +182,25 @@ const App: React.FC = () => {
         loadMissions();
     }, [isEditorMode]);
 
-    // --- LÓGICA DE MISIONES (SOLO BBDD + AUTO-REPARACIÓN) ---
+    // --- LÓGICA DE MISIONES (BBDD + AUTO-REPARACIÓN DE COORDENADAS) ---
     const allMissions: Mission[] = useMemo(() => {
         if (customMissions.length === 0) return getInitialMissions(t);
         
-        // AUTO-REPARACIÓN: Si la intro tiene coordenadas [0,0], las arreglamos temporalmente
         return customMissions.map(m => {
-            if (m.id === 'm_intro_0') {
-                const [x, y] = m.location.coordinates;
-                if (x === 0 && y === 0) {
-                    // Coordenadas de seguridad (Ohio/Indiana aprox)
-                    return { ...m, location: { ...m.location, coordinates: [-86.1, 40.2] } };
-                }
+            let [x, y] = m.location.coordinates;
+
+            // 1. Reparar coordenadas [0,0]
+            if (x === 0 && y === 0) {
+                return { ...m, location: { ...m.location, coordinates: [-82.5, 40.2] } };
             }
+
+            // 2. Reparar coordenadas invertidas (Lat, Long -> Long, Lat)
+            // En USA, la Longitud (X) es negativa (ej: -80) y la Latitud (Y) es positiva (ej: 40).
+            // Si X es positivo y Y es negativo, están al revés.
+            if (x > 0 && y < 0) {
+                return { ...m, location: { ...m.location, coordinates: [y, x] } };
+            }
+
             return m;
         });
     }, [customMissions, t]);
@@ -248,7 +252,7 @@ const App: React.FC = () => {
     }, [allMissions, completedMissionIds, isEditorMode, worldStage, playerAlignment, ownedExpansions]);
 
     const handleMissionComplete = async (id: string) => {
-        console.log("Completando misión:", id); // DEBUG
+        console.log("Completando misión:", id); 
         
         const newSet = new Set(completedMissionIds);
         newSet.add(id);
@@ -260,7 +264,6 @@ const App: React.FC = () => {
         }
 
         if (user && playerAlignment) {
-            // Guardamos inmediatamente para asegurar persistencia
             await saveData(heroes, newSet, omegaCylinders);
         }
 
@@ -272,7 +275,6 @@ const App: React.FC = () => {
             checkGlobalEvents(newSet); 
         }
         
-        // Forzamos una recarga de misiones visibles para que React se entere
         const loaded = await getCustomMissions();
         setCustomMissions(loaded);
     };
@@ -331,7 +333,6 @@ const App: React.FC = () => {
     const handleEventAcknowledge = () => setActiveGlobalEvent(null);
     const handleToggleHeroObjective = (heroId: string, idx: number) => { const hIndex = heroes.findIndex(h => h.id === heroId); if (hIndex >= 0) { const newHeroes = [...heroes]; const h = newHeroes[hIndex]; const indices = h.completedObjectiveIndices ? [...h.completedObjectiveIndices] : []; if (indices.includes(idx)) { newHeroes[hIndex] = { ...h, completedObjectiveIndices: indices.filter(i => i !== idx) }; } else { newHeroes[hIndex] = { ...h, completedObjectiveIndices: [...indices, idx] }; } setHeroes(newHeroes); } };
     const handleTransformHero = (heroId: string, targetAlignment: 'ALIVE' | 'ZOMBIE') => { /* ... lógica existente ... */ };
-    const mergeWithLatestContent = (savedHeroes: Hero[], isZombie: boolean, templates: HeroTemplate[]): Hero[] => { return savedHeroes; };
 
     const toggleZone = (zone: string) => {
         setExpandedZones(prev => {
@@ -375,7 +376,6 @@ const App: React.FC = () => {
             {viewMode === 'story' && (<StoryMode language={lang} onComplete={(choice) => { setPlayerAlignment(choice); setViewMode('setup'); }} onSkip={() => { setPlayerAlignment('ALIVE'); const core = GAME_EXPANSIONS.find(e => e.id === 'core_box'); if (core) setHeroes(core.heroes); setViewMode('map'); }} startAtChoice={startStoryAtChoice} />)}
             {viewMode === 'setup' && playerAlignment && (<ExpansionSelector language={lang} playerAlignment={playerAlignment} onConfirm={handleExpansionConfirm} onBack={() => { setPlayerAlignment(null); setStartStoryAtChoice(true); setViewMode('story'); }} ownedExpansions={ownedExpansions} onToggleExpansion={toggleExpansion} onToggleAllExpansions={toggleAllExpansions} />)}
             
-            {/* --- CORRECCIÓN AQUÍ: LÓGICA DE INTRO --- */}
             {viewMode === 'intro' && playerAlignment && (
                 <IntroSequence 
                     language={lang} 
