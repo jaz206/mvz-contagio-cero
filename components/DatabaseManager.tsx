@@ -80,7 +80,7 @@ export const DatabaseManager: React.FC<DatabaseManagerProps> = ({ isOpen, onClos
         if (isOpen) loadData();
     }, [isOpen]);
 
-    // --- AGRUPACIÓN INTELIGENTE DE MISIONES ---
+    // --- AGRUPACIÓN INTELIGENTE DE MISIONES (CORREGIDA) ---
     const groupedMissions = useMemo(() => {
         const groups: Record<string, Mission[]> = {
             KINGPIN: [], MAGNETO: [], HULK: [], DOOM: [], NEUTRAL: [], GALACTUS: []
@@ -98,7 +98,9 @@ export const DatabaseManager: React.FC<DatabaseManagerProps> = ({ isOpen, onClos
         }
 
         filtered.forEach(m => {
-            if (m.type === 'GALACTUS' || (m.type && m.type.startsWith('BOSS'))) {
+            // CORRECCIÓN: Solo tipo 'GALACTUS' va al grupo GALACTUS.
+            // Los tipos 'BOSS_...' ahora pasan al 'else' para ser clasificados por estado.
+            if (m.type === 'GALACTUS') {
                 groups.GALACTUS.push(m);
             } else {
                 const faction = getFactionForState(m.location.state);
@@ -140,7 +142,7 @@ export const DatabaseManager: React.FC<DatabaseManagerProps> = ({ isOpen, onClos
     const handleDeleteMission = async (id: string) => { if (window.confirm("¿ELIMINAR?")) { await deleteMissionInDB(id); loadData(); } };
     const handleDeleteHero = async (id: string) => { if (window.confirm("¿ELIMINAR?")) { await deleteHeroInDB(id); loadData(); } };
     const handleSync = async () => { if (window.confirm("¿SYNC?")) { setLoading(true); await seedExpansionsToDB(); await loadData(); setLoading(false); } };
-    const executeMerge = async () => { /* Lógica de fusión simplificada para visualización */ };
+    const executeMerge = async () => { /* Lógica de fusión simplificada */ };
 
     // --- HELPER PARA OBTENER NOMBRE DE PRERREQUISITO ---
     const getPrereqName = (prereqId: string) => {
@@ -157,13 +159,12 @@ export const DatabaseManager: React.FC<DatabaseManagerProps> = ({ isOpen, onClos
         return 'border-gray-500 text-gray-400';
     };
 
-    // --- CORRECCIÓN CRÍTICA: SI NO ESTÁ ABIERTO, NO RENDERIZAR NADA ---
     if (!isOpen) return null;
 
     return (
         <div className="fixed inset-0 z-[100] bg-slate-950 flex flex-col font-mono">
             
-            {/* MODAL DE FUSIÓN (Simplificado para este archivo, la lógica completa está en versiones anteriores si la necesitas) */}
+            {/* MODAL DE FUSIÓN */}
             {showMergeModal && (
                 <div className="fixed inset-0 z-[150] bg-black/90 flex items-center justify-center">
                     <div className="bg-slate-900 p-8 border border-purple-500">
@@ -275,15 +276,28 @@ export const DatabaseManager: React.FC<DatabaseManagerProps> = ({ isOpen, onClos
                                             {factionMissions.map(m => {
                                                 const diffColor = getDifficultyColor(m.threatLevel);
                                                 const isIntro = m.isIntroMission || m.type === 'INTRODUCTORY';
+                                                const isBoss = m.type && m.type.startsWith('BOSS'); // DETECTAR BOSS
                                                 const hasPrereq = (m.prereqs && m.prereqs.length > 0) || m.prereq;
 
+                                                // Estilo base de la tarjeta
+                                                let cardBg = 'bg-slate-800/40 hover:bg-slate-800';
+                                                let cardBorder = diffColor.replace('text-', 'border-');
+
+                                                // Estilo especial para BOSS
+                                                if (isBoss) {
+                                                    cardBg = 'bg-gradient-to-br from-purple-900/30 to-slate-900 hover:from-purple-900/50';
+                                                    cardBorder = 'border-purple-500 shadow-[0_0_10px_rgba(168,85,247,0.2)]';
+                                                }
+
                                                 return (
-                                                    <div key={m.id} className={`p-3 border-l-4 bg-slate-800/40 hover:bg-slate-800 transition-all relative group flex flex-col gap-2 ${diffColor.replace('text-', 'border-')}`}>
+                                                    <div key={m.id} className={`p-3 border-l-4 transition-all relative group flex flex-col gap-2 ${cardBg} ${cardBorder}`}>
                                                         
                                                         {/* Header Tarjeta */}
                                                         <div className="flex justify-between items-start">
                                                             <div className="flex-1 min-w-0">
                                                                 {isIntro && <div className="text-[9px] font-black text-emerald-400 uppercase tracking-widest mb-1">⭐ INTRODUCCIÓN</div>}
+                                                                {isBoss && <div className="text-[9px] font-black text-purple-400 uppercase tracking-widest mb-1">💀 JEFE DE ZONA</div>}
+                                                                
                                                                 <h4 className="font-bold text-xs text-white truncate" title={m.title}>{m.title}</h4>
                                                                 <div className="flex items-center gap-2 mt-1">
                                                                     <span className={`text-[9px] font-bold ${diffColor.split(' ')[1]}`}>{m.threatLevel}</span>
