@@ -374,7 +374,23 @@ const App: React.FC = () => {
             {viewMode === 'login' && (<LoginScreen onLogin={handleGuestLogin} onGoogleLogin={() => {}} onEditorLogin={handleEditorLogin} language={lang} setLanguage={setLang} />)}
             {viewMode === 'story' && (<StoryMode language={lang} onComplete={(choice) => { setPlayerAlignment(choice); setViewMode('setup'); }} onSkip={() => { setPlayerAlignment('ALIVE'); const core = GAME_EXPANSIONS.find(e => e.id === 'core_box'); if (core) setHeroes(core.heroes); setViewMode('map'); }} startAtChoice={startStoryAtChoice} />)}
             {viewMode === 'setup' && playerAlignment && (<ExpansionSelector language={lang} playerAlignment={playerAlignment} onConfirm={handleExpansionConfirm} onBack={() => { setPlayerAlignment(null); setStartStoryAtChoice(true); setViewMode('story'); }} ownedExpansions={ownedExpansions} onToggleExpansion={toggleExpansion} onToggleAllExpansions={toggleAllExpansions} />)}
-            {viewMode === 'intro' && playerAlignment && (<IntroSequence language={lang} playerAlignment={playerAlignment} onComplete={() => setViewMode('mission0')} />)}
+            
+            {/* --- CORRECCIÓN AQUÍ: LÓGICA DE INTRO --- */}
+            {viewMode === 'intro' && playerAlignment && (
+                <IntroSequence 
+                    language={lang} 
+                    playerAlignment={playerAlignment} 
+                    onComplete={() => {
+                        // Verificar si la misión de intro coincide con el bando actual
+                        if (introMission && (introMission.alignment === 'BOTH' || introMission.alignment === playerAlignment)) {
+                            setViewMode('mission0');
+                        } else {
+                            // Si no coincide (ej: Zombi jugando y misión es de Héroe), saltar al tutorial
+                            setViewMode('tutorial');
+                        }
+                    }} 
+                />
+            )}
             
             {viewMode === 'mission0' && introMission ? (
                 <MissionModal mission={introMission} isOpen={true} onClose={() => setViewMode('tutorial')} onComplete={() => { handleMissionComplete(introMission.id); setViewMode('tutorial'); }} language={lang} isCompleted={false} />
