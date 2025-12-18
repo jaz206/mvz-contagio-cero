@@ -22,7 +22,7 @@ export const MissionModal: React.FC<MissionModalProps> = ({
   const [reporting, setReporting] = useState(false);
   const [reportSuccess, setReportSuccess] = useState(false);
   const [showMap, setShowMap] = useState(false);
-  const [showPdf, setShowPdf] = useState(false); // NUEVO ESTADO
+  const [showPdf, setShowPdf] = useState(false); 
   const t = translations[language].missionModal;
   
   const timeoutsRef = useRef<NodeJS.Timeout[]>([]);
@@ -31,7 +31,7 @@ export const MissionModal: React.FC<MissionModalProps> = ({
     setReporting(false);
     setReportSuccess(false);
     setShowMap(false);
-    setShowPdf(false); // Resetear
+    setShowPdf(false); 
     return () => {
         timeoutsRef.current.forEach(clearTimeout);
         timeoutsRef.current = [];
@@ -69,6 +69,22 @@ export const MissionModal: React.FC<MissionModalProps> = ({
   };
 
   const showOutcome = reportSuccess && mission.outcomeText;
+
+  // Función auxiliar para procesar la URL del PDF
+  const getPdfViewerUrl = (url: string) => {
+      // Si es un enlace de Drive normal (/view), intentar convertirlo para el visor
+      if (url.includes('drive.google.com') && url.includes('/view')) {
+          // Extraer ID
+          const idMatch = url.match(/\/d\/(.*?)\//);
+          if (idMatch && idMatch[1]) {
+              // Convertir a enlace de descarga directa para que el visor lo pueda leer
+              const directLink = `https://drive.google.com/uc?id=${idMatch[1]}&export=download`;
+              return `https://docs.google.com/gview?url=${encodeURIComponent(directLink)}&embedded=true`;
+          }
+      }
+      // Si ya es un enlace directo o de otro sitio, usar el visor genérico
+      return `https://docs.google.com/gview?url=${encodeURIComponent(url)}&embedded=true`;
+  };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -154,7 +170,7 @@ export const MissionModal: React.FC<MissionModalProps> = ({
                 </div>
             ) : (
                 <>
-                    {/* --- BOTÓN DE PDF (NUEVO) --- */}
+                    {/* --- BOTÓN DE PDF --- */}
                     {mission.pdfUrl && (
                         <div className="mb-6 animate-fade-in">
                             <button 
@@ -261,7 +277,7 @@ export const MissionModal: React.FC<MissionModalProps> = ({
             </div>
         )}
 
-        {/* --- VISOR DE PDF (NUEVO) --- */}
+        {/* --- VISOR DE PDF (MEJORADO) --- */}
         {showPdf && mission.pdfUrl && (
             <div className="fixed inset-0 z-[110] bg-slate-900 flex flex-col animate-fade-in">
                 <div className="flex justify-between items-center p-4 bg-slate-800 border-b border-slate-700 shadow-lg z-10">
@@ -287,7 +303,7 @@ export const MissionModal: React.FC<MissionModalProps> = ({
                 </div>
                 <div className="flex-1 bg-gray-900 relative flex items-center justify-center">
                     <iframe 
-                        src={mission.pdfUrl} 
+                        src={getPdfViewerUrl(mission.pdfUrl)} 
                         className="w-full h-full border-0" 
                         title="PDF Viewer"
                     ></iframe>
