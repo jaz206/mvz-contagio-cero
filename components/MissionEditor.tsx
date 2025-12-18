@@ -48,7 +48,7 @@ export const MissionEditor: React.FC<MissionEditorProps> = ({ isOpen, onClose, o
     const [threatLevel, setThreatLevel] = useState(THREAT_LEVELS[1]); 
     const [type, setType] = useState<MissionType>('STANDARD');
     const [alignment, setAlignment] = useState<'ALIVE' | 'ZOMBIE' | 'BOTH'>('BOTH');
-    const [isIntroMission, setIsIntroMission] = useState(false); // NUEVO ESTADO
+    const [isIntroMission, setIsIntroMission] = useState(false);
     
     const [triggerStage, setTriggerStage] = useState<WorldStage>('NORMAL');
 
@@ -61,6 +61,7 @@ export const MissionEditor: React.FC<MissionEditorProps> = ({ isOpen, onClose, o
     const [selectedExpansionId, setSelectedExpansionId] = useState(GAME_EXPANSIONS[0].id);
     
     const [layoutUrl, setLayoutUrl] = useState('');
+    const [pdfUrl, setPdfUrl] = useState(''); // NUEVO ESTADO
     const [saving, setSaving] = useState(false);
 
     useEffect(() => {
@@ -73,7 +74,7 @@ export const MissionEditor: React.FC<MissionEditorProps> = ({ isOpen, onClose, o
             setType(initialData.type || 'STANDARD');
             setAlignment(initialData.alignment || 'BOTH');
             setTriggerStage(initialData.triggerStage || 'NORMAL');
-            setIsIntroMission(initialData.isIntroMission || false); // CARGAR VALOR
+            setIsIntroMission(initialData.isIntroMission || false);
             
             if (initialData.prereqs && initialData.prereqs.length > 0) {
                 setPrereqs(initialData.prereqs);
@@ -86,6 +87,7 @@ export const MissionEditor: React.FC<MissionEditorProps> = ({ isOpen, onClose, o
             setObjectives(initialData.objectives.length > 0 ? initialData.objectives : [{ title: '', desc: '' }]);
             setRequirements(initialData.requirements || []);
             setLayoutUrl(initialData.layoutUrl || '');
+            setPdfUrl(initialData.pdfUrl || ''); // CARGAR PDF
         } else {
             setTitle('');
             setDescription('');
@@ -100,6 +102,7 @@ export const MissionEditor: React.FC<MissionEditorProps> = ({ isOpen, onClose, o
             setObjectives([{ title: '', desc: '' }]);
             setRequirements([]);
             setLayoutUrl('');
+            setPdfUrl('');
         }
     }, [initialData, isOpen]);
 
@@ -140,7 +143,6 @@ export const MissionEditor: React.FC<MissionEditorProps> = ({ isOpen, onClose, o
         e.preventDefault();
         setSaving(true);
 
-        // Lógica de coordenadas estables
         let finalCoordinates: [number, number];
         if (initialData && initialData.location.state === locationState) {
             finalCoordinates = initialData.location.coordinates;
@@ -159,13 +161,14 @@ export const MissionEditor: React.FC<MissionEditorProps> = ({ isOpen, onClose, o
             threatLevel,
             type,
             alignment,
-            isIntroMission, // GUARDAR EL CHECK
+            isIntroMission,
             triggerStage: type === 'GALACTUS' ? triggerStage : null,
             objectives: objectives.filter(o => o.title && o.desc),
             prereq: prereqs.length > 0 ? prereqs[0] : null, 
             prereqs: prereqs,
             requirements, 
             layoutUrl: layoutUrl.trim() || null,
+            pdfUrl: pdfUrl.trim() || null, // GUARDAR PDF
         };
 
         try {
@@ -262,7 +265,6 @@ export const MissionEditor: React.FC<MissionEditorProps> = ({ isOpen, onClose, o
                                 </div>
                             </div>
 
-                            {/* --- NUEVO CHECKBOX DE INTRO --- */}
                             <div className="flex items-center gap-3 p-3 border border-emerald-500/50 bg-emerald-900/10">
                                 <input 
                                     type="checkbox" 
@@ -361,6 +363,11 @@ export const MissionEditor: React.FC<MissionEditorProps> = ({ isOpen, onClose, o
                                     <div>
                                         <label className="text-[9px] text-cyan-700 block mb-1">URL IMAGEN MAPA (LAYOUT)</label>
                                         <input value={layoutUrl} onChange={e => setLayoutUrl(e.target.value)} placeholder="https://..." className="w-full bg-slate-950 border border-cyan-800 p-2 text-cyan-200 text-xs" />
+                                    </div>
+                                    {/* --- NUEVO CAMPO PDF --- */}
+                                    <div>
+                                        <label className="text-[9px] text-cyan-700 block mb-1">URL ARCHIVO PDF (MISIÓN)</label>
+                                        <input value={pdfUrl} onChange={e => setPdfUrl(e.target.value)} placeholder="https://... (Drive/Dropbox/Direct Link)" className="w-full bg-slate-950 border border-cyan-800 p-2 text-cyan-200 text-xs" />
                                     </div>
                                 </div>
                             </div>

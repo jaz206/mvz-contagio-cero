@@ -73,14 +73,14 @@ export interface Mission {
     triggerStage?: WorldStage; 
     prereq?: string;       
     prereqs?: string[];    
-    pdfUrl?: string;
+    pdfUrl?: string; // <--- NUEVO CAMPO
     alignment?: 'ALIVE' | 'ZOMBIE' | 'BOTH';
     requirements?: string[];
     specialRules?: string[];      
     setupInstructions?: string[]; 
     layoutUrl?: string;
     outcomeText?: string;
-    isIntroMission?: boolean; // <--- NUEVO CAMPO
+    isIntroMission?: boolean;
 }
 
 export interface GlobalEvent {

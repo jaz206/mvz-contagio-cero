@@ -22,6 +22,7 @@ export const MissionModal: React.FC<MissionModalProps> = ({
   const [reporting, setReporting] = useState(false);
   const [reportSuccess, setReportSuccess] = useState(false);
   const [showMap, setShowMap] = useState(false);
+  const [showPdf, setShowPdf] = useState(false); // NUEVO ESTADO
   const t = translations[language].missionModal;
   
   const timeoutsRef = useRef<NodeJS.Timeout[]>([]);
@@ -30,6 +31,7 @@ export const MissionModal: React.FC<MissionModalProps> = ({
     setReporting(false);
     setReportSuccess(false);
     setShowMap(false);
+    setShowPdf(false); // Resetear
     return () => {
         timeoutsRef.current.forEach(clearTimeout);
         timeoutsRef.current = [];
@@ -82,12 +84,10 @@ export const MissionModal: React.FC<MissionModalProps> = ({
                 <h2 className={`text-xl md:text-2xl font-bold tracking-widest font-mono uppercase ${isCompleted || reportSuccess ? 'text-emerald-300' : 'text-cyan-300'}`}>
                     {isCompleted || reportSuccess ? 'MISSION COMPLETE' : t.title}
                 </h2>
-                {/* --- NUEVO: ID VISIBLE --- */}
                 <span className="text-[9px] font-mono text-gray-400 tracking-wider">ID: {mission.id}</span>
             </div>
 
             <div className="flex gap-2 items-center">
-                {/* BOTONES DE EDITOR EN EL HEADER */}
                 {isEditorMode && !showOutcome && (
                     <div className="flex gap-2">
                         {onEdit && (
@@ -154,6 +154,20 @@ export const MissionModal: React.FC<MissionModalProps> = ({
                 </div>
             ) : (
                 <>
+                    {/* --- BOTÓN DE PDF (NUEVO) --- */}
+                    {mission.pdfUrl && (
+                        <div className="mb-6 animate-fade-in">
+                            <button 
+                                onClick={() => setShowPdf(true)}
+                                className="w-full py-3 bg-red-900/20 border border-red-500/50 hover:bg-red-900/40 hover:border-red-500 text-red-300 font-bold tracking-widest flex items-center justify-center gap-3 transition-all group shadow-[0_0_15px_rgba(220,38,38,0.2)]"
+                            >
+                                <span className="text-xl group-hover:scale-110 transition-transform">📄</span>
+                                <span>ACCEDER A DOCUMENTO CLASIFICADO (PDF)</span>
+                                <span className="text-xs opacity-50 group-hover:opacity-100 border-l border-red-700 pl-2 ml-2">CLICK TO OPEN</span>
+                            </button>
+                        </div>
+                    )}
+
                     <div className="mb-6">
                         <h4 className={`text-xs font-bold tracking-[0.2em] mb-3 border-l-2 pl-2 uppercase ${isCompleted ? 'text-emerald-500 border-emerald-500' : 'text-cyan-500 border-cyan-500'}`}>
                             {t.briefing}
@@ -243,6 +257,40 @@ export const MissionModal: React.FC<MissionModalProps> = ({
                 <div className="relative max-w-full max-h-full flex flex-col items-center">
                     <img src={mission.layoutUrl} alt="Tactical Map" className="max-w-[95vw] max-h-[85vh] object-contain border-2 border-cyan-500 shadow-[0_0_50px_rgba(6,182,212,0.3)]" onClick={(e) => e.stopPropagation()} />
                     <button onClick={() => setShowMap(false)} className="mt-4 px-6 py-2 bg-red-900/80 text-white font-bold tracking-widest border border-red-600 hover:bg-red-800">CERRAR VISOR</button>
+                </div>
+            </div>
+        )}
+
+        {/* --- VISOR DE PDF (NUEVO) --- */}
+        {showPdf && mission.pdfUrl && (
+            <div className="fixed inset-0 z-[110] bg-slate-900 flex flex-col animate-fade-in">
+                <div className="flex justify-between items-center p-4 bg-slate-800 border-b border-slate-700 shadow-lg z-10">
+                    <h3 className="text-white font-bold tracking-widest flex items-center gap-2">
+                        <span className="text-red-500">📄</span> VISOR DE DOCUMENTOS
+                    </h3>
+                    <div className="flex gap-4">
+                        <a 
+                            href={mission.pdfUrl} 
+                            target="_blank" 
+                            rel="noopener noreferrer" 
+                            className="px-4 py-2 bg-blue-600 text-white text-xs font-bold hover:bg-blue-500 border border-blue-400 flex items-center gap-2"
+                        >
+                            <span>⬇</span> DESCARGAR / ABRIR EXTERNO
+                        </a>
+                        <button 
+                            onClick={() => setShowPdf(false)} 
+                            className="px-4 py-2 bg-red-600 text-white text-xs font-bold hover:bg-red-500 border border-red-400"
+                        >
+                            CERRAR ✕
+                        </button>
+                    </div>
+                </div>
+                <div className="flex-1 bg-gray-900 relative flex items-center justify-center">
+                    <iframe 
+                        src={mission.pdfUrl} 
+                        className="w-full h-full border-0" 
+                        title="PDF Viewer"
+                    ></iframe>
                 </div>
             </div>
         )}
