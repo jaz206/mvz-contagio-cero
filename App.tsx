@@ -184,9 +184,10 @@ const App: React.FC = () => {
 
     // --- LÓGICA DE MISIONES (BBDD + AUTO-REPARACIÓN DE COORDENADAS) ---
     const allMissions: Mission[] = useMemo(() => {
-        if (customMissions.length === 0) return getInitialMissions(t);
+        // Si no hay misiones en BBDD, usar las iniciales
+        const sourceMissions = customMissions.length > 0 ? customMissions : getInitialMissions(t);
         
-        return customMissions.map(m => {
+        return sourceMissions.map(m => {
             let [x, y] = m.location.coordinates;
 
             // 1. Reparar coordenadas [0,0]
@@ -196,7 +197,6 @@ const App: React.FC = () => {
 
             // 2. Reparar coordenadas invertidas (Lat, Long -> Long, Lat)
             // En USA, la Longitud (X) es negativa (ej: -80) y la Latitud (Y) es positiva (ej: 40).
-            // Si X es positivo y Y es negativo, están al revés.
             if (x > 0 && y < 0) {
                 return { ...m, location: { ...m.location, coordinates: [y, x] } };
             }
@@ -205,10 +205,20 @@ const App: React.FC = () => {
         });
     }, [customMissions, t]);
 
+    // --- LÓGICA INTELIGENTE DE INTRO (CHECKBOX) ---
     const introMission = useMemo(() => {
-        const found = allMissions.find(m => m.id === 'm_intro_0');
-        return found || getInitialMissions(t)[0];
-    }, [allMissions, t]);
+        if (!playerAlignment) return null;
+        
+        // 1. Buscar misión marcada con el checkbox "isIntroMission" que coincida con el bando
+        const flaggedIntro = allMissions.find(m => 
+            m.isIntroMission === true && 
+            (m.alignment === playerAlignment || m.alignment === 'BOTH')
+        );
+        if (flaggedIntro) return flaggedIntro;
+
+        // 2. Fallback: Buscar por ID antiguo por si acaso
+        return allMissions.find(m => m.id === 'm_intro_0');
+    }, [allMissions, playerAlignment]);
 
     const visibleMissions = useMemo(() => {
         const alignmentFiltered = allMissions.filter(m => {
@@ -235,12 +245,17 @@ const App: React.FC = () => {
             const isCompleted = completedMissionIds.has(m.id);
             if (isCompleted) return true;
 
+            // Lógica de Prerrequisitos
             let prereqMet = true;
             if (m.prereqs && m.prereqs.length > 0) {
                 prereqMet = m.prereqs.every(pid => completedMissionIds.has(pid));
             } else if (m.prereq) {
                 prereqMet = completedMissionIds.has(m.prereq);
             }
+            
+            // Si es la misión de intro detectada, siempre es visible si no está completada
+            if (introMission && m.id === introMission.id && !isCompleted) return true;
+
             if (m.type === 'GALACTUS') {
                 if (m.triggerStage === 'SURFER') return worldStage === 'SURFER' || worldStage === 'GALACTUS';
                 if (m.triggerStage === 'GALACTUS') return worldStage === 'GALACTUS';
@@ -249,7 +264,7 @@ const App: React.FC = () => {
             if (worldStage === 'GALACTUS' && !isCompleted && m.type !== 'GALACTUS' && m.type !== 'BOSS') return false;
             return isCompleted || prereqMet;
         });
-    }, [allMissions, completedMissionIds, isEditorMode, worldStage, playerAlignment, ownedExpansions]);
+    }, [allMissions, completedMissionIds, isEditorMode, worldStage, playerAlignment, ownedExpansions, introMission]);
 
     const handleMissionComplete = async (id: string) => {
         console.log("Completando misión:", id); 
@@ -381,11 +396,11 @@ const App: React.FC = () => {
                     language={lang} 
                     playerAlignment={playerAlignment} 
                     onComplete={() => {
-                        // Verificar si la misión de intro coincide con el bando actual
-                        if (introMission && (introMission.alignment === 'BOTH' || introMission.alignment === playerAlignment)) {
+                        // Si existe una misión introductoria válida, ir a ella
+                        if (introMission) {
                             setViewMode('mission0');
                         } else {
-                            // Si no coincide (ej: Zombi jugando y misión es de Héroe), saltar al tutorial
+                            // Si no hay ninguna (ej: borraste la de héroe y eres zombi y no has creado la de zombi), ir al mapa
                             setViewMode('tutorial');
                         }
                     }} 
@@ -396,7 +411,7 @@ const App: React.FC = () => {
                 <MissionModal mission={introMission} isOpen={true} onClose={() => setViewMode('tutorial')} onComplete={() => { handleMissionComplete(introMission.id); setViewMode('tutorial'); }} language={lang} isCompleted={false} />
             ) : viewMode === 'mission0' && !introMission ? (
                 <div className="absolute inset-0 flex items-center justify-center bg-slate-950 text-red-500 font-bold z-50 flex-col gap-4">
-                    <div>ERROR: MISIÓN 'm_intro_0' NO ENCONTRADA EN BBDD</div>
+                    <div>ERROR: NO SE ENCONTRÓ MISIÓN INTRODUCTORIA</div>
                     <button onClick={() => setViewMode('map')} className="border border-red-500 px-4 py-2 hover:bg-red-900/20">SALTAR AL MAPA</button>
                 </div>
             ) : null}

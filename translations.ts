@@ -250,7 +250,7 @@ export const translations = {
             {
                 text: "S.H.I.E.L.D. llegó tarde. Sellaron el complejo, bombardearon las coordenadas. Llaman a nuestra casa 'Zona Perdida'. El mundo exterior aún cree que puede contener esto, que puede revertirlo. No saben que el origen sigue rugiendo. No saben que el virus nos ha otorgado un poder que nunca conocimos. Ya no se trata de salvación. Se trata de expansión. Hemos aprendido a caminar con este vacío. Hemos aprendido a usar esta rabia. El virus aprendió a caminar. Y nosotros... vamos a cazarlo todo.",
                 // IMAGEN ACTUALIZADA SLIDE 3
-                image: "https://i.pinimg.com/736x/e9/82/23/e98223ab8a1251e8fe9fce826dd3385f.jpg"
+                image: "https://i.postimg.cc/nhGFfZgp/Image-to-Video-(1).gif"
             }
         ]
     },
@@ -545,7 +545,7 @@ export const translations = {
             },
             {
                 text: "S.H.I.E.L.D. arrived too late. They sealed the complex, bombed the coordinates. They call our home 'Lost Zone'. The outside world still believes it can contain this, that it can reverse it. They don't know the origin is still roaring. They don't know the virus has granted us a power we never knew. It's no longer about salvation. It's about expansion. We have learned to walk with this void. We have learned to use this rage. The virus learned to walk. And we... are going to hunt it all.",
-                image: "https://i.pinimg.com/736x/e9/82/23/e98223ab8a1251e8fe9fce826dd3385f.jpg"
+                image: "https://i.postimg.cc/nhGFfZgp/Image-to-Video-(1).gif"
             }
         ]
     },

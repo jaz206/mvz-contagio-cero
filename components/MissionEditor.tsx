@@ -48,6 +48,7 @@ export const MissionEditor: React.FC<MissionEditorProps> = ({ isOpen, onClose, o
     const [threatLevel, setThreatLevel] = useState(THREAT_LEVELS[1]); 
     const [type, setType] = useState<MissionType>('STANDARD');
     const [alignment, setAlignment] = useState<'ALIVE' | 'ZOMBIE' | 'BOTH'>('BOTH');
+    const [isIntroMission, setIsIntroMission] = useState(false); // NUEVO ESTADO
     
     const [triggerStage, setTriggerStage] = useState<WorldStage>('NORMAL');
 
@@ -72,6 +73,7 @@ export const MissionEditor: React.FC<MissionEditorProps> = ({ isOpen, onClose, o
             setType(initialData.type || 'STANDARD');
             setAlignment(initialData.alignment || 'BOTH');
             setTriggerStage(initialData.triggerStage || 'NORMAL');
+            setIsIntroMission(initialData.isIntroMission || false); // CARGAR VALOR
             
             if (initialData.prereqs && initialData.prereqs.length > 0) {
                 setPrereqs(initialData.prereqs);
@@ -92,6 +94,7 @@ export const MissionEditor: React.FC<MissionEditorProps> = ({ isOpen, onClose, o
             setThreatLevel(THREAT_LEVELS[1]);
             setType('STANDARD');
             setAlignment('BOTH');
+            setIsIntroMission(false);
             setTriggerStage('NORMAL');
             setPrereqs([]);
             setObjectives([{ title: '', desc: '' }]);
@@ -137,12 +140,16 @@ export const MissionEditor: React.FC<MissionEditorProps> = ({ isOpen, onClose, o
         e.preventDefault();
         setSaving(true);
 
-        // --- CORRECCIÓN: SIEMPRE RECALCULAR COORDENADAS ---
-        // Esto asegura que si el estado cambia o si las coordenadas estaban mal, se arreglen.
-        const center = STATE_CENTERS[locationState] || [-98.5, 39.8]; 
-        const jitterX = (Math.random() - 0.5) * 2.0; 
-        const jitterY = (Math.random() - 0.5) * 1.5;
-        const finalCoordinates: [number, number] = [center[0] + jitterX, center[1] + jitterY];
+        // Lógica de coordenadas estables
+        let finalCoordinates: [number, number];
+        if (initialData && initialData.location.state === locationState) {
+            finalCoordinates = initialData.location.coordinates;
+        } else {
+            const center = STATE_CENTERS[locationState] || [-98.5, 39.8]; 
+            const jitterX = (Math.random() - 0.5) * 2.0; 
+            const jitterY = (Math.random() - 0.5) * 1.5;
+            finalCoordinates = [center[0] + jitterX, center[1] + jitterY];
+        }
 
         const missionPayload: any = {
             title,
@@ -152,6 +159,7 @@ export const MissionEditor: React.FC<MissionEditorProps> = ({ isOpen, onClose, o
             threatLevel,
             type,
             alignment,
+            isIntroMission, // GUARDAR EL CHECK
             triggerStage: type === 'GALACTUS' ? triggerStage : null,
             objectives: objectives.filter(o => o.title && o.desc),
             prereq: prereqs.length > 0 ? prereqs[0] : null, 
@@ -254,6 +262,21 @@ export const MissionEditor: React.FC<MissionEditorProps> = ({ isOpen, onClose, o
                                 </div>
                             </div>
 
+                            {/* --- NUEVO CHECKBOX DE INTRO --- */}
+                            <div className="flex items-center gap-3 p-3 border border-emerald-500/50 bg-emerald-900/10">
+                                <input 
+                                    type="checkbox" 
+                                    id="isIntro"
+                                    checked={isIntroMission} 
+                                    onChange={e => setIsIntroMission(e.target.checked)} 
+                                    className="w-5 h-5 accent-emerald-500 cursor-pointer"
+                                />
+                                <div>
+                                    <label htmlFor="isIntro" className="text-xs font-bold text-emerald-400 cursor-pointer uppercase">ES MISIÓN INICIAL (INTRO)</label>
+                                    <div className="text-[9px] text-emerald-600">Aparecerá automáticamente tras la intro.</div>
+                                </div>
+                            </div>
+
                             {type === 'GALACTUS' && (
                                 <div className="bg-purple-900/20 border border-purple-500/50 p-2 animate-fade-in">
                                     <label className="text-[10px] text-purple-400 font-bold block mb-1 uppercase">ETAPA DE ACTIVACIÓN</label>
@@ -265,9 +288,6 @@ export const MissionEditor: React.FC<MissionEditorProps> = ({ isOpen, onClose, o
                                         <option value="SURFER">LLEGADA DE SILVER SURFER (ETAPA 2)</option>
                                         <option value="GALACTUS">LLEGADA DE GALACTUS (ETAPA 3)</option>
                                     </select>
-                                    <div className="text-[9px] text-purple-400/70 mt-1">
-                                        * Esta misión aparecerá automáticamente cuando ocurra el evento seleccionado.
-                                    </div>
                                 </div>
                             )}
 

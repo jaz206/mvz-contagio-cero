@@ -51,7 +51,6 @@ export interface Objective {
     desc: string;
 }
 
-// --- ACTUALIZACIÓN DE TIPOS DE MISIÓN ---
 export type MissionType = 
     | 'STANDARD' 
     | 'INTRODUCTORY' 
@@ -81,6 +80,7 @@ export interface Mission {
     setupInstructions?: string[]; 
     layoutUrl?: string;
     outcomeText?: string;
+    isIntroMission?: boolean; // <--- NUEVO CAMPO
 }
 
 export interface GlobalEvent {
