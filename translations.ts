@@ -221,7 +221,6 @@ export const translations = {
         storm: { alias: "STORM", bio: "Controla el clima. Una diosa entre mortales." }
     },
     
-    // --- ESTRUCTURA ACTUALIZADA PARA INTRO ---
     introSequence: {
         alive: [
             {
@@ -244,12 +243,11 @@ export const translations = {
             },
             {
                 text: "Cuando las alarmas sonaron, ya estábamos en los pasillos, y el color verde lo inundó todo. El virus nos tocó. Y, en lugar de matarnos, nos despertó. El dolor se desvaneció, y en su lugar llegó el Hambre. No como un grito, sino como un frío constante, un vacío que ningún poder puede apagar. Éramos héroes, y ahora somos el error. El laboratorio es ahora nuestro matadero personal. Y en el corazón del complejo, lo oímos. Hulk no murió. El monstruo despertó. Sin alma, sin freno. Cada latido suyo extiende la plaga Gamma. Ahora entendemos: Hulk es el origen, y lo último que intentamos fue lo que desató la catástrofe.",
-                // IMAGEN ACTUALIZADA SLIDE 2
                 image: "https://i.postimg.cc/RhvyRdYX/Animacion-sutil-de-vineta-comica.gif"
             },
             {
                 text: "S.H.I.E.L.D. llegó tarde. Sellaron el complejo, bombardearon las coordenadas. Llaman a nuestra casa 'Zona Perdida'. El mundo exterior aún cree que puede contener esto, que puede revertirlo. No saben que el origen sigue rugiendo. No saben que el virus nos ha otorgado un poder que nunca conocimos. Ya no se trata de salvación. Se trata de expansión. Hemos aprendido a caminar con este vacío. Hemos aprendido a usar esta rabia. El virus aprendió a caminar. Y nosotros... vamos a cazarlo todo.",
-                // IMAGEN ACTUALIZADA SLIDE 3
+                // IMAGEN ACTUALIZADA CON EL NUEVO GIF
                 image: "https://i.postimg.cc/nhGFfZgp/Image-to-Video-(1).gif"
             }
         ]
