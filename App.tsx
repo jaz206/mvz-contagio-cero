@@ -7,7 +7,8 @@ import {
     getUserProfile, 
     saveUserProfile, 
     getCustomMissions, 
-    deleteMissionInDB
+    deleteMissionInDB,
+    getHeroTemplates // Importamos esto para buscar en la DB
 } from './services/dbService';
 import { logout } from './services/authService';
 
@@ -182,41 +183,28 @@ const App: React.FC = () => {
         loadMissions();
     }, [isEditorMode]);
 
-    // --- LÓGICA DE MISIONES (BBDD + AUTO-REPARACIÓN DE COORDENADAS) ---
+    // --- LÓGICA DE MISIONES ---
     const allMissions: Mission[] = useMemo(() => {
-        // Si no hay misiones en BBDD, usar las iniciales
         const sourceMissions = customMissions.length > 0 ? customMissions : getInitialMissions(t);
-        
         return sourceMissions.map(m => {
             let [x, y] = m.location.coordinates;
-
-            // 1. Reparar coordenadas [0,0]
             if (x === 0 && y === 0) {
                 return { ...m, location: { ...m.location, coordinates: [-82.5, 40.2] } };
             }
-
-            // 2. Reparar coordenadas invertidas (Lat, Long -> Long, Lat)
-            // En USA, la Longitud (X) es negativa (ej: -80) y la Latitud (Y) es positiva (ej: 40).
             if (x > 0 && y < 0) {
                 return { ...m, location: { ...m.location, coordinates: [y, x] } };
             }
-
             return m;
         });
     }, [customMissions, t]);
 
-    // --- LÓGICA INTELIGENTE DE INTRO (CHECKBOX) ---
     const introMission = useMemo(() => {
         if (!playerAlignment) return null;
-        
-        // 1. Buscar misión marcada con el checkbox "isIntroMission" que coincida con el bando
         const flaggedIntro = allMissions.find(m => 
             m.isIntroMission === true && 
             (m.alignment === playerAlignment || m.alignment === 'BOTH')
         );
         if (flaggedIntro) return flaggedIntro;
-
-        // 2. Fallback: Buscar por ID antiguo por si acaso
         return allMissions.find(m => m.id === 'm_intro_0');
     }, [allMissions, playerAlignment]);
 
@@ -241,21 +229,15 @@ const App: React.FC = () => {
 
         return expansionFiltered.filter(m => {
             if (!m) return false;
-            
             const isCompleted = completedMissionIds.has(m.id);
             if (isCompleted) return true;
-
-            // Lógica de Prerrequisitos
             let prereqMet = true;
             if (m.prereqs && m.prereqs.length > 0) {
                 prereqMet = m.prereqs.every(pid => completedMissionIds.has(pid));
             } else if (m.prereq) {
                 prereqMet = completedMissionIds.has(m.prereq);
             }
-            
-            // Si es la misión de intro detectada, siempre es visible si no está completada
             if (introMission && m.id === introMission.id && !isCompleted) return true;
-
             if (m.type === 'GALACTUS') {
                 if (m.triggerStage === 'SURFER') return worldStage === 'SURFER' || worldStage === 'GALACTUS';
                 if (m.triggerStage === 'GALACTUS') return worldStage === 'GALACTUS';
@@ -268,20 +250,16 @@ const App: React.FC = () => {
 
     const handleMissionComplete = async (id: string) => {
         console.log("Completando misión:", id); 
-        
         const newSet = new Set(completedMissionIds);
         newSet.add(id);
         setCompletedMissionIds(newSet);
         setSelectedMission(null);
-
         if (worldStage === 'SURFER') {
             setSurferTurnCount(prev => prev + 1);
         }
-
         if (user && playerAlignment) {
             await saveData(heroes, newSet, omegaCylinders);
         }
-
         if (id === 'boss-galactus') {
             setWorldStage('NORMAL');
             setActiveGlobalEvent(null);
@@ -289,7 +267,6 @@ const App: React.FC = () => {
         } else {
             checkGlobalEvents(newSet); 
         }
-        
         const loaded = await getCustomMissions();
         setCustomMissions(loaded);
     };
@@ -347,7 +324,79 @@ const App: React.FC = () => {
     const handleResetProgress = () => { setCompletedMissionIds(new Set()); setWorldStage('NORMAL'); setActiveGlobalEvent(null); setOmegaCylinders(0); setSurferTurnCount(0); };
     const handleEventAcknowledge = () => setActiveGlobalEvent(null);
     const handleToggleHeroObjective = (heroId: string, idx: number) => { const hIndex = heroes.findIndex(h => h.id === heroId); if (hIndex >= 0) { const newHeroes = [...heroes]; const h = newHeroes[hIndex]; const indices = h.completedObjectiveIndices ? [...h.completedObjectiveIndices] : []; if (indices.includes(idx)) { newHeroes[hIndex] = { ...h, completedObjectiveIndices: indices.filter(i => i !== idx) }; } else { newHeroes[hIndex] = { ...h, completedObjectiveIndices: [...indices, idx] }; } setHeroes(newHeroes); } };
-    const handleTransformHero = (heroId: string, targetAlignment: 'ALIVE' | 'ZOMBIE') => { /* ... lógica existente ... */ };
+    
+    // --- LÓGICA DE TRANSFORMACIÓN (CURAR/INFECTAR) CORREGIDA ---
+    const handleTransformHero = async (heroId: string, targetAlignment: 'ALIVE' | 'ZOMBIE') => {
+        const heroIndex = heroes.findIndex(h => h.id === heroId);
+        if (heroIndex === -1) return;
+
+        const currentHero = heroes[heroIndex];
+
+        // 1. Buscar en Expansiones Locales (Hardcoded)
+        let targetTemplate: HeroTemplate | null = null;
+
+        for (const exp of GAME_EXPANSIONS) {
+            const list = targetAlignment === 'ALIVE' ? exp.heroes : exp.zombieHeroes;
+            // BUSCAR POR ALIAS (NOMBRE EN CLAVE) PARA VINCULARLOS
+            const found = list.find(h => h.alias === currentHero.alias);
+            if (found) {
+                targetTemplate = {
+                    id: found.id,
+                    defaultName: found.name,
+                    alias: found.alias,
+                    defaultClass: found.class,
+                    defaultStats: found.stats,
+                    imageUrl: found.imageUrl || '',
+                    bio: found.bio,
+                    defaultAlignment: targetAlignment,
+                    objectives: found.objectives,
+                    currentStory: found.currentStory
+                };
+                break;
+            }
+        }
+
+        // 2. Si no está en locales, buscar en BBDD (Customs)
+        if (!targetTemplate) {
+            const allTemplates = await getHeroTemplates();
+            const found = allTemplates.find(t => t.alias === currentHero.alias && t.defaultAlignment === targetAlignment);
+            if (found) targetTemplate = found;
+        }
+
+        if (targetTemplate) {
+            const newHero: Hero = {
+                id: `trans_${Date.now()}`, // Nuevo ID único para evitar conflictos
+                templateId: targetTemplate.id,
+                name: targetTemplate.defaultName,
+                alias: targetTemplate.alias || currentHero.alias,
+                class: targetTemplate.defaultClass,
+                stats: targetTemplate.defaultStats,
+                imageUrl: targetTemplate.imageUrl,
+                bio: targetTemplate.bio || currentHero.bio,
+                status: 'AVAILABLE', // Al transformarse, se cura/restaura
+                assignedMissionId: null,
+                objectives: targetTemplate.objectives || [],
+                completedObjectiveIndices: [],
+                currentStory: targetTemplate.currentStory || ''
+            };
+
+            const newHeroes = [...heroes];
+            newHeroes[heroIndex] = newHero;
+            setHeroes(newHeroes);
+            
+            // Feedback
+            if (targetAlignment === 'ALIVE') {
+                handleTickerUpdate(`SUJETO ${newHero.alias} CURADO. ADN REESTRUCTURADO.`);
+                setOmegaCylinders(prev => Math.max(0, prev - 1)); // Gastar cilindro
+            } else {
+                handleTickerUpdate(`SUJETO ${newHero.alias} INFECTADO. BIENVENIDO AL HAMBRE.`);
+            }
+        } else {
+            alert("ERROR: No se encontró una versión compatible de este personaje para el bando contrario.");
+        }
+    };
+
+    const mergeWithLatestContent = (savedHeroes: Hero[], isZombie: boolean, templates: HeroTemplate[]): Hero[] => { return savedHeroes; };
 
     const toggleZone = (zone: string) => {
         setExpandedZones(prev => {
@@ -396,11 +445,9 @@ const App: React.FC = () => {
                     language={lang} 
                     playerAlignment={playerAlignment} 
                     onComplete={() => {
-                        // Si existe una misión introductoria válida, ir a ella
                         if (introMission) {
                             setViewMode('mission0');
                         } else {
-                            // Si no hay ninguna (ej: borraste la de héroe y eres zombi y no has creado la de zombi), ir al mapa
                             setViewMode('tutorial');
                         }
                     }} 
@@ -474,27 +521,6 @@ const App: React.FC = () => {
                                 </>
                             ) : (
                                 <div className="flex flex-col items-center py-4 gap-4 h-full"><div className="w-8 h-8 rounded-full border-2 border-red-600 flex items-center justify-center bg-red-900/20 animate-pulse" title="Nivel de Amenaza: CRÍTICO"><span className="text-xs">⚠</span></div><button onClick={() => setViewMode('bunker')} className="w-8 h-8 rounded border border-cyan-500 flex items-center justify-center hover:bg-cyan-900/50 text-cyan-300" title="Búnker"><span className="text-xs">🛡</span></button><div className="flex-1 w-full flex flex-col items-center justify-end pb-4"><div className="relative w-8 h-8 flex items-center justify-center" title={`Progreso: ${progressPercentage}%`}><svg className="w-full h-full transform -rotate-90"><circle cx="16" cy="16" r="14" stroke="#1e293b" strokeWidth="3" fill="transparent" /><circle cx="16" cy="16" r="14" stroke="#10b981" strokeWidth="3" fill="transparent" strokeDasharray={2 * Math.PI * 14} strokeDashoffset={2 * Math.PI * 14 - (progressPercentage / 100) * 2 * Math.PI * 14} /></svg></div></div></div>
-                            )}
-                        </aside>
-
-                        <main className="flex-1 relative bg-slate-950 overflow-hidden">
-                            {viewMode === 'map' && (
-                                <>
-                                    <USAMap language={lang} missions={visibleMissions} completedMissionIds={completedMissionIds} onMissionComplete={handleMissionComplete} onMissionSelect={handleMissionSelectWrapper} onBunkerClick={() => setViewMode('bunker')} factionStates={FACTION_STATES} playerAlignment={playerAlignment} worldStage={worldStage} surferTurnCount={surferTurnCount} />
-                                    
-                                    {isEditorMode && (
-                                        <div className="absolute top-20 right-4 z-50 flex flex-col gap-2 bg-slate-900/95 p-4 border border-cyan-500 shadow-[0_0_20px_rgba(6,182,212,0.3)] rounded-sm min-w-[200px] max-h-[80vh] overflow-y-auto scrollbar-thin scrollbar-thumb-cyan-700">
-                                            <h3 className="text-xs font-bold text-cyan-400 border-b border-cyan-800 pb-1 mb-2 tracking-widest uppercase">EDITOR TOOLS</h3>
-                                            <button onClick={() => setShowMissionEditor(true)} className="bg-cyan-900/50 hover:bg-cyan-800 text-cyan-200 text-[10px] font-bold py-2 px-3 border border-cyan-700 uppercase tracking-wider transition-colors">+ CREAR MISIÓN</button>
-                                            <button onClick={() => setShowCharacterEditor(true)} className="bg-blue-900/50 hover:bg-blue-800 text-blue-200 text-[10px] font-bold py-2 px-3 border border-blue-700 uppercase tracking-wider transition-colors">+ CREAR PERSONAJE</button>
-                                            <button onClick={() => setShowDbManager(true)} className="bg-purple-900/50 hover:bg-purple-800 text-purple-200 text-[10px] font-bold py-2 px-3 border border-purple-700 uppercase tracking-wider transition-colors">⚙ GESTOR BBDD (ADMIN)</button>
-                                            <div className="h-px bg-cyan-900 my-1"></div>
-                                            <button onClick={() => handleSimulateProgress(5)} className="bg-emerald-900/50 hover:bg-emerald-800 text-emerald-200 text-[10px] font-bold py-2 px-3 border border-emerald-700 uppercase tracking-wider transition-colors">+5 MISIONES (SIM)</button>
-                                            <button onClick={handleResetProgress} className="bg-red-900/50 hover:bg-red-800 text-red-200 text-[10px] font-bold py-2 px-3 border border-red-700 uppercase tracking-wider transition-colors">RESET PROGRESO</button>
-                                            <div className="mt-2 text-[9px] text-gray-500 font-mono text-center border-t border-gray-800 pt-2">SURFER TURN: <span className="text-white font-bold">{surferTurnCount}</span></div>
-                                        </div>
-                                    )}
-                                </>
                             )}
                             {viewMode === 'bunker' && (<BunkerInterior heroes={heroes} missions={visibleMissions.filter(m => m && !completedMissionIds.has(m.id))} onAssign={(heroId, missionId) => { const hIndex = heroes.findIndex(h => h.id === heroId); if(hIndex >= 0) { const newHeroes = [...heroes]; newHeroes[hIndex] = { ...newHeroes[hIndex], status: 'DEPLOYED', assignedMissionId: missionId }; setHeroes(newHeroes); return true; } return false; }} onUnassign={(heroId) => { const hIndex = heroes.findIndex(h => h.id === heroId); if(hIndex >= 0) { const newHeroes = [...heroes]; newHeroes[hIndex] = { ...newHeroes[hIndex], status: 'AVAILABLE', assignedMissionId: null }; setHeroes(newHeroes); } }} onAddHero={(hero) => setHeroes([...heroes, hero])} onToggleObjective={handleToggleHeroObjective} onBack={() => setViewMode('map')} language={lang} playerAlignment={playerAlignment} isEditorMode={isEditorMode} onTransformHero={handleTransformHero} onTickerUpdate={handleTickerUpdate} omegaCylinders={omegaCylinders} onFindCylinder={() => setOmegaCylinders(prev => prev + 1)} />)}
                             {viewMode === 'tutorial' && (<div className="absolute inset-0 z-40"><USAMap language={lang} missions={visibleMissions} completedMissionIds={completedMissionIds} onMissionComplete={() => {}} onMissionSelect={() => {}} onBunkerClick={() => {}} factionStates={FACTION_STATES} playerAlignment={playerAlignment} worldStage={worldStage} /><TutorialOverlay language={lang} onComplete={() => { if(user) localStorage.setItem(`shield_tutorial_seen_${user.uid}`, 'true'); setViewMode('map'); }} onStepChange={(stepKey) => { if (['roster', 'file', 'recruit'].includes(stepKey)) { setViewMode('bunker'); } }} /></div>)}
