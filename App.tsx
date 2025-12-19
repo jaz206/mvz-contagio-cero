@@ -98,7 +98,13 @@ const App: React.FC = () => {
     }, []);
 
     useEffect(() => {
-        if (!auth) { setLoadingAuth(false); setLoading(false); return; }
+        // Si auth es null (error de config), terminamos la carga para no bloquear la UI
+        if (!auth) { 
+            console.warn("Auth no inicializado. Modo offline/limitado.");
+            setLoadingAuth(false); 
+            setLoading(false); 
+            return; 
+        }
         const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
             setUser(currentUser);
             setLoadingAuth(false);
@@ -325,18 +331,21 @@ const App: React.FC = () => {
     const handleEventAcknowledge = () => setActiveGlobalEvent(null);
     const handleToggleHeroObjective = (heroId: string, idx: number) => { const hIndex = heroes.findIndex(h => h.id === heroId); if (hIndex >= 0) { const newHeroes = [...heroes]; const h = newHeroes[hIndex]; const indices = h.completedObjectiveIndices ? [...h.completedObjectiveIndices] : []; if (indices.includes(idx)) { newHeroes[hIndex] = { ...h, completedObjectiveIndices: indices.filter(i => i !== idx) }; } else { newHeroes[hIndex] = { ...h, completedObjectiveIndices: [...indices, idx] }; } setHeroes(newHeroes); } };
     
-    // --- LÓGICA DE TRANSFORMACIÓN (CURAR/INFECTAR) CORREGIDA ---
+    // --- LÓGICA DE TRANSFORMACIÓN (CURAR/INFECTAR) CORREGIDA Y ROBUSTA ---
     const handleTransformHero = async (heroId: string, targetAlignment: 'ALIVE' | 'ZOMBIE') => {
         const heroIndex = heroes.findIndex(h => h.id === heroId);
         if (heroIndex === -1) return;
 
         const currentHero = heroes[heroIndex];
 
+        // Función de limpieza más agresiva para encontrar coincidencias
         const cleanString = (str: string) => {
             return str.toLowerCase()
                 .replace(/\(z\)/g, '')       
                 .replace(/\(artist\)/g, '')  
                 .replace(/\(old man\)/g, '') 
+                .replace(/zombie/g, '') // Elimina prefijo "zombie"
+                .replace(/hero/g, '')   // Elimina prefijo "hero"
                 .replace(/[^a-z0-9]/g, '')   
                 .trim();
         };
@@ -349,8 +358,11 @@ const App: React.FC = () => {
                 const hAliasClean = cleanString(h.alias);
                 const hNameClean = cleanString(h.name || (h as HeroTemplate).defaultName);
                 
+                // Coincidencia exacta del string limpio
                 if (hAliasClean === currentAliasClean) return true;
                 if (hNameClean === currentNameClean) return true;
+                
+                // Coincidencia parcial (útil para variantes)
                 if (hAliasClean.includes(currentAliasClean) || currentAliasClean.includes(hAliasClean)) return true;
 
                 return false;
