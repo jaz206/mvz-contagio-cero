@@ -99,8 +99,13 @@ export const StoryMode: React.FC<StoryModeProps> = ({ language, onComplete, star
                           <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-transparent to-slate-950"></div>
                           
                           <div className="absolute inset-0 flex flex-col items-center justify-center p-8 text-center">
-                              <div className="w-24 h-24 rounded-full border-2 border-cyan-500 flex items-center justify-center mb-6 shadow-[0_0_30px_rgba(6,182,212,0.4)] group-hover:scale-110 transition-transform duration-300 bg-slate-900/80 backdrop-blur-sm">
-                                  <span className="text-5xl">🛡️</span>
+                              {/* LOGO SHIELD */}
+                              <div className="w-24 h-24 rounded-full border-2 border-cyan-500 flex items-center justify-center mb-6 shadow-[0_0_30px_rgba(6,182,212,0.4)] group-hover:scale-110 transition-transform duration-300 bg-slate-900/80 backdrop-blur-sm overflow-hidden">
+                                  <img 
+                                    src="https://i.pinimg.com/736x/63/1e/3a/631e3a68228c97963e78381ad11bf3bb.jpg" 
+                                    alt="SHIELD Logo" 
+                                    className="w-full h-full object-cover"
+                                  />
                               </div>
                               <h3 className="text-3xl font-black text-cyan-400 tracking-widest uppercase mb-2 group-hover:text-white transition-colors">S.H.I.E.L.D.</h3>
                               <p className="text-cyan-200/70 font-mono text-sm max-w-sm">"Salva lo que queda. Protege a los inocentes. Restaura el orden."</p>
@@ -126,13 +131,18 @@ export const StoryMode: React.FC<StoryModeProps> = ({ language, onComplete, star
                           `}
                           onClick={() => handleChoice('ZOMBIE')}
                       >
-                          {/* Imagen de fondo sutil (ACTUALIZADA) */}
+                          {/* Imagen de fondo sutil (ZOMBIE) */}
                           <div className="absolute inset-0 bg-[url('https://i.pinimg.com/736x/ca/43/c8/ca43c8db7918105fa66aa8cca2cd5699.jpg')] bg-cover bg-center opacity-20 group-hover:opacity-40 transition-opacity duration-500 mix-blend-luminosity"></div>
                           <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-transparent to-slate-950"></div>
 
                           <div className="absolute inset-0 flex flex-col items-center justify-center p-8 text-center">
-                              <div className="w-24 h-24 rounded-full border-2 border-lime-600 flex items-center justify-center mb-6 shadow-[0_0_30px_rgba(101,163,13,0.4)] group-hover:scale-110 transition-transform duration-300 bg-slate-900/80 backdrop-blur-sm">
-                                  <span className="text-5xl">🧟</span>
+                              {/* LOGO ZOMBIE (CORREGIDO) */}
+                              <div className="w-24 h-24 rounded-full border-2 border-lime-600 flex items-center justify-center mb-6 shadow-[0_0_30px_rgba(101,163,13,0.4)] group-hover:scale-110 transition-transform duration-300 bg-slate-900/80 backdrop-blur-sm overflow-hidden">
+                                  <img 
+                                    src="https://i.pinimg.com/736x/7b/e8/d2/7be8d2f25242523d131ff8d81b1385fc.jpg" 
+                                    alt="Zombie Logo" 
+                                    className="w-full h-full object-cover"
+                                  />
                               </div>
                               <h3 className="text-3xl font-black text-lime-500 tracking-widest uppercase mb-2 group-hover:text-white transition-colors">THE HUNGER</h3>
                               <p className="text-lime-200/70 font-mono text-sm max-w-sm">"Consume todo. Expande la plaga. Evoluciona."</p>
