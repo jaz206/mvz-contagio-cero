@@ -32,6 +32,9 @@ const BASE_GAME_MISSIONS: Mission[] = [
     { id: 'm_intro_0', title: "MH0: CADENAS ROTAS", description: [], objectives: [], location: { state: 'Ohio', coordinates: [0,0] }, threatLevel: 'N/A' }
 ];
 
+// --- CONTRASEÑA DE ADMINISTRADOR ---
+const ADMIN_PASSWORD = "A140138";
+
 interface DatabaseManagerProps {
     isOpen: boolean;
     onClose: () => void;
@@ -80,7 +83,7 @@ export const DatabaseManager: React.FC<DatabaseManagerProps> = ({ isOpen, onClos
         if (isOpen) loadData();
     }, [isOpen]);
 
-    // --- AGRUPACIÓN INTELIGENTE DE MISIONES (CORREGIDA) ---
+    // --- AGRUPACIÓN INTELIGENTE DE MISIONES ---
     const groupedMissions = useMemo(() => {
         const groups: Record<string, Mission[]> = {
             KINGPIN: [], MAGNETO: [], HULK: [], DOOM: [], NEUTRAL: [], GALACTUS: []
@@ -98,8 +101,6 @@ export const DatabaseManager: React.FC<DatabaseManagerProps> = ({ isOpen, onClos
         }
 
         filtered.forEach(m => {
-            // CORRECCIÓN: Solo tipo 'GALACTUS' va al grupo GALACTUS.
-            // Los tipos 'BOSS_...' ahora pasan al 'else' para ser clasificados por estado.
             if (m.type === 'GALACTUS') {
                 groups.GALACTUS.push(m);
             } else {
@@ -139,10 +140,45 @@ export const DatabaseManager: React.FC<DatabaseManagerProps> = ({ isOpen, onClos
         setShowMergeModal(true);
     };
 
-    const handleDeleteMission = async (id: string) => { if (window.confirm("¿ELIMINAR?")) { await deleteMissionInDB(id); loadData(); } };
-    const handleDeleteHero = async (id: string) => { if (window.confirm("¿ELIMINAR?")) { await deleteHeroInDB(id); loadData(); } };
-    const handleSync = async () => { if (window.confirm("¿SYNC?")) { setLoading(true); await seedExpansionsToDB(); await loadData(); setLoading(false); } };
-    const executeMerge = async () => { /* Lógica de fusión simplificada */ };
+    // --- FUNCIONES DE ELIMINACIÓN PROTEGIDAS ---
+    const handleDeleteMission = async (id: string) => { 
+        const password = prompt("⚠ ACCIÓN DESTRUCTIVA ⚠\n\nIntroduce la contraseña de administrador para eliminar esta misión:");
+        
+        if (password === ADMIN_PASSWORD) {
+            if (window.confirm("¿ESTÁS SEGURO? Esta acción no se puede deshacer.")) { 
+                await deleteMissionInDB(id); 
+                loadData(); 
+            }
+        } else if (password !== null) {
+            alert("⛔ ACCESO DENEGADO: Contraseña incorrecta.");
+        }
+    };
+
+    const handleDeleteHero = async (id: string) => { 
+        const password = prompt("⚠ ACCIÓN DESTRUCTIVA ⚠\n\nIntroduce la contraseña de administrador para eliminar este héroe:");
+        
+        if (password === ADMIN_PASSWORD) {
+            if (window.confirm("¿ESTÁS SEGURO? Esta acción no se puede deshacer.")) { 
+                await deleteHeroInDB(id); 
+                loadData(); 
+            }
+        } else if (password !== null) {
+            alert("⛔ ACCESO DENEGADO: Contraseña incorrecta.");
+        }
+    };
+
+    const handleSync = async () => { 
+        const password = prompt("⚠ REINICIO DE BASE DE DATOS ⚠\n\nEsto borrará todo y restaurará los valores por defecto.\nIntroduce contraseña:");
+        
+        if (password === ADMIN_PASSWORD) {
+            setLoading(true); 
+            await seedExpansionsToDB(); 
+            await loadData(); 
+            setLoading(false); 
+        } else if (password !== null) {
+            alert("⛔ ACCESO DENEGADO.");
+        }
+    };
 
     // --- HELPER PARA OBTENER NOMBRE DE PRERREQUISITO ---
     const getPrereqName = (prereqId: string) => {
@@ -197,6 +233,7 @@ export const DatabaseManager: React.FC<DatabaseManagerProps> = ({ isOpen, onClos
                     </div>
                 </div>
                 <div className="flex gap-4">
+                    <button onClick={handleSync} className="bg-orange-900/50 border border-orange-500 text-orange-300 px-4 py-2 text-xs font-bold hover:bg-orange-800">RESTAURAR DB</button>
                     <button onClick={onClose} className="bg-red-900/50 border border-red-500 text-red-300 px-4 py-2 text-xs font-bold hover:bg-red-800">CERRAR</button>
                 </div>
             </div>
