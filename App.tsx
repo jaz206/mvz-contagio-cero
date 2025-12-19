@@ -332,37 +332,31 @@ const App: React.FC = () => {
 
         const currentHero = heroes[heroIndex];
 
-        // Función auxiliar para limpiar nombres y facilitar la comparación
         const cleanString = (str: string) => {
             return str.toLowerCase()
-                .replace(/\(z\)/g, '')       // Quitar (Z)
-                .replace(/\(artist\)/g, '')  // Quitar (ARTIST)
-                .replace(/\(old man\)/g, '') // Quitar (OLD MAN)
-                .replace(/[^a-z0-9]/g, '')   // Quitar símbolos y espacios
+                .replace(/\(z\)/g, '')       
+                .replace(/\(artist\)/g, '')  
+                .replace(/\(old man\)/g, '') 
+                .replace(/[^a-z0-9]/g, '')   
                 .trim();
         };
 
         const currentAliasClean = cleanString(currentHero.alias);
         const currentNameClean = cleanString(currentHero.name);
 
-        // Función de búsqueda flexible
         const findMatch = (list: HeroTemplate[] | Hero[]) => {
             return list.find(h => {
                 const hAliasClean = cleanString(h.alias);
                 const hNameClean = cleanString(h.name || (h as HeroTemplate).defaultName);
                 
-                // 1. Coincidencia exacta de Alias limpio
                 if (hAliasClean === currentAliasClean) return true;
-                // 2. Coincidencia exacta de Nombre Real limpio (Elektra Natchios == Elektra Natchios)
                 if (hNameClean === currentNameClean) return true;
-                // 3. Búsqueda parcial (ej: "Daredevil Elektra" contiene "Elektra")
                 if (hAliasClean.includes(currentAliasClean) || currentAliasClean.includes(hAliasClean)) return true;
 
                 return false;
             });
         };
 
-        // 1. Buscar en Expansiones Locales
         let targetTemplate: HeroTemplate | null = null;
 
         for (const exp of GAME_EXPANSIONS) {
@@ -386,10 +380,8 @@ const App: React.FC = () => {
             }
         }
 
-        // 2. Si no está en locales, buscar en BBDD (Customs)
         if (!targetTemplate) {
             const allTemplates = await getHeroTemplates();
-            // Filtrar primero por bando para no encontrar al mismo personaje
             const candidates = allTemplates.filter(t => t.defaultAlignment === targetAlignment);
             const found = findMatch(candidates);
             if (found) targetTemplate = found;
