@@ -63,97 +63,92 @@ export const StoryMode: React.FC<StoryModeProps> = ({ language, onComplete, star
       setSelection(choice);
       setTimeout(() => {
           onComplete(choice);
-      }, 2500); // Un poco más de tiempo para apreciar la firma
+      }, 2000);
   };
 
   const renderContent = () => {
+      // --- PANTALLA DE SELECCIÓN REDISEÑADA ---
       if (isChoiceScreen) {
           return (
-              <div className="w-full h-full flex flex-col items-center justify-center p-8 bg-slate-100 relative overflow-hidden">
-                  <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/grid-me.png')] opacity-10"></div>
+              <div className="fixed inset-0 z-[70] bg-slate-950 flex flex-col font-mono overflow-hidden">
+                  {/* Fondo de rejilla táctica */}
+                  <div className="absolute inset-0 opacity-10 pointer-events-none bg-[linear-gradient(0deg,transparent_24%,rgba(6,182,212,0.3)_25%,rgba(6,182,212,0.3)_26%,transparent_27%,transparent_74%,rgba(6,182,212,0.3)_75%,rgba(6,182,212,0.3)_76%,transparent_77%,transparent),linear-gradient(90deg,transparent_24%,rgba(6,182,212,0.3)_25%,rgba(6,182,212,0.3)_26%,transparent_27%,transparent_74%,rgba(6,182,212,0.3)_75%,rgba(6,182,212,0.3)_76%,transparent_77%,transparent)] bg-[length:50px_50px]"></div>
                   
-                  <h2 className="text-4xl font-black text-slate-900 mb-2 tracking-tighter uppercase">Protocol Selection</h2>
-                  <div className="w-24 h-1 bg-red-600 mb-8"></div>
-                  
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8 w-full max-w-4xl z-10">
-                      {/* ALIVE - S.H.I.E.L.D. */}
-                      <button 
-                          onClick={() => handleChoice('ALIVE')}
-                          disabled={selection !== null}
-                          className={`group relative h-64 bg-white border border-slate-300 shadow-xl transition-all overflow-hidden flex flex-col
-                              ${selection === 'ZOMBIE' ? 'opacity-50 grayscale blur-sm' : 'hover:shadow-2xl hover:-translate-y-2'}
-                          `}
-                      >
-                          <div className="absolute inset-0 bg-blue-600/5 group-hover:bg-blue-600/10 transition-colors"></div>
-                          <div className="h-2 w-full bg-blue-600"></div>
-                          <div className="p-6 flex-1 flex flex-col items-center justify-center text-center">
-                              <span className="text-5xl mb-4 filter drop-shadow-md">🛡️</span>
-                              <h3 className="text-2xl font-bold text-slate-800">S.H.I.E.L.D. INITIATIVE</h3>
-                              <p className="text-xs text-slate-500 mt-2 font-mono">"Save what remains."</p>
-                          </div>
-                          <div className="p-3 bg-slate-50 border-t border-slate-200 w-full text-center">
-                              <span className="text-[10px] font-bold text-blue-700 tracking-widest">AUTHORIZE DEPLOYMENT</span>
-                          </div>
-                          
-                          {/* --- SELLO DE NICK FURY CORREGIDO --- */}
-                          {selection === 'ALIVE' && (
-                              <div className="absolute inset-0 flex items-center justify-center z-50 bg-white/80 backdrop-blur-[2px]">
-                                  <div 
-                                    className="border-[6px] border-blue-900 text-blue-900 p-6 flex flex-col items-center justify-center shadow-2xl relative overflow-hidden bg-blue-50 stamp-enter" 
-                                    style={{
-                                        maskImage: 'url(https://www.transparenttextures.com/patterns/grunge-wall.png)',
-                                        WebkitMaskImage: 'url(https://www.transparenttextures.com/patterns/grunge-wall.png)'
-                                    }}
-                                  >
-                                      {/* Marca de agua del águila */}
-                                      <div className="absolute inset-0 flex items-center justify-center opacity-10 text-8xl pointer-events-none select-none">🦅</div>
-                                      
-                                      <div className="text-xs font-black tracking-[0.4em] border-b-4 border-blue-900 mb-2 w-full text-center pb-1">S.H.I.E.L.D.</div>
-                                      <span className="text-4xl font-black tracking-tighter text-blue-900 uppercase">AUTHORIZED</span>
-                                      <span className="text-[9px] font-mono tracking-widest mt-2 uppercase font-bold">Clearance: Level 10 // OMEGA</span>
-                                      
-                                      {/* Firma de Nick Fury */}
-                                      <div className="mt-4 text-3xl text-blue-800 transform -rotate-6 font-bold" style={{ fontFamily: '"Brush Script MT", "Comic Sans MS", cursive' }}>
-                                          Nick Fury
-                                      </div>
-                                  </div>
-                              </div>
-                          )}
-                      </button>
+                  {/* Header */}
+                  <div className="relative z-10 text-center pt-12 pb-6">
+                      <h2 className="text-3xl md:text-5xl font-black tracking-[0.2em] text-white uppercase drop-shadow-[0_0_10px_rgba(255,255,255,0.5)]">
+                          {t.choose}
+                      </h2>
+                      <div className="w-64 h-1 bg-gradient-to-r from-transparent via-cyan-500 to-transparent mx-auto mt-4"></div>
+                      <p className="text-cyan-500 text-xs mt-2 tracking-widest animate-pulse">SYSTEM OVERRIDE REQUIRED</p>
+                  </div>
 
-                      {/* ZOMBIE - THE HUNGER */}
-                      <button 
-                           onClick={() => handleChoice('ZOMBIE')}
-                           disabled={selection !== null}
-                          className={`group relative h-64 bg-white border border-slate-300 shadow-xl transition-all overflow-hidden flex flex-col
-                              ${selection === 'ALIVE' ? 'opacity-50 grayscale blur-sm' : 'hover:shadow-2xl hover:-translate-y-2'}
+                  {/* Contenedor Dividido */}
+                  <div className="flex-1 flex flex-col md:flex-row relative z-10">
+                      
+                      {/* OPCIÓN: HÉROES (ALIVE) */}
+                      <div 
+                          className={`flex-1 relative group cursor-pointer transition-all duration-700 border-r border-slate-800 overflow-hidden
+                              ${selection === 'ZOMBIE' ? 'opacity-20 grayscale pointer-events-none' : ''}
+                              ${selection === 'ALIVE' ? 'flex-[2] bg-cyan-950/30' : 'hover:flex-[1.5] hover:bg-cyan-900/10'}
                           `}
+                          onClick={() => handleChoice('ALIVE')}
                       >
-                          <div className="absolute inset-0 bg-green-600/5 group-hover:bg-green-600/10 transition-colors"></div>
-                          <div className="h-2 w-full bg-green-600"></div>
-                          <div className="p-6 flex-1 flex flex-col items-center justify-center text-center">
-                              <span className="text-5xl mb-4 filter drop-shadow-md">🧟</span>
-                              <h3 className="text-2xl font-bold text-slate-800">THE HUNGER</h3>
-                              <p className="text-xs text-slate-500 mt-2 font-mono">"Consume everything."</p>
-                          </div>
-                          <div className="p-3 bg-slate-50 border-t border-slate-200 w-full text-center">
-                              <span className="text-[10px] font-bold text-green-700 tracking-widest">UNLEASH PATHOGEN</span>
-                          </div>
+                          {/* Imagen de fondo sutil */}
+                          <div className="absolute inset-0 bg-[url('https://i.pinimg.com/736x/43/45/8b/43458b29272370723226334336066223.jpg')] bg-cover bg-center opacity-20 group-hover:opacity-40 transition-opacity duration-500 mix-blend-luminosity"></div>
+                          <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-transparent to-slate-950"></div>
                           
-                          {/* SELLO ZOMBIE */}
-                          {selection === 'ZOMBIE' && (
-                              <div className="absolute inset-0 z-50 flex items-center justify-center pointer-events-none">
-                                  <div className="absolute text-5xl font-black text-red-900 tracking-widest border-[6px] border-red-900 p-4 stamp-enter-zombie bg-red-900/10" style={{maskImage: 'url(https://www.transparenttextures.com/patterns/grunge-wall.png)'}}>
-                                      INFECTED
-                                  </div>
+                          <div className="absolute inset-0 flex flex-col items-center justify-center p-8 text-center">
+                              <div className="w-24 h-24 rounded-full border-2 border-cyan-500 flex items-center justify-center mb-6 shadow-[0_0_30px_rgba(6,182,212,0.4)] group-hover:scale-110 transition-transform duration-300 bg-slate-900/80 backdrop-blur-sm">
+                                  <span className="text-5xl">🛡️</span>
                               </div>
-                          )}
-                      </button>
+                              <h3 className="text-3xl font-black text-cyan-400 tracking-widest uppercase mb-2 group-hover:text-white transition-colors">S.H.I.E.L.D.</h3>
+                              <p className="text-cyan-200/70 font-mono text-sm max-w-sm">"Salva lo que queda. Protege a los inocentes. Restaura el orden."</p>
+                              
+                              <div className={`mt-8 px-8 py-3 border border-cyan-500 text-cyan-400 text-xs font-bold tracking-[0.3em] uppercase transition-all duration-300 ${selection === 'ALIVE' ? 'bg-cyan-500 text-black scale-110' : 'group-hover:bg-cyan-500/20'}`}>
+                                  {selection === 'ALIVE' ? 'ACCESS GRANTED' : 'INITIATE PROTOCOL'}
+                              </div>
+                          </div>
+                      </div>
+
+                      {/* Separador Central (Rayo) */}
+                      <div className="hidden md:block absolute left-1/2 top-0 bottom-0 w-[1px] bg-white/20 z-20">
+                          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-8 h-8 bg-slate-950 border border-slate-700 rotate-45 flex items-center justify-center">
+                              <span className="text-xs text-gray-500 -rotate-45 font-bold">VS</span>
+                          </div>
+                      </div>
+
+                      {/* OPCIÓN: ZOMBIES (THE HUNGER) */}
+                      <div 
+                          className={`flex-1 relative group cursor-pointer transition-all duration-700 border-l border-slate-800 overflow-hidden
+                              ${selection === 'ALIVE' ? 'opacity-20 grayscale pointer-events-none' : ''}
+                              ${selection === 'ZOMBIE' ? 'flex-[2] bg-lime-950/30' : 'hover:flex-[1.5] hover:bg-lime-900/10'}
+                          `}
+                          onClick={() => handleChoice('ZOMBIE')}
+                      >
+                          {/* Imagen de fondo sutil (ACTUALIZADA) */}
+                          <div className="absolute inset-0 bg-[url('https://i.pinimg.com/736x/ca/43/c8/ca43c8db7918105fa66aa8cca2cd5699.jpg')] bg-cover bg-center opacity-20 group-hover:opacity-40 transition-opacity duration-500 mix-blend-luminosity"></div>
+                          <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-transparent to-slate-950"></div>
+
+                          <div className="absolute inset-0 flex flex-col items-center justify-center p-8 text-center">
+                              <div className="w-24 h-24 rounded-full border-2 border-lime-600 flex items-center justify-center mb-6 shadow-[0_0_30px_rgba(101,163,13,0.4)] group-hover:scale-110 transition-transform duration-300 bg-slate-900/80 backdrop-blur-sm">
+                                  <span className="text-5xl">🧟</span>
+                              </div>
+                              <h3 className="text-3xl font-black text-lime-500 tracking-widest uppercase mb-2 group-hover:text-white transition-colors">THE HUNGER</h3>
+                              <p className="text-lime-200/70 font-mono text-sm max-w-sm">"Consume todo. Expande la plaga. Evoluciona."</p>
+                              
+                              <div className={`mt-8 px-8 py-3 border border-lime-600 text-lime-500 text-xs font-bold tracking-[0.3em] uppercase transition-all duration-300 ${selection === 'ZOMBIE' ? 'bg-lime-600 text-black scale-110' : 'group-hover:bg-lime-600/20'}`}>
+                                  {selection === 'ZOMBIE' ? 'VIRUS RELEASED' : 'UNLEASH PATHOGEN'}
+                              </div>
+                          </div>
+                      </div>
+
                   </div>
               </div>
           );
       }
 
+      // --- PANTALLA DE HISTORIA (CARPETA) ---
       const slide = slides[currentIndex];
       if (!slide) return null;
 
@@ -208,26 +203,6 @@ export const StoryMode: React.FC<StoryModeProps> = ({ language, onComplete, star
 
   return (
     <div className="fixed inset-0 z-[60] bg-[#0f172a] flex items-center justify-center perspective-[1500px] overflow-hidden">
-      <style>{`
-        /* ANIMACIÓN PARA EL SELLO DE SHIELD */
-        .stamp-enter {
-            animation: stamp-blue 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
-        }
-        @keyframes stamp-blue {
-            0% { opacity: 0; transform: scale(3) rotate(5deg); }
-            100% { opacity: 1; transform: scale(1) rotate(-12deg); }
-        }
-
-        /* ANIMACIÓN PARA EL SELLO ZOMBIE */
-        .stamp-enter-zombie {
-            animation: stamp-red 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
-        }
-        @keyframes stamp-red {
-            0% { opacity: 0; transform: scale(3) rotate(-5deg); }
-            100% { opacity: 1; transform: scale(1) rotate(12deg); }
-        }
-      `}</style>
-
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_#1e293b_0%,_#020617_100%)]"></div>
       <div className="absolute inset-0 opacity-20" style={{backgroundImage: 'linear-gradient(#334155 1px, transparent 1px), linear-gradient(90deg, #334155 1px, transparent 1px)', backgroundSize: '40px 40px'}}></div>
 
@@ -240,24 +215,29 @@ export const StoryMode: React.FC<StoryModeProps> = ({ language, onComplete, star
           </button>
       )}
 
-      <div className={`relative w-[95%] h-[85%] max-w-6xl bg-[#d1d5db] shadow-[0_20px_50px_rgba(0,0,0,0.6)] transition-all duration-1000 ease-out transform-style-3d rounded-r-md border-l-8 border-slate-400 ${isFolderOpen ? 'rotate-x-0 translate-y-0 opacity-100' : 'rotate-x-20 translate-y-[100px] opacity-0'}`}>
-          <div className="absolute -top-6 left-0 w-48 h-8 bg-[#9ca3af] rounded-t-lg border-t border-x border-white/20 flex items-center px-4 shadow-inner">
-              <span className="text-[10px] font-bold text-slate-800 tracking-widest">PROJECT: LAZARUS</span>
-          </div>
+      {!isChoiceScreen && (
+        <div className={`relative w-[95%] h-[85%] max-w-6xl bg-[#d1d5db] shadow-[0_20px_50px_rgba(0,0,0,0.6)] transition-all duration-1000 ease-out transform-style-3d rounded-r-md border-l-8 border-slate-400 ${isFolderOpen ? 'rotate-x-0 translate-y-0 opacity-100' : 'rotate-x-20 translate-y-[100px] opacity-0'}`}>
+            <div className="absolute -top-6 left-0 w-48 h-8 bg-[#9ca3af] rounded-t-lg border-t border-x border-white/20 flex items-center px-4 shadow-inner">
+                <span className="text-[10px] font-bold text-slate-800 tracking-widest">PROJECT: LAZARUS</span>
+            </div>
 
-          <div className="w-full h-full bg-white relative overflow-hidden flex rounded-r-sm">
-              {renderContent()}
-              {pageTurn && <div className={`absolute inset-0 bg-black/10 z-50 transition-opacity duration-500 ${pageTurn ? 'opacity-100' : 'opacity-0'}`}></div>}
-          </div>
+            <div className="w-full h-full bg-white relative overflow-hidden flex rounded-r-sm">
+                {renderContent()}
+                {pageTurn && <div className={`absolute inset-0 bg-black/10 z-50 transition-opacity duration-500 ${pageTurn ? 'opacity-100' : 'opacity-0'}`}></div>}
+            </div>
 
-          {!isChoiceScreen && isFolderOpen && (
-              <div className="absolute -bottom-16 w-full flex justify-center gap-4">
-                  <button onClick={handlePrev} disabled={currentIndex === 0 || isAnimating} className={`w-12 h-12 rounded-full bg-slate-800 border border-slate-600 flex items-center justify-center text-white hover:bg-cyan-600 transition-all ${currentIndex === 0 ? 'opacity-30 cursor-not-allowed' : ''}`}>←</button>
-                  <div className="h-12 px-6 bg-slate-900/90 border border-slate-700 rounded-full flex items-center justify-center text-cyan-400 font-mono text-xs tracking-widest shadow-lg">SLIDE {currentIndex + 1} / {slides.length}</div>
-                  <button onClick={handleNext} disabled={isAnimating} className="w-12 h-12 rounded-full bg-slate-800 border border-slate-600 flex items-center justify-center text-white hover:bg-cyan-600 transition-all">→</button>
-              </div>
-          )}
-      </div>
+            {isFolderOpen && (
+                <div className="absolute -bottom-16 w-full flex justify-center gap-4">
+                    <button onClick={handlePrev} disabled={currentIndex === 0 || isAnimating} className={`w-12 h-12 rounded-full bg-slate-800 border border-slate-600 flex items-center justify-center text-white hover:bg-cyan-600 transition-all ${currentIndex === 0 ? 'opacity-30 cursor-not-allowed' : ''}`}>←</button>
+                    <div className="h-12 px-6 bg-slate-900/90 border border-slate-700 rounded-full flex items-center justify-center text-cyan-400 font-mono text-xs tracking-widest shadow-lg">SLIDE {currentIndex + 1} / {slides.length}</div>
+                    <button onClick={handleNext} disabled={isAnimating} className="w-12 h-12 rounded-full bg-slate-800 border border-slate-600 flex items-center justify-center text-white hover:bg-cyan-600 transition-all">→</button>
+                </div>
+            )}
+        </div>
+      )}
+
+      {/* Renderizar la pantalla de elección fuera del contenedor de la carpeta para que ocupe todo */}
+      {isChoiceScreen && renderContent()}
     </div>
   );
 };

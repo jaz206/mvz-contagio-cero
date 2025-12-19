@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { GAME_EXPANSIONS } from '../data/gameContent';
-import { getHeroTemplates } from '../services/dbService'; // Importamos el servicio
+import { getHeroTemplates } from '../services/dbService';
 import { Language } from '../translations';
 import { Hero, HeroTemplate } from '../types';
 
@@ -19,7 +19,6 @@ export const ExpansionSelector: React.FC<ExpansionSelectorProps> = ({
     ownedExpansions, onToggleExpansion, onToggleAllExpansions
 }) => {
     const [selectedHeroes, setSelectedHeroes] = useState<Hero[]>([]);
-    const [expandedBoxes, setExpandedBoxes] = useState<Set<string>>(new Set(['core_box'])); 
     const [searchTerm, setSearchTerm] = useState('');
     
     // Estado para los datos de la BBDD
@@ -49,27 +48,24 @@ export const ExpansionSelector: React.FC<ExpansionSelectorProps> = ({
     }, []);
 
     // 2. PROCESAR Y MEZCLAR DATOS (LOCAL + BBDD)
-    const filteredData = useMemo(() => {
+    const availableHeroes = useMemo(() => {
         if (loadingDb) return [];
 
+        let allHeroes: Hero[] = [];
         const processedIds = new Set<string>();
-        const resultBoxes = [];
 
-        // A) PROCESAR CAJAS OFICIALES
+        // A) PROCESAR CAJAS OFICIALES MARCADAS
         for (const exp of GAME_EXPANSIONS) {
-            // Seleccionar lista base según bando (del archivo local para saber qué va en cada caja)
+            // Solo procesar si la expansión está marcada como "owned"
+            if (!ownedExpansions.has(exp.id)) continue;
+
             const baseList = isZombie ? exp.zombieHeroes : exp.heroes;
 
-            // Mapear a datos de la BBDD si existen
             const heroesInBox = baseList.map(localHero => {
                 const dbVersion = dbHeroes.find(h => h.id === localHero.id);
-                
-                // Marcamos como procesado para no duplicarlo luego
                 processedIds.add(localHero.id);
 
                 if (dbVersion) {
-                    // Si existe en DB, usamos sus datos (stats editados, foto nueva, etc.)
-                    // Pero mantenemos la estructura de objeto 'Hero'
                     return {
                         ...localHero,
                         name: dbVersion.defaultName,
@@ -80,39 +76,23 @@ export const ExpansionSelector: React.FC<ExpansionSelectorProps> = ({
                         bio: dbVersion.bio || localHero.bio
                     };
                 }
-                return localHero; // Si no está en DB, usamos el local
+                return localHero;
             });
-
-            // Filtrar por búsqueda
-            const matchingHeroes = searchTerm 
-                ? heroesInBox.filter(h => h.alias.toLowerCase().includes(searchTerm.toLowerCase()) || h.name.toLowerCase().includes(searchTerm.toLowerCase()))
-                : heroesInBox;
-
-            // Solo añadimos la caja si tiene héroes de este bando
-            if (matchingHeroes.length > 0 || !searchTerm) {
-                resultBoxes.push({
-                    ...exp,
-                    heroesToShow: matchingHeroes
-                });
-            }
+            allHeroes = [...allHeroes, ...heroesInBox];
         }
 
-        // B) PROCESAR HÉROES CUSTOM (Creados en el Editor y que no están en cajas oficiales)
+        // B) PROCESAR HÉROES CUSTOM (Siempre disponibles si coinciden con el bando)
         const customHeroes = dbHeroes.filter(h => {
-            // 1. Que no haya sido procesado ya en una caja oficial
             const notProcessed = !processedIds.has(h.id);
-            // 2. Que coincida con el bando actual
             const matchesAlignment = h.defaultAlignment === playerAlignment;
-            // 3. Que coincida con la búsqueda
-            const matchesSearch = searchTerm 
-                ? (h.alias.toLowerCase().includes(searchTerm.toLowerCase()) || h.defaultName.toLowerCase().includes(searchTerm.toLowerCase()))
-                : true;
-
-            return notProcessed && matchesAlignment && matchesSearch;
+            // Solo incluir si no pertenece a una expansión oficial o si esa expansión está marcada
+            // (Asumimos que los custom sin expansionId son "custom_database")
+            const isCustomBox = !h.expansionId || h.expansionId === 'custom_database';
+            
+            return notProcessed && matchesAlignment && isCustomBox;
         });
 
         if (customHeroes.length > 0) {
-            // Convertir HeroTemplate a Hero
             const formattedCustomHeroes: Hero[] = customHeroes.map(h => ({
                 id: h.id,
                 templateId: h.id,
@@ -127,26 +107,20 @@ export const ExpansionSelector: React.FC<ExpansionSelectorProps> = ({
                 objectives: h.objectives || [],
                 currentStory: h.currentStory || ''
             }));
-
-            resultBoxes.push({
-                id: 'custom_database',
-                name: 'S.H.I.E.L.D. DATABASE (CUSTOM)',
-                heroes: formattedCustomHeroes, // No importa donde lo pongamos, usaremos heroesToShow
-                zombieHeroes: [],
-                heroesToShow: formattedCustomHeroes
-            });
+            allHeroes = [...allHeroes, ...formattedCustomHeroes];
         }
 
-        return resultBoxes;
+        // Filtrar por búsqueda
+        if (searchTerm) {
+            allHeroes = allHeroes.filter(h => 
+                h.alias.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                h.name.toLowerCase().includes(searchTerm.toLowerCase())
+            );
+        }
 
-    }, [isZombie, searchTerm, dbHeroes, loadingDb, playerAlignment]);
+        return allHeroes;
 
-    const toggleBox = (id: string) => {
-        const newSet = new Set(expandedBoxes);
-        if (newSet.has(id)) newSet.delete(id);
-        else newSet.add(id);
-        setExpandedBoxes(newSet);
-    };
+    }, [isZombie, searchTerm, dbHeroes, loadingDb, playerAlignment, ownedExpansions]);
 
     const toggleHero = (hero: Hero) => {
         const isSelected = selectedHeroes.some(h => h.id === hero.id);
@@ -169,123 +143,193 @@ export const ExpansionSelector: React.FC<ExpansionSelectorProps> = ({
     return (
         <div className="fixed inset-0 z-[80] bg-slate-950 flex flex-col font-mono h-screen w-screen overflow-hidden">
             
-            {/* FONDO */}
-            <div className={`absolute inset-0 opacity-10 pointer-events-none bg-[linear-gradient(0deg,transparent_24%,${isZombie ? '#84cc16' : '#06b6d4'}_25%,${isZombie ? '#84cc16' : '#06b6d4'}_26%,transparent_27%,transparent_74%,${isZombie ? '#84cc16' : '#06b6d4'}_75%,${isZombie ? '#84cc16' : '#06b6d4'}_76%,transparent_77%,transparent),linear-gradient(90deg,transparent_24%,${isZombie ? '#84cc16' : '#06b6d4'}_25%,${isZombie ? '#84cc16' : '#06b6d4'}_26%,transparent_27%,transparent_74%,${isZombie ? '#84cc16' : '#06b6d4'}_75%,${isZombie ? '#84cc16' : '#06b6d4'}_76%,transparent_77%,transparent)] bg-[length:50px_50px]`}></div>
-
             {/* HEADER */}
-            <div className={`flex-none p-4 border-b-2 ${borderColor} bg-slate-900 z-20 shadow-2xl flex flex-col md:flex-row justify-between items-center gap-4 relative`}>
-                <div className="flex items-center gap-4 w-full md:w-auto">
-                    <button onClick={onBack} className={`w-10 h-10 flex items-center justify-center border-2 ${borderColor} text-white hover:bg-white/10 transition-colors font-bold text-xl`}>←</button>
-                    <div>
-                        <h2 className={`text-xl md:text-2xl font-black tracking-[0.2em] uppercase ${textColor} flex items-center gap-3 drop-shadow-md`}>
-                            <span className="text-3xl">{isZombie ? '🧟' : '🛡️'}</span>
-                            {language === 'es' ? 'RECLUTAMIENTO' : 'RECRUITMENT'}
-                        </h2>
-                        <p className="text-xs text-white font-bold tracking-widest mt-1">
-                            {language === 'es' ? 'SELECCIONA TU EQUIPO Y EXPANSIONES' : 'SELECT YOUR SQUAD AND EXPANSIONS'}
-                        </p>
+            <div className={`flex-none h-16 border-b border-slate-800 bg-slate-900 flex items-center justify-between px-6 z-20 shadow-lg`}>
+                <div className="flex items-center gap-4">
+                    <button onClick={onBack} className="text-gray-400 hover:text-white text-xl font-bold">←</button>
+                    <h2 className={`text-xl font-black tracking-[0.2em] uppercase ${textColor}`}>
+                        {language === 'es' ? 'RECLUTAMIENTO TÁCTICO' : 'TACTICAL RECRUITMENT'}
+                    </h2>
+                </div>
+                <div className="flex items-center gap-4">
+                    <div className="relative w-64">
+                        <input 
+                            type="text" 
+                            value={searchTerm} 
+                            onChange={(e) => setSearchTerm(e.target.value)} 
+                            placeholder={language === 'es' ? "BUSCAR AGENTE..." : "SEARCH AGENT..."} 
+                            className="w-full bg-slate-950 border border-slate-700 p-2 pl-8 text-xs text-white focus:border-cyan-500 outline-none rounded-sm" 
+                        />
+                        <span className="absolute left-2 top-2 text-gray-500 text-xs">🔍</span>
                     </div>
-                </div>
-                <div className="flex gap-2">
-                    <button onClick={() => onToggleAllExpansions(true)} className="text-[9px] bg-white/10 hover:bg-white/20 text-white px-2 py-1 border border-white/30 rounded uppercase">{language === 'es' ? 'MARCAR TODAS' : 'CHECK ALL'}</button>
-                    <button onClick={() => onToggleAllExpansions(false)} className="text-[9px] bg-black/30 hover:bg-black/50 text-gray-400 px-2 py-1 border border-white/10 rounded uppercase">{language === 'es' ? 'DESMARCAR TODAS' : 'UNCHECK ALL'}</button>
-                </div>
-                <div className="relative w-full md:w-64">
-                    <input type="text" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} placeholder={language === 'es' ? "BUSCAR AGENTE..." : "SEARCH AGENT..."} className={`w-full bg-black border-2 ${borderColor} p-2 pl-8 text-xs text-white placeholder-gray-500 focus:outline-none focus:bg-slate-900 transition-colors uppercase font-bold shadow-inner`} />
-                    <span className="absolute left-2 top-2 text-white font-bold text-xs">🔍</span>
+                    <button 
+                        onClick={handleConfirm} 
+                        disabled={selectedHeroes.length === 0} 
+                        className={`px-6 py-2 font-bold text-xs tracking-widest uppercase transition-all ${selectedHeroes.length > 0 ? `${bgColor} text-white hover:brightness-110 shadow-lg` : 'bg-slate-800 text-gray-500 cursor-not-allowed'}`}
+                    >
+                        {language === 'es' ? 'DESPLEGAR EQUIPO' : 'DEPLOY SQUAD'}
+                    </button>
                 </div>
             </div>
 
-            {/* MAIN CONTENT */}
-            <div className="flex-1 overflow-y-auto p-4 md:p-8 scrollbar-thin scrollbar-thumb-slate-600 relative z-10">
-                {loadingDb ? (
-                    <div className="flex flex-col items-center justify-center h-64 gap-4">
-                        <div className={`w-12 h-12 border-4 border-t-transparent rounded-full animate-spin ${borderColor}`}></div>
-                        <div className="text-xs font-bold tracking-widest animate-pulse">SINCRONIZANDO BASE DE DATOS...</div>
+            {/* MAIN CONTENT - TRÍPTICO */}
+            <div className="flex-1 flex overflow-hidden relative">
+                
+                {/* COLUMNA 1: EXPANSIONES (20%) */}
+                <div className="w-1/5 bg-slate-900 border-r border-slate-800 flex flex-col min-w-[250px]">
+                    <div className="p-3 bg-slate-950 border-b border-slate-800 flex justify-between items-center">
+                        <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest">ARSENAL (EXPANSIONES)</h3>
+                        <div className="flex gap-1">
+                            <button onClick={() => onToggleAllExpansions(true)} className="text-[9px] text-cyan-500 hover:text-white px-1">ALL</button>
+                            <span className="text-gray-600">|</span>
+                            <button onClick={() => onToggleAllExpansions(false)} className="text-[9px] text-gray-500 hover:text-white px-1">NONE</button>
+                        </div>
                     </div>
-                ) : (
-                    <div className="max-w-5xl mx-auto space-y-6 pb-8">
-                        {filteredData.map((exp) => {
-                            const isOpen = expandedBoxes.has(exp.id) || searchTerm.length > 0;
-                            // Si es la caja custom, siempre se considera "comprada"
-                            const isOwned = exp.id === 'custom_database' || ownedExpansions.has(exp.id);
-                            
-                            // Si no hay héroes que mostrar en esta caja (por filtro de bando), no la renderizamos
-                            if (exp.heroesToShow.length === 0) return null;
-
+                    <div className="flex-1 overflow-y-auto p-2 space-y-1 scrollbar-thin scrollbar-thumb-slate-700">
+                        {GAME_EXPANSIONS.map(exp => {
+                            const isOwned = ownedExpansions.has(exp.id);
                             return (
-                                <div key={exp.id} className={`border-2 ${isOwned ? borderColor : 'border-slate-700'} bg-slate-900 shadow-lg transition-all duration-300 ${!isOwned ? 'opacity-70' : ''}`}>
-                                    <div className={`w-full flex justify-between items-center p-3 transition-colors ${isOpen ? `bg-slate-800 border-b-2 ${isOwned ? borderColor : 'border-slate-700'}` : 'bg-slate-900'}`}>
-                                        <div className="flex items-center gap-4 flex-1">
-                                            {/* Checkbox de propiedad (oculto para custom) */}
-                                            {exp.id !== 'custom_database' && (
-                                                <div onClick={(e) => { e.stopPropagation(); onToggleExpansion(exp.id); }} className={`w-6 h-6 border-2 flex items-center justify-center cursor-pointer transition-all ${isOwned ? `${borderColor} bg-black text-white` : 'border-slate-600 bg-slate-800'}`}>
-                                                    {isOwned && '✓'}
+                                <div 
+                                    key={exp.id} 
+                                    onClick={() => onToggleExpansion(exp.id)}
+                                    className={`flex items-center gap-3 p-3 cursor-pointer transition-all border-l-2 ${isOwned ? `bg-slate-800 ${isZombie ? 'border-lime-500' : 'border-cyan-500'}` : 'bg-transparent border-transparent hover:bg-slate-800/50'}`}
+                                >
+                                    <div className={`w-4 h-4 border flex items-center justify-center ${isOwned ? `${isZombie ? 'bg-lime-600 border-lime-500' : 'bg-cyan-600 border-cyan-500'} text-black` : 'border-slate-600'}`}>
+                                        {isOwned && <span className="text-[10px] font-bold">✓</span>}
+                                    </div>
+                                    <span className={`text-[10px] font-bold uppercase ${isOwned ? 'text-white' : 'text-gray-500'}`}>{exp.name}</span>
+                                </div>
+                            );
+                        })}
+                        {/* Custom DB siempre visible */}
+                        <div className="flex items-center gap-3 p-3 bg-slate-800/30 border-l-2 border-purple-500 cursor-default opacity-80">
+                            <div className="w-4 h-4 bg-purple-600 flex items-center justify-center text-black text-[10px] font-bold">✓</div>
+                            <span className="text-[10px] font-bold uppercase text-purple-300">CUSTOM DATABASE</span>
+                        </div>
+                    </div>
+                </div>
+
+                {/* COLUMNA 2: POOL DE HÉROES (60%) */}
+                <div className="flex-1 bg-slate-950 relative overflow-hidden flex flex-col">
+                    <div className="p-3 border-b border-slate-800 flex justify-between items-center bg-slate-900/50">
+                        <h3 className={`text-xs font-bold uppercase tracking-widest ${textColor}`}>AGENTES DISPONIBLES ({availableHeroes.length})</h3>
+                        <div className="text-[10px] text-gray-500">SELECCIONA PARA AÑADIR AL ESCUADRÓN</div>
+                    </div>
+                    
+                    <div className="flex-1 overflow-y-auto p-4 scrollbar-thin scrollbar-thumb-slate-700">
+                        {loadingDb ? (
+                            <div className="flex flex-col items-center justify-center h-full text-gray-500 animate-pulse">
+                                <div className="text-2xl mb-2">✇</div>
+                                <div className="text-xs tracking-widest">ACCEDIENDO A LA BASE DE DATOS...</div>
+                            </div>
+                        ) : (
+                            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+                                {availableHeroes.map(hero => {
+                                    const isSelected = selectedHeroes.some(h => h.id === hero.id);
+                                    const isDisabled = !isSelected && selectedHeroes.length >= 6;
+
+                                    return (
+                                        <div 
+                                            key={hero.id} 
+                                            onClick={() => !isDisabled && toggleHero(hero)}
+                                            className={`
+                                                relative group cursor-pointer border transition-all duration-200 overflow-hidden aspect-[3/4]
+                                                ${isSelected 
+                                                    ? `${borderColor} ring-2 ring-offset-2 ring-offset-slate-950 ${isZombie ? 'ring-lime-500/50' : 'ring-cyan-500/50'}` 
+                                                    : isDisabled 
+                                                        ? 'border-slate-800 opacity-30 grayscale cursor-not-allowed' 
+                                                        : 'border-slate-700 hover:border-white hover:scale-[1.02] hover:shadow-xl hover:z-10'
+                                                }
+                                            `}
+                                        >
+                                            {/* Imagen */}
+                                            <img src={hero.imageUrl} alt={hero.alias} className="w-full h-full object-cover" />
+                                            
+                                            {/* Overlay Gradiente */}
+                                            <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent opacity-80"></div>
+
+                                            {/* Info */}
+                                            <div className="absolute bottom-0 left-0 right-0 p-2">
+                                                <div className={`text-[10px] font-black uppercase truncate ${isSelected ? textColor : 'text-white'}`}>{hero.alias}</div>
+                                                <div className="text-[8px] text-gray-400 font-mono">{hero.class}</div>
+                                            </div>
+
+                                            {/* Check de Selección */}
+                                            {isSelected && (
+                                                <div className={`absolute top-2 right-2 w-6 h-6 ${bgColor} flex items-center justify-center text-black font-bold shadow-lg`}>
+                                                    ✓
                                                 </div>
                                             )}
-                                            <button onClick={() => toggleBox(exp.id)} className="flex items-center gap-3 flex-1 text-left">
-                                                <span className={`text-sm md:text-lg font-black tracking-widest uppercase ${isOwned ? 'text-white' : 'text-gray-500'} drop-shadow-md`}>{exp.name}</span>
-                                                {!isOwned && <span className="text-[9px] bg-slate-700 text-gray-400 px-2 py-0.5 rounded">NOT OWNED</span>}
-                                            </button>
                                         </div>
-                                        <button onClick={() => toggleBox(exp.id)} className={`text-xs font-bold px-3 py-1.5 rounded border ${isOwned ? `${borderColor} ${textColor}` : 'border-slate-600 text-slate-500'} bg-black shrink-0 ml-2`}>
-                                            {isOpen ? '▲' : '▼'} {exp.heroesToShow.length}
-                                        </button>
-                                    </div>
+                                    );
+                                })}
+                            </div>
+                        )}
+                    </div>
+                </div>
 
-                                    {isOpen && (
-                                        <div className={`p-4 bg-black/40 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 animate-fade-in ${!isOwned ? 'grayscale opacity-50 pointer-events-none' : ''}`}>
-                                            {exp.heroesToShow.map(hero => {
-                                                const isSelected = selectedHeroes.some(h => h.id === hero.id);
-                                                const isDisabled = !isSelected && selectedHeroes.length >= 6;
-                                                return (
-                                                    <div key={hero.id} onClick={() => !isDisabled && toggleHero(hero)} className={`relative group cursor-pointer border-2 transition-all duration-200 overflow-hidden rounded-sm ${isSelected ? `${borderColor} bg-slate-800 ${glowClass} transform scale-105 z-10` : isDisabled ? 'border-slate-700 opacity-30 grayscale cursor-not-allowed' : 'border-slate-600 bg-slate-900 hover:border-white hover:bg-slate-800'}`}>
-                                                        {isSelected && <div className={`absolute top-0 right-0 p-1.5 z-20 ${bgColor} shadow-lg border-l border-b border-black`}><svg className="w-4 h-4 text-black font-bold" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="4"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7"></path></svg></div>}
-                                                        <div className="aspect-[4/5] w-full overflow-hidden relative bg-black">
-                                                            <img src={hero.imageUrl} alt={hero.alias} className={`w-full h-full object-cover transition-transform duration-500 ${isSelected ? 'scale-110' : 'group-hover:scale-110'}`} />
-                                                            <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent opacity-90"></div>
-                                                        </div>
-                                                        <div className="absolute bottom-0 left-0 right-0 p-2 border-t border-white/20 bg-slate-900/95">
-                                                            <div className={`text-[10px] md:text-xs font-black truncate uppercase ${isSelected ? textColor : 'text-white'}`}>{hero.alias}</div>
-                                                            <div className="text-[9px] text-gray-400 font-mono">{hero.class}</div>
-                                                        </div>
-                                                    </div>
-                                                );
-                                            })}
-                                        </div>
+                {/* COLUMNA 3: ESCUADRÓN (20%) */}
+                <div className="w-1/5 bg-slate-900 border-l border-slate-800 flex flex-col min-w-[200px]">
+                    <div className={`p-4 border-b border-slate-800 ${selectedHeroes.length === 6 ? 'bg-red-900/20' : 'bg-slate-950'}`}>
+                        <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1">ESCUADRÓN ACTIVO</h3>
+                        <div className={`text-2xl font-black ${selectedHeroes.length === 6 ? 'text-red-500 animate-pulse' : textColor}`}>
+                            {selectedHeroes.length} / 6
+                        </div>
+                    </div>
+
+                    <div className="flex-1 overflow-y-auto p-3 space-y-2 scrollbar-thin scrollbar-thumb-slate-700">
+                        {/* Slots Vacíos o Llenos */}
+                        {[...Array(6)].map((_, i) => {
+                            const hero = selectedHeroes[i];
+                            return (
+                                <div 
+                                    key={i} 
+                                    className={`
+                                        relative h-20 border flex items-center justify-center transition-all
+                                        ${hero 
+                                            ? `${borderColor} bg-slate-800 cursor-pointer group` 
+                                            : 'border-slate-800 border-dashed bg-slate-950/50'
+                                        }
+                                    `}
+                                    onClick={() => hero && toggleHero(hero)}
+                                >
+                                    {hero ? (
+                                        <>
+                                            <div className="absolute inset-0 flex">
+                                                <div className="w-20 h-full shrink-0 relative">
+                                                    <img src={hero.imageUrl} className="w-full h-full object-cover" alt="" />
+                                                    <div className="absolute inset-0 bg-gradient-to-r from-transparent to-slate-800"></div>
+                                                </div>
+                                                <div className="flex-1 p-2 flex flex-col justify-center min-w-0">
+                                                    <div className={`text-[10px] font-bold truncate ${textColor}`}>{hero.alias}</div>
+                                                    <div className="text-[8px] text-gray-500">{hero.class}</div>
+                                                </div>
+                                            </div>
+                                            {/* Botón de eliminar al hover */}
+                                            <div className="absolute right-2 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                <div className="w-6 h-6 bg-red-600 text-white flex items-center justify-center rounded-full text-[10px] font-bold shadow-md">✕</div>
+                                            </div>
+                                        </>
+                                    ) : (
+                                        <span className="text-slate-700 font-black text-2xl select-none">{i + 1}</span>
                                     )}
                                 </div>
                             );
                         })}
                     </div>
-                )}
-            </div>
 
-            {/* FOOTER */}
-            <div className={`flex-none h-28 border-t-4 ${borderColor} bg-slate-900 z-50 flex items-center px-4 md:px-8 justify-between shadow-[0_-10px_50px_rgba(0,0,0,1)]`}>
-                <div className="flex items-center gap-3 overflow-x-auto flex-1 mr-4 scrollbar-hide py-2">
-                    <div className="flex flex-col justify-center mr-4 shrink-0 text-center">
-                        <span className={`text-4xl font-black ${selectedHeroes.length === 6 ? 'text-red-500 animate-pulse' : textColor}`}>{selectedHeroes.length}/6</span>
-                        <span className="text-[10px] text-white font-bold tracking-[0.2em]">SQUAD</span>
+                    {/* Botón Confirmar (Móvil o redundancia) */}
+                    <div className="p-4 border-t border-slate-800 bg-slate-950">
+                        <button 
+                            onClick={handleConfirm} 
+                            disabled={selectedHeroes.length === 0}
+                            className={`w-full py-3 font-bold text-xs tracking-widest uppercase transition-all ${selectedHeroes.length > 0 ? `${bgColor} text-white hover:brightness-110` : 'bg-slate-800 text-gray-600 cursor-not-allowed'}`}
+                        >
+                            CONFIRMAR
+                        </button>
                     </div>
-                    {[...Array(6)].map((_, i) => {
-                        const hero = selectedHeroes[i];
-                        return (
-                            <div key={i} onClick={() => hero && toggleHero(hero)} className={`w-16 h-20 border-2 shrink-0 relative flex items-center justify-center transition-all group ${hero ? `${borderColor} cursor-pointer bg-slate-800` : 'border-slate-700 bg-black border-dashed'}`}>
-                                {hero ? (
-                                    <>
-                                        <img src={hero.imageUrl} className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity" alt="" />
-                                        <div className="absolute -top-2 -right-2 bg-red-600 text-white rounded-full w-5 h-5 flex items-center justify-center text-[10px] font-bold shadow-md opacity-0 group-hover:opacity-100 transition-opacity z-10 border border-white">✕</div>
-                                        <div className="absolute bottom-0 left-0 right-0 bg-black text-[8px] text-white text-center py-0.5 truncate px-1 font-bold">{hero.alias}</div>
-                                    </>
-                                ) : <span className="text-slate-600 text-xl font-bold">{i + 1}</span>}
-                            </div>
-                        );
-                    })}
                 </div>
-                <button onClick={handleConfirm} disabled={selectedHeroes.length === 0} className={`px-8 py-4 font-black tracking-[0.2em] text-sm transition-all shadow-lg shrink-0 border-2 ${selectedHeroes.length > 0 ? isZombie ? 'bg-lime-600 hover:bg-lime-500 text-black border-lime-400 hover:shadow-[0_0_20px_rgba(132,204,22,0.8)]' : 'bg-cyan-600 hover:bg-cyan-500 text-black border-cyan-400 hover:shadow-[0_0_20px_rgba(6,182,212,0.8)]' : 'bg-slate-800 text-slate-500 cursor-not-allowed border-slate-600'}`}>
-                    {language === 'es' ? 'DESPLEGAR' : 'DEPLOY'}
-                </button>
+
             </div>
         </div>
     );
