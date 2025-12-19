@@ -229,7 +229,7 @@ export const translations = {
             },
             {
                 text: "Te tocas el cuello. El piloto LED del collar inhibidor está apagado. El impacto ha frito los circuitos. Estáis libres. Pero en este mundo, la libertad tiene un precio: ahora sois presas. El humo negro es una baliza; el ruido del choque, una campana de cena para cada mordedor hambriento en cinco kilómetros a la redonda. Ya puedes oír sus gruñidos mezclándose con sirenas distantes.",
-                image: "https://i.postimg.cc/FHdhNV6n/Image-to-Video.gif"
+                image: "https://i.postimg.cc/JnyLZtZn/Animacion-realista-de-imagen-estatica.gif"
             },
             {
                 text: "Una figura aparece recortada por las llamas. No lleva el uniforme de la Tríada. Os tiende una mano llena de cicatrices y grasa. “Podéis quedaros ahí tirados y ser el aperitivo, o podéis levantaros y ser los que aprietan el gatillo. El refugio está cerca… pero el asfalto se va a teñir de rojo antes de que lleguemos.”",
@@ -525,7 +525,7 @@ export const translations = {
             },
             {
                 text: "You touch your neck. The inhibitor collar's LED is off. The impact fried the circuits. You are free. But in this world, freedom comes at a price: now you are prey. The black smoke is a beacon; the crash noise, a dinner bell for every hungry biter within five kilometers. You can already hear their growls mixing with distant sirens.",
-                image: "https://i.postimg.cc/FHdhNV6n/Image-to-Video.gif"
+                image: "https://i.postimg.cc/JnyLZtZn/Animacion-realista-de-imagen-estatica.gif"
             },
             {
                 text: "A figure appears silhouetted by the flames. She doesn't wear the Triad uniform. She extends a hand covered in scars and grease. 'You can stay there lying down and be the appetizer, or you can get up and be the ones pulling the trigger. The shelter is close... but the asphalt is going to run red before we get there.'",
