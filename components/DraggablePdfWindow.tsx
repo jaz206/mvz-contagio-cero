@@ -21,6 +21,24 @@ export const DraggablePdfWindow: React.FC<DraggablePdfWindowProps> = ({ url, tit
     // Referencias para guardar estado previo al maximizar
     const prevBounds = useRef({ x: 50, y: 50, w: 600, h: 500 });
 
+    // --- LÓGICA DE URL INTELIGENTE ---
+    const getEmbedUrl = (originalUrl: string) => {
+        // Caso 1: Google Drive
+        if (originalUrl.includes('drive.google.com')) {
+            // Convertir /view o /edit a /preview para que funcione el embed
+            return originalUrl.replace(/\/view.*/, '/preview').replace(/\/edit.*/, '/preview');
+        }
+        // Caso 2: Dropbox (forzar renderizado)
+        if (originalUrl.includes('dropbox.com')) {
+            return originalUrl.replace('?dl=0', '').replace('?dl=1', '') + '?raw=1';
+        }
+        // Caso 3: PDF Directo
+        return originalUrl;
+    };
+
+    const embedUrl = getEmbedUrl(url);
+    const isGoogleDrive = url.includes('drive.google.com');
+
     // Lógica de Arrastre (Drag)
     const handleMouseDown = (e: React.MouseEvent) => {
         if (isMaximized) return;
@@ -62,24 +80,26 @@ export const DraggablePdfWindow: React.FC<DraggablePdfWindowProps> = ({ url, tit
         if (isDragging || isResizing) {
             window.addEventListener('mousemove', handleMouseMove);
             window.addEventListener('mouseup', handleMouseUp);
+            // Añadir clase al body para evitar selección de texto mientras se arrastra
+            document.body.style.userSelect = 'none';
+        } else {
+            document.body.style.userSelect = '';
         }
 
         return () => {
             window.removeEventListener('mousemove', handleMouseMove);
             window.removeEventListener('mouseup', handleMouseUp);
+            document.body.style.userSelect = '';
         };
     }, [isDragging, isResizing, dragOffset, position]);
 
     const toggleMaximize = () => {
         if (isMaximized) {
-            // Restaurar
             setPosition({ x: prevBounds.current.x, y: prevBounds.current.y });
             setSize({ w: prevBounds.current.w, h: prevBounds.current.h });
         } else {
-            // Guardar estado actual y Maximizar
             prevBounds.current = { ...position, ...size };
             setPosition({ x: 0, y: 0 });
-            // Usamos CSS para el tamaño full, pero reseteamos posición
         }
         setIsMaximized(!isMaximized);
         setIsMinimized(false);
@@ -89,9 +109,6 @@ export const DraggablePdfWindow: React.FC<DraggablePdfWindowProps> = ({ url, tit
         setIsMinimized(!isMinimized);
         if (isMaximized) setIsMaximized(false);
     };
-
-    // URL del visor de Google
-    const viewerUrl = `https://docs.google.com/gview?url=${encodeURIComponent(url)}&embedded=true`;
 
     // Estilos dinámicos
     const windowStyle: React.CSSProperties = {
@@ -113,11 +130,23 @@ export const DraggablePdfWindow: React.FC<DraggablePdfWindowProps> = ({ url, tit
                 onMouseDown={handleMouseDown}
                 className={`flex justify-between items-center p-2 bg-slate-800 border-b border-cyan-700 select-none ${isMaximized ? '' : 'cursor-move'}`}
             >
-                <div className="flex items-center gap-2 text-cyan-400 font-bold text-xs tracking-widest">
+                <div className="flex items-center gap-2 text-cyan-400 font-bold text-xs tracking-widest overflow-hidden">
                     <span>📄</span>
                     <span className="truncate max-w-[200px]">{title}</span>
                 </div>
-                <div className="flex gap-1">
+                <div className="flex gap-1 items-center">
+                    {/* Botón Abrir Externo */}
+                    <a 
+                        href={url} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="w-6 h-6 flex items-center justify-center bg-slate-700 hover:bg-cyan-800 text-cyan-300 text-xs border border-slate-600 mr-2"
+                        title="Abrir en pestaña nueva"
+                        onMouseDown={(e) => e.stopPropagation()} // Evitar arrastre al hacer click
+                    >
+                        ↗
+                    </a>
+
                     {/* Botón Minimizar */}
                     <button onClick={toggleMinimize} className="w-6 h-6 flex items-center justify-center bg-slate-700 hover:bg-cyan-800 text-white text-xs border border-slate-600">
                         _
@@ -133,17 +162,35 @@ export const DraggablePdfWindow: React.FC<DraggablePdfWindowProps> = ({ url, tit
                 </div>
             </div>
 
-            {/* --- CONTENIDO (IFRAME) --- */}
+            {/* --- CONTENIDO --- */}
             {!isMinimized && (
-                <div className="flex-1 relative bg-gray-800">
-                    {/* Capa protectora para que el iframe no capture el ratón al arrastrar */}
+                <div className="flex-1 relative bg-gray-800 flex flex-col">
+                    {/* Capa protectora transparente para que el iframe no capture el ratón al arrastrar */}
                     {(isDragging || isResizing) && <div className="absolute inset-0 z-50 bg-transparent"></div>}
                     
-                    <iframe 
-                        src={viewerUrl} 
-                        className="w-full h-full border-0" 
-                        title="PDF Viewer"
-                    />
+                    {isGoogleDrive ? (
+                        // Google Drive funciona mejor con iframe y /preview
+                        <iframe 
+                            src={embedUrl} 
+                            className="w-full h-full border-0 bg-white" 
+                            title="PDF Viewer"
+                            allow="autoplay"
+                        />
+                    ) : (
+                        // PDFs directos funcionan mejor con object (visor nativo del navegador)
+                        <object 
+                            data={embedUrl} 
+                            type="application/pdf" 
+                            className="w-full h-full border-0 bg-white"
+                        >
+                            <div className="flex flex-col items-center justify-center h-full text-gray-400 gap-4">
+                                <p>El navegador no puede visualizar este archivo directamente.</p>
+                                <a href={url} target="_blank" rel="noreferrer" className="px-4 py-2 bg-cyan-600 text-white rounded">
+                                    Descargar PDF
+                                </a>
+                            </div>
+                        </object>
+                    )}
 
                     {/* --- MANIJA DE REDIMENSIÓN (RESIZE HANDLE) --- */}
                     {!isMaximized && (
