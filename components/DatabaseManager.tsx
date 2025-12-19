@@ -5,7 +5,6 @@ import {
     getCustomMissions, 
     deleteHeroInDB, 
     deleteMissionInDB, 
-    seedExpansionsToDB, 
     updateHeroTemplate,
     updateMissionInDB 
 } from '../services/dbService';
@@ -167,19 +166,6 @@ export const DatabaseManager: React.FC<DatabaseManagerProps> = ({ isOpen, onClos
         }
     };
 
-    const handleSync = async () => { 
-        const password = prompt("⚠ REINICIO DE BASE DE DATOS ⚠\n\nEsto borrará todo y restaurará los valores por defecto.\nIntroduce contraseña:");
-        
-        if (password === ADMIN_PASSWORD) {
-            setLoading(true); 
-            await seedExpansionsToDB(); 
-            await loadData(); 
-            setLoading(false); 
-        } else if (password !== null) {
-            alert("⛔ ACCESO DENEGADO.");
-        }
-    };
-
     // --- HELPER PARA OBTENER NOMBRE DE PRERREQUISITO ---
     const getPrereqName = (prereqId: string) => {
         const m = missions.find(mis => mis.id === prereqId);
@@ -233,7 +219,6 @@ export const DatabaseManager: React.FC<DatabaseManagerProps> = ({ isOpen, onClos
                     </div>
                 </div>
                 <div className="flex gap-4">
-                    <button onClick={handleSync} className="bg-orange-900/50 border border-orange-500 text-orange-300 px-4 py-2 text-xs font-bold hover:bg-orange-800">RESTAURAR DB</button>
                     <button onClick={onClose} className="bg-red-900/50 border border-red-500 text-red-300 px-4 py-2 text-xs font-bold hover:bg-red-800">CERRAR</button>
                 </div>
             </div>
