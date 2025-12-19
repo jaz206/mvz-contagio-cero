@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Mission } from '../types';
 import { translations, Language } from '../translations';
+import { DraggablePdfWindow } from './DraggablePdfWindow'; // <--- IMPORTANTE
 
 interface MissionModalProps {
   mission: Mission;
@@ -70,26 +71,22 @@ export const MissionModal: React.FC<MissionModalProps> = ({
 
   const showOutcome = reportSuccess && mission.outcomeText;
 
-  // Función auxiliar para procesar la URL del PDF
-  const getPdfViewerUrl = (url: string) => {
-      // Si es un enlace de Drive normal (/view), intentar convertirlo para el visor
-      if (url.includes('drive.google.com') && url.includes('/view')) {
-          // Extraer ID
-          const idMatch = url.match(/\/d\/(.*?)\//);
-          if (idMatch && idMatch[1]) {
-              // Convertir a enlace de descarga directa para que el visor lo pueda leer
-              const directLink = `https://drive.google.com/uc?id=${idMatch[1]}&export=download`;
-              return `https://docs.google.com/gview?url=${encodeURIComponent(directLink)}&embedded=true`;
-          }
-      }
-      // Si ya es un enlace directo o de otro sitio, usar el visor genérico
-      return `https://docs.google.com/gview?url=${encodeURIComponent(url)}&embedded=true`;
-  };
-
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      {/* Fondo oscuro del modal principal */}
       <div className="absolute inset-0 bg-slate-950/90 backdrop-blur-sm" onClick={onClose}></div>
 
+      {/* --- VISOR DE PDF FLOTANTE (NUEVO) --- */}
+      {/* Se renderiza fuera del contenedor principal del modal para que pueda flotar por encima */}
+      {showPdf && mission.pdfUrl && (
+          <DraggablePdfWindow 
+              url={mission.pdfUrl}
+              title={`DOC CLASIFICADO: ${mission.title}`}
+              onClose={() => setShowPdf(false)}
+          />
+      )}
+
+      {/* Contenedor Principal del Modal de Misión */}
       <div className={`relative w-full max-w-3xl bg-slate-900 border-2 shadow-[0_0_50px_rgba(0,0,0,0.5)] flex flex-col max-h-[90vh] overflow-hidden ${isCompleted || reportSuccess ? 'border-emerald-600 shadow-emerald-900/20' : 'border-cyan-600 shadow-cyan-900/20'}`}>
         
         {/* Header */}
@@ -178,7 +175,7 @@ export const MissionModal: React.FC<MissionModalProps> = ({
                                 className="w-full py-3 bg-red-900/20 border border-red-500/50 hover:bg-red-900/40 hover:border-red-500 text-red-300 font-bold tracking-widest flex items-center justify-center gap-3 transition-all group shadow-[0_0_15px_rgba(220,38,38,0.2)]"
                             >
                                 <span className="text-xl group-hover:scale-110 transition-transform">📄</span>
-                                <span>ACCEDER A DOCUMENTO CLASIFICADO (PDF)</span>
+                                <span>ABRIR DOCUMENTO CLASIFICADO (PDF)</span>
                                 <span className="text-xs opacity-50 group-hover:opacity-100 border-l border-red-700 pl-2 ml-2">CLICK TO OPEN</span>
                             </button>
                         </div>
@@ -273,40 +270,6 @@ export const MissionModal: React.FC<MissionModalProps> = ({
                 <div className="relative max-w-full max-h-full flex flex-col items-center">
                     <img src={mission.layoutUrl} alt="Tactical Map" className="max-w-[95vw] max-h-[85vh] object-contain border-2 border-cyan-500 shadow-[0_0_50px_rgba(6,182,212,0.3)]" onClick={(e) => e.stopPropagation()} />
                     <button onClick={() => setShowMap(false)} className="mt-4 px-6 py-2 bg-red-900/80 text-white font-bold tracking-widest border border-red-600 hover:bg-red-800">CERRAR VISOR</button>
-                </div>
-            </div>
-        )}
-
-        {/* --- VISOR DE PDF (MEJORADO) --- */}
-        {showPdf && mission.pdfUrl && (
-            <div className="fixed inset-0 z-[110] bg-slate-900 flex flex-col animate-fade-in">
-                <div className="flex justify-between items-center p-4 bg-slate-800 border-b border-slate-700 shadow-lg z-10">
-                    <h3 className="text-white font-bold tracking-widest flex items-center gap-2">
-                        <span className="text-red-500">📄</span> VISOR DE DOCUMENTOS
-                    </h3>
-                    <div className="flex gap-4">
-                        <a 
-                            href={mission.pdfUrl} 
-                            target="_blank" 
-                            rel="noopener noreferrer" 
-                            className="px-4 py-2 bg-blue-600 text-white text-xs font-bold hover:bg-blue-500 border border-blue-400 flex items-center gap-2"
-                        >
-                            <span>⬇</span> DESCARGAR / ABRIR EXTERNO
-                        </a>
-                        <button 
-                            onClick={() => setShowPdf(false)} 
-                            className="px-4 py-2 bg-red-600 text-white text-xs font-bold hover:bg-red-500 border border-red-400"
-                        >
-                            CERRAR ✕
-                        </button>
-                    </div>
-                </div>
-                <div className="flex-1 bg-gray-900 relative flex items-center justify-center">
-                    <iframe 
-                        src={getPdfViewerUrl(mission.pdfUrl)} 
-                        className="w-full h-full border-0" 
-                        title="PDF Viewer"
-                    ></iframe>
                 </div>
             </div>
         )}
