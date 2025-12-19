@@ -325,14 +325,12 @@ const App: React.FC = () => {
     const handleEventAcknowledge = () => setActiveGlobalEvent(null);
     const handleToggleHeroObjective = (heroId: string, idx: number) => { const hIndex = heroes.findIndex(h => h.id === heroId); if (hIndex >= 0) { const newHeroes = [...heroes]; const h = newHeroes[hIndex]; const indices = h.completedObjectiveIndices ? [...h.completedObjectiveIndices] : []; if (indices.includes(idx)) { newHeroes[hIndex] = { ...h, completedObjectiveIndices: indices.filter(i => i !== idx) }; } else { newHeroes[hIndex] = { ...h, completedObjectiveIndices: [...indices, idx] }; } setHeroes(newHeroes); } };
     
-    // --- LÓGICA DE TRANSFORMACIÓN (CURAR/INFECTAR) CORREGIDA ---
     const handleTransformHero = async (heroId: string, targetAlignment: 'ALIVE' | 'ZOMBIE') => {
         const heroIndex = heroes.findIndex(h => h.id === heroId);
         if (heroIndex === -1) return;
 
         const currentHero = heroes[heroIndex];
 
-        // Función auxiliar para limpiar nombres y facilitar la comparación
         const cleanString = (str: string) => {
             return str.toLowerCase()
                 .replace(/\(z\)/g, '')       
@@ -345,7 +343,6 @@ const App: React.FC = () => {
         const currentAliasClean = cleanString(currentHero.alias);
         const currentNameClean = cleanString(currentHero.name);
 
-        // Función de búsqueda flexible
         const findMatch = (list: HeroTemplate[] | Hero[]) => {
             return list.find(h => {
                 const hAliasClean = cleanString(h.alias);
@@ -361,7 +358,6 @@ const App: React.FC = () => {
 
         let targetTemplate: HeroTemplate | null = null;
 
-        // 1. Buscar en Expansiones Locales (Prioridad Alta)
         for (const exp of GAME_EXPANSIONS) {
             const list = targetAlignment === 'ALIVE' ? exp.heroes : exp.zombieHeroes;
             const found = findMatch(list);
@@ -373,7 +369,7 @@ const App: React.FC = () => {
                     alias: found.alias,
                     defaultClass: found.class,
                     defaultStats: found.stats,
-                    imageUrl: found.imageUrl || '', // Asegurar que no sea undefined
+                    imageUrl: found.imageUrl || '',
                     bio: found.bio,
                     defaultAlignment: targetAlignment,
                     objectives: found.objectives,
@@ -383,7 +379,6 @@ const App: React.FC = () => {
             }
         }
 
-        // 2. Si no está en locales, buscar en BBDD (Customs)
         if (!targetTemplate) {
             const allTemplates = await getHeroTemplates();
             const candidates = allTemplates.filter(t => t.defaultAlignment === targetAlignment);
@@ -392,18 +387,16 @@ const App: React.FC = () => {
         }
 
         if (targetTemplate) {
-            // --- CORRECCIÓN DE IMAGEN ---
-            // Si la plantilla encontrada no tiene imagen, intentar usar la del héroe actual como fallback
             const finalImage = targetTemplate.imageUrl || currentHero.imageUrl || '';
 
             const newHero: Hero = {
                 id: `trans_${Date.now()}`, 
                 templateId: targetTemplate.id,
                 name: targetTemplate.defaultName,
-                alias: targetTemplate.alias || currentHero.alias, // Fallback al alias actual si falla
+                alias: targetTemplate.alias || currentHero.alias, 
                 class: targetTemplate.defaultClass,
                 stats: targetTemplate.defaultStats,
-                imageUrl: finalImage, // Usar la imagen asegurada
+                imageUrl: finalImage, 
                 bio: targetTemplate.bio || currentHero.bio,
                 status: 'AVAILABLE', 
                 assignedMissionId: null,
@@ -550,6 +543,27 @@ const App: React.FC = () => {
                                 </>
                             ) : (
                                 <div className="flex flex-col items-center py-4 gap-4 h-full"><div className="w-8 h-8 rounded-full border-2 border-red-600 flex items-center justify-center bg-red-900/20 animate-pulse" title="Nivel de Amenaza: CRÍTICO"><span className="text-xs">⚠</span></div><button onClick={() => setViewMode('bunker')} className="w-8 h-8 rounded border border-cyan-500 flex items-center justify-center hover:bg-cyan-900/50 text-cyan-300" title="Búnker"><span className="text-xs">🛡</span></button><div className="flex-1 w-full flex flex-col items-center justify-end pb-4"><div className="relative w-8 h-8 flex items-center justify-center" title={`Progreso: ${progressPercentage}%`}><svg className="w-full h-full transform -rotate-90"><circle cx="16" cy="16" r="14" stroke="#1e293b" strokeWidth="3" fill="transparent" /><circle cx="16" cy="16" r="14" stroke="#10b981" strokeWidth="3" fill="transparent" strokeDasharray={2 * Math.PI * 14} strokeDashoffset={2 * Math.PI * 14 - (progressPercentage / 100) * 2 * Math.PI * 14} /></svg></div></div></div>
+                            )}
+                        </aside>
+
+                        <main className="flex-1 relative bg-slate-950 overflow-hidden">
+                            {viewMode === 'map' && (
+                                <>
+                                    <USAMap language={lang} missions={visibleMissions} completedMissionIds={completedMissionIds} onMissionComplete={handleMissionComplete} onMissionSelect={handleMissionSelectWrapper} onBunkerClick={() => setViewMode('bunker')} factionStates={FACTION_STATES} playerAlignment={playerAlignment} worldStage={worldStage} surferTurnCount={surferTurnCount} />
+                                    
+                                    {isEditorMode && (
+                                        <div className="absolute top-20 right-4 z-50 flex flex-col gap-2 bg-slate-900/95 p-4 border border-cyan-500 shadow-[0_0_20px_rgba(6,182,212,0.3)] rounded-sm min-w-[200px] max-h-[80vh] overflow-y-auto scrollbar-thin scrollbar-thumb-cyan-700">
+                                            <h3 className="text-xs font-bold text-cyan-400 border-b border-cyan-800 pb-1 mb-2 tracking-widest uppercase">EDITOR TOOLS</h3>
+                                            <button onClick={() => setShowMissionEditor(true)} className="bg-cyan-900/50 hover:bg-cyan-800 text-cyan-200 text-[10px] font-bold py-2 px-3 border border-cyan-700 uppercase tracking-wider transition-colors">+ CREAR MISIÓN</button>
+                                            <button onClick={() => setShowCharacterEditor(true)} className="bg-blue-900/50 hover:bg-blue-800 text-blue-200 text-[10px] font-bold py-2 px-3 border border-blue-700 uppercase tracking-wider transition-colors">+ CREAR PERSONAJE</button>
+                                            <button onClick={() => setShowDbManager(true)} className="bg-purple-900/50 hover:bg-purple-800 text-purple-200 text-[10px] font-bold py-2 px-3 border border-purple-700 uppercase tracking-wider transition-colors">⚙ GESTOR BBDD (ADMIN)</button>
+                                            <div className="h-px bg-cyan-900 my-1"></div>
+                                            <button onClick={() => handleSimulateProgress(5)} className="bg-emerald-900/50 hover:bg-emerald-800 text-emerald-200 text-[10px] font-bold py-2 px-3 border border-emerald-700 uppercase tracking-wider transition-colors">+5 MISIONES (SIM)</button>
+                                            <button onClick={handleResetProgress} className="bg-red-900/50 hover:bg-red-800 text-red-200 text-[10px] font-bold py-2 px-3 border border-red-700 uppercase tracking-wider transition-colors">RESET PROGRESO</button>
+                                            <div className="mt-2 text-[9px] text-gray-500 font-mono text-center border-t border-gray-800 pt-2">SURFER TURN: <span className="text-white font-bold">{surferTurnCount}</span></div>
+                                        </div>
+                                    )}
+                                </>
                             )}
                             {viewMode === 'bunker' && (<BunkerInterior heroes={heroes} missions={visibleMissions.filter(m => m && !completedMissionIds.has(m.id))} onAssign={(heroId, missionId) => { const hIndex = heroes.findIndex(h => h.id === heroId); if(hIndex >= 0) { const newHeroes = [...heroes]; newHeroes[hIndex] = { ...newHeroes[hIndex], status: 'DEPLOYED', assignedMissionId: missionId }; setHeroes(newHeroes); return true; } return false; }} onUnassign={(heroId) => { const hIndex = heroes.findIndex(h => h.id === heroId); if(hIndex >= 0) { const newHeroes = [...heroes]; newHeroes[hIndex] = { ...newHeroes[hIndex], status: 'AVAILABLE', assignedMissionId: null }; setHeroes(newHeroes); } }} onAddHero={(hero) => setHeroes([...heroes, hero])} onToggleObjective={handleToggleHeroObjective} onBack={() => setViewMode('map')} language={lang} playerAlignment={playerAlignment} isEditorMode={isEditorMode} onTransformHero={handleTransformHero} onTickerUpdate={handleTickerUpdate} omegaCylinders={omegaCylinders} onFindCylinder={() => setOmegaCylinders(prev => prev + 1)} />)}
                             {viewMode === 'tutorial' && (<div className="absolute inset-0 z-40"><USAMap language={lang} missions={visibleMissions} completedMissionIds={completedMissionIds} onMissionComplete={() => {}} onMissionSelect={() => {}} onBunkerClick={() => {}} factionStates={FACTION_STATES} playerAlignment={playerAlignment} worldStage={worldStage} /><TutorialOverlay language={lang} onComplete={() => { if(user) localStorage.setItem(`shield_tutorial_seen_${user.uid}`, 'true'); setViewMode('map'); }} onStepChange={(stepKey) => { if (['roster', 'file', 'recruit'].includes(stepKey)) { setViewMode('bunker'); } }} /></div>)}
