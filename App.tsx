@@ -325,6 +325,7 @@ const App: React.FC = () => {
     const handleEventAcknowledge = () => setActiveGlobalEvent(null);
     const handleToggleHeroObjective = (heroId: string, idx: number) => { const hIndex = heroes.findIndex(h => h.id === heroId); if (hIndex >= 0) { const newHeroes = [...heroes]; const h = newHeroes[hIndex]; const indices = h.completedObjectiveIndices ? [...h.completedObjectiveIndices] : []; if (indices.includes(idx)) { newHeroes[hIndex] = { ...h, completedObjectiveIndices: indices.filter(i => i !== idx) }; } else { newHeroes[hIndex] = { ...h, completedObjectiveIndices: [...indices, idx] }; } setHeroes(newHeroes); } };
     
+    // --- LÓGICA DE TRANSFORMACIÓN (CURAR/INFECTAR) CORREGIDA ---
     const handleTransformHero = async (heroId: string, targetAlignment: 'ALIVE' | 'ZOMBIE') => {
         const heroIndex = heroes.findIndex(h => h.id === heroId);
         if (heroIndex === -1) return;
@@ -358,35 +359,39 @@ const App: React.FC = () => {
 
         let targetTemplate: HeroTemplate | null = null;
 
-        for (const exp of GAME_EXPANSIONS) {
-            const list = targetAlignment === 'ALIVE' ? exp.heroes : exp.zombieHeroes;
-            const found = findMatch(list);
-            
-            if (found) {
-                targetTemplate = {
-                    id: found.id,
-                    defaultName: found.name,
-                    alias: found.alias,
-                    defaultClass: found.class,
-                    defaultStats: found.stats,
-                    imageUrl: found.imageUrl || '',
-                    bio: found.bio,
-                    defaultAlignment: targetAlignment,
-                    objectives: found.objectives,
-                    currentStory: found.currentStory
-                };
-                break;
+        // 1. PRIORIDAD: Buscar en BBDD (Customs y datos actualizados)
+        const allTemplates = await getHeroTemplates();
+        const candidates = allTemplates.filter(t => t.defaultAlignment === targetAlignment);
+        const foundInDb = findMatch(candidates);
+        
+        if (foundInDb) {
+            targetTemplate = foundInDb;
+        } else {
+            // 2. FALLBACK: Buscar en Expansiones Locales
+            for (const exp of GAME_EXPANSIONS) {
+                const list = targetAlignment === 'ALIVE' ? exp.heroes : exp.zombieHeroes;
+                const found = findMatch(list);
+                
+                if (found) {
+                    targetTemplate = {
+                        id: found.id,
+                        defaultName: found.name,
+                        alias: found.alias,
+                        defaultClass: found.class,
+                        defaultStats: found.stats,
+                        imageUrl: found.imageUrl || '',
+                        bio: found.bio,
+                        defaultAlignment: targetAlignment,
+                        objectives: found.objectives,
+                        currentStory: found.currentStory
+                    };
+                    break;
+                }
             }
         }
 
-        if (!targetTemplate) {
-            const allTemplates = await getHeroTemplates();
-            const candidates = allTemplates.filter(t => t.defaultAlignment === targetAlignment);
-            const found = findMatch(candidates);
-            if (found) targetTemplate = found;
-        }
-
         if (targetTemplate) {
+            // Asegurar imagen: Si la plantilla no tiene, usar la del héroe actual
             const finalImage = targetTemplate.imageUrl || currentHero.imageUrl || '';
 
             const newHero: Hero = {
