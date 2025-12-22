@@ -40,6 +40,9 @@ export const USAMap: React.FC<USAMapProps> = ({
   const gMissionsRef = useRef<d3.Selection<SVGGElement, unknown, null, undefined> | null>(null);
   const gTokensRef = useRef<d3.Selection<SVGGElement, unknown, null, undefined> | null>(null);
   
+  // REF PARA RECORDAR QUÉ RUTAS YA HAN HECHO LA ANIMACIÓN DE "VIAJE"
+  const animatedRoutesRef = useRef<Set<string>>(new Set());
+
   const [usData, setUsData] = useState<USATopoJSON | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -67,7 +70,7 @@ export const USAMap: React.FC<USAMapProps> = ({
           const style = document.createElement('style');
           style.id = styleId;
           style.innerHTML = `
-            /* 1. EFECTO FLOW (Movimiento continuo de guiones) */
+            /* EFECTO FLOW (Movimiento continuo de guiones para rutas activas) */
             @keyframes dash-flow {
                 to { stroke-dashoffset: -20; }
             }
@@ -75,7 +78,7 @@ export const USAMap: React.FC<USAMapProps> = ({
                 animation: dash-flow 1s linear infinite;
             }
 
-            /* 2. EFECTO RADAR (Solo SHIELD) */
+            /* EFECTO RADAR (Solo SHIELD) */
             @keyframes ripple-ping {
                 0% { transform: scale(1); opacity: 0.8; stroke-width: 2px; }
                 100% { transform: scale(3); opacity: 0; stroke-width: 0px; }
@@ -87,7 +90,7 @@ export const USAMap: React.FC<USAMapProps> = ({
                 pointer-events: none;
             }
 
-            /* 3. EFECTO HALO RESPIRATORIO (Historia) */
+            /* EFECTO HALO RESPIRATORIO (Historia) */
             @keyframes halo-breathe {
                 0%, 100% { transform: scale(1.3); opacity: 0.3; stroke-width: 1px; }
                 50% { transform: scale(1.6); opacity: 0.6; stroke-width: 2px; }
@@ -432,7 +435,7 @@ export const USAMap: React.FC<USAMapProps> = ({
           }
       });
 
-      // --- LÍNEAS DE CONEXIÓN CON EFECTO "VIAJE" (D3 TRANSITION) ---
+      // --- LÍNEAS DE CONEXIÓN CON LÓGICA DE 3 ESTADOS ---
       gMissions.selectAll('path.mission-line')
         .data(connections, (d: any) => `${d.source}-${d.target}`) 
         .join(
@@ -459,40 +462,54 @@ export const USAMap: React.FC<USAMapProps> = ({
             const path = d3.select(this);
             const isSourceComplete = completedMissionIds.has(d.source);
             const isTargetComplete = completedMissionIds.has(d.target);
-            const isActiveRoute = isSourceComplete && !isTargetComplete;
+            const routeKey = `${d.source}-${d.target}`;
 
-            // Si es la ruta activa y NO se está animando ni fluyendo ya
-            if (isActiveRoute && !path.classed('line-flowing') && !path.classed('animating')) {
-                 const totalLength = (this as SVGPathElement).getTotalLength();
-
-                 path.classed('animating', true) // Marcar como animando
-                     .attr('stroke-dasharray', `${totalLength} ${totalLength}`) // Patrón: Línea completa, Espacio completo
-                     .attr('stroke-dashoffset', totalLength) // Empezar oculto (offset = longitud)
-                     .attr('opacity', 1)
-                     .attr('stroke', '#fbbf24') // Amarillo brillante
-                     .transition()
-                     .duration(2000) // Duración del "viaje" (2 segundos)
-                     .ease(d3.easeLinear)
-                     .attr('stroke-dashoffset', 0) // Terminar visible (offset = 0)
-                     .on('end', () => {
-                         // Al terminar, cambiar a modo "flujo" infinito
-                         path.classed('animating', false)
-                             .classed('line-flowing', true)
-                             .style('stroke-dasharray', '4,4'); // Restaurar patrón de guiones normal
-                     });
-            } 
-            // Si ya estaba fluyendo (para no reiniciar la animación al hacer zoom/pan)
-            else if (isActiveRoute && path.classed('line-flowing')) {
-                 path.style('stroke-dasharray', '4,4')
-                     .attr('stroke', '#fbbf24')
-                     .attr('opacity', 1);
-            } 
-            // Rutas inactivas o completadas
+            // ESTADO 3: RUTA COMPLETADA (VERDE SÓLIDO)
+            if (isSourceComplete && isTargetComplete) {
+                 path.classed('line-flowing', false)
+                     .classed('animating', false)
+                     .style('stroke-dasharray', 'none') // Sólida
+                     .attr('stroke', '#10b981') // Verde
+                     .attr('opacity', 0.6);
+            }
+            // ESTADO 2: RUTA ACTIVA (AMARILLA DISCONTINUA CON FLUJO)
+            else if (isSourceComplete && !isTargetComplete) {
+                 // ¿Es la primera vez que se activa? (Animación de viaje)
+                 if (!animatedRoutesRef.current.has(routeKey)) {
+                     const totalLength = (this as SVGPathElement).getTotalLength();
+                     
+                     // Configurar inicio de animación (Sólida amarilla oculta)
+                     path.classed('animating', true)
+                         .attr('stroke-dasharray', `${totalLength} ${totalLength}`)
+                         .attr('stroke-dashoffset', totalLength)
+                         .attr('opacity', 1)
+                         .attr('stroke', '#fbbf24') // Amarillo
+                         .transition()
+                         .duration(2000)
+                         .ease(d3.easeLinear)
+                         .attr('stroke-dashoffset', 0) // Revelar línea
+                         .on('end', () => {
+                             // Al terminar, marcar como animada y cambiar a modo flujo
+                             animatedRoutesRef.current.add(routeKey);
+                             path.classed('animating', false)
+                                 .classed('line-flowing', true)
+                                 .style('stroke-dasharray', '4,4');
+                         });
+                 } 
+                 // Si ya se animó antes, mostrar flujo directamente
+                 else {
+                     path.classed('line-flowing', true)
+                         .style('stroke-dasharray', '4,4')
+                         .attr('stroke', '#fbbf24')
+                         .attr('opacity', 1);
+                 }
+            }
+            // ESTADO 1: RUTA BLOQUEADA (GRIS TENUE)
             else {
                  path.classed('line-flowing', false)
                      .classed('animating', false)
                      .style('stroke-dasharray', '4,4')
-                     .attr('stroke', '#475569')
+                     .attr('stroke', '#475569') // Gris
                      .attr('opacity', 0.4);
             }
         });
