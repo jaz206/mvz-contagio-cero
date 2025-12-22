@@ -18,9 +18,19 @@ const findField = (data: any, possibleKeys: string[]): any => {
     return undefined;
 };
 
+// --- HELPERS DE SEGURIDAD ---
+const checkDb = (): boolean => {
+    if (!db) {
+        console.error("🔥 ERROR CRÍTICO: Intentando acceder a Firestore pero la instancia es NULL. Revisa tu .env.local");
+        return false;
+    }
+    return true;
+};
+
 export const getHeroTemplates = async (): Promise<HeroTemplate[]> => {
-  if (!db) { console.warn("DB no disponible (getHeroTemplates)"); return []; }
+  if (!checkDb()) return [];
   try {
+    // @ts-ignore: checkDb asegura que db existe
     const querySnapshot = await getDocs(collection(db, COLLECTION_NAME));
     const templates: HeroTemplate[] = [];
     
@@ -43,8 +53,6 @@ export const getHeroTemplates = async (): Promise<HeroTemplate[]> => {
       const objectives = findField(data, ['objectives', 'objetivos', 'goals', 'misiones']);
       
       const defaultAlignment = findField(data, ['defaultAlignment', 'alignment', 'bando', 'tipo']);
-      
-      // Recuperamos el campo oculto
       const expansionId = findField(data, ['expansionId', 'expansion', 'caja']);
 
       templates.push({
@@ -73,10 +81,12 @@ export const getHeroTemplates = async (): Promise<HeroTemplate[]> => {
 };
 
 export const seedHeroTemplates = async (): Promise<void> => {
-  if (!db) throw new Error("Base de datos no configurada");
+  if (!checkDb()) throw new Error("DB no disponible");
   try {
+    // @ts-ignore
     const batch = writeBatch(db);
     HERO_DATABASE.forEach((hero) => {
+      // @ts-ignore
       const docRef = doc(db, COLLECTION_NAME, hero.id);
       batch.set(docRef, hero);
     });
@@ -88,10 +98,10 @@ export const seedHeroTemplates = async (): Promise<void> => {
   }
 };
 
-// --- ESTA ES LA FUNCIÓN QUE FALTABA O ESTABA MAL ESCRITA ---
 export const updateHeroTemplate = async (id: string, data: Partial<HeroTemplate>): Promise<void> => {
-    if (!db) return;
+    if (!checkDb()) return;
     try {
+        // @ts-ignore
         const docRef = doc(db, COLLECTION_NAME, id);
         await updateDoc(docRef, data);
         console.log(`Hero ${id} updated successfully`);
@@ -100,11 +110,11 @@ export const updateHeroTemplate = async (id: string, data: Partial<HeroTemplate>
         throw error;
     }
 };
-// -----------------------------------------------------------
 
 export const createHeroTemplateInDB = async (heroData: Omit<HeroTemplate, 'id'>): Promise<string> => {
-    if (!db) throw new Error("Base de datos no configurada");
+    if (!checkDb()) throw new Error("DB no disponible");
     try {
+        // @ts-ignore
         const docRef = await addDoc(collection(db, COLLECTION_NAME), heroData);
         console.log("Hero created with ID:", docRef.id);
         return docRef.id;
@@ -115,8 +125,9 @@ export const createHeroTemplateInDB = async (heroData: Omit<HeroTemplate, 'id'>)
 };
 
 export const deleteHeroInDB = async (id: string): Promise<void> => {
-    if (!db) throw new Error("Base de datos no configurada");
+    if (!checkDb()) throw new Error("DB no disponible");
     try {
+        // @ts-ignore
         const docRef = doc(db, COLLECTION_NAME, id);
         await deleteDoc(docRef);
         console.log(`Hero ${id} deleted successfully`);
@@ -134,8 +145,9 @@ export interface UserProfileData {
 }
 
 export const getUserProfile = async (uid: string, campaignMode: 'ALIVE' | 'ZOMBIE'): Promise<UserProfileData | null> => {
-    if (!db) return null;
+    if (!checkDb()) return null;
     try {
+        // @ts-ignore
         const docRef = doc(db, USERS_COLLECTION, uid);
         const docSnap = await getDoc(docRef);
 
@@ -165,8 +177,9 @@ export const saveUserProfile = async (
     completedMissionIds: string[],
     resources?: { omegaCylinders: number }
 ): Promise<void> => {
-    if (!db) return;
+    if (!checkDb()) return;
     try {
+        // @ts-ignore
         const docRef = doc(db, USERS_COLLECTION, uid);
         const updateData = {
             [campaignMode]: {
@@ -185,13 +198,27 @@ export const saveUserProfile = async (
 };
 
 export const getCustomMissions = async (): Promise<Mission[]> => {
-    if (!db) { console.warn("DB no disponible (getCustomMissions)"); return []; }
+    if (!checkDb()) return [];
     try {
+        // @ts-ignore
         const querySnapshot = await getDocs(collection(db, MISSIONS_COLLECTION));
         const missions: Mission[] = [];
         querySnapshot.forEach((doc) => {
             const data = doc.data() as Mission;
-            missions.push({ ...data, id: doc.id });
+            // Normalización de prereqs para evitar errores de lógica
+            let normalizedPrereqs: string[] = [];
+            if (data.prereqs && Array.isArray(data.prereqs)) {
+                normalizedPrereqs = data.prereqs;
+            } else if (data.prereq) {
+                normalizedPrereqs = [data.prereq];
+            }
+
+            missions.push({ 
+                ...data, 
+                id: doc.id,
+                prereqs: normalizedPrereqs,
+                prereq: normalizedPrereqs.length > 0 ? normalizedPrereqs[0] : undefined
+            });
         });
         return missions;
     } catch (error) {
@@ -201,8 +228,9 @@ export const getCustomMissions = async (): Promise<Mission[]> => {
 };
 
 export const createMissionInDB = async (missionData: Omit<Mission, 'id'>): Promise<string> => {
-    if (!db) throw new Error("Base de datos no configurada");
+    if (!checkDb()) throw new Error("DB no disponible");
     try {
+        // @ts-ignore
         const docRef = await addDoc(collection(db, MISSIONS_COLLECTION), missionData);
         return docRef.id;
     } catch (error) {
@@ -212,8 +240,9 @@ export const createMissionInDB = async (missionData: Omit<Mission, 'id'>): Promi
 };
 
 export const updateMissionInDB = async (id: string, missionData: Partial<Mission>): Promise<void> => {
-    if (!db) throw new Error("Base de datos no configurada");
+    if (!checkDb()) throw new Error("DB no disponible");
     try {
+        // @ts-ignore
         const docRef = doc(db, MISSIONS_COLLECTION, id);
         const { id: _, ...dataToUpdate } = missionData as any;
         await setDoc(docRef, dataToUpdate, { merge: true });
@@ -224,8 +253,9 @@ export const updateMissionInDB = async (id: string, missionData: Partial<Mission
 };
 
 export const deleteMissionInDB = async (id: string): Promise<void> => {
-    if (!db) throw new Error("Base de datos no configurada");
+    if (!checkDb()) throw new Error("DB no disponible");
     try {
+        // @ts-ignore
         const docRef = doc(db, MISSIONS_COLLECTION, id);
         await deleteDoc(docRef);
         console.log(`Mission ${id} deleted successfully`);
@@ -236,9 +266,11 @@ export const deleteMissionInDB = async (id: string): Promise<void> => {
 };
 
 export const seedExpansionsToDB = async (): Promise<void> => {
-    if (!db) throw new Error("Base de datos no configurada");
+    if (!checkDb()) throw new Error("DB no disponible");
     try {
+        // @ts-ignore
         const snapshot = await getDocs(collection(db, COLLECTION_NAME));
+        // @ts-ignore
         const deleteBatch = writeBatch(db);
         snapshot.docs.forEach((doc) => {
             deleteBatch.delete(doc.ref);
@@ -246,11 +278,13 @@ export const seedExpansionsToDB = async (): Promise<void> => {
         await deleteBatch.commit();
         console.log("Colección de héroes limpiada.");
 
+        // @ts-ignore
         const createBatch = writeBatch(db);
         let count = 0;
 
         for (const exp of GAME_EXPANSIONS) {
             for (const hero of exp.heroes) {
+                // @ts-ignore
                 const docRef = doc(db, COLLECTION_NAME, hero.id);
                 const templateData: HeroTemplate = {
                     id: hero.id,
@@ -270,6 +304,7 @@ export const seedExpansionsToDB = async (): Promise<void> => {
             }
 
             for (const zHero of exp.zombieHeroes) {
+                // @ts-ignore
                 const docRef = doc(db, COLLECTION_NAME, zHero.id);
                 const templateData: HeroTemplate = {
                     id: zHero.id,
@@ -300,14 +335,16 @@ export const seedExpansionsToDB = async (): Promise<void> => {
 };
 
 export const uploadLocalMissionsToDB = async (missions: Mission[]): Promise<void> => {
-    if (!db) throw new Error("Base de datos no configurada");
+    if (!checkDb()) throw new Error("DB no disponible");
     
     try {
+        // @ts-ignore
         const batch = writeBatch(db);
         let count = 0;
 
         missions.forEach((mission) => {
             if (mission.id) {
+                // @ts-ignore
                 const docRef = doc(db, MISSIONS_COLLECTION, mission.id);
                 const cleanMission = JSON.parse(JSON.stringify(mission));
                 batch.set(docRef, cleanMission);
