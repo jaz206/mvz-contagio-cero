@@ -67,27 +67,15 @@ export const USAMap: React.FC<USAMapProps> = ({
           const style = document.createElement('style');
           style.id = styleId;
           style.innerHTML = `
-            /* 1. EFECTO FLOW (Movimiento continuo) */
+            /* 1. EFECTO FLOW (Movimiento continuo de guiones) */
             @keyframes dash-flow {
                 to { stroke-dashoffset: -20; }
             }
-            
-            /* 2. EFECTO GROW (Dibujado inicial) */
-            /* Empieza invisible (espacio enorme) y termina con el patrón de guiones normal */
-            @keyframes grow-dashed {
-                0% { stroke-dasharray: 0, 1500; } 
-                100% { stroke-dasharray: 4, 4; }
-            }
-
-            /* Clase combinada: Primero crece, luego fluye */
             .line-flowing {
-                /* grow-dashed dura 1.5s una vez, dash-flow es infinito */
-                animation: 
-                    grow-dashed 1.5s ease-out forwards, 
-                    dash-flow 1s linear infinite;
+                animation: dash-flow 1s linear infinite;
             }
 
-            /* 3. EFECTO RADAR (Solo SHIELD) */
+            /* 2. EFECTO RADAR (Solo SHIELD) */
             @keyframes ripple-ping {
                 0% { transform: scale(1); opacity: 0.8; stroke-width: 2px; }
                 100% { transform: scale(3); opacity: 0; stroke-width: 0px; }
@@ -99,7 +87,7 @@ export const USAMap: React.FC<USAMapProps> = ({
                 pointer-events: none;
             }
 
-            /* 4. EFECTO HALO RESPIRATORIO (Historia) */
+            /* 3. EFECTO HALO RESPIRATORIO (Historia) */
             @keyframes halo-breathe {
                 0%, 100% { transform: scale(1.3); opacity: 0.3; stroke-width: 1px; }
                 50% { transform: scale(1.6); opacity: 0.6; stroke-width: 2px; }
@@ -444,17 +432,14 @@ export const USAMap: React.FC<USAMapProps> = ({
           }
       });
 
-      // --- LÍNEAS DE CONEXIÓN CON EFECTO FLOW Y GROW ---
+      // --- LÍNEAS DE CONEXIÓN CON EFECTO "VIAJE" (D3 TRANSITION) ---
       gMissions.selectAll('path.mission-line')
         .data(connections, (d: any) => `${d.source}-${d.target}`) 
-        .join('path')
-        .attr('class', (d) => {
-            const isSourceComplete = completedMissionIds.has(d.source);
-            const isTargetComplete = completedMissionIds.has(d.target);
-            // Si la misión origen está completa pero el destino no, la línea "fluye" hacia el nuevo objetivo
-            if (isSourceComplete && !isTargetComplete) return 'mission-line line-flowing';
-            return 'mission-line';
-        })
+        .join(
+            enter => enter.append('path').attr('class', 'mission-line'),
+            update => update,
+            exit => exit.remove()
+        )
         .attr('d', (d) => {
             const startMission = missions.find(m => m.id === d.source);
             const endMission = missions.find(m => m.id === d.target);
@@ -466,18 +451,50 @@ export const USAMap: React.FC<USAMapProps> = ({
             return `M${start[0]},${start[1]}A${dr},${dr} 0 0,1 ${end[0]},${end[1]}`;
         })
         .attr('fill', 'none')
-        .attr('stroke', (d) => {
-            const isSourceComplete = completedMissionIds.has(d.source);
-            return isSourceComplete ? '#fbbf24' : '#475569';
-        })
         .attr('stroke-width', (d) => {
             const isSourceComplete = completedMissionIds.has(d.source);
             return isSourceComplete ? 2 : 1.5;
         })
-        .attr('stroke-dasharray', '4,4')
-        .attr('opacity', (d) => {
+        .each(function(d) {
+            const path = d3.select(this);
             const isSourceComplete = completedMissionIds.has(d.source);
-            return isSourceComplete ? 1 : 0.4;
+            const isTargetComplete = completedMissionIds.has(d.target);
+            const isActiveRoute = isSourceComplete && !isTargetComplete;
+
+            // Si es la ruta activa y NO se está animando ni fluyendo ya
+            if (isActiveRoute && !path.classed('line-flowing') && !path.classed('animating')) {
+                 const totalLength = (this as SVGPathElement).getTotalLength();
+
+                 path.classed('animating', true) // Marcar como animando
+                     .attr('stroke-dasharray', `${totalLength} ${totalLength}`) // Patrón: Línea completa, Espacio completo
+                     .attr('stroke-dashoffset', totalLength) // Empezar oculto (offset = longitud)
+                     .attr('opacity', 1)
+                     .attr('stroke', '#fbbf24') // Amarillo brillante
+                     .transition()
+                     .duration(2000) // Duración del "viaje" (2 segundos)
+                     .ease(d3.easeLinear)
+                     .attr('stroke-dashoffset', 0) // Terminar visible (offset = 0)
+                     .on('end', () => {
+                         // Al terminar, cambiar a modo "flujo" infinito
+                         path.classed('animating', false)
+                             .classed('line-flowing', true)
+                             .style('stroke-dasharray', '4,4'); // Restaurar patrón de guiones normal
+                     });
+            } 
+            // Si ya estaba fluyendo (para no reiniciar la animación al hacer zoom/pan)
+            else if (isActiveRoute && path.classed('line-flowing')) {
+                 path.style('stroke-dasharray', '4,4')
+                     .attr('stroke', '#fbbf24')
+                     .attr('opacity', 1);
+            } 
+            // Rutas inactivas o completadas
+            else {
+                 path.classed('line-flowing', false)
+                     .classed('animating', false)
+                     .style('stroke-dasharray', '4,4')
+                     .attr('stroke', '#475569')
+                     .attr('opacity', 0.4);
+            }
         });
 
       // --- GRUPOS DE MISIONES ---
