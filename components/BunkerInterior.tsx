@@ -22,27 +22,68 @@ interface BunkerInteriorProps {
 
 // --- SUB-COMPONENTS ---
 
-const StatBar: React.FC<{ label: string; value: number; colorClass: string }> = ({ label, value, colorClass }) => (
-  <div className="flex items-center gap-2 text-[9px]">
-    <span className="w-8 text-right opacity-70">{label}</span>
-    <div className="flex-1 h-1.5 bg-slate-800 rounded-full overflow-hidden">
-      <div className={`h-full ${colorClass}`} style={{ width: `${(value / 10) * 100}%` }} />
-    </div>
-    <span className="w-4 font-bold">{value}</span>
-  </div>
-);
+// NOTA: StatBar eliminado ya que no se usa.
 
 const HeroListCard: React.FC<{ hero: Hero; onClick: () => void; compact?: boolean; onAction?: () => void; actionLabel?: string }> = ({ hero, onClick, compact, onAction, actionLabel }) => (
-  <div onClick={onClick} className={`group relative flex items-center gap-3 p-2 border transition-all cursor-pointer overflow-hidden ${hero.status === 'INJURED' ? 'bg-red-950/30 border-red-900 opacity-80' : hero.status === 'CAPTURED' ? 'bg-orange-950/30 border-orange-900' : 'bg-slate-900/80 border-slate-700 hover:border-cyan-500 hover:bg-slate-800'}`}>
-    <div className={`absolute left-0 top-0 bottom-0 w-1 ${hero.status === 'AVAILABLE' ? 'bg-emerald-500' : hero.status === 'INJURED' ? 'bg-red-600 animate-pulse' : hero.status === 'CAPTURED' ? 'bg-orange-500' : 'bg-yellow-500'}`} />
-    <div className="w-10 h-10 shrink-0 border border-slate-600 bg-slate-800 relative overflow-hidden">
-      {hero.imageUrl ? <img src={hero.imageUrl} alt={hero.alias} className={`w-full h-full object-cover ${hero.status === 'INJURED' ? 'grayscale contrast-125 sepia' : ''} ${hero.status === 'CAPTURED' ? 'opacity-50 blur-[1px]' : ''}`} /> : <div className="w-full h-full flex items-center justify-center text-xs font-bold text-slate-500">?</div>}
+  <div 
+    onClick={onClick} 
+    className={`
+        group relative flex items-stretch gap-0 border transition-all cursor-pointer overflow-hidden h-24
+        ${hero.status === 'INJURED' ? 'bg-red-950/30 border-red-900 opacity-80' : 
+          hero.status === 'CAPTURED' ? 'bg-orange-950/30 border-orange-900' : 
+          'bg-slate-900/80 border-slate-700 hover:border-cyan-500 hover:bg-slate-800'}
+    `}
+  >
+    {/* Barra de estado lateral */}
+    <div className={`w-1 shrink-0 ${hero.status === 'AVAILABLE' ? 'bg-emerald-500' : hero.status === 'INJURED' ? 'bg-red-600 animate-pulse' : hero.status === 'CAPTURED' ? 'bg-orange-500' : 'bg-yellow-500'}`} />
+    
+    {/* Imagen Grande (Estilo Credencial) */}
+    <div className="w-24 shrink-0 relative overflow-hidden border-r border-slate-700 group-hover:border-cyan-500/50 transition-colors">
+      {hero.imageUrl ? (
+          <>
+            <img 
+                src={hero.imageUrl} 
+                alt={hero.alias} 
+                className={`w-full h-full object-cover transition-transform duration-500 group-hover:scale-110 ${hero.status === 'INJURED' ? 'grayscale contrast-125 sepia' : ''} ${hero.status === 'CAPTURED' ? 'opacity-50 blur-[1px]' : ''}`} 
+            />
+            <div className="absolute inset-0 bg-gradient-to-r from-transparent to-slate-900/80 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+          </>
+      ) : (
+          <div className="w-full h-full flex items-center justify-center text-xs font-bold text-slate-500 bg-slate-800">NO IMG</div>
+      )}
     </div>
-    <div className="flex-1 min-w-0">
-      <div className="flex justify-between items-baseline"><h4 className={`text-xs font-bold truncate ${hero.status === 'INJURED' ? 'text-red-400' : 'text-cyan-100'}`}>{hero.alias}</h4><span className="text-[9px] text-cyan-600 font-mono">{hero.class}</span></div>
-      {hero.status === 'INJURED' ? <div className="text-[8px] text-red-500 font-bold tracking-widest mt-1 animate-pulse">CRITICAL CONDITION</div> : hero.status === 'CAPTURED' ? <div className="text-[8px] text-orange-500 font-bold tracking-widest mt-1">M.I.A. - LOCATING...</div> : !compact && <div className="mt-1 space-y-0.5"><StatBar label="STR" value={hero.stats.strength} colorClass="bg-red-500" /><StatBar label="AGI" value={hero.stats.agility} colorClass="bg-green-500" /><StatBar label="INT" value={hero.stats.intellect} colorClass="bg-blue-500" /></div>}
+
+    {/* Información de Texto */}
+    <div className="flex-1 min-w-0 p-2 flex flex-col justify-center relative">
+      <div className="flex justify-between items-start">
+          <div>
+              <h4 className={`text-sm font-black tracking-wide truncate ${hero.status === 'INJURED' ? 'text-red-400' : 'text-cyan-100 group-hover:text-white'}`}>
+                  {hero.alias}
+              </h4>
+              <div className="text-[9px] text-slate-400 uppercase tracking-wider font-bold">{hero.name}</div>
+          </div>
+          <span className="text-[8px] px-1.5 py-0.5 rounded bg-slate-800 border border-slate-600 text-cyan-500 font-mono">
+              {hero.class}
+          </span>
+      </div>
+      
+      {/* Bio o Estado (Reemplaza a las stats) */}
+      <div className="mt-2 text-[9px] leading-tight text-slate-400 italic line-clamp-2 border-l-2 border-slate-700 pl-2 group-hover:border-cyan-500/50 group-hover:text-slate-300 transition-colors">
+          {hero.status === 'INJURED' ? <span className="text-red-500 font-bold not-italic animate-pulse">⚠ CRITICAL CONDITION - REQUIRE MEDBAY</span> : 
+           hero.status === 'CAPTURED' ? <span className="text-orange-500 font-bold not-italic">⚠ SUBJECT MISSING - LAST SEEN IN HOSTILE TERRITORY</span> : 
+           hero.bio || "No additional data available in S.H.I.E.L.D. archives."}
+      </div>
     </div>
-    {onAction && actionLabel && <button onClick={(e) => { e.stopPropagation(); onAction(); }} className="ml-2 px-2 py-1 bg-emerald-900/50 border border-emerald-600 text-[9px] font-bold text-emerald-400 hover:bg-emerald-800 hover:text-white transition-colors z-10 relative">{actionLabel}</button>}
+
+    {/* Botón de Acción (Si existe) */}
+    {onAction && actionLabel && (
+        <button 
+            onClick={(e) => { e.stopPropagation(); onAction(); }} 
+            className="absolute bottom-2 right-2 px-3 py-1 bg-emerald-900/80 border border-emerald-600 text-[9px] font-bold text-emerald-400 hover:bg-emerald-700 hover:text-white transition-colors z-10 shadow-lg backdrop-blur-sm"
+        >
+            {actionLabel}
+        </button>
+    )}
   </div>
 );
 
