@@ -140,7 +140,7 @@ export const USAMap: React.FC<USAMapProps> = ({
             .radar-spinning-group {
                 transform-box: fill-box; 
                 transform-origin: center;
-                animation: radar-spin-infinite 10s linear infinite;
+                animation: radar-spin-infinite 12s linear infinite;
             }
           `;
           document.head.appendChild(style);
@@ -291,7 +291,6 @@ export const USAMap: React.FC<USAMapProps> = ({
 
     const svg = d3.select(svgRef.current);
     
-    // --- INICIALIZACIÓN DEL MAPA (SOLO UNA VEZ) ---
     if (svg.select('g.layer-map').empty()) {
         svg.selectAll('*').remove();
         const defs = svg.append("defs");
@@ -332,24 +331,66 @@ export const USAMap: React.FC<USAMapProps> = ({
         gMissionsRef.current = gMain.append('g').attr('class', 'layer-missions');
         gTokensRef.current = gMain.append('g').attr('class', 'layer-tokens');
 
-        // --- ZOOM HANDLER ---
+        // --- ZOOM HANDLER SIMPLIFICADO (IGUAL QUE EL BÚNKER) ---
         const zoom = d3.zoom<SVGSVGElement, unknown>()
           .scaleExtent([1, 8])
           .on('zoom', (event) => {
             gMain.attr('transform', event.transform.toString());
             const k = event.transform.k;
             
+            // 1. BÚNKER (Funciona bien)
             svg.selectAll('.bunker').attr('transform', function() {
                  const coords = d3.select(this).attr('data-coords')?.split(',').map(Number) || [0,0];
                  return `translate(${coords[0]},${coords[1]}) scale(${1/k})`;
             });
+            
+            // 2. ETIQUETAS
             svg.selectAll('text.label').style('font-size', `${Math.max(6, 10/k)}px`);
 
-            // LLAMADA A LA FUNCIÓN CENTRALIZADA DE VISIBILIDAD
-            // Pasamos la selección actual para asegurar que se actualice
+            // 3. MISIONES (AHORA FUNCIONA IGUAL QUE EL BÚNKER)
+            // Ya no ocultamos/mostramos cosas aquí. Solo escalamos inversamente.
             if (gMissionsRef.current) {
-                updateVisuals(gMissionsRef.current.selectAll('.mission'), k);
+                gMissionsRef.current.selectAll('.mission').each(function(d: any) {
+                    const grp = d3.select(this);
+                    const isCompleted = completedMissionIds.has(d.id);
+                    const isShield = d.type === 'SHIELD_BASE';
+                    
+                    // Si es SHIELD completada, aplicamos escala inversa para mantener tamaño fijo
+                    if (isShield && isCompleted) {
+                        grp.attr('transform', (d: any) => {
+                            const coords = projection(d.location.coordinates);
+                            return `translate(${coords![0]}, ${coords![1]}) scale(${1/k * 1.5})`; // 1.5x más grande
+                        });
+                    } 
+                    // Para las demás, mantenemos la lógica de cambio de detalle (Punto -> Icono)
+                    // pero asegurando que los atributos base estén presentes
+                    else {
+                        const coords = projection(d.location.coordinates);
+                        grp.attr('transform', `translate(${coords![0]}, ${coords![1]})`); // Posición base
+
+                        if (k < 2.5) {
+                            grp.select('.shield-logo-group').style('display', 'none');
+                            grp.select('.mission-icon').style('display', 'none');
+                            grp.select('.mission-dot').style('display', 'block').attr('transform', `scale(${1/Math.sqrt(k)})`);
+                            
+                            // Efectos
+                            if (isShield && !isCompleted) grp.select('.effect-shield-ripple').style('display', 'block').attr('transform', `scale(${1/Math.sqrt(k)})`);
+                            else grp.select('.effect-shield-ripple').style('display', 'none');
+
+                            if (!isShield && isCompleted) grp.select('.effect-story-halo').style('display', 'block').attr('transform', `scale(${1/Math.sqrt(k)})`);
+                            else grp.select('.effect-story-halo').style('display', 'none');
+                        } else {
+                            grp.select('.shield-logo-group').style('display', 'none');
+                            grp.select('.mission-dot').style('display', 'none');
+                            grp.select('.effect-shield-ripple').style('display', 'none');
+                            grp.select('.effect-story-halo').style('display', 'none');
+                            grp.select('.mission-icon').style('display', 'block').attr('transform', `scale(${1/k * 2})`);
+                        }
+                    }
+                });
             }
+
+            // 4. TOKENS
             if (gTokensRef.current) {
                 gTokensRef.current.selectAll('.token-group').each(function() {
                     const sel = d3.select(this);
@@ -432,55 +473,6 @@ export const USAMap: React.FC<USAMapProps> = ({
     }
 
   }, [usData, dimensions, projection, pathGenerator, factionStates]); 
-
-  // --- FUNCIÓN CENTRALIZADA DE VISUALIZACIÓN ---
-  // Esta función se define AQUÍ para tener acceso al scope, pero se usa en el useEffect de misiones
-  const updateVisuals = (selection: d3.Selection<d3.BaseType, unknown, d3.BaseType, unknown>, k: number) => {
-      selection.each(function(d: any) {
-          const grp = d3.select(this);
-          const isCompleted = completedMissionIds.has(d.id);
-          const isShield = d.type === 'SHIELD_BASE';
-          const isShieldCompleted = isShield && isCompleted;
-
-          // 1. BASE SHIELD COMPLETADA: SIEMPRE VISIBLE, TAMAÑO FIJO
-          if (isShieldCompleted) {
-              grp.select('.shield-logo-group')
-                  .style('display', 'block')
-                  .attr('transform', `scale(${1/k * 1.5})`); // Escala inversa para tamaño constante
-              
-              grp.select('.mission-dot').style('display', 'none');
-              grp.select('.mission-icon').style('display', 'none');
-              grp.select('.effect-shield-ripple').style('display', 'none');
-              grp.select('.effect-story-halo').style('display', 'none');
-          } 
-          // 2. ZOOM LEJOS (PUNTOS)
-          else if (k < 2.5) {
-              grp.select('.shield-logo-group').style('display', 'none');
-              grp.select('.mission-icon').style('display', 'none');
-              grp.select('.mission-dot').style('display', 'block').attr('transform', `scale(${1/Math.sqrt(k)})`);
-              
-              if (isShield && !isCompleted) {
-                  grp.select('.effect-shield-ripple').style('display', 'block').attr('transform', `scale(${1/Math.sqrt(k)})`);
-              } else {
-                  grp.select('.effect-shield-ripple').style('display', 'none');
-              }
-
-              if (!isShield && isCompleted) {
-                  grp.select('.effect-story-halo').style('display', 'block').attr('transform', `scale(${1/Math.sqrt(k)})`);
-              } else {
-                  grp.select('.effect-story-halo').style('display', 'none');
-              }
-          } 
-          // 3. ZOOM CERCA (ICONOS)
-          else {
-              grp.select('.shield-logo-group').style('display', 'none');
-              grp.select('.mission-dot').style('display', 'none');
-              grp.select('.effect-shield-ripple').style('display', 'none');
-              grp.select('.effect-story-halo').style('display', 'none');
-              grp.select('.mission-icon').style('display', 'block').attr('transform', `scale(${1/k * 2})`);
-          }
-      });
-  };
 
   useEffect(() => {
       if (!projection || !gMissionsRef.current || !gTokensRef.current || !svgRef.current) return;
@@ -637,89 +629,34 @@ export const USAMap: React.FC<USAMapProps> = ({
         .on('mousemove', (event) => setTooltip(prev => prev ? { ...prev, x: event.clientX, y: event.clientY } : null))
         .on('mouseleave', () => setTooltip(null));
 
-      // --- RENDERIZADO EFECTO RADAR (SOLO SHIELD INCOMPLETA) ---
-      missionGroups.select('.effect-shield-ripple')
-        .attr('r', 8)
-        .attr('fill', 'none')
-        .attr('stroke', '#3b82f6')
-        .attr('class', (d) => {
-            const isCompleted = completedMissionIds.has(d.id);
-            const isShield = d.type === 'SHIELD_BASE';
-            return (isShield && !isCompleted) ? 'effect-shield-ripple shield-ripple' : 'effect-shield-ripple';
-        });
-
-      // --- RENDERIZADO EFECTO HALO (SOLO HISTORIA COMPLETADA) ---
-      missionGroups.select('.effect-story-halo')
-        .attr('r', 8)
-        .attr('fill', 'none')
-        .attr('stroke', (d) => {
-            if (d.type === 'INTRODUCTORY') return '#10b981';
-            const visuals = getMissionVisuals(d, true);
-            return visuals.factionColor;
-        })
-        .attr('class', (d) => {
-            const isCompleted = completedMissionIds.has(d.id);
-            const isShield = d.type === 'SHIELD_BASE';
-            return (isCompleted && !isShield) ? 'effect-story-halo story-halo' : 'effect-story-halo';
-        });
-
-      // --- RENDERIZADO DEL PUNTO PRINCIPAL ---
-      missionGroups.select('.mission-dot')
-        .attr('r', (d) => completedMissionIds.has(d.id) ? 6 : 5)
-        .attr('fill', (d) => {
-            const isCompleted = completedMissionIds.has(d.id);
-            if (isCompleted) {
-                if (d.type === 'SHIELD_BASE') return '#06b6d4';
-                return '#10b981'; 
-            }
-            return '#eab308'; 
-        })
-        .attr('stroke', (d) => {
-            const isCompleted = completedMissionIds.has(d.id);
-            if (isCompleted) {
-                if (d.type === 'SHIELD_BASE') return '#0891b2';
-                return '#059669';
-            }
-            return '#ca8a04'; 
-        })
-        .attr('stroke-width', 2) 
-        .style('filter', (d) => {
-            if (worldStage === 'GALACTUS' && d.type !== 'BOSS' && d.type !== 'GALACTUS') return 'none';
-            const visuals = getMissionVisuals(d, completedMissionIds.has(d.id));
-            return `url(#${visuals.glowId})`;
-        });
-
-      // --- RENDERIZADO DEL ICONO (ZOOM ALTO) ---
-      missionGroups.select('.mission-icon')
-        .each(function(d) {
-          const sel = d3.select(this);
+      // --- RENDERIZADO INICIAL DE ELEMENTOS (SIN ESPERAR AL ZOOM) ---
+      // Esto asegura que los puntos existan y sean visibles desde el frame 1
+      missionGroups.each(function(d: any) {
+          const grp = d3.select(this);
           const isCompleted = completedMissionIds.has(d.id);
           const isShield = d.type === 'SHIELD_BASE';
-          
-          if (isCompleted && isShield) {
-              sel.style('display', 'none');
-              return;
+          const isShieldCompleted = isShield && isCompleted;
+
+          if (isShieldCompleted) {
+              grp.select('.shield-logo-group').style('display', 'block').attr('transform', `scale(${1/currentZoom * 1.5})`);
+              grp.select('.mission-dot').style('display', 'none');
+              grp.select('.mission-icon').style('display', 'none');
+              grp.select('.effect-shield-ripple').style('display', 'none');
+              grp.select('.effect-story-halo').style('display', 'none');
+          } else {
+              // Configuración por defecto (Punto visible)
+              grp.select('.mission-dot')
+                  .style('display', 'block')
+                  .attr('r', isCompleted ? 6 : 5)
+                  .attr('fill', isCompleted ? '#10b981' : '#eab308')
+                  .attr('stroke', isCompleted ? '#059669' : '#ca8a04')
+                  .attr('stroke-width', 2)
+                  .attr('transform', `scale(${1/Math.sqrt(currentZoom)})`);
+              
+              grp.select('.shield-logo-group').style('display', 'none');
+              grp.select('.mission-icon').style('display', 'none');
           }
-
-          const currentStatus = sel.attr('data-status');
-          const newStatus = isCompleted ? 'completed' : 'active';
-          const isBlocked = worldStage === 'GALACTUS' && d.type !== 'BOSS' && d.type !== 'GALACTUS';
-
-          if (sel.selectAll('*').empty() || currentStatus !== newStatus) {
-              sel.selectAll('*').remove();
-              sel.attr('data-status', newStatus);
-              const visuals = getMissionVisuals(d, isCompleted);
-              const strokeColor = isBlocked ? '#64748b' : visuals.factionColor;
-              const fillColor = isBlocked ? '#1e293b' : '#0f172a';
-              const coreColor = isBlocked ? '#64748b' : visuals.coreColor;
-              sel.append('circle').attr('r', 10).attr('fill', fillColor).attr('stroke', strokeColor).attr('stroke-width', 2).style('filter', isBlocked ? 'none' : `url(#${visuals.glowId})`);
-              sel.append('circle').attr('r', 3).attr('fill', coreColor);
-          }
-        });
-
-      // --- APLICAR VISIBILIDAD INICIAL INMEDIATAMENTE ---
-      // Esto es crucial: llama a la función de visibilidad justo después de crear/actualizar los elementos
-      updateVisuals(missionGroups, currentZoom);
+      });
 
       // ... (Resto de tokens Hulk/Surfer) ...
       let hulkRenderCoords = projection(hulkLocation);
