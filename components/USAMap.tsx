@@ -77,7 +77,7 @@ export const USAMap: React.FC<USAMapProps> = ({
                 animation: dash-flow 1s linear infinite;
             }
 
-            /* EFECTO RIPPLE (Onda expansiva) */
+            /* EFECTO RIPPLE (Onda expansiva para bases incompletas) */
             @keyframes ripple-ping {
                 0% { transform: scale(1); opacity: 0.8; stroke-width: 2px; }
                 100% { transform: scale(3); opacity: 0; stroke-width: 0px; }
@@ -89,7 +89,7 @@ export const USAMap: React.FC<USAMapProps> = ({
                 pointer-events: none;
             }
 
-            /* EFECTO HALO (Historia) */
+            /* EFECTO HALO (Historia completada) */
             @keyframes halo-breathe {
                 0%, 100% { transform: scale(1.3); opacity: 0.3; stroke-width: 1px; }
                 50% { transform: scale(1.6); opacity: 0.6; stroke-width: 2px; }
@@ -101,15 +101,15 @@ export const USAMap: React.FC<USAMapProps> = ({
                 pointer-events: none;
             }
 
-            /* NUEVO: EFECTO ESCÁNER (BARRIDO) */
-            @keyframes scanner-spin {
+            /* EFECTO RADAR GIRATORIO (SHIELD COMPLETADO) */
+            @keyframes radar-spin {
                 from { transform: rotate(0deg); }
                 to { transform: rotate(360deg); }
             }
-            .scanner-beam {
+            .radar-spinner {
                 transform-box: fill-box;
                 transform-origin: center;
-                animation: scanner-spin 3s linear infinite;
+                animation: radar-spin 4s linear infinite;
             }
           `;
           document.head.appendChild(style);
@@ -182,37 +182,6 @@ export const USAMap: React.FC<USAMapProps> = ({
       if (factionStates.hulk.has(state)) return t.factions.hulk.name;
       if (factionStates.doom.has(state)) return t.factions.doom.name;
       return t.factions.neutral.name;
-  };
-
-  const getMissionVisuals = (mission: Mission, isCompleted: boolean) => {
-      let coreColor = '#eab308'; 
-      
-      if (isCompleted) coreColor = '#10b981'; 
-      else if (mission.type === 'SHIELD_BASE') coreColor = '#3b82f6'; 
-      else if (mission.type === 'INTRODUCTORY') coreColor = '#10b981'; 
-      else if (mission.type && mission.type.startsWith('BOSS')) coreColor = '#9333ea'; 
-      else if (mission.type === 'GALACTUS') coreColor = '#9333ea'; 
-
-      let factionColor = '#94a3b8'; 
-      let glowId = 'glow-neutral';
-      
-      const state = mission.location.state;
-      if (factionStates.magneto.has(state)) { factionColor = '#ef4444'; glowId = 'glow-magneto'; }
-      else if (factionStates.kingpin.has(state)) { factionColor = '#d946ef'; glowId = 'glow-kingpin'; }
-      else if (factionStates.hulk.has(state)) { factionColor = '#84cc16'; glowId = 'glow-hulk'; }
-      else if (factionStates.doom.has(state)) { factionColor = '#06b6d4'; glowId = 'glow-doom'; }
-
-      if (mission.type === 'GALACTUS' || (mission.type && mission.type.startsWith('BOSS'))) { 
-          factionColor = '#9333ea'; 
-          glowId = 'glow-boss'; 
-      }
-      
-      if (mission.type === 'INTRODUCTORY') {
-          glowId = 'glow-shield';
-          factionColor = '#10b981';
-      }
-
-      return { coreColor, factionColor, glowId };
   };
 
   // --- LÓGICA DE MOVIMIENTO DE TOKENS (HULK/SURFER) ---
@@ -334,33 +303,15 @@ export const USAMap: React.FC<USAMapProps> = ({
                 svg.selectAll('.mission-dot').style('display', 'none');
                 svg.selectAll('.effect-shield-ripple').style('display', 'none');
                 svg.selectAll('.effect-story-halo').style('display', 'none');
-                
-                // El logo de SHIELD se mantiene visible pero escala un poco para no ser enorme
-                svg.selectAll('.shield-logo-group').attr('transform', `scale(${1/k * 2})`);
-                
-                // Iconos normales visibles
+                svg.selectAll('.shield-logo-group').style('display', 'none'); 
                 svg.selectAll('.mission-icon').style('display', 'block').attr('transform', `scale(${1/k * 2})`);
             } else {
                 svg.selectAll('.mission-icon').style('display', 'none');
                 svg.selectAll('.mission-dot').style('display', 'block').attr('transform', `scale(${1/Math.sqrt(k)})`);
                 svg.selectAll('.effect-shield-ripple').style('display', 'block');
                 svg.selectAll('.effect-story-halo').style('display', 'block');
-                
-                // Logo de SHIELD visible y escalado
-                svg.selectAll('.shield-logo-group').attr('transform', `scale(${1/Math.sqrt(k)})`);
+                svg.selectAll('.shield-logo-group').style('display', 'block').attr('transform', `scale(${1/Math.sqrt(k)})`);
             }
-            
-            // Asegurar que los logos de SHIELD completados SIEMPRE se muestren (sobrescribiendo la lógica general si es necesario)
-            svg.selectAll('.shield-logo-group').style('display', 'block');
-
-            // Ocultar iconos genéricos si hay un logo de SHIELD activo en ese grupo
-            svg.selectAll('.mission').each(function() {
-                const grp = d3.select(this);
-                if (!grp.select('.shield-logo-group').empty() && grp.select('.shield-logo-group').style('display') !== 'none') {
-                    grp.select('.mission-icon').style('display', 'none');
-                    grp.select('.mission-dot').style('display', 'none');
-                }
-            });
             
             svg.selectAll('.token-group').each(function() {
                 const sel = d3.select(this);
@@ -546,11 +497,10 @@ export const USAMap: React.FC<USAMapProps> = ({
                 grp.append('circle').attr('class', 'effect-story-halo');
                 grp.append('circle').attr('class', 'mission-dot');
                 
-                // Grupo para el logo de SHIELD (Solo se crea, la visibilidad se maneja abajo)
-                const shieldGrp = grp.append('g').attr('class', 'shield-logo-group');
+                // Grupo para el logo de SHIELD
+                const shieldGrp = grp.append('g').attr('class', 'shield-logo-group').style('display', 'none');
                 
                 // Efecto Escáner (Barrido)
-                // Usamos un path para crear un "sector" de radar que gira
                 shieldGrp.append('path')
                     .attr('class', 'scanner-beam')
                     .attr('d', d3.arc()({ innerRadius: 0, outerRadius: 14, startAngle: 0, endAngle: Math.PI / 3 }) || '')
@@ -592,7 +542,7 @@ export const USAMap: React.FC<USAMapProps> = ({
         .on('mousemove', (event) => setTooltip(prev => prev ? { ...prev, x: event.clientX, y: event.clientY } : null))
         .on('mouseleave', () => setTooltip(null));
 
-      // --- RENDERIZADO EFECTO RADAR (SHIELD NO COMPLETADO) ---
+      // --- RENDERIZADO EFECTO RADAR (SOLO SHIELD INCOMPLETA) ---
       missionGroups.select('.effect-shield-ripple')
         .attr('r', 8)
         .attr('fill', 'none')
@@ -608,24 +558,22 @@ export const USAMap: React.FC<USAMapProps> = ({
             return (isShield && !isCompleted && currentZoom < 2.5) ? 'block' : 'none';
         });
 
-      // --- RENDERIZADO LOGO SHIELD (SOLO COMPLETADO Y TIPO SHIELD) ---
+      // --- RENDERIZADO LOGO SHIELD (SOLO SHIELD COMPLETADA) ---
       missionGroups.select('.shield-logo-group')
         .style('display', (d) => {
             const isCompleted = completedMissionIds.has(d.id);
             const isShield = d.type === 'SHIELD_BASE';
-            // Lógica estricta: Solo visible si es SHIELD y está completada
-            return (isShield && isCompleted) ? 'block' : 'none';
+            return (isShield && isCompleted && currentZoom < 2.5) ? 'block' : 'none';
         })
-        .attr('transform', `scale(${currentZoom >= 2.5 ? 1/currentZoom * 2 : 1/Math.sqrt(currentZoom)})`);
+        .attr('transform', `scale(${1/Math.sqrt(currentZoom)})`);
 
-      // --- RENDERIZADO EFECTO HALO (HISTORIA) ---
+      // --- RENDERIZADO EFECTO HALO (SOLO HISTORIA COMPLETADA) ---
       missionGroups.select('.effect-story-halo')
         .attr('r', 8)
         .attr('fill', 'none')
         .attr('stroke', (d) => {
             if (d.type === 'INTRODUCTORY') return '#10b981';
-            const visuals = getMissionVisuals(d, true);
-            return visuals.factionColor;
+            return '#10b981'; // Siempre verde para completadas
         })
         .attr('class', (d) => {
             const isCompleted = completedMissionIds.has(d.id);
@@ -642,14 +590,14 @@ export const USAMap: React.FC<USAMapProps> = ({
       missionGroups.select('.mission-dot')
         .attr('r', (d) => completedMissionIds.has(d.id) ? 6 : 5)
         .attr('fill', (d) => {
-            if (worldStage === 'GALACTUS' && d.type !== 'BOSS' && d.type !== 'GALACTUS') return '#64748b';
-            const visuals = getMissionVisuals(d, completedMissionIds.has(d.id));
-            return visuals.coreColor;
+            const isCompleted = completedMissionIds.has(d.id);
+            if (isCompleted) return '#10b981'; // Verde (Historia Completada)
+            return '#eab308'; // Amarillo (Incompleta, sea Historia o Shield)
         })
         .attr('stroke', (d) => {
-            if (worldStage === 'GALACTUS' && d.type !== 'BOSS' && d.type !== 'GALACTUS') return '#475569';
-            const visuals = getMissionVisuals(d, completedMissionIds.has(d.id));
-            return visuals.factionColor;
+            const isCompleted = completedMissionIds.has(d.id);
+            if (isCompleted) return '#059669'; // Borde verde oscuro
+            return '#ca8a04'; // Borde amarillo oscuro
         })
         .attr('stroke-width', 2) 
         .style('filter', (d) => {
@@ -660,7 +608,7 @@ export const USAMap: React.FC<USAMapProps> = ({
         .style('display', (d) => {
             const isCompleted = completedMissionIds.has(d.id);
             const isShield = d.type === 'SHIELD_BASE';
-            // Ocultar si es SHIELD completada (porque mostramos el logo)
+            // Ocultar punto si es base SHIELD completada (porque mostramos el logo)
             if (isCompleted && isShield) return 'none';
             return currentZoom >= 2.5 ? 'none' : 'block';
         })
