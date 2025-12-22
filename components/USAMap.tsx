@@ -62,6 +62,38 @@ export const USAMap: React.FC<USAMapProps> = ({
 
   const t = translations[language];
 
+  // --- FUNCIÓN HELPER PARA ESTILOS (DEFINIDA AQUÍ PARA QUE SEA ACCESIBLE) ---
+  const getMissionVisuals = (mission: Mission, isCompleted: boolean) => {
+      let coreColor = '#eab308'; // Amarillo por defecto
+      
+      if (isCompleted) coreColor = '#10b981'; // Verde si completada
+      else if (mission.type === 'SHIELD_BASE') coreColor = '#3b82f6'; 
+      else if (mission.type === 'INTRODUCTORY') coreColor = '#10b981'; 
+      else if (mission.type && mission.type.startsWith('BOSS')) coreColor = '#9333ea'; 
+      else if (mission.type === 'GALACTUS') coreColor = '#9333ea'; 
+
+      let factionColor = '#94a3b8'; 
+      let glowId = 'glow-neutral';
+      
+      const state = mission.location.state;
+      if (factionStates.magneto.has(state)) { factionColor = '#ef4444'; glowId = 'glow-magneto'; }
+      else if (factionStates.kingpin.has(state)) { factionColor = '#d946ef'; glowId = 'glow-kingpin'; }
+      else if (factionStates.hulk.has(state)) { factionColor = '#84cc16'; glowId = 'glow-hulk'; }
+      else if (factionStates.doom.has(state)) { factionColor = '#06b6d4'; glowId = 'glow-doom'; }
+
+      if (mission.type === 'GALACTUS' || (mission.type && mission.type.startsWith('BOSS'))) { 
+          factionColor = '#9333ea'; 
+          glowId = 'glow-boss'; 
+      }
+      
+      if (mission.type === 'INTRODUCTORY') {
+          glowId = 'glow-shield';
+          factionColor = '#10b981';
+      }
+
+      return { coreColor, factionColor, glowId };
+  };
+
   // --- DEFINICIÓN DE ANIMACIONES CSS ---
   useEffect(() => {
       const styleId = 'map-animations';
@@ -573,7 +605,8 @@ export const USAMap: React.FC<USAMapProps> = ({
         .attr('fill', 'none')
         .attr('stroke', (d) => {
             if (d.type === 'INTRODUCTORY') return '#10b981';
-            return '#10b981'; // Siempre verde para completadas
+            const visuals = getMissionVisuals(d, true);
+            return visuals.factionColor;
         })
         .attr('class', (d) => {
             const isCompleted = completedMissionIds.has(d.id);
