@@ -23,9 +23,6 @@ interface USAMapProps {
   surferTurnCount?: number;
 }
 
-const RADAR_SIZE = 250; 
-const RADAR_OFFSET = RADAR_SIZE / 2;
-
 export const USAMap: React.FC<USAMapProps> = ({ 
     language, 
     missions, 
@@ -62,6 +59,47 @@ export const USAMap: React.FC<USAMapProps> = ({
   const meetingInProgressRef = useRef(false);
 
   const t = translations[language];
+
+  // --- DEFINICIÓN DE ANIMACIONES CSS ---
+  useEffect(() => {
+      const styleId = 'map-animations';
+      if (!document.getElementById(styleId)) {
+          const style = document.createElement('style');
+          style.id = styleId;
+          style.innerHTML = `
+            /* 1. EFECTO FLOW (Líneas) */
+            @keyframes dash-flow {
+                to { stroke-dashoffset: -20; }
+            }
+            .line-flowing {
+                animation: dash-flow 1s linear infinite;
+            }
+
+            /* 2. EFECTO RADAR (Solo SHIELD) */
+            @keyframes ripple-ping {
+                0% { transform: scale(1); opacity: 0.8; stroke-width: 2px; }
+                100% { transform: scale(3); opacity: 0; stroke-width: 0px; }
+            }
+            .shield-ripple {
+                transform-origin: center;
+                animation: ripple-ping 2s cubic-bezier(0, 0, 0.2, 1) infinite;
+                pointer-events: none;
+            }
+
+            /* 3. EFECTO HALO RESPIRATORIO (Historia) */
+            @keyframes halo-breathe {
+                0%, 100% { transform: scale(1.3); opacity: 0.3; stroke-width: 1px; }
+                50% { transform: scale(1.6); opacity: 0.6; stroke-width: 2px; }
+            }
+            .story-halo {
+                transform-origin: center;
+                animation: halo-breathe 3s ease-in-out infinite;
+                pointer-events: none;
+            }
+          `;
+          document.head.appendChild(style);
+      }
+  }, []);
 
   useEffect(() => {
       hulkCurrentLocRef.current = hulkLocation;
@@ -154,83 +192,56 @@ export const USAMap: React.FC<USAMapProps> = ({
           glowId = 'glow-boss'; 
       }
       
-      // Override para Intro: Siempre verde brillante si es intro
       if (mission.type === 'INTRODUCTORY') {
-          glowId = 'glow-shield'; // Reutilizamos el glow azul/verde brillante
+          glowId = 'glow-shield';
           factionColor = '#10b981';
       }
 
       return { coreColor, factionColor, glowId };
   };
 
+  // --- LÓGICA DE MOVIMIENTO DE TOKENS (HULK/SURFER) ---
   useEffect(() => {
       if (!tokensReleased || !usData || !pathGenerator || !projection) return;
       const getDistance = (a: [number, number], b: [number, number]) => Math.sqrt(Math.pow(a[0] - b[0], 2) + Math.pow(a[1] - b[1], 2));
-
       const jumpHulk = () => {
-          if (meetingInProgressRef.current) {
-              hulkTimerRef.current = setTimeout(jumpHulk, 1000);
-              return;
-          }
+          if (meetingInProgressRef.current) { hulkTimerRef.current = setTimeout(jumpHulk, 1000); return; }
           const statesFeatureCollection = feature(usData as any, usData!.objects.states as any) as any;
           const validStates = statesFeatureCollection.features.filter((f: any) => factionStates.hulk.has(f.properties.name));
-
           if (validStates.length > 0) {
               const candidates: { coords: [number, number], dist: number }[] = [];
               const currentLoc = hulkCurrentLocRef.current;
-
               validStates.forEach((state: any) => {
                   const centroid = pathGenerator.centroid(state);
                   if (projection.invert && centroid && !isNaN(centroid[0])) {
                       const coords = projection.invert(centroid) as [number, number];
-                      if (coords) {
-                          const dist = getDistance(currentLoc, coords);
-                          if (dist > 0.5) candidates.push({ coords, dist });
-                      }
+                      if (coords) { const dist = getDistance(currentLoc, coords); if (dist > 0.5) candidates.push({ coords, dist }); }
                   }
               });
-              
               candidates.sort((a, b) => a.dist - b.dist);
               const poolSize = Math.min(candidates.length, 4);
-              
               if (poolSize > 0) {
                   const randomIndex = Math.floor(Math.random() * poolSize);
-                  const newCoords = candidates[randomIndex].coords;
-                  setHulkLocation(newCoords); 
-                  if (hulkTimerRef.current) clearTimeout(hulkTimerRef.current);
+                  setHulkLocation(candidates[randomIndex].coords); 
                   hulkTimerRef.current = setTimeout(jumpHulk, 6000);
-              } else {
-                  if (hulkTimerRef.current) clearTimeout(hulkTimerRef.current);
-                  hulkTimerRef.current = setTimeout(jumpHulk, 3000);
-              }
+              } else { hulkTimerRef.current = setTimeout(jumpHulk, 3000); }
           }
       };
-
       if (hulkTimerRef.current) clearTimeout(hulkTimerRef.current);
       hulkTimerRef.current = setTimeout(jumpHulk, 2000);
-
       return () => { if (hulkTimerRef.current) clearTimeout(hulkTimerRef.current); };
   }, [tokensReleased, usData, pathGenerator, projection, factionStates]);
 
   useEffect(() => {
-      if (worldStage !== 'SURFER' || !usData || !pathGenerator || !projection) {
-          setSurferLocation(null);
-          meetingInProgressRef.current = false;
-          return;
-      }
-
+      if (worldStage !== 'SURFER' || !usData || !pathGenerator || !projection) { setSurferLocation(null); meetingInProgressRef.current = false; return; }
       const getRandomStateCoords = () => {
           const statesFeatureCollection = feature(usData as any, usData!.objects.states as any) as any;
           const randomFeature = statesFeatureCollection.features[Math.floor(Math.random() * statesFeatureCollection.features.length)];
           const centroid = pathGenerator.centroid(randomFeature);
-          if (projection.invert && centroid && !isNaN(centroid[0])) {
-              return projection.invert(centroid) as [number, number];
-          }
+          if (projection.invert && centroid && !isNaN(centroid[0])) { return projection.invert(centroid) as [number, number]; }
           return [-98.5, 39.8] as [number, number];
       };
-
       if (surferTimerRef.current) clearTimeout(surferTimerRef.current);
-
       if (surferTurnCount === 0) {
           meetingInProgressRef.current = true;
           if (!surferLocation) {
@@ -243,10 +254,7 @@ export const USAMap: React.FC<USAMapProps> = ({
                       setSurferLocation(scatterCoords);
                   }, 20000); 
               }, 500);
-          } else {
-              meetingInProgressRef.current = true;
-              setSurferLocation(hulkCurrentLocRef.current);
-          }
+          } else { meetingInProgressRef.current = true; setSurferLocation(hulkCurrentLocRef.current); }
       } else if (surferTurnCount > 0 && surferTurnCount <= 2) {
           meetingInProgressRef.current = false; 
           const newCoords = getRandomStateCoords();
@@ -257,6 +265,7 @@ export const USAMap: React.FC<USAMapProps> = ({
       }
       return () => { if (surferTimerRef.current) clearTimeout(surferTimerRef.current); };
   }, [worldStage, surferTurnCount, usData, pathGenerator, projection]);
+
 
   useEffect(() => {
     if (!usData || !svgRef.current || !projection || !pathGenerator) return;
@@ -304,12 +313,17 @@ export const USAMap: React.FC<USAMapProps> = ({
             });
             svg.selectAll('text.label').style('font-size', `${Math.max(6, 10/k)}px`);
 
+            // Ajuste de escala para misiones
             if (k >= 2.5) {
                 svg.selectAll('.mission-dot').style('display', 'none');
+                svg.selectAll('.effect-shield-ripple').style('display', 'none');
+                svg.selectAll('.effect-story-halo').style('display', 'none');
                 svg.selectAll('.mission-icon').style('display', 'block').attr('transform', `scale(${1/k * 2})`);
             } else {
                 svg.selectAll('.mission-icon').style('display', 'none');
                 svg.selectAll('.mission-dot').style('display', 'block').attr('transform', `scale(${1/Math.sqrt(k)})`);
+                svg.selectAll('.effect-shield-ripple').style('display', 'block').attr('transform', `scale(${1/Math.sqrt(k)})`);
+                svg.selectAll('.effect-story-halo').style('display', 'block').attr('transform', `scale(${1/Math.sqrt(k)})`);
             }
             
             svg.selectAll('.token-group').each(function() {
@@ -400,10 +414,8 @@ export const USAMap: React.FC<USAMapProps> = ({
       const gTokens = gTokensRef.current;
       const currentZoom = d3.zoomTransform(svgRef.current).k || 1;
 
-      // --- CORRECCIÓN: Asegurar que las misiones tengan coordenadas válidas ---
       const validMissions = missions.filter(m => {
           if (!m || !m.id || !m.location || !m.location.coordinates) return false;
-          // Verificar que las coordenadas no sean [0,0] o inválidas
           const [x, y] = m.location.coordinates;
           return x !== 0 && y !== 0 && !isNaN(x) && !isNaN(y);
       });
@@ -418,36 +430,55 @@ export const USAMap: React.FC<USAMapProps> = ({
           }
       });
 
+      // --- LÍNEAS DE CONEXIÓN CON EFECTO FLOW ---
       gMissions.selectAll('path.mission-line')
         .data(connections, (d: any) => `${d.source}-${d.target}`) 
         .join('path')
-        .attr('class', 'mission-line')
+        .attr('class', (d) => {
+            const isSourceComplete = completedMissionIds.has(d.source);
+            const isTargetComplete = completedMissionIds.has(d.target);
+            // Si la misión origen está completa pero el destino no, la línea "fluye" hacia el nuevo objetivo
+            if (isSourceComplete && !isTargetComplete) return 'mission-line line-flowing';
+            return 'mission-line';
+        })
         .attr('d', (d) => {
             const startMission = missions.find(m => m.id === d.source);
             const endMission = missions.find(m => m.id === d.target);
-            
             if (!startMission || !endMission) return null;
-            
             const start = projection(startMission.location.coordinates);
             const end = projection(endMission.location.coordinates);
-            
             if (!start || !end) return null;
-            
             const dr = Math.sqrt(Math.pow(end[0]-start[0], 2) + Math.pow(end[1]-start[1], 2));
             return `M${start[0]},${start[1]}A${dr},${dr} 0 0,1 ${end[0]},${end[1]}`;
         })
         .attr('fill', 'none')
-        .attr('stroke', '#eab308')
-        .attr('stroke-width', 1.5)
+        .attr('stroke', (d) => {
+            const isSourceComplete = completedMissionIds.has(d.source);
+            return isSourceComplete ? '#fbbf24' : '#475569';
+        })
+        .attr('stroke-width', (d) => {
+            const isSourceComplete = completedMissionIds.has(d.source);
+            return isSourceComplete ? 2 : 1.5;
+        })
         .attr('stroke-dasharray', '4,4')
-        .attr('opacity', 0.6);
+        .attr('opacity', (d) => {
+            const isSourceComplete = completedMissionIds.has(d.source);
+            return isSourceComplete ? 1 : 0.4;
+        });
 
+      // --- GRUPOS DE MISIONES ---
       const missionGroups = gMissions.selectAll('g.mission')
         .data(validMissions, (d: any) => d.id) 
         .join(
             enter => {
                 const grp = enter.append('g').attr('class', 'mission cursor-pointer hover:opacity-100');
+                // 1. Efecto Radar (Solo SHIELD)
+                grp.append('circle').attr('class', 'effect-shield-ripple');
+                // 2. Efecto Halo (Historia)
+                grp.append('circle').attr('class', 'effect-story-halo');
+                // 3. Punto Principal
                 grp.append('circle').attr('class', 'mission-dot');
+                // 4. Icono (Zoom Alto)
                 grp.append('g').attr('class', 'mission-icon');
                 return grp;
             }
@@ -468,6 +499,46 @@ export const USAMap: React.FC<USAMapProps> = ({
         .on('mousemove', (event) => setTooltip(prev => prev ? { ...prev, x: event.clientX, y: event.clientY } : null))
         .on('mouseleave', () => setTooltip(null));
 
+      // --- RENDERIZADO EFECTO RADAR (SHIELD) ---
+      missionGroups.select('.effect-shield-ripple')
+        .attr('r', 8)
+        .attr('fill', 'none')
+        .attr('stroke', '#3b82f6') // Azul SHIELD
+        .attr('class', (d) => {
+            const isCompleted = completedMissionIds.has(d.id);
+            const isShield = d.type === 'SHIELD_BASE';
+            return (isCompleted && isShield) ? 'effect-shield-ripple shield-ripple' : 'effect-shield-ripple';
+        })
+        .style('display', (d) => {
+            const isCompleted = completedMissionIds.has(d.id);
+            const isShield = d.type === 'SHIELD_BASE';
+            return (isCompleted && isShield && currentZoom < 2.5) ? 'block' : 'none';
+        })
+        .attr('transform', `scale(${1/Math.sqrt(currentZoom)})`);
+
+      // --- RENDERIZADO EFECTO HALO (HISTORIA) ---
+      missionGroups.select('.effect-story-halo')
+        .attr('r', 8)
+        .attr('fill', 'none')
+        .attr('stroke', (d) => {
+            // Color según facción o verde si es intro
+            if (d.type === 'INTRODUCTORY') return '#10b981';
+            const visuals = getMissionVisuals(d, true);
+            return visuals.factionColor;
+        })
+        .attr('class', (d) => {
+            const isCompleted = completedMissionIds.has(d.id);
+            const isShield = d.type === 'SHIELD_BASE';
+            return (isCompleted && !isShield) ? 'effect-story-halo story-halo' : 'effect-story-halo';
+        })
+        .style('display', (d) => {
+            const isCompleted = completedMissionIds.has(d.id);
+            const isShield = d.type === 'SHIELD_BASE';
+            return (isCompleted && !isShield && currentZoom < 2.5) ? 'block' : 'none';
+        })
+        .attr('transform', `scale(${1/Math.sqrt(currentZoom)})`);
+
+      // --- RENDERIZADO DEL PUNTO PRINCIPAL ---
       missionGroups.select('.mission-dot')
         .attr('r', (d) => completedMissionIds.has(d.id) ? 6 : 5)
         .attr('fill', (d) => {
@@ -489,6 +560,7 @@ export const USAMap: React.FC<USAMapProps> = ({
         .style('display', currentZoom >= 2.5 ? 'none' : 'block')
         .attr('transform', `scale(${1/Math.sqrt(currentZoom)})`);
 
+      // --- RENDERIZADO DEL ICONO (ZOOM ALTO) ---
       missionGroups.select('.mission-icon')
         .each(function(d) {
           const sel = d3.select(this);
@@ -511,6 +583,7 @@ export const USAMap: React.FC<USAMapProps> = ({
         .style('display', currentZoom < 2.5 ? 'none' : 'block')
         .attr('transform', `scale(${1/currentZoom * 2})`);
 
+      // ... (Lógica de renderizado de tokens Hulk/Surfer se mantiene igual) ...
       let hulkRenderCoords = projection(hulkLocation);
       let surferRenderCoords = surferLocation ? projection(surferLocation) : null;
 
