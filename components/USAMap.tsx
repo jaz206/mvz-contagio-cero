@@ -62,11 +62,11 @@ export const USAMap: React.FC<USAMapProps> = ({
 
   const t = translations[language];
 
-  // --- FUNCIÓN HELPER PARA ESTILOS (DEFINIDA AQUÍ PARA QUE SEA ACCESIBLE) ---
+  // --- FUNCIÓN HELPER PARA ESTILOS ---
   const getMissionVisuals = (mission: Mission, isCompleted: boolean) => {
-      let coreColor = '#eab308'; // Amarillo por defecto
+      let coreColor = '#eab308'; 
       
-      if (isCompleted) coreColor = '#10b981'; // Verde si completada
+      if (isCompleted) coreColor = '#10b981'; 
       else if (mission.type === 'SHIELD_BASE') coreColor = '#3b82f6'; 
       else if (mission.type === 'INTRODUCTORY') coreColor = '#10b981'; 
       else if (mission.type && mission.type.startsWith('BOSS')) coreColor = '#9333ea'; 
@@ -101,46 +101,35 @@ export const USAMap: React.FC<USAMapProps> = ({
           const style = document.createElement('style');
           style.id = styleId;
           style.innerHTML = `
-            /* EFECTO FLOW (Líneas) */
-            @keyframes dash-flow {
-                to { stroke-dashoffset: -20; }
-            }
-            .line-flowing {
-                animation: dash-flow 1s linear infinite;
-            }
+            @keyframes dash-flow { to { stroke-dashoffset: -20; } }
+            .line-flowing { animation: dash-flow 1s linear infinite; }
 
-            /* EFECTO RIPPLE (Onda expansiva para bases incompletas) */
             @keyframes ripple-ping {
                 0% { transform: scale(1); opacity: 0.8; stroke-width: 2px; }
                 100% { transform: scale(3); opacity: 0; stroke-width: 0px; }
             }
             .shield-ripple {
-                transform-box: fill-box;
-                transform-origin: center;
+                transform-box: fill-box; transform-origin: center;
                 animation: ripple-ping 2s cubic-bezier(0, 0, 0.2, 1) infinite;
                 pointer-events: none;
             }
 
-            /* EFECTO HALO (Historia completada) */
             @keyframes halo-breathe {
                 0%, 100% { transform: scale(1.3); opacity: 0.3; stroke-width: 1px; }
                 50% { transform: scale(1.6); opacity: 0.6; stroke-width: 2px; }
             }
             .story-halo {
-                transform-box: fill-box;
-                transform-origin: center;
+                transform-box: fill-box; transform-origin: center;
                 animation: halo-breathe 3s ease-in-out infinite;
                 pointer-events: none;
             }
 
-            /* EFECTO RADAR GIRATORIO (SHIELD COMPLETADO) */
             @keyframes radar-spin {
                 from { transform: rotate(0deg); }
                 to { transform: rotate(360deg); }
             }
             .radar-spinner {
-                transform-box: fill-box;
-                transform-origin: center;
+                transform-box: fill-box; transform-origin: center;
                 animation: radar-spin 4s linear infinite;
             }
           `;
@@ -330,20 +319,49 @@ export const USAMap: React.FC<USAMapProps> = ({
             });
             svg.selectAll('text.label').style('font-size', `${Math.max(6, 10/k)}px`);
 
-            // Ajuste de escala para misiones
-            if (k >= 2.5) {
-                svg.selectAll('.mission-dot').style('display', 'none');
-                svg.selectAll('.effect-shield-ripple').style('display', 'none');
-                svg.selectAll('.effect-story-halo').style('display', 'none');
-                svg.selectAll('.shield-logo-group').style('display', 'none'); 
-                svg.selectAll('.mission-icon').style('display', 'block').attr('transform', `scale(${1/k * 2})`);
-            } else {
-                svg.selectAll('.mission-icon').style('display', 'none');
-                svg.selectAll('.mission-dot').style('display', 'block').attr('transform', `scale(${1/Math.sqrt(k)})`);
-                svg.selectAll('.effect-shield-ripple').style('display', 'block');
-                svg.selectAll('.effect-story-halo').style('display', 'block');
-                svg.selectAll('.shield-logo-group').style('display', 'block').attr('transform', `scale(${1/Math.sqrt(k)})`);
-            }
+            // --- LÓGICA DE ZOOM CORREGIDA Y ROBUSTA ---
+            svg.selectAll('.mission').each(function(d: any) {
+                const grp = d3.select(this);
+                const isCompleted = completedMissionIds.has(d.id);
+                const isShield = d.type === 'SHIELD_BASE';
+                const isShieldCompleted = isShield && isCompleted;
+
+                // CASO 1: BASE SHIELD COMPLETADA (SIEMPRE VISIBLE, SIN IMPORTAR ZOOM)
+                if (isShieldCompleted) {
+                    grp.select('.shield-logo-group').style('display', 'block').attr('transform', `scale(${1/Math.sqrt(k)})`);
+                    grp.select('.mission-dot').style('display', 'none');
+                    grp.select('.mission-icon').style('display', 'none');
+                    grp.select('.effect-shield-ripple').style('display', 'none');
+                    grp.select('.effect-story-halo').style('display', 'none');
+                } 
+                // CASO 2: ZOOM LEJOS (PUNTOS SIMPLES)
+                else if (k < 2.5) {
+                    grp.select('.shield-logo-group').style('display', 'none');
+                    grp.select('.mission-icon').style('display', 'none');
+                    grp.select('.mission-dot').style('display', 'block').attr('transform', `scale(${1/Math.sqrt(k)})`);
+                    
+                    // Efectos
+                    if (isShield && !isCompleted) {
+                        grp.select('.effect-shield-ripple').style('display', 'block').attr('transform', `scale(${1/Math.sqrt(k)})`);
+                    } else {
+                        grp.select('.effect-shield-ripple').style('display', 'none');
+                    }
+
+                    if (!isShield && isCompleted) {
+                        grp.select('.effect-story-halo').style('display', 'block').attr('transform', `scale(${1/Math.sqrt(k)})`);
+                    } else {
+                        grp.select('.effect-story-halo').style('display', 'none');
+                    }
+                } 
+                // CASO 3: ZOOM CERCA (ICONOS DETALLADOS)
+                else {
+                    grp.select('.shield-logo-group').style('display', 'none');
+                    grp.select('.mission-dot').style('display', 'none');
+                    grp.select('.effect-shield-ripple').style('display', 'none');
+                    grp.select('.effect-story-halo').style('display', 'none');
+                    grp.select('.mission-icon').style('display', 'block').attr('transform', `scale(${1/k * 2})`);
+                }
+            });
             
             svg.selectAll('.token-group').each(function() {
                 const sel = d3.select(this);
@@ -595,9 +613,9 @@ export const USAMap: React.FC<USAMapProps> = ({
         .style('display', (d) => {
             const isCompleted = completedMissionIds.has(d.id);
             const isShield = d.type === 'SHIELD_BASE';
-            return (isShield && isCompleted && currentZoom < 2.5) ? 'block' : 'none';
+            return (isShield && isCompleted) ? 'block' : 'none';
         })
-        .attr('transform', `scale(${1/Math.sqrt(currentZoom)})`);
+        .attr('transform', `scale(${currentZoom >= 2.5 ? 1/currentZoom * 2 : 1/Math.sqrt(currentZoom)})`);
 
       // --- RENDERIZADO EFECTO HALO (SOLO HISTORIA COMPLETADA) ---
       missionGroups.select('.effect-story-halo')
