@@ -60,40 +60,52 @@ export const USAMap: React.FC<USAMapProps> = ({
 
   const t = translations[language];
 
-  // --- DEFINICIÓN DE ANIMACIONES CSS (CORREGIDO) ---
+  // --- DEFINICIÓN DE ANIMACIONES CSS ---
   useEffect(() => {
       const styleId = 'map-animations';
       if (!document.getElementById(styleId)) {
           const style = document.createElement('style');
           style.id = styleId;
           style.innerHTML = `
-            /* 1. EFECTO FLOW (Líneas) */
+            /* 1. EFECTO FLOW (Movimiento continuo) */
             @keyframes dash-flow {
                 to { stroke-dashoffset: -20; }
             }
-            .line-flowing {
-                animation: dash-flow 1s linear infinite;
+            
+            /* 2. EFECTO GROW (Dibujado inicial) */
+            /* Empieza invisible (espacio enorme) y termina con el patrón de guiones normal */
+            @keyframes grow-dashed {
+                0% { stroke-dasharray: 0, 1500; } 
+                100% { stroke-dasharray: 4, 4; }
             }
 
-            /* 2. EFECTO RADAR (Solo SHIELD) */
+            /* Clase combinada: Primero crece, luego fluye */
+            .line-flowing {
+                /* grow-dashed dura 1.5s una vez, dash-flow es infinito */
+                animation: 
+                    grow-dashed 1.5s ease-out forwards, 
+                    dash-flow 1s linear infinite;
+            }
+
+            /* 3. EFECTO RADAR (Solo SHIELD) */
             @keyframes ripple-ping {
                 0% { transform: scale(1); opacity: 0.8; stroke-width: 2px; }
                 100% { transform: scale(3); opacity: 0; stroke-width: 0px; }
             }
             .shield-ripple {
-                transform-box: fill-box; /* IMPORTANTE: Fija el centro al elemento */
+                transform-box: fill-box;
                 transform-origin: center;
                 animation: ripple-ping 2s cubic-bezier(0, 0, 0.2, 1) infinite;
                 pointer-events: none;
             }
 
-            /* 3. EFECTO HALO RESPIRATORIO (Historia) */
+            /* 4. EFECTO HALO RESPIRATORIO (Historia) */
             @keyframes halo-breathe {
                 0%, 100% { transform: scale(1.3); opacity: 0.3; stroke-width: 1px; }
                 50% { transform: scale(1.6); opacity: 0.6; stroke-width: 2px; }
             }
             .story-halo {
-                transform-box: fill-box; /* IMPORTANTE: Fija el centro al elemento */
+                transform-box: fill-box;
                 transform-origin: center;
                 animation: halo-breathe 3s ease-in-out infinite;
                 pointer-events: none;
@@ -324,7 +336,6 @@ export const USAMap: React.FC<USAMapProps> = ({
             } else {
                 svg.selectAll('.mission-icon').style('display', 'none');
                 svg.selectAll('.mission-dot').style('display', 'block').attr('transform', `scale(${1/Math.sqrt(k)})`);
-                // NOTA: Ya no aplicamos transform a los efectos animados aquí para evitar conflictos con CSS
                 svg.selectAll('.effect-shield-ripple').style('display', 'block');
                 svg.selectAll('.effect-story-halo').style('display', 'block');
             }
@@ -433,13 +444,14 @@ export const USAMap: React.FC<USAMapProps> = ({
           }
       });
 
-      // --- LÍNEAS DE CONEXIÓN CON EFECTO FLOW ---
+      // --- LÍNEAS DE CONEXIÓN CON EFECTO FLOW Y GROW ---
       gMissions.selectAll('path.mission-line')
         .data(connections, (d: any) => `${d.source}-${d.target}`) 
         .join('path')
         .attr('class', (d) => {
             const isSourceComplete = completedMissionIds.has(d.source);
             const isTargetComplete = completedMissionIds.has(d.target);
+            // Si la misión origen está completa pero el destino no, la línea "fluye" hacia el nuevo objetivo
             if (isSourceComplete && !isTargetComplete) return 'mission-line line-flowing';
             return 'mission-line';
         })
@@ -516,7 +528,6 @@ export const USAMap: React.FC<USAMapProps> = ({
             const isShield = d.type === 'SHIELD_BASE';
             return (isCompleted && isShield && currentZoom < 2.5) ? 'block' : 'none';
         });
-        // NOTA: Eliminado .attr('transform') para evitar conflicto con CSS
 
       // --- RENDERIZADO EFECTO HALO (HISTORIA) ---
       missionGroups.select('.effect-story-halo')
@@ -538,7 +549,6 @@ export const USAMap: React.FC<USAMapProps> = ({
             const isShield = d.type === 'SHIELD_BASE';
             return (isCompleted && !isShield && currentZoom < 2.5) ? 'block' : 'none';
         });
-        // NOTA: Eliminado .attr('transform') para evitar conflicto con CSS
 
       // --- RENDERIZADO DEL PUNTO PRINCIPAL ---
       missionGroups.select('.mission-dot')

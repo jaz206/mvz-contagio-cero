@@ -1,12 +1,10 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { HeroTemplate, Mission, HeroStats } from '../types';
+import { HeroTemplate, Mission } from '../types';
 import { 
     getHeroTemplates, 
     getCustomMissions, 
     deleteHeroInDB, 
-    deleteMissionInDB, 
-    updateHeroTemplate,
-    updateMissionInDB 
+    deleteMissionInDB 
 } from '../services/dbService';
 import { CharacterEditor } from './CharacterEditor';
 import { MissionEditor } from './MissionEditor';
@@ -31,9 +29,6 @@ const BASE_GAME_MISSIONS: Mission[] = [
     { id: 'm_intro_0', title: "MH0: CADENAS ROTAS", description: [], objectives: [], location: { state: 'Ohio', coordinates: [0,0] }, threatLevel: 'N/A' }
 ];
 
-// --- CONTRASEÑA DE ADMINISTRADOR ---
-const ADMIN_PASSWORD = "A140138";
-
 interface DatabaseManagerProps {
     isOpen: boolean;
     onClose: () => void;
@@ -48,31 +43,26 @@ export const DatabaseManager: React.FC<DatabaseManagerProps> = ({ isOpen, onClos
     const [searchTerm, setSearchTerm] = useState('');
     
     // Filtros
-    const [heroFilter, setHeroFilter] = useState<'ALL' | 'ALIVE' | 'ZOMBIE'>('ALL');
+    const [heroFilter, setHeroFilter] = useState<'ALL' | 'ALIVE' | 'ZOMBIE'>('ALL'); // NUEVO FILTRO
     const [missionFilterAlignment, setMissionFilterAlignment] = useState<'ALL' | 'ALIVE' | 'ZOMBIE' | 'BOTH'>('ALL');
     const [missionFilterDifficulty, setMissionFilterDifficulty] = useState<string>('ALL');
 
     // UI State
     const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set(['KINGPIN', 'MAGNETO', 'HULK', 'DOOM', 'NEUTRAL', 'GALACTUS']));
 
-    // Edición / Fusión
+    // Edición
     const [editingHero, setEditingHero] = useState<HeroTemplate | null>(null);
     const [editingMission, setEditingMission] = useState<Mission | null>(null);
-    const [selectedIds, setSelectedIds] = useState<string[]>([]);
-    const [showMergeModal, setShowMergeModal] = useState(false);
-    const [mergedHero, setMergedHero] = useState<HeroTemplate | null>(null);
-    const [mergedMission, setMergedMission] = useState<Mission | null>(null);
 
     const loadData = async () => {
         setLoading(true);
         try {
-            const h = await getHeroTemplates();
-            const m = await getCustomMissions();
+            const [h, m] = await Promise.all([getHeroTemplates(), getCustomMissions()]);
             setHeroes(h);
             setMissions(m);
-            setSelectedIds([]);
         } catch (e) {
-            console.error(e);
+            console.error("Error cargando datos:", e);
+            alert("Error al conectar con la base de datos.");
         } finally {
             setLoading(false);
         }
@@ -82,6 +72,23 @@ export const DatabaseManager: React.FC<DatabaseManagerProps> = ({ isOpen, onClos
         if (isOpen) loadData();
     }, [isOpen]);
 
+    // --- NUEVA FUNCIÓN: EXPORTAR A JSON ---
+    const handleExportData = () => {
+        const dataToExport = activeTab === 'HEROES' ? heroes : missions;
+        const fileName = activeTab === 'HEROES' ? 'shield_heroes_backup.json' : 'shield_missions_backup.json';
+
+        const jsonString = JSON.stringify(dataToExport, null, 2);
+        const blob = new Blob([jsonString], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = fileName;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+    };
+
     // --- AGRUPACIÓN INTELIGENTE DE MISIONES ---
     const groupedMissions = useMemo(() => {
         const groups: Record<string, Mission[]> = {
@@ -90,11 +97,9 @@ export const DatabaseManager: React.FC<DatabaseManagerProps> = ({ isOpen, onClos
 
         let filtered = missions.filter(m => m.title.toLowerCase().includes(searchTerm.toLowerCase()));
 
-        // Filtro Bando
         if (missionFilterAlignment !== 'ALL') {
             filtered = filtered.filter(m => m.alignment === missionFilterAlignment || m.alignment === 'BOTH');
         }
-        // Filtro Dificultad
         if (missionFilterDifficulty !== 'ALL') {
             filtered = filtered.filter(m => m.threatLevel.includes(missionFilterDifficulty));
         }
@@ -120,59 +125,44 @@ export const DatabaseManager: React.FC<DatabaseManagerProps> = ({ isOpen, onClos
         });
     };
 
-    // --- LÓGICA DE FUSIÓN Y EDICIÓN ---
-    const toggleSelection = (id: string) => {
-        if (selectedIds.includes(id)) setSelectedIds(selectedIds.filter(sid => sid !== id));
-        else if (selectedIds.length < 2) setSelectedIds([...selectedIds, id]);
-        else alert("Solo puedes fusionar 2 elementos a la vez.");
-    };
-
-    const startMerge = () => {
-        if (selectedIds.length !== 2) return;
-        if (activeTab === 'HEROES') {
-            const heroA = heroes.find(h => h.id === selectedIds[0]);
-            if (heroA) setMergedHero({ ...heroA });
-        } else {
-            const missionA = missions.find(m => m.id === selectedIds[0]);
-            if (missionA) setMergedMission({ ...missionA });
+    // --- SEGURIDAD: VERIFICACIÓN DE CONTRASEÑA ---
+    const verifyAdmin = (): boolean => {
+        const envPassword = import.meta.env.VITE_ADMIN_PASSWORD;
+        if (!envPassword) {
+            alert("ERROR DE CONFIGURACIÓN: No se ha definido una contraseña de administrador en el entorno.");
+            return false;
         }
-        setShowMergeModal(true);
+        const password = prompt("⚠ ACCESO DE ADMINISTRADOR ⚠\n\nIntroduce la contraseña para confirmar la eliminación:");
+        if (password === envPassword) return true;
+        alert("⛔ ACCESO DENEGADO: Contraseña incorrecta.");
+        return false;
     };
 
-    // --- FUNCIONES DE ELIMINACIÓN PROTEGIDAS ---
     const handleDeleteMission = async (id: string) => { 
-        const password = prompt("⚠ ACCIÓN DESTRUCTIVA ⚠\n\nIntroduce la contraseña de administrador para eliminar esta misión:");
-        
-        if (password === ADMIN_PASSWORD) {
-            if (window.confirm("¿ESTÁS SEGURO? Esta acción no se puede deshacer.")) { 
+        if (verifyAdmin()) {
+            if (window.confirm("¿ESTÁS SEGURO? Esta acción es irreversible.")) { 
+                setLoading(true);
                 await deleteMissionInDB(id); 
-                loadData(); 
+                await loadData(); 
             }
-        } else if (password !== null) {
-            alert("⛔ ACCESO DENEGADO: Contraseña incorrecta.");
         }
     };
 
     const handleDeleteHero = async (id: string) => { 
-        const password = prompt("⚠ ACCIÓN DESTRUCTIVA ⚠\n\nIntroduce la contraseña de administrador para eliminar este héroe:");
-        
-        if (password === ADMIN_PASSWORD) {
-            if (window.confirm("¿ESTÁS SEGURO? Esta acción no se puede deshacer.")) { 
+        if (verifyAdmin()) {
+            if (window.confirm("¿ESTÁS SEGURO? Esta acción es irreversible.")) { 
+                setLoading(true);
                 await deleteHeroInDB(id); 
-                loadData(); 
+                await loadData(); 
             }
-        } else if (password !== null) {
-            alert("⛔ ACCESO DENEGADO: Contraseña incorrecta.");
         }
     };
 
-    // --- HELPER PARA OBTENER NOMBRE DE PRERREQUISITO ---
     const getPrereqName = (prereqId: string) => {
         const m = missions.find(mis => mis.id === prereqId);
         return m ? m.title : prereqId;
     };
 
-    // --- HELPER PARA COLOR DE DIFICULTAD ---
     const getDifficultyColor = (threat: string) => {
         if (threat.includes('Fácil') || threat.includes('Latente')) return 'border-emerald-500 text-emerald-400';
         if (threat.includes('Intermedia') || threat.includes('Insaciable')) return 'border-yellow-500 text-yellow-400';
@@ -181,21 +171,18 @@ export const DatabaseManager: React.FC<DatabaseManagerProps> = ({ isOpen, onClos
         return 'border-gray-500 text-gray-400';
     };
 
+    // --- FILTRADO DE HÉROES ---
+    const filteredHeroes = heroes.filter(h => {
+        const matchesSearch = (h.alias + h.defaultName).toLowerCase().includes(searchTerm.toLowerCase());
+        const matchesFilter = heroFilter === 'ALL' || h.defaultAlignment === heroFilter;
+        return matchesSearch && matchesFilter;
+    });
+
     if (!isOpen) return null;
 
     return (
         <div className="fixed inset-0 z-[100] bg-slate-950 flex flex-col font-mono">
             
-            {/* MODAL DE FUSIÓN */}
-            {showMergeModal && (
-                <div className="fixed inset-0 z-[150] bg-black/90 flex items-center justify-center">
-                    <div className="bg-slate-900 p-8 border border-purple-500">
-                        <h2 className="text-purple-400 mb-4">FUSIÓN EN PROCESO...</h2>
-                        <button onClick={() => setShowMergeModal(false)} className="bg-red-600 text-white px-4 py-2">CANCELAR</button>
-                    </div>
-                </div>
-            )}
-
             {/* EDITORES */}
             {editingHero && <CharacterEditor isOpen={true} onClose={() => setEditingHero(null)} language={language} initialData={editingHero} onSave={loadData} />}
             {editingMission && (
@@ -214,11 +201,17 @@ export const DatabaseManager: React.FC<DatabaseManagerProps> = ({ isOpen, onClos
                 <div className="flex items-center gap-4">
                     <h2 className="text-xl font-black text-cyan-400 tracking-widest uppercase">DATABASE MANAGER</h2>
                     <div className="flex gap-2">
-                        <button onClick={() => { setActiveTab('HEROES'); setSelectedIds([]); }} className={`px-4 py-1 text-xs font-bold border ${activeTab === 'HEROES' ? 'bg-cyan-600 text-white border-cyan-400' : 'text-cyan-600 border-cyan-900'}`}>HÉROES ({heroes.length})</button>
-                        <button onClick={() => { setActiveTab('MISSIONS'); setSelectedIds([]); }} className={`px-4 py-1 text-xs font-bold border ${activeTab === 'MISSIONS' ? 'bg-cyan-600 text-white border-cyan-400' : 'text-cyan-600 border-cyan-900'}`}>MISIONES ({missions.length})</button>
+                        <button onClick={() => setActiveTab('HEROES')} className={`px-4 py-1 text-xs font-bold border ${activeTab === 'HEROES' ? 'bg-cyan-600 text-white border-cyan-400' : 'text-cyan-600 border-cyan-900'}`}>HÉROES ({heroes.length})</button>
+                        <button onClick={() => setActiveTab('MISSIONS')} className={`px-4 py-1 text-xs font-bold border ${activeTab === 'MISSIONS' ? 'bg-cyan-600 text-white border-cyan-400' : 'text-cyan-600 border-cyan-900'}`}>MISIONES ({missions.length})</button>
                     </div>
                 </div>
                 <div className="flex gap-4">
+                    <button 
+                        onClick={handleExportData} 
+                        className="bg-emerald-900/50 border border-emerald-500 text-emerald-300 px-4 py-2 text-xs font-bold hover:bg-emerald-800 flex items-center gap-2"
+                    >
+                        <span>💾</span> EXPORTAR JSON
+                    </button>
                     <button onClick={onClose} className="bg-red-900/50 border border-red-500 text-red-300 px-4 py-2 text-xs font-bold hover:bg-red-800">CERRAR</button>
                 </div>
             </div>
@@ -227,6 +220,14 @@ export const DatabaseManager: React.FC<DatabaseManagerProps> = ({ isOpen, onClos
             <div className="bg-slate-900/50 p-4 border-b border-cyan-900 flex flex-wrap gap-4 items-center">
                 <input type="text" placeholder="BUSCAR..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="bg-slate-950 border border-cyan-700 p-2 text-cyan-200 text-xs w-64 focus:outline-none focus:border-cyan-400" />
                 
+                {activeTab === 'HEROES' && (
+                    <select value={heroFilter} onChange={e => setHeroFilter(e.target.value as any)} className="bg-slate-950 border border-cyan-800 text-xs text-cyan-300 p-2">
+                        <option value="ALL">TODOS LOS HÉROES</option>
+                        <option value="ALIVE">🛡️ VIVOS (ALIVE)</option>
+                        <option value="ZOMBIE">🧟 ZOMBIES</option>
+                    </select>
+                )}
+
                 {activeTab === 'MISSIONS' && (
                     <>
                         <select value={missionFilterAlignment} onChange={e => setMissionFilterAlignment(e.target.value as any)} className="bg-slate-950 border border-cyan-800 text-xs text-cyan-300 p-2">
@@ -252,12 +253,12 @@ export const DatabaseManager: React.FC<DatabaseManagerProps> = ({ isOpen, onClos
                 
                 {activeTab === 'HEROES' ? (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                        {heroes.filter(h => (h.alias + h.defaultName).toLowerCase().includes(searchTerm.toLowerCase())).map(h => (
+                        {filteredHeroes.map(h => (
                             <div key={h.id} className="p-3 border border-cyan-900 bg-cyan-950/10 flex gap-3 group relative">
                                 <div className="w-12 h-12 bg-black border border-gray-700 shrink-0"><img src={h.imageUrl} alt="" className="w-full h-full object-cover" /></div>
                                 <div>
                                     <div className="font-bold text-xs text-cyan-400">{h.alias}</div>
-                                    <div className="text-[9px] text-gray-500">{h.defaultAlignment}</div>
+                                    <div className={`text-[9px] font-bold ${h.defaultAlignment === 'ZOMBIE' ? 'text-lime-500' : 'text-blue-400'}`}>{h.defaultAlignment}</div>
                                 </div>
                                 <div className="absolute right-2 bottom-2 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                                     <button onClick={() => setEditingHero(h)} className="bg-blue-900 text-blue-300 px-2 py-1 text-[9px] border border-blue-700">EDIT</button>
@@ -267,7 +268,6 @@ export const DatabaseManager: React.FC<DatabaseManagerProps> = ({ isOpen, onClos
                         ))}
                     </div>
                 ) : (
-                    // --- RENDERIZADO DE MISIONES AGRUPADAS POR FACCIÓN ---
                     <div className="space-y-6">
                         {Object.entries(groupedMissions).map(([faction, factionMissions]) => {
                             if (factionMissions.length === 0) return null;
@@ -298,14 +298,12 @@ export const DatabaseManager: React.FC<DatabaseManagerProps> = ({ isOpen, onClos
                                             {factionMissions.map(m => {
                                                 const diffColor = getDifficultyColor(m.threatLevel);
                                                 const isIntro = m.isIntroMission || m.type === 'INTRODUCTORY';
-                                                const isBoss = m.type && m.type.startsWith('BOSS'); // DETECTAR BOSS
+                                                const isBoss = m.type && m.type.startsWith('BOSS');
                                                 const hasPrereq = (m.prereqs && m.prereqs.length > 0) || m.prereq;
 
-                                                // Estilo base de la tarjeta
                                                 let cardBg = 'bg-slate-800/40 hover:bg-slate-800';
                                                 let cardBorder = diffColor.replace('text-', 'border-');
 
-                                                // Estilo especial para BOSS
                                                 if (isBoss) {
                                                     cardBg = 'bg-gradient-to-br from-purple-900/30 to-slate-900 hover:from-purple-900/50';
                                                     cardBorder = 'border-purple-500 shadow-[0_0_10px_rgba(168,85,247,0.2)]';
@@ -313,8 +311,6 @@ export const DatabaseManager: React.FC<DatabaseManagerProps> = ({ isOpen, onClos
 
                                                 return (
                                                     <div key={m.id} className={`p-3 border-l-4 transition-all relative group flex flex-col gap-2 ${cardBg} ${cardBorder}`}>
-                                                        
-                                                        {/* Header Tarjeta */}
                                                         <div className="flex justify-between items-start">
                                                             <div className="flex-1 min-w-0">
                                                                 {isIntro && <div className="text-[9px] font-black text-emerald-400 uppercase tracking-widest mb-1">⭐ INTRODUCCIÓN</div>}
@@ -331,7 +327,6 @@ export const DatabaseManager: React.FC<DatabaseManagerProps> = ({ isOpen, onClos
                                                             </div>
                                                         </div>
 
-                                                        {/* Cadena de Misiones (Prerrequisitos) */}
                                                         {hasPrereq && (
                                                             <div className="mt-2 pt-2 border-t border-gray-700/50">
                                                                 <div className="text-[8px] text-gray-500 uppercase font-bold mb-1">REQUIERE COMPLETAR:</div>
@@ -346,10 +341,8 @@ export const DatabaseManager: React.FC<DatabaseManagerProps> = ({ isOpen, onClos
                                                             </div>
                                                         )}
 
-                                                        {/* ID Técnico (Discreto) */}
                                                         <div className="mt-auto pt-2 text-[8px] text-gray-600 font-mono truncate">ID: {m.id}</div>
 
-                                                        {/* Botones de Acción */}
                                                         <div className="absolute right-2 bottom-2 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity bg-slate-900/90 p-1 rounded">
                                                             <button onClick={() => setEditingMission(m)} className="bg-blue-900 text-blue-300 px-2 py-1 text-[9px] border border-blue-700 hover:bg-blue-800">EDIT</button>
                                                             <button onClick={() => handleDeleteMission(m.id)} className="bg-red-900 text-red-300 px-2 py-1 text-[9px] border border-red-700 hover:bg-red-800">DEL</button>
