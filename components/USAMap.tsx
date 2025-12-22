@@ -40,7 +40,6 @@ export const USAMap: React.FC<USAMapProps> = ({
   const gMissionsRef = useRef<d3.Selection<SVGGElement, unknown, null, undefined> | null>(null);
   const gTokensRef = useRef<d3.Selection<SVGGElement, unknown, null, undefined> | null>(null);
   
-  // REF PARA RECORDAR QUÉ RUTAS YA HAN HECHO LA ANIMACIÓN DE "VIAJE"
   const animatedRoutesRef = useRef<Set<string>>(new Set());
 
   const [usData, setUsData] = useState<USATopoJSON | null>(null);
@@ -70,7 +69,7 @@ export const USAMap: React.FC<USAMapProps> = ({
           const style = document.createElement('style');
           style.id = styleId;
           style.innerHTML = `
-            /* EFECTO FLOW (Movimiento continuo de guiones para rutas activas) */
+            /* EFECTO FLOW (Líneas) */
             @keyframes dash-flow {
                 to { stroke-dashoffset: -20; }
             }
@@ -78,7 +77,7 @@ export const USAMap: React.FC<USAMapProps> = ({
                 animation: dash-flow 1s linear infinite;
             }
 
-            /* EFECTO RADAR (Solo SHIELD) */
+            /* EFECTO RIPPLE (Onda expansiva) */
             @keyframes ripple-ping {
                 0% { transform: scale(1); opacity: 0.8; stroke-width: 2px; }
                 100% { transform: scale(3); opacity: 0; stroke-width: 0px; }
@@ -90,7 +89,7 @@ export const USAMap: React.FC<USAMapProps> = ({
                 pointer-events: none;
             }
 
-            /* EFECTO HALO RESPIRATORIO (Historia) */
+            /* EFECTO HALO (Historia) */
             @keyframes halo-breathe {
                 0%, 100% { transform: scale(1.3); opacity: 0.3; stroke-width: 1px; }
                 50% { transform: scale(1.6); opacity: 0.6; stroke-width: 2px; }
@@ -100,6 +99,17 @@ export const USAMap: React.FC<USAMapProps> = ({
                 transform-origin: center;
                 animation: halo-breathe 3s ease-in-out infinite;
                 pointer-events: none;
+            }
+
+            /* NUEVO: EFECTO RADAR GIRATORIO (SHIELD COMPLETADO) */
+            @keyframes radar-spin {
+                from { transform: rotate(0deg); }
+                to { transform: rotate(360deg); }
+            }
+            .radar-spinner {
+                transform-box: fill-box;
+                transform-origin: center;
+                animation: radar-spin 4s linear infinite;
             }
           `;
           document.head.appendChild(style);
@@ -299,8 +309,12 @@ export const USAMap: React.FC<USAMapProps> = ({
         createGlowFilter("glow-shield", "#3b82f6");
         createGlowFilter("glow-surfer", "#e2e8f0");
 
+        // Clip para el búnker
         defs.append("clipPath").attr("id", "bunker-clip").append("circle").attr("cx", 0).attr("cy", 0).attr("r", 12);
         
+        // NUEVO: Clip para el icono de SHIELD completado
+        defs.append("clipPath").attr("id", "shield-icon-clip").append("circle").attr("cx", 0).attr("cy", 0).attr("r", 8);
+
         const gMain = svg.append('g').attr('class', 'g-main');
         gMapRef.current = gMain.append('g').attr('class', 'layer-map');
         gMissionsRef.current = gMain.append('g').attr('class', 'layer-missions');
@@ -323,12 +337,14 @@ export const USAMap: React.FC<USAMapProps> = ({
                 svg.selectAll('.mission-dot').style('display', 'none');
                 svg.selectAll('.effect-shield-ripple').style('display', 'none');
                 svg.selectAll('.effect-story-halo').style('display', 'none');
+                svg.selectAll('.shield-logo-group').style('display', 'none'); // Ocultar logo en zoom alto
                 svg.selectAll('.mission-icon').style('display', 'block').attr('transform', `scale(${1/k * 2})`);
             } else {
                 svg.selectAll('.mission-icon').style('display', 'none');
                 svg.selectAll('.mission-dot').style('display', 'block').attr('transform', `scale(${1/Math.sqrt(k)})`);
                 svg.selectAll('.effect-shield-ripple').style('display', 'block');
                 svg.selectAll('.effect-story-halo').style('display', 'block');
+                svg.selectAll('.shield-logo-group').style('display', 'block').attr('transform', `scale(${1/Math.sqrt(k)})`);
             }
             
             svg.selectAll('.token-group').each(function() {
@@ -435,7 +451,7 @@ export const USAMap: React.FC<USAMapProps> = ({
           }
       });
 
-      // --- LÍNEAS DE CONEXIÓN CON LÓGICA DE 3 ESTADOS ---
+      // --- LÍNEAS DE CONEXIÓN ---
       gMissions.selectAll('path.mission-line')
         .data(connections, (d: any) => `${d.source}-${d.target}`) 
         .join(
@@ -464,52 +480,43 @@ export const USAMap: React.FC<USAMapProps> = ({
             const isTargetComplete = completedMissionIds.has(d.target);
             const routeKey = `${d.source}-${d.target}`;
 
-            // ESTADO 3: RUTA COMPLETADA (VERDE SÓLIDO)
             if (isSourceComplete && isTargetComplete) {
                  path.classed('line-flowing', false)
                      .classed('animating', false)
-                     .style('stroke-dasharray', 'none') // Sólida
-                     .attr('stroke', '#10b981') // Verde
+                     .style('stroke-dasharray', 'none')
+                     .attr('stroke', '#10b981')
                      .attr('opacity', 0.6);
             }
-            // ESTADO 2: RUTA ACTIVA (AMARILLA DISCONTINUA CON FLUJO)
             else if (isSourceComplete && !isTargetComplete) {
-                 // ¿Es la primera vez que se activa? (Animación de viaje)
                  if (!animatedRoutesRef.current.has(routeKey)) {
                      const totalLength = (this as SVGPathElement).getTotalLength();
-                     
-                     // Configurar inicio de animación (Sólida amarilla oculta)
                      path.classed('animating', true)
                          .attr('stroke-dasharray', `${totalLength} ${totalLength}`)
                          .attr('stroke-dashoffset', totalLength)
                          .attr('opacity', 1)
-                         .attr('stroke', '#fbbf24') // Amarillo
+                         .attr('stroke', '#fbbf24')
                          .transition()
                          .duration(2000)
                          .ease(d3.easeLinear)
-                         .attr('stroke-dashoffset', 0) // Revelar línea
+                         .attr('stroke-dashoffset', 0)
                          .on('end', () => {
-                             // Al terminar, marcar como animada y cambiar a modo flujo
                              animatedRoutesRef.current.add(routeKey);
                              path.classed('animating', false)
                                  .classed('line-flowing', true)
                                  .style('stroke-dasharray', '4,4');
                          });
-                 } 
-                 // Si ya se animó antes, mostrar flujo directamente
-                 else {
+                 } else {
                      path.classed('line-flowing', true)
                          .style('stroke-dasharray', '4,4')
                          .attr('stroke', '#fbbf24')
                          .attr('opacity', 1);
                  }
             }
-            // ESTADO 1: RUTA BLOQUEADA (GRIS TENUE)
             else {
                  path.classed('line-flowing', false)
                      .classed('animating', false)
                      .style('stroke-dasharray', '4,4')
-                     .attr('stroke', '#475569') // Gris
+                     .attr('stroke', '#475569')
                      .attr('opacity', 0.4);
             }
         });
@@ -520,13 +527,16 @@ export const USAMap: React.FC<USAMapProps> = ({
         .join(
             enter => {
                 const grp = enter.append('g').attr('class', 'mission cursor-pointer hover:opacity-100');
-                // 1. Efecto Radar (Solo SHIELD)
                 grp.append('circle').attr('class', 'effect-shield-ripple');
-                // 2. Efecto Halo (Historia)
                 grp.append('circle').attr('class', 'effect-story-halo');
-                // 3. Punto Principal
                 grp.append('circle').attr('class', 'mission-dot');
-                // 4. Icono (Zoom Alto)
+                
+                // NUEVO: Grupo para el logo de SHIELD
+                const shieldGrp = grp.append('g').attr('class', 'shield-logo-group').style('display', 'none');
+                shieldGrp.append('circle').attr('class', 'radar-spinner').attr('r', 10).attr('fill', 'none').attr('stroke', '#06b6d4').attr('stroke-width', 1).attr('stroke-dasharray', '4, 4');
+                shieldGrp.append('image').attr('href', 'https://i.pinimg.com/736x/13/13/71/13137177f62170cffa788baac6cbace5.jpg')
+                    .attr('width', 16).attr('height', 16).attr('x', -8).attr('y', -8).attr('clip-path', 'url(#shield-icon-clip)');
+
                 grp.append('g').attr('class', 'mission-icon');
                 return grp;
             }
@@ -551,24 +561,35 @@ export const USAMap: React.FC<USAMapProps> = ({
       missionGroups.select('.effect-shield-ripple')
         .attr('r', 8)
         .attr('fill', 'none')
-        .attr('stroke', '#3b82f6') // Azul SHIELD
+        .attr('stroke', '#3b82f6')
         .attr('class', (d) => {
             const isCompleted = completedMissionIds.has(d.id);
             const isShield = d.type === 'SHIELD_BASE';
-            return (isCompleted && isShield) ? 'effect-shield-ripple shield-ripple' : 'effect-shield-ripple';
+            // Si está completada, usamos el nuevo icono, así que quitamos el ripple antiguo
+            return (isCompleted && isShield) ? 'effect-shield-ripple' : 'effect-shield-ripple shield-ripple';
         })
         .style('display', (d) => {
             const isCompleted = completedMissionIds.has(d.id);
             const isShield = d.type === 'SHIELD_BASE';
-            return (isCompleted && isShield && currentZoom < 2.5) ? 'block' : 'none';
+            // Si está completada, ocultamos el ripple para mostrar el logo
+            if (isCompleted && isShield) return 'none';
+            return (isShield && currentZoom < 2.5) ? 'block' : 'none';
         });
+
+      // --- RENDERIZADO LOGO SHIELD (NUEVO) ---
+      missionGroups.select('.shield-logo-group')
+        .style('display', (d) => {
+            const isCompleted = completedMissionIds.has(d.id);
+            const isShield = d.type === 'SHIELD_BASE';
+            return (isCompleted && isShield && currentZoom < 2.5) ? 'block' : 'none';
+        })
+        .attr('transform', `scale(${1/Math.sqrt(currentZoom)})`);
 
       // --- RENDERIZADO EFECTO HALO (HISTORIA) ---
       missionGroups.select('.effect-story-halo')
         .attr('r', 8)
         .attr('fill', 'none')
         .attr('stroke', (d) => {
-            // Color según facción o verde si es intro
             if (d.type === 'INTRODUCTORY') return '#10b981';
             const visuals = getMissionVisuals(d, true);
             return visuals.factionColor;
@@ -603,7 +624,13 @@ export const USAMap: React.FC<USAMapProps> = ({
             const visuals = getMissionVisuals(d, completedMissionIds.has(d.id));
             return `url(#${visuals.glowId})`;
         })
-        .style('display', currentZoom >= 2.5 ? 'none' : 'block')
+        .style('display', (d) => {
+            // Ocultar punto si es base SHIELD completada (porque mostramos el logo)
+            const isCompleted = completedMissionIds.has(d.id);
+            const isShield = d.type === 'SHIELD_BASE';
+            if (isCompleted && isShield) return 'none';
+            return currentZoom >= 2.5 ? 'none' : 'block';
+        })
         .attr('transform', `scale(${1/Math.sqrt(currentZoom)})`);
 
       // --- RENDERIZADO DEL ICONO (ZOOM ALTO) ---
