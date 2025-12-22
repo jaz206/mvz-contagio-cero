@@ -101,15 +101,15 @@ export const USAMap: React.FC<USAMapProps> = ({
                 pointer-events: none;
             }
 
-            /* NUEVO: EFECTO RADAR GIRATORIO (SHIELD COMPLETADO) */
-            @keyframes radar-spin {
+            /* NUEVO: EFECTO ESCÁNER (BARRIDO) */
+            @keyframes scanner-spin {
                 from { transform: rotate(0deg); }
                 to { transform: rotate(360deg); }
             }
-            .radar-spinner {
+            .scanner-beam {
                 transform-box: fill-box;
                 transform-origin: center;
-                animation: radar-spin 4s linear infinite;
+                animation: scanner-spin 3s linear infinite;
             }
           `;
           document.head.appendChild(style);
@@ -309,10 +309,7 @@ export const USAMap: React.FC<USAMapProps> = ({
         createGlowFilter("glow-shield", "#3b82f6");
         createGlowFilter("glow-surfer", "#e2e8f0");
 
-        // Clip para el búnker
         defs.append("clipPath").attr("id", "bunker-clip").append("circle").attr("cx", 0).attr("cy", 0).attr("r", 12);
-        
-        // NUEVO: Clip para el icono de SHIELD completado
         defs.append("clipPath").attr("id", "shield-icon-clip").append("circle").attr("cx", 0).attr("cy", 0).attr("r", 8);
 
         const gMain = svg.append('g').attr('class', 'g-main');
@@ -337,15 +334,33 @@ export const USAMap: React.FC<USAMapProps> = ({
                 svg.selectAll('.mission-dot').style('display', 'none');
                 svg.selectAll('.effect-shield-ripple').style('display', 'none');
                 svg.selectAll('.effect-story-halo').style('display', 'none');
-                svg.selectAll('.shield-logo-group').style('display', 'none'); // Ocultar logo en zoom alto
+                
+                // El logo de SHIELD se mantiene visible pero escala un poco para no ser enorme
+                svg.selectAll('.shield-logo-group').attr('transform', `scale(${1/k * 2})`);
+                
+                // Iconos normales visibles
                 svg.selectAll('.mission-icon').style('display', 'block').attr('transform', `scale(${1/k * 2})`);
             } else {
                 svg.selectAll('.mission-icon').style('display', 'none');
                 svg.selectAll('.mission-dot').style('display', 'block').attr('transform', `scale(${1/Math.sqrt(k)})`);
                 svg.selectAll('.effect-shield-ripple').style('display', 'block');
                 svg.selectAll('.effect-story-halo').style('display', 'block');
-                svg.selectAll('.shield-logo-group').style('display', 'block').attr('transform', `scale(${1/Math.sqrt(k)})`);
+                
+                // Logo de SHIELD visible y escalado
+                svg.selectAll('.shield-logo-group').attr('transform', `scale(${1/Math.sqrt(k)})`);
             }
+            
+            // Asegurar que los logos de SHIELD completados SIEMPRE se muestren (sobrescribiendo la lógica general si es necesario)
+            svg.selectAll('.shield-logo-group').style('display', 'block');
+
+            // Ocultar iconos genéricos si hay un logo de SHIELD activo en ese grupo
+            svg.selectAll('.mission').each(function() {
+                const grp = d3.select(this);
+                if (!grp.select('.shield-logo-group').empty() && grp.select('.shield-logo-group').style('display') !== 'none') {
+                    grp.select('.mission-icon').style('display', 'none');
+                    grp.select('.mission-dot').style('display', 'none');
+                }
+            });
             
             svg.selectAll('.token-group').each(function() {
                 const sel = d3.select(this);
@@ -531,11 +546,31 @@ export const USAMap: React.FC<USAMapProps> = ({
                 grp.append('circle').attr('class', 'effect-story-halo');
                 grp.append('circle').attr('class', 'mission-dot');
                 
-                // NUEVO: Grupo para el logo de SHIELD
-                const shieldGrp = grp.append('g').attr('class', 'shield-logo-group').style('display', 'none');
-                shieldGrp.append('circle').attr('class', 'radar-spinner').attr('r', 10).attr('fill', 'none').attr('stroke', '#06b6d4').attr('stroke-width', 1).attr('stroke-dasharray', '4, 4');
-                shieldGrp.append('image').attr('href', 'https://i.pinimg.com/736x/13/13/71/13137177f62170cffa788baac6cbace5.jpg')
-                    .attr('width', 16).attr('height', 16).attr('x', -8).attr('y', -8).attr('clip-path', 'url(#shield-icon-clip)');
+                // Grupo para el logo de SHIELD (Solo se crea, la visibilidad se maneja abajo)
+                const shieldGrp = grp.append('g').attr('class', 'shield-logo-group');
+                
+                // Efecto Escáner (Barrido)
+                // Usamos un path para crear un "sector" de radar que gira
+                shieldGrp.append('path')
+                    .attr('class', 'scanner-beam')
+                    .attr('d', d3.arc()({ innerRadius: 0, outerRadius: 14, startAngle: 0, endAngle: Math.PI / 3 }) || '')
+                    .attr('fill', '#06b6d4')
+                    .attr('opacity', 0.3);
+
+                // Borde del radar
+                shieldGrp.append('circle')
+                    .attr('r', 14)
+                    .attr('fill', 'none')
+                    .attr('stroke', '#06b6d4')
+                    .attr('stroke-width', 1)
+                    .attr('stroke-dasharray', '2, 2')
+                    .attr('opacity', 0.6);
+
+                // Imagen Central
+                shieldGrp.append('image')
+                    .attr('href', 'https://i.pinimg.com/736x/13/13/71/13137177f62170cffa788baac6cbace5.jpg')
+                    .attr('width', 16).attr('height', 16).attr('x', -8).attr('y', -8)
+                    .attr('clip-path', 'url(#shield-icon-clip)');
 
                 grp.append('g').attr('class', 'mission-icon');
                 return grp;
@@ -557,7 +592,7 @@ export const USAMap: React.FC<USAMapProps> = ({
         .on('mousemove', (event) => setTooltip(prev => prev ? { ...prev, x: event.clientX, y: event.clientY } : null))
         .on('mouseleave', () => setTooltip(null));
 
-      // --- RENDERIZADO EFECTO RADAR (SHIELD) ---
+      // --- RENDERIZADO EFECTO RADAR (SHIELD NO COMPLETADO) ---
       missionGroups.select('.effect-shield-ripple')
         .attr('r', 8)
         .attr('fill', 'none')
@@ -565,25 +600,23 @@ export const USAMap: React.FC<USAMapProps> = ({
         .attr('class', (d) => {
             const isCompleted = completedMissionIds.has(d.id);
             const isShield = d.type === 'SHIELD_BASE';
-            // Si está completada, usamos el nuevo icono, así que quitamos el ripple antiguo
-            return (isCompleted && isShield) ? 'effect-shield-ripple' : 'effect-shield-ripple shield-ripple';
+            return (isShield && !isCompleted) ? 'effect-shield-ripple shield-ripple' : 'effect-shield-ripple';
         })
         .style('display', (d) => {
             const isCompleted = completedMissionIds.has(d.id);
             const isShield = d.type === 'SHIELD_BASE';
-            // Si está completada, ocultamos el ripple para mostrar el logo
-            if (isCompleted && isShield) return 'none';
-            return (isShield && currentZoom < 2.5) ? 'block' : 'none';
+            return (isShield && !isCompleted && currentZoom < 2.5) ? 'block' : 'none';
         });
 
-      // --- RENDERIZADO LOGO SHIELD (NUEVO) ---
+      // --- RENDERIZADO LOGO SHIELD (SOLO COMPLETADO Y TIPO SHIELD) ---
       missionGroups.select('.shield-logo-group')
         .style('display', (d) => {
             const isCompleted = completedMissionIds.has(d.id);
             const isShield = d.type === 'SHIELD_BASE';
-            return (isCompleted && isShield && currentZoom < 2.5) ? 'block' : 'none';
+            // Lógica estricta: Solo visible si es SHIELD y está completada
+            return (isShield && isCompleted) ? 'block' : 'none';
         })
-        .attr('transform', `scale(${1/Math.sqrt(currentZoom)})`);
+        .attr('transform', `scale(${currentZoom >= 2.5 ? 1/currentZoom * 2 : 1/Math.sqrt(currentZoom)})`);
 
       // --- RENDERIZADO EFECTO HALO (HISTORIA) ---
       missionGroups.select('.effect-story-halo')
@@ -625,9 +658,9 @@ export const USAMap: React.FC<USAMapProps> = ({
             return `url(#${visuals.glowId})`;
         })
         .style('display', (d) => {
-            // Ocultar punto si es base SHIELD completada (porque mostramos el logo)
             const isCompleted = completedMissionIds.has(d.id);
             const isShield = d.type === 'SHIELD_BASE';
+            // Ocultar si es SHIELD completada (porque mostramos el logo)
             if (isCompleted && isShield) return 'none';
             return currentZoom >= 2.5 ? 'none' : 'block';
         })
@@ -638,6 +671,14 @@ export const USAMap: React.FC<USAMapProps> = ({
         .each(function(d) {
           const sel = d3.select(this);
           const isCompleted = completedMissionIds.has(d.id);
+          const isShield = d.type === 'SHIELD_BASE';
+          
+          // Si es SHIELD completada, ocultamos el icono genérico incluso en zoom alto
+          if (isCompleted && isShield) {
+              sel.style('display', 'none');
+              return;
+          }
+
           const currentStatus = sel.attr('data-status');
           const newStatus = isCompleted ? 'completed' : 'active';
           const isBlocked = worldStage === 'GALACTUS' && d.type !== 'BOSS' && d.type !== 'GALACTUS';
@@ -653,10 +694,15 @@ export const USAMap: React.FC<USAMapProps> = ({
               sel.append('circle').attr('r', 3).attr('fill', coreColor);
           }
         })
-        .style('display', currentZoom < 2.5 ? 'none' : 'block')
+        .style('display', (d) => {
+            const isCompleted = completedMissionIds.has(d.id);
+            const isShield = d.type === 'SHIELD_BASE';
+            if (isCompleted && isShield) return 'none';
+            return currentZoom < 2.5 ? 'none' : 'block';
+        })
         .attr('transform', `scale(${1/currentZoom * 2})`);
 
-      // ... (Lógica de renderizado de tokens Hulk/Surfer se mantiene igual) ...
+      // ... (Resto de lógica de tokens Hulk/Surfer) ...
       let hulkRenderCoords = projection(hulkLocation);
       let surferRenderCoords = surferLocation ? projection(surferLocation) : null;
 
