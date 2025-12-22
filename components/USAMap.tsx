@@ -102,7 +102,8 @@ export const USAMap: React.FC<USAMapProps> = ({
       return { coreColor, factionColor, glowId };
   };
 
-  // --- LÓGICA CENTRAL DE VISIBILIDAD (EXTRAÍDA PARA EVITAR PARPADEOS) ---
+  // --- LÓGICA CENTRAL DE VISIBILIDAD (OPTIMIZADA) ---
+  // Esta función se encarga de mantener el tamaño constante de los iconos al hacer zoom
   const updateMissionVisibility = (k: number) => {
       if (!gMissionsRef.current) return;
 
@@ -116,9 +117,11 @@ export const USAMap: React.FC<USAMapProps> = ({
           if (isShieldCompleted) {
               grp.select('.shield-logo-group')
                   .style('display', 'block')
-                  // Escala inversa al zoom para mantener tamaño constante en pantalla
+                  // Escala inversa al zoom (1/k) para mantener tamaño constante en píxeles
+                  // Multiplicamos por 1.5 para que sea un poco más grande y legible
                   .attr('transform', `scale(${1/k * 1.5})`);
               
+              // Ocultar explícitamente los otros elementos para evitar superposiciones
               grp.select('.mission-dot').style('display', 'none');
               grp.select('.mission-icon').style('display', 'none');
               grp.select('.effect-shield-ripple').style('display', 'none');
@@ -130,6 +133,7 @@ export const USAMap: React.FC<USAMapProps> = ({
               grp.select('.mission-icon').style('display', 'none');
               grp.select('.mission-dot').style('display', 'block').attr('transform', `scale(${1/Math.sqrt(k)})`);
               
+              // Efectos condicionales
               if (isShield && !isCompleted) {
                   grp.select('.effect-shield-ripple').style('display', 'block').attr('transform', `scale(${1/Math.sqrt(k)})`);
               } else {
@@ -152,7 +156,7 @@ export const USAMap: React.FC<USAMapProps> = ({
           }
       });
 
-      // Actualizar escala de tokens también
+      // Actualizar escala de tokens (Hulk/Surfer)
       if (gTokensRef.current) {
           gTokensRef.current.selectAll('.token-group').each(function() {
               const sel = d3.select(this);
@@ -205,7 +209,7 @@ export const USAMap: React.FC<USAMapProps> = ({
             .radar-spinning-group {
                 transform-box: fill-box; 
                 transform-origin: center;
-                animation: radar-spin-infinite 4s linear infinite;
+                animation: radar-spin-infinite 8s linear infinite; /* Más lento para que se vea majestuoso */
             }
           `;
           document.head.appendChild(style);
@@ -378,14 +382,15 @@ export const USAMap: React.FC<USAMapProps> = ({
         createGlowFilter("glow-shield", "#06b6d4"); 
         createGlowFilter("glow-surfer", "#e2e8f0");
 
-        // Gradiente para el radar
+        // Gradiente para el radar (Más suave y grande)
         const radarGrad = defs.append("radialGradient")
             .attr("id", "radar-gradient")
             .attr("cx", "50%")
             .attr("cy", "50%")
             .attr("r", "50%");
-        radarGrad.append("stop").attr("offset", "0%").attr("stop-color", "#06b6d4").attr("stop-opacity", 0.1);
-        radarGrad.append("stop").attr("offset", "100%").attr("stop-color", "#06b6d4").attr("stop-opacity", 0.6);
+        radarGrad.append("stop").attr("offset", "0%").attr("stop-color", "#06b6d4").attr("stop-opacity", 0.0); // Centro transparente
+        radarGrad.append("stop").attr("offset", "80%").attr("stop-color", "#06b6d4").attr("stop-opacity", 0.3); // Borde semi-transparente
+        radarGrad.append("stop").attr("offset", "100%").attr("stop-color", "#06b6d4").attr("stop-opacity", 0.6); // Borde final
 
         defs.append("clipPath").attr("id", "bunker-clip").append("circle").attr("cx", 0).attr("cy", 0).attr("r", 12);
         defs.append("clipPath").attr("id", "shield-icon-clip").append("circle").attr("cx", 0).attr("cy", 0).attr("r", 10);
@@ -594,15 +599,15 @@ export const USAMap: React.FC<USAMapProps> = ({
                 // 2. GRUPO DE RADAR GIRATORIO (GIGANTE)
                 const radarGrp = shieldGrp.append('g').attr('class', 'radar-spinning-group');
 
-                // Haz de luz (MUY LARGO: 60px)
+                // Haz de luz (GIGANTE: 100px)
                 radarGrp.append('path')
                     .attr('class', 'scanner-beam')
-                    .attr('d', d3.arc()({ innerRadius: 0, outerRadius: 60, startAngle: 0, endAngle: Math.PI / 2 }) || '') // 90 grados
+                    .attr('d', d3.arc()({ innerRadius: 0, outerRadius: 100, startAngle: 0, endAngle: Math.PI / 2 }) || '') // 90 grados
                     .attr('fill', 'url(#radar-gradient)'); // Usar gradiente
 
-                // Borde del radar (MUY LARGO: 60px)
+                // Borde del radar (GIGANTE: 100px)
                 radarGrp.append('circle')
-                    .attr('r', 60)
+                    .attr('r', 100)
                     .attr('fill', 'none')
                     .attr('stroke', '#06b6d4')
                     .attr('stroke-width', 0.5)
@@ -634,86 +639,6 @@ export const USAMap: React.FC<USAMapProps> = ({
         })
         .on('mousemove', (event) => setTooltip(prev => prev ? { ...prev, x: event.clientX, y: event.clientY } : null))
         .on('mouseleave', () => setTooltip(null));
-
-      // --- RENDERIZADO EFECTO RADAR (SOLO SHIELD INCOMPLETA) ---
-      missionGroups.select('.effect-shield-ripple')
-        .attr('r', 8)
-        .attr('fill', 'none')
-        .attr('stroke', '#3b82f6')
-        .attr('class', (d) => {
-            const isCompleted = completedMissionIds.has(d.id);
-            const isShield = d.type === 'SHIELD_BASE';
-            return (isShield && !isCompleted) ? 'effect-shield-ripple shield-ripple' : 'effect-shield-ripple';
-        });
-
-      // --- RENDERIZADO EFECTO HALO (SOLO HISTORIA COMPLETADA) ---
-      missionGroups.select('.effect-story-halo')
-        .attr('r', 8)
-        .attr('fill', 'none')
-        .attr('stroke', (d) => {
-            if (d.type === 'INTRODUCTORY') return '#10b981';
-            const visuals = getMissionVisuals(d, true);
-            return visuals.factionColor;
-        })
-        .attr('class', (d) => {
-            const isCompleted = completedMissionIds.has(d.id);
-            const isShield = d.type === 'SHIELD_BASE';
-            return (isCompleted && !isShield) ? 'effect-story-halo story-halo' : 'effect-story-halo';
-        });
-
-      // --- RENDERIZADO DEL PUNTO PRINCIPAL ---
-      missionGroups.select('.mission-dot')
-        .attr('r', (d) => completedMissionIds.has(d.id) ? 6 : 5)
-        .attr('fill', (d) => {
-            const isCompleted = completedMissionIds.has(d.id);
-            if (isCompleted) {
-                if (d.type === 'SHIELD_BASE') return '#06b6d4';
-                return '#10b981'; 
-            }
-            return '#eab308'; 
-        })
-        .attr('stroke', (d) => {
-            const isCompleted = completedMissionIds.has(d.id);
-            if (isCompleted) {
-                if (d.type === 'SHIELD_BASE') return '#0891b2';
-                return '#059669';
-            }
-            return '#ca8a04'; 
-        })
-        .attr('stroke-width', 2) 
-        .style('filter', (d) => {
-            if (worldStage === 'GALACTUS' && d.type !== 'BOSS' && d.type !== 'GALACTUS') return 'none';
-            const visuals = getMissionVisuals(d, completedMissionIds.has(d.id));
-            return `url(#${visuals.glowId})`;
-        });
-
-      // --- RENDERIZADO DEL ICONO (ZOOM ALTO) ---
-      missionGroups.select('.mission-icon')
-        .each(function(d) {
-          const sel = d3.select(this);
-          const isCompleted = completedMissionIds.has(d.id);
-          const isShield = d.type === 'SHIELD_BASE';
-          
-          if (isCompleted && isShield) {
-              sel.style('display', 'none');
-              return;
-          }
-
-          const currentStatus = sel.attr('data-status');
-          const newStatus = isCompleted ? 'completed' : 'active';
-          const isBlocked = worldStage === 'GALACTUS' && d.type !== 'BOSS' && d.type !== 'GALACTUS';
-
-          if (sel.selectAll('*').empty() || currentStatus !== newStatus) {
-              sel.selectAll('*').remove();
-              sel.attr('data-status', newStatus);
-              const visuals = getMissionVisuals(d, isCompleted);
-              const strokeColor = isBlocked ? '#64748b' : visuals.factionColor;
-              const fillColor = isBlocked ? '#1e293b' : '#0f172a';
-              const coreColor = isBlocked ? '#64748b' : visuals.coreColor;
-              sel.append('circle').attr('r', 10).attr('fill', fillColor).attr('stroke', strokeColor).attr('stroke-width', 2).style('filter', isBlocked ? 'none' : `url(#${visuals.glowId})`);
-              sel.append('circle').attr('r', 3).attr('fill', coreColor);
-          }
-        });
 
       // --- APLICAR VISIBILIDAD INICIAL INMEDIATAMENTE ---
       // Esto evita el parpadeo al renderizar por primera vez o actualizar datos
