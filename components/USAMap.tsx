@@ -60,7 +60,7 @@ export const USAMap: React.FC<USAMapProps> = ({
 
   const t = translations[language];
 
-  // --- DEFINICIÓN DE ANIMACIONES CSS ---
+  // --- DEFINICIÓN DE ANIMACIONES CSS (CORREGIDO) ---
   useEffect(() => {
       const styleId = 'map-animations';
       if (!document.getElementById(styleId)) {
@@ -81,6 +81,7 @@ export const USAMap: React.FC<USAMapProps> = ({
                 100% { transform: scale(3); opacity: 0; stroke-width: 0px; }
             }
             .shield-ripple {
+                transform-box: fill-box; /* IMPORTANTE: Fija el centro al elemento */
                 transform-origin: center;
                 animation: ripple-ping 2s cubic-bezier(0, 0, 0.2, 1) infinite;
                 pointer-events: none;
@@ -92,6 +93,7 @@ export const USAMap: React.FC<USAMapProps> = ({
                 50% { transform: scale(1.6); opacity: 0.6; stroke-width: 2px; }
             }
             .story-halo {
+                transform-box: fill-box; /* IMPORTANTE: Fija el centro al elemento */
                 transform-origin: center;
                 animation: halo-breathe 3s ease-in-out infinite;
                 pointer-events: none;
@@ -322,8 +324,9 @@ export const USAMap: React.FC<USAMapProps> = ({
             } else {
                 svg.selectAll('.mission-icon').style('display', 'none');
                 svg.selectAll('.mission-dot').style('display', 'block').attr('transform', `scale(${1/Math.sqrt(k)})`);
-                svg.selectAll('.effect-shield-ripple').style('display', 'block').attr('transform', `scale(${1/Math.sqrt(k)})`);
-                svg.selectAll('.effect-story-halo').style('display', 'block').attr('transform', `scale(${1/Math.sqrt(k)})`);
+                // NOTA: Ya no aplicamos transform a los efectos animados aquí para evitar conflictos con CSS
+                svg.selectAll('.effect-shield-ripple').style('display', 'block');
+                svg.selectAll('.effect-story-halo').style('display', 'block');
             }
             
             svg.selectAll('.token-group').each(function() {
@@ -437,7 +440,6 @@ export const USAMap: React.FC<USAMapProps> = ({
         .attr('class', (d) => {
             const isSourceComplete = completedMissionIds.has(d.source);
             const isTargetComplete = completedMissionIds.has(d.target);
-            // Si la misión origen está completa pero el destino no, la línea "fluye" hacia el nuevo objetivo
             if (isSourceComplete && !isTargetComplete) return 'mission-line line-flowing';
             return 'mission-line';
         })
@@ -513,8 +515,8 @@ export const USAMap: React.FC<USAMapProps> = ({
             const isCompleted = completedMissionIds.has(d.id);
             const isShield = d.type === 'SHIELD_BASE';
             return (isCompleted && isShield && currentZoom < 2.5) ? 'block' : 'none';
-        })
-        .attr('transform', `scale(${1/Math.sqrt(currentZoom)})`);
+        });
+        // NOTA: Eliminado .attr('transform') para evitar conflicto con CSS
 
       // --- RENDERIZADO EFECTO HALO (HISTORIA) ---
       missionGroups.select('.effect-story-halo')
@@ -535,8 +537,8 @@ export const USAMap: React.FC<USAMapProps> = ({
             const isCompleted = completedMissionIds.has(d.id);
             const isShield = d.type === 'SHIELD_BASE';
             return (isCompleted && !isShield && currentZoom < 2.5) ? 'block' : 'none';
-        })
-        .attr('transform', `scale(${1/Math.sqrt(currentZoom)})`);
+        });
+        // NOTA: Eliminado .attr('transform') para evitar conflicto con CSS
 
       // --- RENDERIZADO DEL PUNTO PRINCIPAL ---
       missionGroups.select('.mission-dot')
