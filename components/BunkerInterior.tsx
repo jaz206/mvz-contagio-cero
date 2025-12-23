@@ -5,8 +5,8 @@ import { getHeroTemplates } from "../services/dbService";
 
 interface BunkerInteriorProps {
   heroes: Hero[];
-  missions: Mission[]; // Misiones ACTIVAS
-  completedMissionIds?: Set<string>; // Necesario para la gráfica de progreso
+  missions: Mission[];
+  completedMissionIds?: Set<string>;
   onAssign: (heroId: string, missionId: string) => boolean;
   onUnassign: (heroId: string) => void;
   onAddHero: (hero: Hero) => void;
@@ -24,7 +24,6 @@ interface BunkerInteriorProps {
 // --- COMPONENTE: BARRA DE PODER (TUG OF WAR) ---
 const TugOfWarBar = ({ label, shieldVal, enemyVal, enemyColor }: { label: string, shieldVal: number, enemyVal: number, enemyColor: string }) => {
     const total = shieldVal + enemyVal;
-    // Evitar división por cero
     const shieldPct = total === 0 ? 50 : (shieldVal / total) * 100;
     const enemyPct = total === 0 ? 50 : (enemyVal / total) * 100;
 
@@ -35,20 +34,11 @@ const TugOfWarBar = ({ label, shieldVal, enemyVal, enemyColor }: { label: string
                 <span className={enemyColor}>{label} ({enemyVal})</span>
             </div>
             <div className="h-3 w-full bg-slate-900 border border-slate-700 flex relative overflow-hidden">
-                {/* Lado SHIELD */}
-                <div 
-                    className="h-full bg-cyan-600 transition-all duration-1000 ease-out relative" 
-                    style={{ width: `${shieldPct}%` }}
-                >
+                <div className="h-full bg-cyan-600 transition-all duration-1000 ease-out relative" style={{ width: `${shieldPct}%` }}>
                     <div className="absolute right-0 top-0 bottom-0 w-[1px] bg-white shadow-[0_0_10px_white] z-10"></div>
                     <div className="absolute inset-0 bg-[linear-gradient(45deg,transparent_25%,rgba(255,255,255,0.1)_50%,transparent_75%)] bg-[length:10px_10px]"></div>
                 </div>
-                
-                {/* Lado ENEMIGO */}
-                <div 
-                    className={`h-full ${enemyColor.replace('text-', 'bg-')} transition-all duration-1000 ease-out opacity-80`} 
-                    style={{ width: `${enemyPct}%` }}
-                ></div>
+                <div className={`h-full ${enemyColor.replace('text-', 'bg-')} transition-all duration-1000 ease-out opacity-80`} style={{ width: `${enemyPct}%` }}></div>
             </div>
         </div>
     );
@@ -83,30 +73,23 @@ const HeroCompactCard = ({ hero, onClick, actionIcon, onAction }: { hero: Hero, 
 export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
   heroes, missions, completedMissionIds = new Set(), onAssign, onUnassign, onAddHero, onToggleObjective, onBack, language, playerAlignment, isEditorMode, onTransformHero, onTickerUpdate, omegaCylinders = 0, onFindCylinder
 }) => {
-  // Estados UI
   const [activeTab, setActiveTab] = useState<'ROSTER' | 'MEDBAY'>('ROSTER');
   const [selectedHeroId, setSelectedHeroId] = useState<string | null>(null);
   const [showRecruitModal, setShowRecruitModal] = useState(false);
-  
-  // Estados Dossier
   const [dossierTab, setDossierTab] = useState<'DATA' | 'STORY' | 'OBJECTIVES'>('DATA');
 
-  // Estados Reclutamiento
   const [dbTemplates, setDbTemplates] = useState<HeroTemplate[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
-  const [recruitMode, setRecruitMode] = useState<'ALLY' | 'CAPTURE'>('ALLY'); // NUEVO: Modo de reclutamiento
+  const [recruitMode, setRecruitMode] = useState<'ALLY' | 'CAPTURE'>('ALLY');
   const [recruitForm, setRecruitForm] = useState({ templateId: "", name: "", alias: "", class: "BRAWLER" as HeroClass, bio: "", currentStory: "", objectives: [] as string[], imageUrl: "", characterSheetUrl: "", str: 5, agi: 5, int: 5, alignment: "ALIVE" as "ALIVE" | "ZOMBIE" });
 
   const t = translations[language];
   const selectedHero = heroes.find(h => h.id === selectedHeroId);
 
-  // --- LÓGICA DE DATOS ---
   const availableHeroes = heroes.filter(h => h.status === 'AVAILABLE');
   const deployedHeroes = heroes.filter(h => h.status === 'DEPLOYED');
   const injuredHeroes = heroes.filter(h => h.status === 'INJURED' || h.status === 'CAPTURED');
   
-  // Análisis de Amenaza (Tug of War)
-  // Necesitamos contar misiones activas (Enemigo) vs completadas (Shield) por zona
   const threatAnalysis = useMemo(() => {
       const zones = {
           magneto: { shield: 0, enemy: 0, color: 'text-red-500' },
@@ -114,26 +97,17 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
           hulk: { shield: 0, enemy: 0, color: 'text-lime-500' },
           doom: { shield: 0, enemy: 0, color: 'text-blue-500' }
       };
-
-      // Contar activas (Enemigo)
       missions.forEach(m => {
           if (['Washington', 'Oregon', 'California', 'Nevada', 'Idaho', 'Montana', 'Wyoming', 'Utah', 'Arizona', 'Colorado', 'Alaska', 'Hawaii'].includes(m.location.state)) zones.magneto.enemy++;
           else if (['Maine', 'New Hampshire', 'Vermont', 'New York', 'Massachusetts', 'Rhode Island', 'Connecticut', 'New Jersey', 'Pennsylvania', 'Delaware', 'Maryland', 'West Virginia', 'Virginia', 'District of Columbia'].includes(m.location.state)) zones.kingpin.enemy++;
           else if (['North Dakota', 'South Dakota', 'Nebraska', 'Kansas', 'Oklahoma', 'Texas', 'New Mexico', 'Minnesota', 'Iowa', 'Missouri', 'Wisconsin', 'Illinois', 'Michigan', 'Indiana', 'Ohio'].includes(m.location.state)) zones.hulk.enemy++;
           else if (['Arkansas', 'Louisiana', 'Mississippi', 'Alabama', 'Tennessee', 'Kentucky', 'Georgia', 'Florida', 'South Carolina', 'North Carolina'].includes(m.location.state)) zones.doom.enemy++;
       });
-
-      // Contar completadas (Shield) - Esto es una estimación basada en IDs si no tenemos la data completa de misiones completadas
-      // Para simplificar, asumiremos que completedMissionIds tiene IDs que podemos rastrear si tuvieramos la lista completa.
-      // Como no tenemos la lista completa de misiones completadas con sus estados, usaremos un contador simple basado en el set.
-      // *Mejora:* En una app real, necesitaríamos saber a qué zona pertenece cada ID completado.
-      // Por ahora, simularemos un progreso base para que la barra no esté vacía a la izquierda.
       const baseProgress = Math.floor(completedMissionIds.size / 4); 
       zones.magneto.shield = baseProgress;
       zones.kingpin.shield = baseProgress;
       zones.hulk.shield = baseProgress;
       zones.doom.shield = baseProgress;
-
       return zones;
   }, [missions, completedMissionIds]);
 
@@ -141,7 +115,7 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
       const templates = await getHeroTemplates();
       setDbTemplates(templates);
       setRecruitForm({ templateId: "", name: "", alias: "", class: "BRAWLER", bio: "", currentStory: "", objectives: [], imageUrl: "", characterSheetUrl: "", str: 5, agi: 5, int: 5, alignment: "ALIVE" });
-      setRecruitMode('ALLY'); // Reset a aliado por defecto
+      setRecruitMode('ALLY');
       setShowRecruitModal(true);
   };
 
@@ -159,24 +133,49 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
           completedObjectiveIndices: [], 
           imageUrl: recruitForm.imageUrl, 
           characterSheetUrl: recruitForm.characterSheetUrl, 
-          // AQUÍ ESTÁ LA CLAVE: Si es captura, entra como CAPTURED
           status: recruitMode === 'CAPTURE' ? 'CAPTURED' : 'AVAILABLE', 
           stats: { strength: recruitForm.str, agility: recruitForm.agi, intellect: recruitForm.int }, 
           assignedMissionId: null 
       };
       onAddHero(newHero);
-      
-      const msg = recruitMode === 'CAPTURE' 
-        ? `SUJETO HOSTIL CAPTURADO: ${newHero.alias}` 
-        : `NUEVO AGENTE RECLUTADO: ${newHero.alias}`;
-      
+      const msg = recruitMode === 'CAPTURE' ? `SUJETO HOSTIL CAPTURADO: ${newHero.alias}` : `NUEVO AGENTE RECLUTADO: ${newHero.alias}`;
       if (onTickerUpdate) onTickerUpdate(msg);
       setShowRecruitModal(false);
   };
 
   const handleCure = (heroId: string) => {
       if (omegaCylinders > 0 && onTransformHero) {
-          onTransformHero(heroId, 'ALIVE');
+          onTransformHero(heroId, playerAlignment === 'ZOMBIE' ? 'ZOMBIE' : 'ALIVE');
+      }
+  };
+
+  // --- LÓGICA DE FILTRADO DE RECLUTAMIENTO ---
+  const getFilteredTemplates = () => {
+      return dbTemplates.filter(t => {
+          // 1. Filtro de texto
+          const matchesSearch = (t.alias || t.defaultName).toLowerCase().includes(searchTerm.toLowerCase());
+          
+          // 2. Filtro de Alineamiento (Lógica Cruzada)
+          let matchesAlignment = false;
+          const templateAlign = t.defaultAlignment || 'ALIVE';
+
+          if (recruitMode === 'ALLY') {
+              // Si recluto aliado, busco mi mismo bando
+              matchesAlignment = templateAlign === playerAlignment;
+          } else {
+              // Si capturo, busco el bando contrario
+              matchesAlignment = templateAlign !== playerAlignment;
+          }
+
+          return matchesSearch && matchesAlignment;
+      });
+  };
+
+  const getPlaceholderText = () => {
+      if (recruitMode === 'ALLY') {
+          return playerAlignment === 'ALIVE' ? "BUSCAR HÉROE (ALIADO)..." : "BUSCAR ZOMBIE (ALIADO)...";
+      } else {
+          return playerAlignment === 'ALIVE' ? "BUSCAR ZOMBIE (ENEMIGO)..." : "BUSCAR HÉROE (ENEMIGO)...";
       }
   };
 
@@ -331,12 +330,11 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
             </div>
         </div>
 
-        {/* MODAL DE DOSSIER DE HÉROE (COMPLETO) */}
+        {/* MODAL DE DOSSIER DE HÉROE */}
         {selectedHero && (
             <div className="absolute inset-0 z-50 bg-slate-950/90 backdrop-blur-sm flex items-center justify-center p-4 md:p-12" onClick={() => setSelectedHeroId(null)}>
                 <div className="bg-slate-900 border-2 border-cyan-500 w-full max-w-4xl h-[80vh] flex flex-col shadow-[0_0_50px_rgba(6,182,212,0.2)] overflow-hidden" onClick={e => e.stopPropagation()}>
                     
-                    {/* Header Dossier */}
                     <div className="bg-cyan-950/50 p-4 border-b border-cyan-800 flex justify-between items-center shrink-0">
                         <div>
                             <h2 className="text-2xl font-black text-white tracking-widest uppercase">{selectedHero.alias}</h2>
@@ -348,7 +346,6 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
                     </div>
 
                     <div className="flex-1 flex overflow-hidden">
-                        {/* Columna Izquierda: Foto y Stats */}
                         <div className="w-1/3 bg-slate-950 border-r border-cyan-900 flex flex-col">
                             <div className="aspect-[3/4] relative overflow-hidden border-b border-cyan-900">
                                 <img src={selectedHero.imageUrl} className={`w-full h-full object-cover ${selectedHero.status === 'CAPTURED' ? 'grayscale contrast-125' : ''}`} />
@@ -367,7 +364,6 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
                             </div>
                         </div>
 
-                        {/* Columna Derecha: Contenido con Pestañas */}
                         <div className="flex-1 flex flex-col bg-slate-900">
                             <div className="flex border-b border-cyan-900">
                                 <button onClick={() => setDossierTab('DATA')} className={`flex-1 py-3 text-xs font-bold tracking-widest uppercase ${dossierTab === 'DATA' ? 'bg-cyan-900/30 text-white border-b-2 border-cyan-500' : 'text-gray-500 hover:text-cyan-300'}`}>DATOS</button>
@@ -427,11 +423,10 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
                         </div>
                     </div>
 
-                    {/* Footer Dossier */}
                     <div className="bg-slate-950 p-4 border-t border-cyan-900 flex justify-end gap-3 shrink-0">
                         {selectedHero.status === 'CAPTURED' ? (
                             <button onClick={() => { handleCure(selectedHero.id); setSelectedHeroId(null); }} className="px-6 py-2 bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold uppercase tracking-widest shadow-[0_0_15px_rgba(37,99,235,0.4)]">
-                                ADMINISTRAR CURA (1 CILINDRO)
+                                {playerAlignment === 'ZOMBIE' ? 'INFECTAR SUJETO' : 'ADMINISTRAR CURA (1 CILINDRO)'}
                             </button>
                         ) : (
                             <button className="px-6 py-2 bg-cyan-700 hover:bg-cyan-600 text-white text-xs font-bold uppercase tracking-widest opacity-50 cursor-not-allowed">
@@ -446,7 +441,7 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
             </div>
         )}
 
-        {/* MODAL DE RECLUTAMIENTO (ACTUALIZADO CON TOGGLE) */}
+        {/* MODAL DE RECLUTAMIENTO */}
         {showRecruitModal && (
             <div className="absolute inset-0 z-50 bg-slate-950/95 flex items-center justify-center p-4">
                 <div className={`w-full max-w-lg bg-slate-900 border-2 ${recruitMode === 'CAPTURE' ? 'border-red-600' : 'border-cyan-500'} p-6 shadow-2xl transition-colors duration-500`}>
@@ -455,7 +450,6 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
                         <h3 className={`text-xl font-black tracking-widest uppercase ${recruitMode === 'CAPTURE' ? 'text-red-500' : 'text-cyan-400'}`}>
                             {recruitMode === 'CAPTURE' ? 'PROTOCOLO DE CONTENCIÓN' : 'BASE DE DATOS CEREBRO'}
                         </h3>
-                        {/* TOGGLE SWITCH */}
                         <div className="flex bg-slate-950 border border-slate-700 rounded p-1">
                             <button 
                                 onClick={() => setRecruitMode('ALLY')} 
@@ -474,7 +468,7 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
 
                     <input 
                         type="text" 
-                        placeholder={recruitMode === 'CAPTURE' ? "BUSCAR ENEMIGO..." : "BUSCAR HÉROE..."}
+                        placeholder={getPlaceholderText()}
                         className={`w-full bg-slate-950 border p-3 text-white mb-4 outline-none font-mono text-sm ${recruitMode === 'CAPTURE' ? 'border-red-800 focus:border-red-500 placeholder-red-900' : 'border-cyan-800 focus:border-cyan-500 placeholder-cyan-900'}`}
                         value={searchTerm}
                         onChange={e => setSearchTerm(e.target.value)}
@@ -482,7 +476,7 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
                     />
                     
                     <div className="h-64 overflow-y-auto border border-slate-800 mb-6 scrollbar-thin scrollbar-thumb-slate-700">
-                        {dbTemplates.filter(t => t.defaultName.toLowerCase().includes(searchTerm.toLowerCase())).map(t => (
+                        {getFilteredTemplates().map(t => (
                             <div 
                                 key={t.id} 
                                 onClick={() => { setRecruitForm({...recruitForm, templateId: t.id, name: t.defaultName, alias: t.alias || t.defaultName, imageUrl: t.imageUrl, class: t.defaultClass}); }} 
@@ -492,6 +486,11 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
                                 <span className="text-[10px] text-gray-500 font-mono border border-slate-700 px-1">{t.defaultClass}</span>
                             </div>
                         ))}
+                        {getFilteredTemplates().length === 0 && (
+                            <div className="text-center text-xs text-gray-600 py-10 italic">
+                                NO SE ENCONTRARON SUJETOS COMPATIBLES
+                            </div>
+                        )}
                     </div>
 
                     <div className="flex justify-end gap-3 pt-4 border-t border-slate-800">
