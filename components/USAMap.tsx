@@ -62,46 +62,6 @@ export const USAMap: React.FC<USAMapProps> = ({
 
   const t = translations[language];
 
-  // --- FUNCIÓN HELPER PARA ESTILOS ---
-  const getMissionVisuals = (mission: Mission, isCompleted: boolean) => {
-      let coreColor = '#eab308'; 
-      
-      if (isCompleted) {
-          if (mission.type === 'SHIELD_BASE') coreColor = '#06b6d4'; 
-          else coreColor = '#10b981'; 
-      }
-      else if (mission.type === 'SHIELD_BASE') coreColor = '#3b82f6'; 
-      else if (mission.type === 'INTRODUCTORY') coreColor = '#10b981'; 
-      else if (mission.type && mission.type.startsWith('BOSS')) coreColor = '#9333ea'; 
-      else if (mission.type === 'GALACTUS') coreColor = '#9333ea'; 
-
-      let factionColor = '#94a3b8'; 
-      let glowId = 'glow-neutral';
-      
-      const state = mission.location.state;
-      if (factionStates.magneto.has(state)) { factionColor = '#ef4444'; glowId = 'glow-magneto'; }
-      else if (factionStates.kingpin.has(state)) { factionColor = '#d946ef'; glowId = 'glow-kingpin'; }
-      else if (factionStates.hulk.has(state)) { factionColor = '#84cc16'; glowId = 'glow-hulk'; }
-      else if (factionStates.doom.has(state)) { factionColor = '#06b6d4'; glowId = 'glow-doom'; }
-
-      if (mission.type === 'GALACTUS' || (mission.type && mission.type.startsWith('BOSS'))) { 
-          factionColor = '#9333ea'; 
-          glowId = 'glow-boss'; 
-      }
-      
-      if (mission.type === 'INTRODUCTORY') {
-          glowId = 'glow-shield';
-          factionColor = '#10b981';
-      }
-
-      if (mission.type === 'SHIELD_BASE' && isCompleted) {
-          glowId = 'glow-shield';
-          factionColor = '#06b6d4';
-      }
-
-      return { coreColor, factionColor, glowId };
-  };
-
   // --- DEFINICIÓN DE ANIMACIONES CSS ---
   useEffect(() => {
       const styleId = 'map-animations';
@@ -112,35 +72,14 @@ export const USAMap: React.FC<USAMapProps> = ({
             @keyframes dash-flow { to { stroke-dashoffset: -20; } }
             .line-flowing { animation: dash-flow 1s linear infinite; }
 
-            @keyframes ripple-ping {
+            @keyframes pulse-ring {
                 0% { transform: scale(1); opacity: 0.8; stroke-width: 2px; }
-                100% { transform: scale(3); opacity: 0; stroke-width: 0px; }
+                100% { transform: scale(2.5); opacity: 0; stroke-width: 0px; }
             }
-            .shield-ripple {
+            .shield-pulse {
                 transform-box: fill-box; transform-origin: center;
-                animation: ripple-ping 2s cubic-bezier(0, 0, 0.2, 1) infinite;
+                animation: pulse-ring 2s cubic-bezier(0, 0, 0.2, 1) infinite;
                 pointer-events: none;
-            }
-
-            @keyframes halo-breathe {
-                0%, 100% { transform: scale(1.3); opacity: 0.3; stroke-width: 1px; }
-                50% { transform: scale(1.6); opacity: 0.6; stroke-width: 2px; }
-            }
-            .story-halo {
-                transform-box: fill-box; transform-origin: center;
-                animation: halo-breathe 3s ease-in-out infinite;
-                pointer-events: none;
-            }
-
-            /* ROTACIÓN CONSTANTE PARA EL RADAR */
-            @keyframes radar-spin-infinite {
-                from { transform: rotate(0deg); }
-                to { transform: rotate(360deg); }
-            }
-            .radar-spinning-group {
-                transform-box: fill-box; 
-                transform-origin: center;
-                animation: radar-spin-infinite 12s linear infinite;
             }
           `;
           document.head.appendChild(style);
@@ -313,84 +252,37 @@ export const USAMap: React.FC<USAMapProps> = ({
         createGlowFilter("glow-shield", "#06b6d4"); 
         createGlowFilter("glow-surfer", "#e2e8f0");
 
-        // Gradiente para el radar (Más suave y grande)
-        const radarGrad = defs.append("radialGradient")
-            .attr("id", "radar-gradient")
-            .attr("cx", "50%")
-            .attr("cy", "50%")
-            .attr("r", "50%");
-        radarGrad.append("stop").attr("offset", "0%").attr("stop-color", "#06b6d4").attr("stop-opacity", 0.0); 
-        radarGrad.append("stop").attr("offset", "70%").attr("stop-color", "#06b6d4").attr("stop-opacity", 0.1); 
-        radarGrad.append("stop").attr("offset", "100%").attr("stop-color", "#06b6d4").attr("stop-opacity", 0.4); 
-
         defs.append("clipPath").attr("id", "bunker-clip").append("circle").attr("cx", 0).attr("cy", 0).attr("r", 12);
-        defs.append("clipPath").attr("id", "shield-icon-clip").append("circle").attr("cx", 0).attr("cy", 0).attr("r", 10);
 
         const gMain = svg.append('g').attr('class', 'g-main');
         gMapRef.current = gMain.append('g').attr('class', 'layer-map');
         gMissionsRef.current = gMain.append('g').attr('class', 'layer-missions');
         gTokensRef.current = gMain.append('g').attr('class', 'layer-tokens');
 
-        // --- ZOOM HANDLER SIMPLIFICADO (IGUAL QUE EL BÚNKER) ---
         const zoom = d3.zoom<SVGSVGElement, unknown>()
           .scaleExtent([1, 8])
           .on('zoom', (event) => {
             gMain.attr('transform', event.transform.toString());
             const k = event.transform.k;
             
-            // 1. BÚNKER (Funciona bien)
+            // Escalar Búnker
             svg.selectAll('.bunker').attr('transform', function() {
                  const coords = d3.select(this).attr('data-coords')?.split(',').map(Number) || [0,0];
                  return `translate(${coords[0]},${coords[1]}) scale(${1/k})`;
             });
             
-            // 2. ETIQUETAS
+            // Escalar Etiquetas
             svg.selectAll('text.label').style('font-size', `${Math.max(6, 10/k)}px`);
 
-            // 3. MISIONES (AHORA FUNCIONA IGUAL QUE EL BÚNKER)
-            // Ya no ocultamos/mostramos cosas aquí. Solo escalamos inversamente.
+            // Escalar Misiones (Solo escala, sin lógica compleja)
             if (gMissionsRef.current) {
-                gMissionsRef.current.selectAll('.mission').each(function(d: any) {
-                    const grp = d3.select(this);
-                    const isCompleted = completedMissionIds.has(d.id);
-                    const isShield = d.type === 'SHIELD_BASE';
-                    
-                    // Si es SHIELD completada, aplicamos escala inversa para mantener tamaño fijo
-                    if (isShield && isCompleted) {
-                        grp.attr('transform', (d: any) => {
-                            const coords = projection(d.location.coordinates);
-                            return `translate(${coords![0]}, ${coords![1]}) scale(${1/k * 1.5})`; // 1.5x más grande
-                        });
-                    } 
-                    // Para las demás, mantenemos la lógica de cambio de detalle (Punto -> Icono)
-                    // pero asegurando que los atributos base estén presentes
-                    else {
-                        const coords = projection(d.location.coordinates);
-                        grp.attr('transform', `translate(${coords![0]}, ${coords![1]})`); // Posición base
-
-                        if (k < 2.5) {
-                            grp.select('.shield-logo-group').style('display', 'none');
-                            grp.select('.mission-icon').style('display', 'none');
-                            grp.select('.mission-dot').style('display', 'block').attr('transform', `scale(${1/Math.sqrt(k)})`);
-                            
-                            // Efectos
-                            if (isShield && !isCompleted) grp.select('.effect-shield-ripple').style('display', 'block').attr('transform', `scale(${1/Math.sqrt(k)})`);
-                            else grp.select('.effect-shield-ripple').style('display', 'none');
-
-                            if (!isShield && isCompleted) grp.select('.effect-story-halo').style('display', 'block').attr('transform', `scale(${1/Math.sqrt(k)})`);
-                            else grp.select('.effect-story-halo').style('display', 'none');
-                        } else {
-                            grp.select('.shield-logo-group').style('display', 'none');
-                            grp.select('.mission-dot').style('display', 'none');
-                            grp.select('.effect-shield-ripple').style('display', 'none');
-                            grp.select('.effect-story-halo').style('display', 'none');
-                            grp.select('.mission-icon').style('display', 'block').attr('transform', `scale(${1/k * 2})`);
-                        }
-                    }
+                gMissionsRef.current.selectAll('.mission').attr('transform', function(d: any) {
+                    const coords = projection(d.location.coordinates);
+                    return `translate(${coords![0]}, ${coords![1]}) scale(${1/k})`;
                 });
             }
 
-            // 4. TOKENS
+            // Escalar Tokens
             if (gTokensRef.current) {
                 gTokensRef.current.selectAll('.token-group').each(function() {
                     const sel = d3.select(this);
@@ -565,57 +457,28 @@ export const USAMap: React.FC<USAMapProps> = ({
             }
         });
 
-      // --- GRUPOS DE MISIONES ---
+      // --- GRUPOS DE MISIONES (SIMPLIFICADO) ---
       const missionGroups = gMissions.selectAll('g.mission')
         .data(validMissions, (d: any) => d.id) 
         .join(
             enter => {
                 const grp = enter.append('g').attr('class', 'mission cursor-pointer hover:opacity-100');
-                grp.append('circle').attr('class', 'effect-shield-ripple');
-                grp.append('circle').attr('class', 'effect-story-halo');
+                
+                // 1. Efecto de Pulso (Solo para SHIELD)
+                grp.append('circle').attr('class', 'effect-shield-pulse');
+                
+                // 2. Anillo Exterior (Para SHIELD)
+                grp.append('circle').attr('class', 'mission-ring');
+
+                // 3. Punto Central (Para todas)
                 grp.append('circle').attr('class', 'mission-dot');
                 
-                // --- CORRECCIÓN VISUAL DEL LOGO SHIELD ---
-                const shieldGrp = grp.append('g').attr('class', 'shield-logo-group').style('display', 'none');
-                
-                // 1. Fondo sólido
-                shieldGrp.append('circle')
-                    .attr('r', 12)
-                    .attr('fill', '#0f172a') 
-                    .attr('stroke', '#06b6d4') 
-                    .attr('stroke-width', 1);
-
-                // 2. GRUPO DE RADAR GIRATORIO (GIGANTE: 150px)
-                const radarGrp = shieldGrp.append('g').attr('class', 'radar-spinning-group');
-
-                // Haz de luz (GIGANTE: 150px)
-                radarGrp.append('path')
-                    .attr('class', 'scanner-beam')
-                    .attr('d', d3.arc()({ innerRadius: 0, outerRadius: 150, startAngle: 0, endAngle: Math.PI / 2 }) || '') 
-                    .attr('fill', 'url(#radar-gradient)'); 
-
-                // Borde del radar (GIGANTE: 150px)
-                radarGrp.append('circle')
-                    .attr('r', 150)
-                    .attr('fill', 'none')
-                    .attr('stroke', '#06b6d4')
-                    .attr('stroke-width', 0.5)
-                    .attr('stroke-dasharray', '4, 4')
-                    .attr('opacity', 0.4);
-
-                // 3. Imagen Central
-                shieldGrp.append('image')
-                    .attr('href', 'https://i.pinimg.com/736x/13/13/71/13137177f62170cffa788baac6cbace5.jpg')
-                    .attr('width', 20).attr('height', 20).attr('x', -10).attr('y', -10)
-                    .attr('clip-path', 'url(#shield-icon-clip)');
-
-                grp.append('g').attr('class', 'mission-icon');
                 return grp;
             }
         )
         .attr('transform', (d) => {
             const coords = projection(d.location.coordinates);
-            return coords ? `translate(${coords[0]}, ${coords[1]})` : 'translate(-100,-100)';
+            return coords ? `translate(${coords[0]}, ${coords[1]}) scale(${1/currentZoom})` : 'translate(-100,-100)';
         })
         .on('click', (e, d) => { 
             e.stopPropagation(); 
@@ -629,32 +492,62 @@ export const USAMap: React.FC<USAMapProps> = ({
         .on('mousemove', (event) => setTooltip(prev => prev ? { ...prev, x: event.clientX, y: event.clientY } : null))
         .on('mouseleave', () => setTooltip(null));
 
-      // --- RENDERIZADO INICIAL DE ELEMENTOS (SIN ESPERAR AL ZOOM) ---
-      // Esto asegura que los puntos existan y sean visibles desde el frame 1
+      // --- ESTILOS DE MISIONES ---
       missionGroups.each(function(d: any) {
           const grp = d3.select(this);
           const isCompleted = completedMissionIds.has(d.id);
           const isShield = d.type === 'SHIELD_BASE';
-          const isShieldCompleted = isShield && isCompleted;
+          const isBoss = d.type && d.type.startsWith('BOSS');
+          const isGalactus = d.type === 'GALACTUS';
 
-          if (isShieldCompleted) {
-              grp.select('.shield-logo-group').style('display', 'block').attr('transform', `scale(${1/currentZoom * 1.5})`);
-              grp.select('.mission-dot').style('display', 'none');
-              grp.select('.mission-icon').style('display', 'none');
-              grp.select('.effect-shield-ripple').style('display', 'none');
-              grp.select('.effect-story-halo').style('display', 'none');
+          // --- 1. PUNTO CENTRAL ---
+          let dotColor = '#eab308'; // Amarillo (Pendiente)
+          let dotStroke = '#ca8a04';
+          
+          if (isCompleted) {
+              dotColor = '#10b981'; // Verde (Completada)
+              dotStroke = '#059669';
+          }
+          
+          if (isShield) {
+              dotColor = '#06b6d4'; // Cyan (SHIELD)
+              dotStroke = '#0891b2';
+          }
+
+          if (isBoss || isGalactus) {
+              dotColor = '#9333ea'; // Púrpura (Boss)
+              dotStroke = '#7e22ce';
+          }
+
+          grp.select('.mission-dot')
+             .attr('r', isShield ? 4 : 5) // SHIELD un poco más pequeño el centro
+             .attr('fill', isShield && !isCompleted ? '#0f172a' : dotColor) // SHIELD hueco si pendiente
+             .attr('stroke', dotStroke)
+             .attr('stroke-width', 2);
+
+          // --- 2. ANILLO EXTERIOR (SOLO SHIELD) ---
+          if (isShield) {
+              grp.select('.mission-ring')
+                 .style('display', 'block')
+                 .attr('r', 8)
+                 .attr('fill', 'none')
+                 .attr('stroke', '#06b6d4')
+                 .attr('stroke-width', 1.5)
+                 .attr('stroke-dasharray', isCompleted ? 'none' : '2,1'); // Discontinuo si pendiente
           } else {
-              // Configuración por defecto (Punto visible)
-              grp.select('.mission-dot')
-                  .style('display', 'block')
-                  .attr('r', isCompleted ? 6 : 5)
-                  .attr('fill', isCompleted ? '#10b981' : '#eab308')
-                  .attr('stroke', isCompleted ? '#059669' : '#ca8a04')
-                  .attr('stroke-width', 2)
-                  .attr('transform', `scale(${1/Math.sqrt(currentZoom)})`);
-              
-              grp.select('.shield-logo-group').style('display', 'none');
-              grp.select('.mission-icon').style('display', 'none');
+              grp.select('.mission-ring').style('display', 'none');
+          }
+
+          // --- 3. EFECTO PULSO (SOLO SHIELD PENDIENTE) ---
+          if (isShield && !isCompleted) {
+              grp.select('.effect-shield-pulse')
+                 .style('display', 'block')
+                 .attr('r', 8)
+                 .attr('fill', 'none')
+                 .attr('stroke', '#06b6d4')
+                 .attr('class', 'effect-shield-pulse shield-pulse');
+          } else {
+              grp.select('.effect-shield-pulse').style('display', 'none');
           }
       });
 
