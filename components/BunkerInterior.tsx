@@ -44,27 +44,48 @@ const TugOfWarBar = ({ label, shieldVal, enemyVal, enemyColor }: { label: string
     );
 };
 
-// --- COMPONENTE: TARJETA COMPACTA ---
-const HeroCompactCard = ({ hero, onClick, actionIcon, onAction }: { hero: Hero, onClick: () => void, actionIcon?: string, onAction?: () => void }) => (
-    <div onClick={onClick} className={`group flex items-center gap-3 p-2 border-b cursor-pointer transition-all ${hero.status === 'CAPTURED' ? 'bg-red-950/20 border-red-900/50 hover:bg-red-900/30' : 'bg-slate-900/50 border-slate-800 hover:bg-slate-800'}`}>
-        <div className={`w-10 h-10 shrink-0 border ${hero.status === 'INJURED' || hero.status === 'CAPTURED' ? 'border-red-500' : 'border-cyan-700'} overflow-hidden relative`}>
-            <img src={hero.imageUrl} alt={hero.alias} className={`w-full h-full object-cover ${hero.status === 'CAPTURED' ? 'grayscale contrast-125' : ''}`} />
-            {hero.status === 'CAPTURED' && <div className="absolute inset-0 bg-red-500/20"></div>}
+// --- COMPONENTE: TARJETA DE HÉROE CINEMÁTICA ---
+const HeroCinematicCard = ({ hero, onClick, actionIcon, onAction }: { hero: Hero, onClick: () => void, actionIcon?: string, onAction?: () => void }) => (
+    <div 
+        onClick={onClick} 
+        className={`group relative h-24 w-full cursor-pointer overflow-hidden border-b border-slate-800 transition-all hover:border-cyan-500 ${hero.status === 'CAPTURED' ? 'grayscale' : ''}`}
+    >
+        {/* IMAGEN DE FONDO */}
+        <div className="absolute inset-0">
+            <img 
+                src={hero.imageUrl} 
+                alt={hero.alias} 
+                className="w-full h-full object-cover object-top transition-transform duration-700 group-hover:scale-110 opacity-60 group-hover:opacity-80" 
+            />
+            {/* DEGRADADO PARA TEXTO */}
+            <div className="absolute inset-0 bg-gradient-to-r from-slate-950 via-slate-950/60 to-transparent"></div>
         </div>
-        <div className="flex-1 min-w-0">
-            <div className="flex justify-between items-center">
-                <span className={`text-xs font-bold truncate ${hero.status === 'INJURED' || hero.status === 'CAPTURED' ? 'text-red-400' : 'text-cyan-100'}`}>
-                    {hero.status === 'CAPTURED' ? `[PRISONER] ${hero.alias}` : hero.alias}
+
+        {/* CONTENIDO */}
+        <div className="absolute inset-0 p-4 flex flex-col justify-center z-10">
+            <h3 className={`text-lg font-black uppercase tracking-wider truncate ${hero.status === 'INJURED' || hero.status === 'CAPTURED' ? 'text-red-500' : 'text-white group-hover:text-cyan-400'}`}>
+                {hero.alias}
+            </h3>
+            <div className="flex items-center gap-2 mt-1">
+                <span className="text-[9px] font-bold bg-slate-950/80 px-2 py-0.5 border border-slate-700 text-gray-400">
+                    {hero.class}
                 </span>
-                <span className="text-[8px] text-gray-500 font-mono">{hero.class}</span>
+                {hero.status === 'CAPTURED' && <span className="text-[9px] font-bold bg-red-900/80 px-2 py-0.5 text-white border border-red-500">PRISONER</span>}
             </div>
-            <div className="text-[9px] text-gray-400 truncate">{hero.name}</div>
         </div>
+
+        {/* BOTÓN DE ACCIÓN (FLOTANTE) */}
         {actionIcon && onAction && (
-            <button onClick={(e) => { e.stopPropagation(); onAction(); }} className="w-6 h-6 flex items-center justify-center border border-slate-600 hover:border-cyan-500 hover:text-cyan-400 text-gray-500 transition-colors">
+            <button 
+                onClick={(e) => { e.stopPropagation(); onAction(); }} 
+                className="absolute right-4 top-1/2 -translate-y-1/2 w-8 h-8 flex items-center justify-center bg-slate-900/80 border border-slate-600 hover:border-red-500 hover:text-red-500 hover:bg-slate-900 text-gray-400 transition-all z-20 rounded-full"
+            >
                 {actionIcon}
             </button>
         )}
+        
+        {/* BARRA DE ESTADO LATERAL */}
+        <div className={`absolute left-0 top-0 bottom-0 w-1 ${hero.status === 'AVAILABLE' ? 'bg-emerald-500' : hero.status === 'DEPLOYED' ? 'bg-yellow-500' : 'bg-red-500'}`}></div>
     </div>
 );
 
@@ -149,25 +170,31 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
       }
   };
 
-  // --- LÓGICA DE FILTRADO DE RECLUTAMIENTO ---
+  // --- LÓGICA DE FILTRADO DE RECLUTAMIENTO (MEJORADA) ---
   const getFilteredTemplates = () => {
       return dbTemplates.filter(t => {
           // 1. Filtro de texto
           const matchesSearch = (t.alias || t.defaultName).toLowerCase().includes(searchTerm.toLowerCase());
           
-          // 2. Filtro de Alineamiento (Lógica Cruzada)
+          // 2. Filtro de Alineamiento
           let matchesAlignment = false;
           const templateAlign = t.defaultAlignment || 'ALIVE';
 
           if (recruitMode === 'ALLY') {
-              // Si recluto aliado, busco mi mismo bando
               matchesAlignment = templateAlign === playerAlignment;
           } else {
-              // Si capturo, busco el bando contrario
               matchesAlignment = templateAlign !== playerAlignment;
           }
 
-          return matchesSearch && matchesAlignment;
+          // 3. FILTRO DE DUPLICADOS (NUEVO)
+          // Comprobamos si el ID del template ya existe en la lista de héroes del jugador
+          // O si el alias coincide (para evitar duplicados lógicos)
+          const isAlreadyOwned = heroes.some(h => 
+              h.templateId === t.id || 
+              h.alias.toLowerCase() === (t.alias || t.defaultName).toLowerCase()
+          );
+
+          return matchesSearch && matchesAlignment && !isAlreadyOwned;
       });
   };
 
@@ -205,7 +232,7 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
         <div className="flex-1 grid grid-cols-12 gap-0 overflow-hidden">
             
             {/* COLUMNA 1: PERSONAL */}
-            <div className="col-span-3 border-r border-cyan-900 bg-slate-900/50 flex flex-col min-w-[250px]">
+            <div className="col-span-3 border-r border-cyan-900 bg-slate-900/50 flex flex-col min-w-[280px]">
                 <div className="flex border-b border-cyan-900">
                     <button onClick={() => setActiveTab('ROSTER')} className={`flex-1 py-3 text-[10px] font-bold tracking-widest uppercase transition-colors ${activeTab === 'ROSTER' ? 'bg-cyan-900/30 text-white border-b-2 border-cyan-500' : 'text-gray-500 hover:text-cyan-300'}`}>
                         ACTIVOS ({availableHeroes.length + deployedHeroes.length})
@@ -215,19 +242,19 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
                     </button>
                 </div>
                 
-                <div className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-cyan-900 p-2 space-y-1">
+                <div className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-cyan-900 bg-slate-950">
                     {activeTab === 'ROSTER' ? (
                         <>
-                            {availableHeroes.length === 0 && deployedHeroes.length === 0 && <div className="text-center text-[10px] text-gray-600 py-4">SIN PERSONAL</div>}
-                            {availableHeroes.map(h => <HeroCompactCard key={h.id} hero={h} onClick={() => setSelectedHeroId(h.id)} />)}
-                            {deployedHeroes.length > 0 && <div className="text-[9px] font-bold text-yellow-500 uppercase mt-4 mb-1 px-2">DESPLEGADOS EN MISIÓN</div>}
-                            {deployedHeroes.map(h => <HeroCompactCard key={h.id} hero={h} onClick={() => setSelectedHeroId(h.id)} actionIcon="✕" onAction={() => onUnassign(h.id)} />)}
+                            {availableHeroes.length === 0 && deployedHeroes.length === 0 && <div className="text-center text-[10px] text-gray-600 py-10">SIN PERSONAL</div>}
+                            {availableHeroes.map(h => <HeroCinematicCard key={h.id} hero={h} onClick={() => setSelectedHeroId(h.id)} />)}
+                            {deployedHeroes.length > 0 && <div className="text-[9px] font-bold text-yellow-500 uppercase mt-4 mb-1 px-2 border-b border-yellow-900/30 pb-1">DESPLEGADOS EN MISIÓN</div>}
+                            {deployedHeroes.map(h => <HeroCinematicCard key={h.id} hero={h} onClick={() => setSelectedHeroId(h.id)} actionIcon="✕" onAction={() => onUnassign(h.id)} />)}
                         </>
                     ) : (
                         <>
-                            {injuredHeroes.length === 0 && <div className="text-center text-[10px] text-gray-600 py-4">ALA MÉDICA VACÍA</div>}
+                            {injuredHeroes.length === 0 && <div className="text-center text-[10px] text-gray-600 py-10">ALA MÉDICA VACÍA</div>}
                             {injuredHeroes.map(h => (
-                                <HeroCompactCard 
+                                <HeroCinematicCard 
                                     key={h.id} 
                                     hero={h} 
                                     onClick={() => setSelectedHeroId(h.id)} 
