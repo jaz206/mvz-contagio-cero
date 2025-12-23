@@ -25,10 +25,10 @@ interface BunkerInteriorProps {
 const normalizeName = (name: string) => {
     if (!name) return '';
     return name.toLowerCase()
-        .replace(/\(z\)/g, '')       // Quitar (Z)
-        .replace(/\(zombie\)/g, '')  // Quitar (Zombie)
-        .replace(/\(artist\)/g, '')  // Quitar (Artist)
-        .replace(/[^a-z0-9]/g, '')   // Quitar símbolos y espacios
+        .replace(/\(z\)/g, '')       
+        .replace(/\(zombie\)/g, '')  
+        .replace(/\(artist\)/g, '')  
+        .replace(/[^a-z0-9]/g, '')   
         .trim();
 };
 
@@ -61,18 +61,15 @@ const HeroCinematicCard = ({ hero, onClick, actionIcon, onAction }: { hero: Hero
         onClick={onClick} 
         className={`group relative h-24 w-full cursor-pointer overflow-hidden border-b border-slate-800 transition-all hover:border-cyan-500 ${hero.status === 'CAPTURED' ? 'grayscale' : ''}`}
     >
-        {/* IMAGEN DE FONDO */}
         <div className="absolute inset-0">
             <img 
                 src={hero.imageUrl} 
                 alt={hero.alias} 
                 className="w-full h-full object-cover object-top transition-transform duration-700 group-hover:scale-110 opacity-60 group-hover:opacity-80" 
             />
-            {/* DEGRADADO PARA TEXTO */}
             <div className="absolute inset-0 bg-gradient-to-r from-slate-950 via-slate-950/60 to-transparent"></div>
         </div>
 
-        {/* CONTENIDO */}
         <div className="absolute inset-0 p-4 flex flex-col justify-center z-10">
             <h3 className={`text-lg font-black uppercase tracking-wider truncate ${hero.status === 'INJURED' || hero.status === 'CAPTURED' ? 'text-red-500' : 'text-white group-hover:text-cyan-400'}`}>
                 {hero.alias}
@@ -85,7 +82,6 @@ const HeroCinematicCard = ({ hero, onClick, actionIcon, onAction }: { hero: Hero
             </div>
         </div>
 
-        {/* BOTÓN DE ACCIÓN (FLOTANTE) */}
         {actionIcon && onAction && (
             <button 
                 onClick={(e) => { e.stopPropagation(); onAction(); }} 
@@ -95,7 +91,6 @@ const HeroCinematicCard = ({ hero, onClick, actionIcon, onAction }: { hero: Hero
             </button>
         )}
         
-        {/* BARRA DE ESTADO LATERAL */}
         <div className={`absolute left-0 top-0 bottom-0 w-1 ${hero.status === 'AVAILABLE' ? 'bg-emerald-500' : hero.status === 'DEPLOYED' ? 'bg-yellow-500' : 'bg-red-500'}`}></div>
     </div>
 );
@@ -181,13 +176,9 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
       }
   };
 
-  // --- LÓGICA DE FILTRADO DE RECLUTAMIENTO (CORREGIDA) ---
   const getFilteredTemplates = () => {
       return dbTemplates.filter(t => {
-          // 1. Filtro de texto
           const matchesSearch = (t.alias || t.defaultName).toLowerCase().includes(searchTerm.toLowerCase());
-          
-          // 2. Filtro de Alineamiento
           let matchesAlignment = false;
           const templateAlign = t.defaultAlignment || 'ALIVE';
 
@@ -197,10 +188,7 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
               matchesAlignment = templateAlign !== playerAlignment;
           }
 
-          // 3. FILTRO DE DUPLICADOS (ROBUSTO)
-          // Normalizamos los nombres para que "THOR" sea igual a "THOR (Z)"
           const templateNameClean = normalizeName(t.alias || t.defaultName);
-          
           const isAlreadyOwned = heroes.some(h => {
               const heroNameClean = normalizeName(h.alias);
               return heroNameClean === templateNameClean;
@@ -515,16 +503,34 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
                     />
                     
                     <div className="h-64 overflow-y-auto border border-slate-800 mb-6 scrollbar-thin scrollbar-thumb-slate-700">
-                        {getFilteredTemplates().map(t => (
-                            <div 
-                                key={t.id} 
-                                onClick={() => { setRecruitForm({...recruitForm, templateId: t.id, name: t.defaultName, alias: t.alias || t.defaultName, imageUrl: t.imageUrl, class: t.defaultClass}); }} 
-                                className={`p-3 cursor-pointer border-b border-slate-800 flex justify-between items-center transition-colors ${recruitForm.templateId === t.id ? (recruitMode === 'CAPTURE' ? 'bg-red-900/40' : 'bg-cyan-900/40') : 'hover:bg-slate-800'}`}
-                            >
-                                <span className="font-bold text-sm text-gray-300">{t.alias || t.defaultName}</span>
-                                <span className="text-[10px] text-gray-500 font-mono border border-slate-700 px-1">{t.defaultClass}</span>
-                            </div>
-                        ))}
+                        {getFilteredTemplates().map(t => {
+                            const isSelected = recruitForm.templateId === t.id;
+                            const activeColor = recruitMode === 'CAPTURE' ? 'bg-red-900/40 border-red-500' : 'bg-cyan-900/40 border-cyan-500';
+                            const hoverColor = recruitMode === 'CAPTURE' ? 'hover:bg-red-900/20' : 'hover:bg-cyan-900/20';
+                            const borderColor = recruitMode === 'CAPTURE' ? 'border-red-700' : 'border-cyan-700';
+
+                            return (
+                                <div 
+                                    key={t.id} 
+                                    onClick={() => { setRecruitForm({...recruitForm, templateId: t.id, name: t.defaultName, alias: t.alias || t.defaultName, imageUrl: t.imageUrl, class: t.defaultClass}); }} 
+                                    className={`flex items-center gap-3 p-2 border-b border-slate-800 cursor-pointer transition-all ${isSelected ? activeColor : `bg-slate-900 ${hoverColor}`}`}
+                                >
+                                    <div className={`w-12 h-12 shrink-0 border ${isSelected ? borderColor : 'border-slate-700'} relative overflow-hidden`}>
+                                        <img src={t.imageUrl} alt={t.alias} className="w-full h-full object-cover" />
+                                        {isSelected && <div className={`absolute inset-0 opacity-20 ${recruitMode === 'CAPTURE' ? 'bg-red-500' : 'bg-cyan-500'}`}></div>}
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                        <div className={`text-xs font-black uppercase tracking-wider ${isSelected ? 'text-white' : 'text-gray-300'}`}>
+                                            {t.alias || t.defaultName}
+                                        </div>
+                                        <div className="text-[9px] text-gray-500 truncate">{t.defaultName}</div>
+                                    </div>
+                                    <div className={`text-[8px] font-mono px-1.5 py-0.5 border ${isSelected ? borderColor + ' text-white' : 'border-slate-700 text-gray-500'}`}>
+                                        {t.defaultClass}
+                                    </div>
+                                </div>
+                            );
+                        })}
                         {getFilteredTemplates().length === 0 && (
                             <div className="text-center text-xs text-gray-600 py-10 italic">
                                 NO SE ENCONTRARON SUJETOS COMPATIBLES
