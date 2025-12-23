@@ -21,6 +21,17 @@ interface BunkerInteriorProps {
   onFindCylinder?: () => void;
 }
 
+// --- HELPER: NORMALIZAR NOMBRES PARA EVITAR DUPLICADOS ---
+const normalizeName = (name: string) => {
+    if (!name) return '';
+    return name.toLowerCase()
+        .replace(/\(z\)/g, '')       // Quitar (Z)
+        .replace(/\(zombie\)/g, '')  // Quitar (Zombie)
+        .replace(/\(artist\)/g, '')  // Quitar (Artist)
+        .replace(/[^a-z0-9]/g, '')   // Quitar símbolos y espacios
+        .trim();
+};
+
 // --- COMPONENTE: BARRA DE PODER (TUG OF WAR) ---
 const TugOfWarBar = ({ label, shieldVal, enemyVal, enemyColor }: { label: string, shieldVal: number, enemyVal: number, enemyColor: string }) => {
     const total = shieldVal + enemyVal;
@@ -170,7 +181,7 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
       }
   };
 
-  // --- LÓGICA DE FILTRADO DE RECLUTAMIENTO (MEJORADA) ---
+  // --- LÓGICA DE FILTRADO DE RECLUTAMIENTO (CORREGIDA) ---
   const getFilteredTemplates = () => {
       return dbTemplates.filter(t => {
           // 1. Filtro de texto
@@ -186,13 +197,14 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
               matchesAlignment = templateAlign !== playerAlignment;
           }
 
-          // 3. FILTRO DE DUPLICADOS (NUEVO)
-          // Comprobamos si el ID del template ya existe en la lista de héroes del jugador
-          // O si el alias coincide (para evitar duplicados lógicos)
-          const isAlreadyOwned = heroes.some(h => 
-              h.templateId === t.id || 
-              h.alias.toLowerCase() === (t.alias || t.defaultName).toLowerCase()
-          );
+          // 3. FILTRO DE DUPLICADOS (ROBUSTO)
+          // Normalizamos los nombres para que "THOR" sea igual a "THOR (Z)"
+          const templateNameClean = normalizeName(t.alias || t.defaultName);
+          
+          const isAlreadyOwned = heroes.some(h => {
+              const heroNameClean = normalizeName(h.alias);
+              return heroNameClean === templateNameClean;
+          });
 
           return matchesSearch && matchesAlignment && !isAlreadyOwned;
       });
