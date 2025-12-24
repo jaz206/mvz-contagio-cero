@@ -242,7 +242,8 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
                     </button>
                 </div>
                 
-                <div className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-cyan-900 bg-slate-950">
+                {/* AÑADIDO pb-12 PARA EVITAR QUE LA BARRA DE NOTICIAS TAPE EL ÚLTIMO ELEMENTO */}
+                <div className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-cyan-900 bg-slate-950 pb-12">
                     {activeTab === 'ROSTER' ? (
                         <>
                             {availableHeroes.length === 0 && deployedHeroes.length === 0 && <div className="text-center text-[10px] text-gray-600 py-10">SIN PERSONAL</div>}
@@ -288,7 +289,8 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
                 </div>
 
                 {/* Panel Inferior: Lista de Misiones */}
-                <div className="flex-1 p-4 overflow-y-auto scrollbar-thin scrollbar-thumb-cyan-900">
+                {/* AÑADIDO pb-12 PARA EVITAR QUE LA BARRA DE NOTICIAS TAPE EL ÚLTIMO ELEMENTO */}
+                <div className="flex-1 p-4 overflow-y-auto scrollbar-thin scrollbar-thumb-cyan-900 pb-12">
                     <h3 className="text-[10px] font-bold text-cyan-500 uppercase tracking-widest mb-2">REGISTRO DE OPERACIONES</h3>
                     <div className="space-y-2">
                         {missions.map(m => (
@@ -341,7 +343,8 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
                     )}
                 </div>
 
-                <div className="flex-1 p-4 overflow-y-auto">
+                {/* AÑADIDO pb-12 PARA EVITAR QUE LA BARRA DE NOTICIAS TAPE EL ÚLTIMO ELEMENTO */}
+                <div className="flex-1 p-4 overflow-y-auto pb-12">
                     <h3 className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2">HISTORIAL DE EVENTOS</h3>
                     <div className="space-y-2 text-[9px] font-mono text-gray-400">
                         <div className="border-l-2 border-emerald-500 pl-2 py-1">
