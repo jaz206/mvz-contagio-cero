@@ -30,6 +30,7 @@ export const USAMap: React.FC<USAMapProps> = ({
     onMissionSelect, 
     onBunkerClick, 
     factionStates, 
+    playerAlignment, 
     worldStage,
     surferTurnCount = 0
 }) => {
@@ -150,7 +151,35 @@ export const USAMap: React.FC<USAMapProps> = ({
       }
   }, [usData, dimensions]);
 
+  // --- LÓGICA DE DESBLOQUEO DE ZONAS (HELPER) ---
+  // Esta función determina si una zona está desbloqueada en modo Zombie
+  const isZoneUnlocked = (zone: 'magneto' | 'kingpin' | 'hulk' | 'doom') => {
+      if (playerAlignment !== 'ZOMBIE') return true; // En modo Alive siempre se ven
+
+      // AQUÍ ES DONDE PONDREMOS LAS MISIONES EN EL FUTURO
+      // Por ahora todo es false para mantener el mapa unificado
+      const unlocks = {
+          magneto: false, // Ej: completedMissionIds.has('m_conquest_magneto')
+          kingpin: false,
+          hulk: false,
+          doom: false
+      };
+      return unlocks[zone];
+  };
+
   const getFactionName = (state: string) => {
+      // Si es Zombie, verificamos si la zona está desbloqueada para mostrar su nombre real
+      if (playerAlignment === 'ZOMBIE') {
+          if (factionStates.magneto.has(state) && isZoneUnlocked('magneto')) return t.factions.magneto.name;
+          if (factionStates.kingpin.has(state) && isZoneUnlocked('kingpin')) return t.factions.kingpin.name;
+          if (factionStates.hulk.has(state) && isZoneUnlocked('hulk')) return t.factions.hulk.name;
+          if (factionStates.doom.has(state) && isZoneUnlocked('doom')) return t.factions.doom.name;
+          
+          // Si no está desbloqueada, nombre genérico
+          return "TERRITORIO DE CAZA (EEUU)";
+      }
+
+      // Modo Alive (Normal)
       if (factionStates.magneto.has(state)) return t.factions.magneto.name;
       if (factionStates.kingpin.has(state)) return t.factions.kingpin.name;
       if (factionStates.hulk.has(state)) return t.factions.hulk.name;
@@ -165,7 +194,12 @@ export const USAMap: React.FC<USAMapProps> = ({
       const jumpHulk = () => {
           if (meetingInProgressRef.current) { hulkTimerRef.current = setTimeout(jumpHulk, 1000); return; }
           const statesFeatureCollection = feature(usData as any, usData!.objects.states as any) as any;
-          const validStates = statesFeatureCollection.features.filter((f: any) => factionStates.hulk.has(f.properties.name));
+          
+          let validStates = statesFeatureCollection.features;
+          if (playerAlignment === 'ALIVE') {
+             validStates = statesFeatureCollection.features.filter((f: any) => factionStates.hulk.has(f.properties.name));
+          }
+
           if (validStates.length > 0) {
               const candidates: { coords: [number, number], dist: number }[] = [];
               const currentLoc = hulkCurrentLocRef.current;
@@ -176,7 +210,13 @@ export const USAMap: React.FC<USAMapProps> = ({
                       if (coords) { const dist = getDistance(currentLoc, coords); if (dist > 0.5) candidates.push({ coords, dist }); }
                   }
               });
-              candidates.sort((a, b) => a.dist - b.dist);
+              
+              if (playerAlignment === 'ZOMBIE') {
+                  candidates.sort(() => Math.random() - 0.5);
+              } else {
+                  candidates.sort((a, b) => a.dist - b.dist);
+              }
+              
               const poolSize = Math.min(candidates.length, 4);
               if (poolSize > 0) {
                   const randomIndex = Math.floor(Math.random() * poolSize);
@@ -188,7 +228,7 @@ export const USAMap: React.FC<USAMapProps> = ({
       if (hulkTimerRef.current) clearTimeout(hulkTimerRef.current);
       hulkTimerRef.current = setTimeout(jumpHulk, 2000);
       return () => { if (hulkTimerRef.current) clearTimeout(hulkTimerRef.current); };
-  }, [tokensReleased, usData, pathGenerator, projection, factionStates]);
+  }, [tokensReleased, usData, pathGenerator, projection, factionStates, playerAlignment]);
 
   useEffect(() => {
       if (worldStage !== 'SURFER' || !usData || !pathGenerator || !projection) { setSurferLocation(null); meetingInProgressRef.current = false; return; }
@@ -265,16 +305,13 @@ export const USAMap: React.FC<USAMapProps> = ({
             gMain.attr('transform', event.transform.toString());
             const k = event.transform.k;
             
-            // Escalar Búnker
             svg.selectAll('.bunker').attr('transform', function() {
                  const coords = d3.select(this).attr('data-coords')?.split(',').map(Number) || [0,0];
                  return `translate(${coords[0]},${coords[1]}) scale(${1/k})`;
             });
             
-            // Escalar Etiquetas
             svg.selectAll('text.label').style('font-size', `${Math.max(6, 10/k)}px`);
 
-            // Escalar Misiones (Solo escala, sin lógica compleja)
             if (gMissionsRef.current) {
                 gMissionsRef.current.selectAll('.mission').attr('transform', function(d: any) {
                     const coords = projection(d.location.coordinates);
@@ -282,7 +319,6 @@ export const USAMap: React.FC<USAMapProps> = ({
                 });
             }
 
-            // Escalar Tokens
             if (gTokensRef.current) {
                 gTokensRef.current.selectAll('.token-group').each(function() {
                     const sel = d3.select(this);
@@ -307,10 +343,25 @@ export const USAMap: React.FC<USAMapProps> = ({
     const statesFeatures = statesFeatureCollection.features;
 
     const getFactionStyle = (stateName: string) => {
+        // --- MODO ZOMBIE: EVOLUCIÓN DEL MAPA ---
+        if (playerAlignment === 'ZOMBIE') {
+            // 1. Si la zona está desbloqueada, mostramos su color
+            if (factionStates.magneto.has(stateName) && isZoneUnlocked('magneto')) return 'fill-red-900/60 stroke-red-500 stroke-[1px] hover:fill-red-700 hover:stroke-red-300 hover:stroke-[2px]';
+            if (factionStates.kingpin.has(stateName) && isZoneUnlocked('kingpin')) return 'fill-purple-900/60 stroke-purple-500 stroke-[1px] hover:fill-purple-700 hover:stroke-purple-300 hover:stroke-[2px]';
+            if (factionStates.hulk.has(stateName) && isZoneUnlocked('hulk')) return 'fill-lime-900/40 stroke-lime-700 stroke-[1px] hover:fill-lime-900/70 hover:stroke-lime-400 hover:stroke-[2px]';
+            if (factionStates.doom.has(stateName) && isZoneUnlocked('doom')) return 'fill-cyan-900/40 stroke-cyan-700 stroke-[1px] hover:fill-cyan-900/70 hover:stroke-cyan-400 hover:stroke-[2px]';
+
+            // 2. Si no está desbloqueada, estilo unificado oscuro
+            return 'fill-slate-900/90 stroke-slate-700 stroke-[1px] hover:fill-lime-900/30 hover:stroke-lime-500 hover:stroke-[2px]';
+        }
+
+        // --- MODO ALIVE: SIEMPRE MUESTRA FACCIONES ---
         if (factionStates.magneto.has(stateName)) return 'fill-red-900/60 stroke-red-500 stroke-[1px] hover:fill-red-700 hover:stroke-red-300 hover:stroke-[2px]';
         if (factionStates.kingpin.has(stateName)) return 'fill-purple-900/60 stroke-purple-500 stroke-[1px] hover:fill-purple-700 hover:stroke-purple-300 hover:stroke-[2px]';
         if (factionStates.hulk.has(stateName)) return 'fill-lime-900/40 stroke-lime-700 stroke-[1px] hover:fill-lime-900/70 hover:stroke-lime-400 hover:stroke-[2px]';
         if (factionStates.doom.has(stateName)) return 'fill-cyan-900/40 stroke-cyan-700 stroke-[1px] hover:fill-cyan-900/70 hover:stroke-cyan-400 hover:stroke-[2px]';
+        
+        // Neutral
         return 'fill-slate-800/60 stroke-slate-600 stroke-[1px] hover:fill-slate-700 hover:stroke-slate-400 hover:stroke-[2px]';
     };
 
@@ -364,7 +415,7 @@ export const USAMap: React.FC<USAMapProps> = ({
         bunkerGroup.raise();
     }
 
-  }, [usData, dimensions, projection, pathGenerator, factionStates]); 
+  }, [usData, dimensions, projection, pathGenerator, factionStates, playerAlignment, completedMissionIds]); // Añadido completedMissionIds
 
   useEffect(() => {
       if (!projection || !gMissionsRef.current || !gTokensRef.current || !svgRef.current) return;
@@ -372,7 +423,6 @@ export const USAMap: React.FC<USAMapProps> = ({
       const gMissions = gMissionsRef.current;
       const gTokens = gTokensRef.current;
       
-      // Obtener zoom actual para aplicar estado inicial correcto
       const currentZoom = d3.zoomTransform(svgRef.current).k || 1;
 
       const validMissions = missions.filter(m => {
@@ -463,16 +513,9 @@ export const USAMap: React.FC<USAMapProps> = ({
         .join(
             enter => {
                 const grp = enter.append('g').attr('class', 'mission cursor-pointer hover:opacity-100');
-                
-                // 1. Efecto de Pulso (Solo para SHIELD)
                 grp.append('circle').attr('class', 'effect-shield-pulse');
-                
-                // 2. Anillo Exterior (Para SHIELD)
                 grp.append('circle').attr('class', 'mission-ring');
-
-                // 3. Punto Central (Para todas)
                 grp.append('circle').attr('class', 'mission-dot');
-                
                 return grp;
             }
         )
@@ -500,32 +543,30 @@ export const USAMap: React.FC<USAMapProps> = ({
           const isBoss = d.type && d.type.startsWith('BOSS');
           const isGalactus = d.type === 'GALACTUS';
 
-          // --- 1. PUNTO CENTRAL ---
-          let dotColor = '#eab308'; // Amarillo (Pendiente)
+          let dotColor = '#eab308'; 
           let dotStroke = '#ca8a04';
           
           if (isCompleted) {
-              dotColor = '#10b981'; // Verde (Completada)
+              dotColor = '#10b981'; 
               dotStroke = '#059669';
           }
           
           if (isShield) {
-              dotColor = '#06b6d4'; // Cyan (SHIELD)
+              dotColor = '#06b6d4'; 
               dotStroke = '#0891b2';
           }
 
           if (isBoss || isGalactus) {
-              dotColor = '#9333ea'; // Púrpura (Boss)
+              dotColor = '#9333ea'; 
               dotStroke = '#7e22ce';
           }
 
           grp.select('.mission-dot')
-             .attr('r', isShield ? 4 : 5) // SHIELD un poco más pequeño el centro
-             .attr('fill', isShield && !isCompleted ? '#0f172a' : dotColor) // SHIELD hueco si pendiente
+             .attr('r', isShield ? 4 : 5) 
+             .attr('fill', isShield && !isCompleted ? '#0f172a' : dotColor) 
              .attr('stroke', dotStroke)
              .attr('stroke-width', 2);
 
-          // --- 2. ANILLO EXTERIOR (SOLO SHIELD) ---
           if (isShield) {
               grp.select('.mission-ring')
                  .style('display', 'block')
@@ -533,12 +574,11 @@ export const USAMap: React.FC<USAMapProps> = ({
                  .attr('fill', 'none')
                  .attr('stroke', '#06b6d4')
                  .attr('stroke-width', 1.5)
-                 .attr('stroke-dasharray', isCompleted ? 'none' : '2,1'); // Discontinuo si pendiente
+                 .attr('stroke-dasharray', isCompleted ? 'none' : '2,1'); 
           } else {
               grp.select('.mission-ring').style('display', 'none');
           }
 
-          // --- 3. EFECTO PULSO (SOLO SHIELD PENDIENTE) ---
           if (isShield && !isCompleted) {
               grp.select('.effect-shield-pulse')
                  .style('display', 'block')
