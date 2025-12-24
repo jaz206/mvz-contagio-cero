@@ -229,11 +229,12 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
         </div>
 
         {/* GRID PRINCIPAL */}
-        <div className="flex-1 grid grid-cols-12 gap-0 overflow-hidden">
+        <div className="flex-1 grid grid-cols-12 gap-0 overflow-hidden h-full">
             
             {/* COLUMNA 1: PERSONAL */}
-            <div className="col-span-3 border-r border-cyan-900 bg-slate-900/50 flex flex-col min-w-[280px]">
-                <div className="flex border-b border-cyan-900">
+            {/* CAMBIO: Añadido 'h-full overflow-hidden' para forzar el contenedor */}
+            <div className="col-span-3 border-r border-cyan-900 bg-slate-900/50 flex flex-col min-w-[280px] h-full overflow-hidden">
+                <div className="flex border-b border-cyan-900 shrink-0">
                     <button onClick={() => setActiveTab('ROSTER')} className={`flex-1 py-3 text-[10px] font-bold tracking-widest uppercase transition-colors ${activeTab === 'ROSTER' ? 'bg-cyan-900/30 text-white border-b-2 border-cyan-500' : 'text-gray-500 hover:text-cyan-300'}`}>
                         ACTIVOS ({availableHeroes.length + deployedHeroes.length})
                     </button>
@@ -242,8 +243,8 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
                     </button>
                 </div>
                 
-                {/* AÑADIDO pb-12 PARA EVITAR QUE LA BARRA DE NOTICIAS TAPE EL ÚLTIMO ELEMENTO */}
-                <div className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-cyan-900 bg-slate-950 pb-12">
+                {/* CAMBIO: Aumentado padding a pb-24 para asegurar visibilidad sobre el ticker */}
+                <div className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-cyan-900 bg-slate-950 pb-24">
                     {activeTab === 'ROSTER' ? (
                         <>
                             {availableHeroes.length === 0 && deployedHeroes.length === 0 && <div className="text-center text-[10px] text-gray-600 py-10">SIN PERSONAL</div>}
@@ -269,11 +270,12 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
             </div>
 
             {/* COLUMNA 2: INTELIGENCIA */}
-            <div className="col-span-6 flex flex-col bg-slate-950 relative">
+            {/* CAMBIO: Añadido 'h-full overflow-hidden' */}
+            <div className="col-span-6 flex flex-col bg-slate-950 relative h-full overflow-hidden">
                 <div className="absolute inset-0 opacity-5 pointer-events-none bg-[linear-gradient(45deg,transparent_25%,rgba(6,182,212,0.2)_50%,transparent_75%)] bg-[length:20px_20px]"></div>
 
                 {/* Panel Superior: Gráficas Tug of War */}
-                <div className="h-1/3 border-b border-cyan-900 p-4 flex gap-4">
+                <div className="h-1/3 border-b border-cyan-900 p-4 flex gap-4 shrink-0">
                     <div className="flex-1 bg-slate-900/80 border border-cyan-800 p-3 relative overflow-hidden flex flex-col justify-center">
                         <h3 className="text-[10px] font-bold text-cyan-500 uppercase tracking-widest mb-4 border-b border-cyan-900 pb-1">CONTROL TERRITORIAL</h3>
                         <TugOfWarBar label="MAGNETO" shieldVal={threatAnalysis.magneto.shield} enemyVal={threatAnalysis.magneto.enemy} enemyColor={threatAnalysis.magneto.color} />
@@ -289,8 +291,8 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
                 </div>
 
                 {/* Panel Inferior: Lista de Misiones */}
-                {/* AÑADIDO pb-12 PARA EVITAR QUE LA BARRA DE NOTICIAS TAPE EL ÚLTIMO ELEMENTO */}
-                <div className="flex-1 p-4 overflow-y-auto scrollbar-thin scrollbar-thumb-cyan-900 pb-12">
+                {/* CAMBIO: Aumentado padding a pb-24 */}
+                <div className="flex-1 p-4 overflow-y-auto scrollbar-thin scrollbar-thumb-cyan-900 pb-24">
                     <h3 className="text-[10px] font-bold text-cyan-500 uppercase tracking-widest mb-2">REGISTRO DE OPERACIONES</h3>
                     <div className="space-y-2">
                         {missions.map(m => (
@@ -313,8 +315,9 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
             </div>
 
             {/* COLUMNA 3: LOGÍSTICA */}
-            <div className="col-span-3 border-l border-cyan-900 bg-slate-900/50 flex flex-col">
-                <div className="p-4 border-b border-cyan-900">
+            {/* CAMBIO: Añadido 'h-full overflow-hidden' */}
+            <div className="col-span-3 border-l border-cyan-900 bg-slate-900/50 flex flex-col h-full overflow-hidden">
+                <div className="p-4 border-b border-cyan-900 shrink-0">
                     <button onClick={handleOpenRecruit} className="w-full py-4 border-2 border-dashed border-cyan-800 hover:border-cyan-500 hover:bg-cyan-900/10 transition-all group flex flex-col items-center justify-center gap-2">
                         <div className="w-12 h-12 rounded-full bg-slate-950 border border-cyan-700 flex items-center justify-center group-hover:scale-110 transition-transform">
                             <span className="text-2xl text-cyan-500">+</span>
@@ -323,7 +326,7 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
                     </button>
                 </div>
 
-                <div className="p-4 border-b border-cyan-900 bg-slate-900/80">
+                <div className="p-4 border-b border-cyan-900 bg-slate-900/80 shrink-0">
                     <h3 className="text-[10px] font-bold text-blue-400 uppercase tracking-widest mb-3">RECURSOS OMEGA</h3>
                     <div className="flex items-center justify-between mb-4">
                         <div className="flex gap-1">
@@ -343,8 +346,8 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
                     )}
                 </div>
 
-                {/* AÑADIDO pb-12 PARA EVITAR QUE LA BARRA DE NOTICIAS TAPE EL ÚLTIMO ELEMENTO */}
-                <div className="flex-1 p-4 overflow-y-auto pb-12">
+                {/* CAMBIO: Aumentado padding a pb-24 */}
+                <div className="flex-1 p-4 overflow-y-auto pb-24">
                     <h3 className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2">HISTORIAL DE EVENTOS</h3>
                     <div className="space-y-2 text-[9px] font-mono text-gray-400">
                         <div className="border-l-2 border-emerald-500 pl-2 py-1">
