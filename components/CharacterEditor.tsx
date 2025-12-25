@@ -101,7 +101,14 @@ export const CharacterEditor: React.FC<CharacterEditorProps> = ({ isOpen, onClos
         return isOpposite && matchesSearch && isNotSelf;
     });
 
-    const relatedHeroName = allHeroes.find(h => h.id === relatedHeroId)?.alias || relatedHeroId;
+    const getRelatedStatusText = () => {
+        if (relatedHeroId === 'NO_VARIANT') return "🚫 SIN VARIANTE (INMUNE/IRREVERSIBLE)";
+        if (relatedHeroId) {
+            const found = allHeroes.find(h => h.id === relatedHeroId);
+            return found ? `VINCULADO A: ${found.alias}` : `ID: ${relatedHeroId}`;
+        }
+        return "SIN VINCULACIÓN";
+    };
 
     return (
         <div className="fixed inset-0 z-[120] flex items-center justify-center bg-slate-950/90 backdrop-blur-sm p-4">
@@ -185,23 +192,38 @@ export const CharacterEditor: React.FC<CharacterEditorProps> = ({ isOpen, onClos
                         <div className="absolute top-0 right-0 p-1 opacity-20 text-purple-500 text-4xl font-black pointer-events-none">∞</div>
                         <label className="text-[10px] text-purple-400 font-bold block mb-2 uppercase">VINCULACIÓN CUÁNTICA (VERSIÓN ALTERNATIVA)</label>
                         
-                        <div className="flex gap-2 items-center">
+                        <div className="flex flex-col gap-2">
                             <div className="flex-1 bg-slate-950 border border-purple-800 p-2 text-xs text-purple-200 flex justify-between items-center">
-                                <span>{relatedHeroId ? `VINCULADO A: ${relatedHeroName}` : 'SIN VINCULACIÓN'}</span>
+                                <span className={relatedHeroId === 'NO_VARIANT' ? 'text-red-400 font-bold' : ''}>
+                                    {getRelatedStatusText()}
+                                </span>
                                 {relatedHeroId && (
                                     <button type="button" onClick={() => setRelatedHeroId(undefined)} className="text-red-500 hover:text-white font-bold px-2">✕</button>
                                 )}
                             </div>
-                            <button 
-                                type="button" 
-                                onClick={() => setShowLinker(true)}
-                                className="bg-purple-900/50 border border-purple-600 text-purple-300 px-3 py-2 text-[10px] font-bold uppercase hover:bg-purple-800 transition-colors"
-                            >
-                                BUSCAR
-                            </button>
+                            
+                            <div className="flex gap-2">
+                                <button 
+                                    type="button" 
+                                    onClick={() => setShowLinker(true)}
+                                    className="flex-1 bg-purple-900/50 border border-purple-600 text-purple-300 px-3 py-2 text-[10px] font-bold uppercase hover:bg-purple-800 transition-colors"
+                                >
+                                    BUSCAR CONTRAPARTE
+                                </button>
+                                <button 
+                                    type="button" 
+                                    onClick={() => setRelatedHeroId('NO_VARIANT')}
+                                    className="flex-1 bg-slate-800 border border-slate-600 text-gray-400 px-3 py-2 text-[10px] font-bold uppercase hover:bg-slate-700 hover:text-white transition-colors"
+                                    title="Marcar si este personaje es inmune o no tiene versión contraria"
+                                >
+                                    MARCAR SIN VARIANTE
+                                </button>
+                            </div>
                         </div>
-                        <div className="text-[9px] text-purple-500/70 mt-1">
-                            * Relaciona este personaje con su versión {alignment === 'ALIVE' ? 'Zombie' : 'Viva'} para evitar duplicados en el juego.
+                        <div className="text-[9px] text-purple-500/70 mt-2">
+                            * Relaciona este personaje con su versión {alignment === 'ALIVE' ? 'Zombie' : 'Viva'} para evitar duplicados.
+                            <br/>
+                            * Usa "SIN VARIANTE" para personajes inmunes (ej: Vision) o irrecuperables.
                         </div>
                     </div>
 

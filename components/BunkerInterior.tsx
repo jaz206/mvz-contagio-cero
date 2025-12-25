@@ -3,7 +3,7 @@ import { translations, Language } from "../translations";
 import { Hero, Mission, HeroClass, HeroTemplate } from "../types";
 import { getHeroTemplates } from "../services/dbService";
 import { RecruitModal } from "./RecruitModal";
-import { ConfirmationModal } from "./ConfirmationModal"; // <--- IMPORTAR
+import { ConfirmationModal } from "./ConfirmationModal";
 
 interface BunkerInteriorProps {
   heroes: Hero[];
@@ -109,7 +109,6 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
   const deployedHeroes = heroes.filter(h => h.status === 'DEPLOYED');
   const injuredHeroes = heroes.filter(h => h.status === 'INJURED' || h.status === 'CAPTURED');
 
-  // Crear un Set con los ALIAS NORMALIZADOS de los héroes que ya tenemos
   const existingAliases = useMemo(() => {
       const aliases = new Set<string>();
       heroes.forEach(h => {
@@ -191,6 +190,30 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
                             
                             const handleAction = () => {
                                 if (!onTransformHero) return;
+
+                                // --- LÓGICA DE BLOQUEO POR "SIN VARIANTE" ---
+                                if (h.relatedHeroId === 'NO_VARIANT') {
+                                    if (isAlivePlayer) {
+                                        openConfirm({
+                                            isOpen: true,
+                                            title: "ERROR GENÉTICO",
+                                            message: `SUJETO IRRECUPERABLE.\n\nEl tejido de ${h.alias} ha sufrido una degradación celular total. No queda ADN humano viable para la reestructuración.\n\nLA CURA ES INEFICAZ.`,
+                                            confirmText: "ENTENDIDO",
+                                            type: "WARNING",
+                                            onConfirm: () => {}
+                                        });
+                                    } else {
+                                        openConfirm({
+                                            isOpen: true,
+                                            title: "ANOMALÍA DETECTADA",
+                                            message: `SUJETO INMUNE.\n\nLa fisiología de ${h.alias} rechaza el Evangelio del Hambre. Estructura molecular incompatible o sintética.\n\nNO SE PUEDE CONSUMIR.`,
+                                            confirmText: "ENTENDIDO",
+                                            type: "WARNING",
+                                            onConfirm: () => {}
+                                        });
+                                    }
+                                    return;
+                                }
 
                                 if (isAlivePlayer) {
                                     // MODO HÉROE: CURAR
@@ -337,7 +360,6 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
 
         {/* MODALES Y OVERLAYS */}
         
-        {/* MODAL DE CONFIRMACIÓN TEMATIZADO */}
         <ConfirmationModal 
             isOpen={confirmModal.isOpen}
             onClose={() => setConfirmModal({ ...confirmModal, isOpen: false })}
@@ -354,7 +376,7 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
                 onClose={() => setShowRecruitModal(false)}
                 onRecruit={onAddHero}
                 templates={dbTemplates}
-                existingAliases={existingAliases} // <--- PASAMOS ALIAS NORMALIZADOS
+                existingAliases={existingAliases}
                 language={language}
                 playerAlignment={playerAlignment || 'ALIVE'}
             />

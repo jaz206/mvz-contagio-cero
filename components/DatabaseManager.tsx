@@ -44,8 +44,8 @@ export const DatabaseManager: React.FC<DatabaseManagerProps> = ({ isOpen, onClos
     
     // --- FILTROS DE HÉROES ---
     const [heroFilterAlignment, setHeroFilterAlignment] = useState<'ALL' | 'ALIVE' | 'ZOMBIE'>('ALL');
-    const [heroFilterClass, setHeroFilterClass] = useState<'ALL' | HeroClass>('ALL'); // NUEVO
-    const [heroFilterLinked, setHeroFilterLinked] = useState<'ALL' | 'LINKED' | 'UNLINKED'>('ALL'); // NUEVO
+    const [heroFilterClass, setHeroFilterClass] = useState<'ALL' | HeroClass>('ALL'); 
+    const [heroFilterLinked, setHeroFilterLinked] = useState<'ALL' | 'LINKED' | 'UNLINKED'>('ALL'); 
 
     // --- FILTROS DE MISIONES ---
     const [missionFilterAlignment, setMissionFilterAlignment] = useState<'ALL' | 'ALIVE' | 'ZOMBIE' | 'BOTH'>('ALL');
@@ -175,18 +175,13 @@ export const DatabaseManager: React.FC<DatabaseManagerProps> = ({ isOpen, onClos
 
     // --- FILTRADO DE HÉROES ACTUALIZADO ---
     const filteredHeroes = heroes.filter(h => {
-        // 1. Búsqueda por Texto (Nombre o Alias)
         const matchesSearch = (h.alias + h.defaultName).toLowerCase().includes(searchTerm.toLowerCase());
-        
-        // 2. Filtro por Alineación (Vivo/Zombie)
         const matchesAlignment = heroFilterAlignment === 'ALL' || h.defaultAlignment === heroFilterAlignment;
-        
-        // 3. Filtro por Clase (Brawler, Scout, etc.)
         const matchesClass = heroFilterClass === 'ALL' || h.defaultClass === heroFilterClass;
 
-        // 4. Filtro por Vinculación (Tiene relatedHeroId o no)
         let matchesLinked = true;
         if (heroFilterLinked === 'LINKED') {
+            // Consideramos "NO_VARIANT" como vinculado (ya está resuelto)
             matchesLinked = !!h.relatedHeroId;
         } else if (heroFilterLinked === 'UNLINKED') {
             matchesLinked = !h.relatedHeroId;
@@ -239,14 +234,12 @@ export const DatabaseManager: React.FC<DatabaseManagerProps> = ({ isOpen, onClos
                 
                 {activeTab === 'HEROES' && (
                     <>
-                        {/* Filtro Bando */}
                         <select value={heroFilterAlignment} onChange={e => setHeroFilterAlignment(e.target.value as any)} className="bg-slate-950 border border-cyan-800 text-xs text-cyan-300 p-2">
                             <option value="ALL">TODOS LOS BANDOS</option>
                             <option value="ALIVE">🛡️ VIVOS (ALIVE)</option>
                             <option value="ZOMBIE">🧟 ZOMBIES</option>
                         </select>
 
-                        {/* Filtro Clase */}
                         <select value={heroFilterClass} onChange={e => setHeroFilterClass(e.target.value as any)} className="bg-slate-950 border border-cyan-800 text-xs text-cyan-300 p-2">
                             <option value="ALL">TODAS LAS CLASES</option>
                             <option value="BRAWLER">👊 BRAWLER</option>
@@ -255,10 +248,9 @@ export const DatabaseManager: React.FC<DatabaseManagerProps> = ({ isOpen, onClos
                             <option value="BLASTER">💥 BLASTER</option>
                         </select>
 
-                        {/* Filtro Vinculación */}
                         <select value={heroFilterLinked} onChange={e => setHeroFilterLinked(e.target.value as any)} className="bg-slate-950 border border-purple-800 text-xs text-purple-300 p-2">
                             <option value="ALL">VINCULACIÓN (TODOS)</option>
-                            <option value="LINKED">🔗 VINCULADOS (CONTRAPARTE)</option>
+                            <option value="LINKED">🔗 VINCULADOS / SIN VARIANTE</option>
                             <option value="UNLINKED">🚫 SIN VINCULAR</option>
                         </select>
                     </>
@@ -295,8 +287,11 @@ export const DatabaseManager: React.FC<DatabaseManagerProps> = ({ isOpen, onClos
                                     <img src={h.imageUrl} alt="" className="w-full h-full object-cover" />
                                     {/* Indicador de Vinculación */}
                                     {h.relatedHeroId && (
-                                        <div className="absolute -top-1 -right-1 w-4 h-4 bg-purple-600 rounded-full flex items-center justify-center text-[8px] text-white font-bold border border-white" title="Vinculado Cuánticamente">
-                                            ∞
+                                        <div 
+                                            className={`absolute -top-1 -right-1 w-4 h-4 rounded-full flex items-center justify-center text-[8px] text-white font-bold border border-white ${h.relatedHeroId === 'NO_VARIANT' ? 'bg-red-600' : 'bg-purple-600'}`} 
+                                            title={h.relatedHeroId === 'NO_VARIANT' ? "Sin Variante" : "Vinculado"}
+                                        >
+                                            {h.relatedHeroId === 'NO_VARIANT' ? 'Ø' : '∞'}
                                         </div>
                                     )}
                                 </div>

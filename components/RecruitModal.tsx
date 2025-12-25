@@ -7,12 +7,11 @@ interface RecruitModalProps {
     onClose: () => void;
     onRecruit: (hero: Hero) => void;
     templates: HeroTemplate[];
-    existingAliases: Set<string>; // <--- CAMBIO: Recibimos Alias, no IDs
+    existingAliases: Set<string>;
     language: Language;
     playerAlignment: 'ALIVE' | 'ZOMBIE' | null;
 }
 
-// Función auxiliar para limpiar nombres (ej: "THOR (Z)" -> "THOR")
 const normalizeAlias = (alias: string) => {
     return alias.toLowerCase()
         .replace(/\(z\)/g, '')
@@ -33,16 +32,12 @@ export const RecruitModal: React.FC<RecruitModalProps> = ({
     
     const filteredTemplates = useMemo(() => {
         return templates.filter(temp => {
-            // 1. Filtro de búsqueda
             const matchesSearch = temp.alias.toLowerCase().includes(searchTerm.toLowerCase()) || 
                                   temp.defaultName.toLowerCase().includes(searchTerm.toLowerCase());
             
-            // 2. Filtro de Duplicados INTELIGENTE
-            // Limpiamos el alias del candidato y comprobamos si ya existe en el equipo
             const cleanCandidateAlias = normalizeAlias(temp.alias);
             const isAlreadyOwned = existingAliases.has(cleanCandidateAlias);
 
-            // 3. Filtro de Alineación
             let matchesAlignment = true;
             if (playerAlignment) {
                 if (mode === 'RECRUIT') {
@@ -72,7 +67,8 @@ export const RecruitModal: React.FC<RecruitModalProps> = ({
             assignedMissionId: null,
             objectives: template.objectives || [],
             completedObjectiveIndices: [],
-            currentStory: template.currentStory || ''
+            currentStory: template.currentStory || '',
+            relatedHeroId: template.relatedHeroId // <--- IMPORTANTE: Copiar la relación
         };
 
         onRecruit(newHero);
