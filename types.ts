@@ -24,6 +24,7 @@ export interface Hero {
     stats: HeroStats;
     assignedMissionId: string | null;
     expansionId?: string;
+    relatedHeroId?: string; // <--- NUEVO: ID de la versión alternativa
 }
 
 export interface HeroTemplate {
@@ -33,12 +34,13 @@ export interface HeroTemplate {
     defaultStats: HeroStats;
     imageUrl: string;
     bio?: string;
-    alias?: string;
+    alias: string; // Alias es obligatorio ahora para la lógica
     currentStory?: string;
     objectives?: string[];
     characterSheetUrl?: string;
     defaultAlignment?: 'ALIVE' | 'ZOMBIE'; 
     expansionId?: string;
+    relatedHeroId?: string; // <--- NUEVO: ID de la versión alternativa en BBDD
 }
 
 export interface Location {
@@ -73,7 +75,7 @@ export interface Mission {
     triggerStage?: WorldStage; 
     prereq?: string;       
     prereqs?: string[];    
-    pdfUrl?: string; // <--- NUEVO CAMPO
+    pdfUrl?: string;
     alignment?: 'ALIVE' | 'ZOMBIE' | 'BOTH';
     requirements?: string[];
     specialRules?: string[];      

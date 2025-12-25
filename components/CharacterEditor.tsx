@@ -1,14 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { translations, Language } from '../translations';
 import { HeroTemplate, HeroClass, HeroStats } from '../types';
-import { createHeroTemplateInDB, updateHeroTemplate } from '../services/dbService';
+import { createHeroTemplateInDB, updateHeroTemplate, getHeroTemplates } from '../services/dbService';
 
 interface CharacterEditorProps {
     isOpen: boolean;
     onClose: () => void;
     language: Language;
-    initialData?: HeroTemplate | null; // Nuevo prop para editar
-    onSave?: () => void; // Callback para refrescar la lista
+    initialData?: HeroTemplate | null;
+    onSave?: () => void;
 }
 
 const HERO_CLASSES: HeroClass[] = ['BRAWLER', 'SCOUT', 'TACTICIAN', 'BLASTER'];
@@ -21,9 +21,15 @@ export const CharacterEditor: React.FC<CharacterEditorProps> = ({ isOpen, onClos
     const [bio, setBio] = useState('');
     const [imageUrl, setImageUrl] = useState('');
     const [alignment, setAlignment] = useState<'ALIVE' | 'ZOMBIE'>('ALIVE');
+    const [relatedHeroId, setRelatedHeroId] = useState<string | undefined>(undefined);
+    
     const [saving, setSaving] = useState(false);
+    
+    // Estados para el selector de contraparte
+    const [showLinker, setShowLinker] = useState(false);
+    const [allHeroes, setAllHeroes] = useState<HeroTemplate[]>([]);
+    const [linkSearch, setLinkSearch] = useState('');
 
-    // Cargar datos si estamos editando
     useEffect(() => {
         if (initialData) {
             setName(initialData.defaultName);
@@ -33,13 +39,21 @@ export const CharacterEditor: React.FC<CharacterEditorProps> = ({ isOpen, onClos
             setBio(initialData.bio || '');
             setImageUrl(initialData.imageUrl);
             setAlignment(initialData.defaultAlignment || 'ALIVE');
+            setRelatedHeroId(initialData.relatedHeroId);
         } else {
-            // Resetear si es nuevo
             setName(''); setAlias(''); setHeroClass('BRAWLER');
             setStats({ strength: 5, agility: 5, intellect: 5 });
             setBio(''); setImageUrl(''); setAlignment('ALIVE');
+            setRelatedHeroId(undefined);
         }
     }, [initialData, isOpen]);
+
+    // Cargar todos los héroes cuando se abre el vinculador
+    useEffect(() => {
+        if (showLinker && allHeroes.length === 0) {
+            getHeroTemplates().then(setAllHeroes);
+        }
+    }, [showLinker]);
 
     if (!isOpen) return null;
 
@@ -56,16 +70,15 @@ export const CharacterEditor: React.FC<CharacterEditorProps> = ({ isOpen, onClos
             imageUrl,
             defaultAlignment: alignment,
             objectives: initialData?.objectives || [],
-            currentStory: initialData?.currentStory || ''
+            currentStory: initialData?.currentStory || '',
+            relatedHeroId: relatedHeroId || null // Guardar la relación
         };
 
         try {
             if (initialData && initialData.id) {
-                // MODO EDICIÓN
                 await updateHeroTemplate(initialData.id, templateData);
                 alert("PERSONAJE ACTUALIZADO");
             } else {
-                // MODO CREACIÓN
                 await createHeroTemplateInDB(templateData);
                 alert("PERSONAJE CREADO");
             }
@@ -80,9 +93,57 @@ export const CharacterEditor: React.FC<CharacterEditorProps> = ({ isOpen, onClos
         }
     };
 
+    // Filtrar candidatos para vincular (solo del bando contrario)
+    const linkCandidates = allHeroes.filter(h => {
+        const isOpposite = h.defaultAlignment !== alignment;
+        const matchesSearch = h.alias.toLowerCase().includes(linkSearch.toLowerCase());
+        const isNotSelf = h.id !== initialData?.id;
+        return isOpposite && matchesSearch && isNotSelf;
+    });
+
+    const relatedHeroName = allHeroes.find(h => h.id === relatedHeroId)?.alias || relatedHeroId;
+
     return (
         <div className="fixed inset-0 z-[120] flex items-center justify-center bg-slate-950/90 backdrop-blur-sm p-4">
-            <div className="w-full max-w-2xl bg-slate-900 border-2 border-cyan-500 shadow-2xl flex flex-col max-h-[90vh]">
+            <div className="w-full max-w-2xl bg-slate-900 border-2 border-cyan-500 shadow-2xl flex flex-col max-h-[90vh] relative">
+                
+                {/* --- MODAL INTERNO DE VINCULACIÓN --- */}
+                {showLinker && (
+                    <div className="absolute inset-0 z-50 bg-slate-950/95 flex flex-col p-6 animate-fade-in">
+                        <div className="flex justify-between items-center mb-4 border-b border-cyan-700 pb-2">
+                            <h4 className="text-cyan-400 font-bold uppercase tracking-widest">SELECCIONAR CONTRAPARTE ({alignment === 'ALIVE' ? 'ZOMBIE' : 'ALIVE'})</h4>
+                            <button onClick={() => setShowLinker(false)} className="text-red-500 font-bold">CERRAR</button>
+                        </div>
+                        <input 
+                            placeholder="BUSCAR POR NOMBRE..." 
+                            value={linkSearch} 
+                            onChange={e => setLinkSearch(e.target.value)} 
+                            className="w-full bg-black border border-cyan-800 p-2 text-cyan-200 mb-4 uppercase"
+                            autoFocus
+                        />
+                        <div className="flex-1 overflow-y-auto space-y-2 pr-2 scrollbar-thin scrollbar-thumb-cyan-900">
+                            {linkCandidates.map(c => (
+                                <div 
+                                    key={c.id} 
+                                    onClick={() => { setRelatedHeroId(c.id); setShowLinker(false); }}
+                                    className="p-3 border border-slate-700 hover:border-cyan-500 hover:bg-cyan-900/20 cursor-pointer flex justify-between items-center group"
+                                >
+                                    <div className="flex items-center gap-3">
+                                        <img src={c.imageUrl} className="w-8 h-8 object-cover border border-slate-600" />
+                                        <div>
+                                            <div className="text-xs font-bold text-white group-hover:text-cyan-300">{c.alias}</div>
+                                            <div className="text-[8px] text-gray-500">{c.defaultName}</div>
+                                        </div>
+                                    </div>
+                                    <div className={`text-[9px] font-bold px-2 py-1 border ${c.defaultAlignment === 'ZOMBIE' ? 'border-lime-600 text-lime-500' : 'border-cyan-600 text-cyan-500'}`}>
+                                        {c.defaultAlignment}
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
+
                 <div className="bg-cyan-900/40 p-4 border-b border-cyan-600 flex justify-between items-center">
                     <h3 className="text-cyan-300 font-bold tracking-widest uppercase">
                         {initialData ? `EDITING: ${initialData.alias}` : 'CREATE NEW CHARACTER (DB)'}
@@ -116,6 +177,31 @@ export const CharacterEditor: React.FC<CharacterEditorProps> = ({ isOpen, onClos
                                 <option value="ALIVE">🛡️ HERO (ALIVE)</option>
                                 <option value="ZOMBIE">🧟 ZOMBIE (UNDEAD)</option>
                             </select>
+                        </div>
+                    </div>
+
+                    {/* --- SECCIÓN DE VINCULACIÓN --- */}
+                    <div className="bg-purple-900/10 border border-purple-500/30 p-3 relative overflow-hidden">
+                        <div className="absolute top-0 right-0 p-1 opacity-20 text-purple-500 text-4xl font-black pointer-events-none">∞</div>
+                        <label className="text-[10px] text-purple-400 font-bold block mb-2 uppercase">VINCULACIÓN CUÁNTICA (VERSIÓN ALTERNATIVA)</label>
+                        
+                        <div className="flex gap-2 items-center">
+                            <div className="flex-1 bg-slate-950 border border-purple-800 p-2 text-xs text-purple-200 flex justify-between items-center">
+                                <span>{relatedHeroId ? `VINCULADO A: ${relatedHeroName}` : 'SIN VINCULACIÓN'}</span>
+                                {relatedHeroId && (
+                                    <button type="button" onClick={() => setRelatedHeroId(undefined)} className="text-red-500 hover:text-white font-bold px-2">✕</button>
+                                )}
+                            </div>
+                            <button 
+                                type="button" 
+                                onClick={() => setShowLinker(true)}
+                                className="bg-purple-900/50 border border-purple-600 text-purple-300 px-3 py-2 text-[10px] font-bold uppercase hover:bg-purple-800 transition-colors"
+                            >
+                                BUSCAR
+                            </button>
+                        </div>
+                        <div className="text-[9px] text-purple-500/70 mt-1">
+                            * Relaciona este personaje con su versión {alignment === 'ALIVE' ? 'Zombie' : 'Viva'} para evitar duplicados en el juego.
                         </div>
                     </div>
 
