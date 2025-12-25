@@ -99,6 +99,7 @@ const HeroCard = ({ hero, onClick, actionIcon, onAction }: { hero: Hero, onClick
                 <button 
                     onClick={(e) => { e.stopPropagation(); onAction(); }} 
                     className="absolute right-2 top-2 w-8 h-8 flex items-center justify-center bg-black/50 border border-white/20 hover:bg-red-600 hover:border-red-500 text-white transition-all rounded-sm z-20 backdrop-blur-sm"
+                    title="Ejecutar Acción"
                 >
                     {actionIcon}
                 </button>
@@ -125,7 +126,7 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
   const deployedHeroes = heroes.filter(h => h.status === 'DEPLOYED');
   const injuredHeroes = heroes.filter(h => h.status === 'INJURED' || h.status === 'CAPTURED');
 
-  // Crear un Set con los IDs de los héroes que ya tenemos (usando templateId si existe, o id)
+  // Crear un Set con los IDs de los héroes que ya tenemos
   const existingHeroIds = useMemo(() => {
       const ids = new Set<string>();
       heroes.forEach(h => {
@@ -198,7 +199,41 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
                             {deployedHeroes.map(h => <HeroCard key={h.id} hero={h} onClick={() => setSelectedHeroId(h.id)} actionIcon="✕" onAction={() => onUnassign(h.id)} />)}
                         </>
                     ) : (
-                        injuredHeroes.map(h => <HeroCard key={h.id} hero={h} onClick={() => setSelectedHeroId(h.id)} actionIcon="💉" onAction={() => {}} />)
+                        injuredHeroes.map(h => {
+                            // LÓGICA DE CURA / INFECCIÓN
+                            const isAlivePlayer = playerAlignment === 'ALIVE';
+                            const actionIcon = isAlivePlayer ? "💉" : "🧟"; // Jeringa o Zombie
+                            
+                            const handleAction = () => {
+                                if (!onTransformHero) return;
+
+                                if (isAlivePlayer) {
+                                    // MODO HÉROE: CURAR
+                                    if (omegaCylinders > 0) {
+                                        if (window.confirm(`¿GASTAR 1 CILINDRO OMEGA PARA CURAR A ${h.alias}?`)) {
+                                            onTransformHero(h.id, 'ALIVE');
+                                        }
+                                    } else {
+                                        alert("RECURSOS INSUFICIENTES: NECESITAS UN CILINDRO OMEGA.");
+                                    }
+                                } else {
+                                    // MODO ZOMBIE: INFECTAR
+                                    if (window.confirm(`¿INFECTAR A ${h.alias} PARA LA HORDA?`)) {
+                                        onTransformHero(h.id, 'ZOMBIE');
+                                    }
+                                }
+                            };
+
+                            return (
+                                <HeroCard 
+                                    key={h.id} 
+                                    hero={h} 
+                                    onClick={() => setSelectedHeroId(h.id)} 
+                                    actionIcon={actionIcon} 
+                                    onAction={handleAction} 
+                                />
+                            );
+                        })
                     )}
                 </div>
             </div>
@@ -306,7 +341,7 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
                 onClose={() => setShowRecruitModal(false)}
                 onRecruit={onAddHero}
                 templates={dbTemplates}
-                existingHeroIds={existingHeroIds} // <--- PASAMOS LOS IDS AQUÍ
+                existingHeroIds={existingHeroIds}
                 language={language}
                 playerAlignment={playerAlignment || 'ALIVE'}
             />
