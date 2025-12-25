@@ -3,6 +3,7 @@ import { translations, Language } from "../translations";
 import { Hero, Mission, HeroClass, HeroTemplate } from "../types";
 import { getHeroTemplates } from "../services/dbService";
 import { RecruitModal } from "./RecruitModal";
+import { ConfirmationModal } from "./ConfirmationModal"; // <--- IMPORTAR
 
 interface BunkerInteriorProps {
   heroes: Hero[];
@@ -23,15 +24,20 @@ interface BunkerInteriorProps {
 }
 
 // --- UTILIDADES ---
-const normalizeName = (name: string) => name.toLowerCase().replace(/[^a-z0-9]/g, '').trim();
+const normalizeAlias = (alias: string) => {
+    return alias.toLowerCase()
+        .replace(/\(z\)/g, '')
+        .replace(/\(zombie\)/g, '')
+        .replace(/\(artist\)/g, '')
+        .replace(/\(old man\)/g, '')
+        .trim();
+};
 
-// --- COMPONENTE: BARRA TÁCTICA (TUG OF WAR) ---
+// --- COMPONENTE: BARRA TÁCTICA ---
 const TacticalBar = ({ label, shieldVal, enemyVal, enemyColor }: { label: string, shieldVal: number, enemyVal: number, enemyColor: string }) => {
     const total = shieldVal + enemyVal;
     const shieldPct = total === 0 ? 50 : (shieldVal / total) * 100;
-    
     const enemyBg = enemyColor.replace('text-', 'bg-');
-
     return (
         <div className="mb-4 group">
             <div className="flex justify-between text-[9px] font-black mb-1 uppercase tracking-wider px-1">
@@ -58,53 +64,21 @@ const HeroCard = ({ hero, onClick, actionIcon, onAction }: { hero: Hero, onClick
         INJURED: 'border-red-500 shadow-red-500/20',
         CAPTURED: 'border-red-900 shadow-red-900/20 grayscale'
     };
-
     const colorClass = statusColors[hero.status] || 'border-slate-600';
-
     return (
-        <div 
-            onClick={onClick} 
-            className={`
-                group relative h-28 w-full cursor-pointer overflow-hidden border-l-4 bg-slate-900/50 
-                transition-all duration-300 hover:bg-slate-800 hover:scale-[1.02] hover:z-10
-                ${colorClass} border-b border-slate-800
-            `}
-        >
+        <div onClick={onClick} className={`group relative h-28 w-full cursor-pointer overflow-hidden border-l-4 bg-slate-900/50 transition-all duration-300 hover:bg-slate-800 hover:scale-[1.02] hover:z-10 ${colorClass} border-b border-slate-800`}>
             <div className="absolute inset-0">
-                <img 
-                    src={hero.imageUrl} 
-                    alt={hero.alias} 
-                    className="w-full h-full object-cover object-top opacity-50 group-hover:opacity-80 transition-opacity duration-500" 
-                />
+                <img src={hero.imageUrl} alt={hero.alias} className="w-full h-full object-cover object-top opacity-50 group-hover:opacity-80 transition-opacity duration-500" />
                 <div className="absolute inset-0 bg-gradient-to-r from-slate-950 via-slate-950/80 to-transparent"></div>
             </div>
-
             <div className="absolute inset-0 p-4 flex flex-col justify-center z-10 pl-6">
-                <h3 className="text-lg font-black uppercase tracking-wider truncate text-white group-hover:text-cyan-400 drop-shadow-md" style={{fontFamily: 'Impact, sans-serif'}}>
-                    {hero.alias}
-                </h3>
+                <h3 className="text-lg font-black uppercase tracking-wider truncate text-white group-hover:text-cyan-400 drop-shadow-md" style={{fontFamily: 'Impact, sans-serif'}}>{hero.alias}</h3>
                 <div className="flex items-center gap-2 mt-1">
-                    <span className="text-[8px] font-bold bg-black/80 px-2 py-0.5 border border-slate-700 text-cyan-500 tracking-widest uppercase">
-                        {hero.class}
-                    </span>
-                    {hero.status !== 'AVAILABLE' && (
-                        <span className={`text-[8px] font-bold px-2 py-0.5 border uppercase tracking-widest ${hero.status === 'DEPLOYED' ? 'bg-yellow-900/50 text-yellow-500 border-yellow-700' : 'bg-red-900/50 text-red-500 border-red-700'}`}>
-                            {hero.status}
-                        </span>
-                    )}
+                    <span className="text-[8px] font-bold bg-black/80 px-2 py-0.5 border border-slate-700 text-cyan-500 tracking-widest uppercase">{hero.class}</span>
+                    {hero.status !== 'AVAILABLE' && (<span className={`text-[8px] font-bold px-2 py-0.5 border uppercase tracking-widest ${hero.status === 'DEPLOYED' ? 'bg-yellow-900/50 text-yellow-500 border-yellow-700' : 'bg-red-900/50 text-red-500 border-red-700'}`}>{hero.status}</span>)}
                 </div>
             </div>
-
-            {actionIcon && onAction && (
-                <button 
-                    onClick={(e) => { e.stopPropagation(); onAction(); }} 
-                    className="absolute right-2 top-2 w-8 h-8 flex items-center justify-center bg-black/50 border border-white/20 hover:bg-red-600 hover:border-red-500 text-white transition-all rounded-sm z-20 backdrop-blur-sm"
-                    title="Ejecutar Acción"
-                >
-                    {actionIcon}
-                </button>
-            )}
-            
+            {actionIcon && onAction && (<button onClick={(e) => { e.stopPropagation(); onAction(); }} className="absolute right-2 top-2 w-8 h-8 flex items-center justify-center bg-black/50 border border-white/20 hover:bg-red-600 hover:border-red-500 text-white transition-all rounded-sm z-20 backdrop-blur-sm">{actionIcon}</button>)}
             <div className="absolute inset-0 bg-scan opacity-0 group-hover:opacity-10 pointer-events-none transition-opacity"></div>
         </div>
     );
@@ -116,8 +90,17 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
   const [activeTab, setActiveTab] = useState<'ROSTER' | 'MEDBAY'>('ROSTER');
   const [selectedHeroId, setSelectedHeroId] = useState<string | null>(null);
   const [showRecruitModal, setShowRecruitModal] = useState(false);
-  
   const [dbTemplates, setDbTemplates] = useState<HeroTemplate[]>([]);
+
+  // ESTADO PARA EL MODAL DE CONFIRMACIÓN
+  const [confirmModal, setConfirmModal] = useState<{
+      isOpen: boolean;
+      title: string;
+      message: string;
+      confirmText: string;
+      type: 'CURE' | 'INFECT' | 'WARNING';
+      onConfirm: () => void;
+  }>({ isOpen: false, title: '', message: '', confirmText: '', type: 'WARNING', onConfirm: () => {} });
 
   const t = translations[language];
   const selectedHero = heroes.find(h => h.id === selectedHeroId);
@@ -126,14 +109,13 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
   const deployedHeroes = heroes.filter(h => h.status === 'DEPLOYED');
   const injuredHeroes = heroes.filter(h => h.status === 'INJURED' || h.status === 'CAPTURED');
 
-  // Crear un Set con los IDs de los héroes que ya tenemos
-  const existingHeroIds = useMemo(() => {
-      const ids = new Set<string>();
+  // Crear un Set con los ALIAS NORMALIZADOS de los héroes que ya tenemos
+  const existingAliases = useMemo(() => {
+      const aliases = new Set<string>();
       heroes.forEach(h => {
-          if (h.templateId) ids.add(h.templateId);
-          ids.add(h.id);
+          aliases.add(normalizeAlias(h.alias));
       });
-      return ids;
+      return aliases;
   }, [heroes]);
 
   const threatAnalysis = {
@@ -147,6 +129,10 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
       const templates = await getHeroTemplates();
       setDbTemplates(templates);
       setShowRecruitModal(true);
+  };
+
+  const openConfirm = (config: typeof confirmModal) => {
+      setConfirmModal(config);
   };
 
   return (
@@ -200,9 +186,8 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
                         </>
                     ) : (
                         injuredHeroes.map(h => {
-                            // LÓGICA DE CURA / INFECCIÓN
                             const isAlivePlayer = playerAlignment === 'ALIVE';
-                            const actionIcon = isAlivePlayer ? "💉" : "🧟"; // Jeringa o Zombie
+                            const actionIcon = isAlivePlayer ? "💉" : "🧟";
                             
                             const handleAction = () => {
                                 if (!onTransformHero) return;
@@ -210,17 +195,34 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
                                 if (isAlivePlayer) {
                                     // MODO HÉROE: CURAR
                                     if (omegaCylinders > 0) {
-                                        if (window.confirm(`¿GASTAR 1 CILINDRO OMEGA PARA CURAR A ${h.alias}?`)) {
-                                            onTransformHero(h.id, 'ALIVE');
-                                        }
+                                        openConfirm({
+                                            isOpen: true,
+                                            title: "PROTOCOLO DE CURA",
+                                            message: `¿INICIAR SECUENCIA DE REESTRUCTURACIÓN DE ADN PARA ${h.alias}?\n\nCOSTE: 1 CILINDRO OMEGA`,
+                                            confirmText: "ADMINISTRAR CURA",
+                                            type: "CURE",
+                                            onConfirm: () => onTransformHero(h.id, 'ALIVE')
+                                        });
                                     } else {
-                                        alert("RECURSOS INSUFICIENTES: NECESITAS UN CILINDRO OMEGA.");
+                                        openConfirm({
+                                            isOpen: true,
+                                            title: "RECURSOS INSUFICIENTES",
+                                            message: "NO HAY CILINDROS OMEGA DISPONIBLES.\n\nBUSCA SUMINISTROS EN EL MAPA.",
+                                            confirmText: "ENTENDIDO",
+                                            type: "WARNING",
+                                            onConfirm: () => {}
+                                        });
                                     }
                                 } else {
                                     // MODO ZOMBIE: INFECTAR
-                                    if (window.confirm(`¿INFECTAR A ${h.alias} PARA LA HORDA?`)) {
-                                        onTransformHero(h.id, 'ZOMBIE');
-                                    }
+                                    openConfirm({
+                                        isOpen: true,
+                                        title: "EXPANDIR EL HAMBRE",
+                                        message: `¿INFECTAR A ${h.alias}?\n\nEL SUJETO SE UNIRÁ A LA HORDA.`,
+                                        confirmText: "DEVORAR / INFECTAR",
+                                        type: "INFECT",
+                                        onConfirm: () => onTransformHero(h.id, 'ZOMBIE')
+                                    });
                                 }
                             };
 
@@ -335,13 +337,24 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
 
         {/* MODALES Y OVERLAYS */}
         
+        {/* MODAL DE CONFIRMACIÓN TEMATIZADO */}
+        <ConfirmationModal 
+            isOpen={confirmModal.isOpen}
+            onClose={() => setConfirmModal({ ...confirmModal, isOpen: false })}
+            onConfirm={confirmModal.onConfirm}
+            title={confirmModal.title}
+            message={confirmModal.message}
+            confirmText={confirmModal.confirmText}
+            type={confirmModal.type}
+        />
+
         {showRecruitModal && (
             <RecruitModal 
                 isOpen={showRecruitModal}
                 onClose={() => setShowRecruitModal(false)}
                 onRecruit={onAddHero}
                 templates={dbTemplates}
-                existingHeroIds={existingHeroIds}
+                existingAliases={existingAliases} // <--- PASAMOS ALIAS NORMALIZADOS
                 language={language}
                 playerAlignment={playerAlignment || 'ALIVE'}
             />

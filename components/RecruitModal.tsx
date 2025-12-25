@@ -7,49 +7,56 @@ interface RecruitModalProps {
     onClose: () => void;
     onRecruit: (hero: Hero) => void;
     templates: HeroTemplate[];
-    existingHeroIds: Set<string>; // <--- NUEVO: Para evitar duplicados
+    existingAliases: Set<string>; // <--- CAMBIO: Recibimos Alias, no IDs
     language: Language;
     playerAlignment: 'ALIVE' | 'ZOMBIE' | null;
 }
 
+// Función auxiliar para limpiar nombres (ej: "THOR (Z)" -> "THOR")
+const normalizeAlias = (alias: string) => {
+    return alias.toLowerCase()
+        .replace(/\(z\)/g, '')
+        .replace(/\(zombie\)/g, '')
+        .replace(/\(artist\)/g, '')
+        .replace(/\(old man\)/g, '')
+        .trim();
+};
+
 export const RecruitModal: React.FC<RecruitModalProps> = ({ 
-    isOpen, onClose, onRecruit, templates, existingHeroIds, language, playerAlignment 
+    isOpen, onClose, onRecruit, templates, existingAliases, language, playerAlignment 
 }) => {
     const [searchTerm, setSearchTerm] = useState('');
-    const [mode, setMode] = useState<'RECRUIT' | 'CAPTURE'>('RECRUIT'); // <--- NUEVO: Modo
+    const [mode, setMode] = useState<'RECRUIT' | 'CAPTURE'>('RECRUIT');
     const t = translations[language].recruit;
 
-    // Determinar colores según el bando y el modo
     const isZombiePlayer = playerAlignment === 'ZOMBIE';
     
-    // Lógica de filtrado
     const filteredTemplates = useMemo(() => {
         return templates.filter(temp => {
-            // 1. Filtro de búsqueda de texto
+            // 1. Filtro de búsqueda
             const matchesSearch = temp.alias.toLowerCase().includes(searchTerm.toLowerCase()) || 
                                   temp.defaultName.toLowerCase().includes(searchTerm.toLowerCase());
             
-            // 2. Filtro de duplicados (si ya lo tienes, no sale)
-            const isAlreadyOwned = existingHeroIds.has(temp.id);
+            // 2. Filtro de Duplicados INTELIGENTE
+            // Limpiamos el alias del candidato y comprobamos si ya existe en el equipo
+            const cleanCandidateAlias = normalizeAlias(temp.alias);
+            const isAlreadyOwned = existingAliases.has(cleanCandidateAlias);
 
-            // 3. Filtro de Alineación según el modo
+            // 3. Filtro de Alineación
             let matchesAlignment = true;
             if (playerAlignment) {
                 if (mode === 'RECRUIT') {
-                    // Buscas gente de tu mismo bando
                     matchesAlignment = temp.defaultAlignment === playerAlignment;
                 } else {
-                    // CAPTURE: Buscas gente del bando contrario
                     matchesAlignment = temp.defaultAlignment !== playerAlignment;
                 }
             }
 
             return matchesSearch && !isAlreadyOwned && matchesAlignment;
         });
-    }, [templates, searchTerm, playerAlignment, existingHeroIds, mode]);
+    }, [templates, searchTerm, playerAlignment, existingAliases, mode]);
 
     const handleActionClick = (template: HeroTemplate) => {
-        // Si estamos en modo CAPTURE, el estado inicial es CAPTURED, si no AVAILABLE
         const initialStatus = mode === 'CAPTURE' ? 'CAPTURED' : 'AVAILABLE';
 
         const newHero: Hero = {
@@ -61,7 +68,7 @@ export const RecruitModal: React.FC<RecruitModalProps> = ({
             stats: template.defaultStats,
             imageUrl: template.imageUrl,
             bio: template.bio || '',
-            status: initialStatus, // <--- Estado dinámico
+            status: initialStatus,
             assignedMissionId: null,
             objectives: template.objectives || [],
             completedObjectiveIndices: [],
@@ -69,9 +76,6 @@ export const RecruitModal: React.FC<RecruitModalProps> = ({
         };
 
         onRecruit(newHero);
-        // No cerramos automáticamente para permitir reclutar varios seguidos si se quiere, 
-        // o puedes descomentar onClose() si prefieres cerrar.
-        // onClose(); 
     };
 
     if (!isOpen) return null;
@@ -93,7 +97,7 @@ export const RecruitModal: React.FC<RecruitModalProps> = ({
                     <button onClick={onClose} className="text-cyan-500 hover:text-white font-bold text-2xl">✕</button>
                 </div>
 
-                {/* TABS DE MODO (RECLUTAR vs CAPTURAR) */}
+                {/* TABS */}
                 <div className="flex border-b border-cyan-900 bg-slate-950">
                     <button 
                         onClick={() => setMode('RECRUIT')}
@@ -132,7 +136,7 @@ export const RecruitModal: React.FC<RecruitModalProps> = ({
                     </div>
                 </div>
 
-                {/* Grid de Resultados */}
+                {/* Grid */}
                 <div className="flex-1 overflow-y-auto p-4 scrollbar-thin scrollbar-thumb-cyan-900 bg-slate-950">
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                         {filteredTemplates.map(template => (
@@ -145,12 +149,9 @@ export const RecruitModal: React.FC<RecruitModalProps> = ({
                                         : 'border-red-900 hover:bg-red-900/20 hover:border-red-500'}
                                 `}
                             >
-                                {/* Imagen */}
                                 <div className="w-16 h-16 shrink-0 border border-slate-700 group-hover:border-white overflow-hidden bg-black">
                                     <img src={template.imageUrl} alt={template.alias} className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity" />
                                 </div>
-                                
-                                {/* Info */}
                                 <div className="flex flex-col justify-center min-w-0">
                                     <div className={`text-xs font-black truncate group-hover:text-white ${mode === 'RECRUIT' ? 'text-cyan-400' : 'text-red-400'}`}>
                                         {template.alias}
@@ -160,8 +161,6 @@ export const RecruitModal: React.FC<RecruitModalProps> = ({
                                         {template.defaultClass}
                                     </div>
                                 </div>
-
-                                {/* Botón Hover */}
                                 <div className="absolute right-2 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity">
                                     <div className={`w-8 h-8 flex items-center justify-center text-black font-bold text-lg shadow-lg ${mode === 'RECRUIT' ? 'bg-cyan-600' : 'bg-red-600'}`}>
                                         {mode === 'RECRUIT' ? '+' : '⛓'}
@@ -173,7 +172,7 @@ export const RecruitModal: React.FC<RecruitModalProps> = ({
                         {filteredTemplates.length === 0 && (
                             <div className="col-span-full text-center py-10 text-gray-600 font-mono flex flex-col items-center gap-2">
                                 <span className="text-2xl">∅</span>
-                                <span>NO SE ENCONTRARON REGISTROS.</span>
+                                <span>NO SE ENCONTRARON REGISTROS COMPATIBLES O YA POSEES ESTE AGENTE.</span>
                             </div>
                         )}
                     </div>
