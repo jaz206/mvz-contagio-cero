@@ -184,7 +184,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin, onGoogleLogin
                         className="flex-1 bg-black border border-cyan-800 px-2 py-1 text-[10px] text-cyan-500 outline-none focus:border-cyan-500"
                         autoFocus
                     />
-                    <button type="submit" className="bg-cyan-900 text-cyan-400 px-2 text-[10px] border border-cyan-700 hover:bg-cyan-700 hover:text-white">></button>
+                    <button type="submit" className="bg-cyan-900 text-cyan-400 px-2 text-[10px] border border-cyan-700 hover:bg-cyan-700 hover:text-white">&gt;</button>
                 </form>
             )}
         </div>
