@@ -2,7 +2,7 @@ import React, { useState, useMemo } from "react";
 import { translations, Language } from "../translations";
 import { Hero, Mission, HeroClass, HeroTemplate } from "../types";
 import { getHeroTemplates } from "../services/dbService";
-import { RecruitModal } from "./RecruitModal"; // <--- 1. IMPORTAR AQUÍ
+import { RecruitModal } from "./RecruitModal";
 
 interface BunkerInteriorProps {
   heroes: Hero[];
@@ -124,6 +124,16 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
   const availableHeroes = heroes.filter(h => h.status === 'AVAILABLE');
   const deployedHeroes = heroes.filter(h => h.status === 'DEPLOYED');
   const injuredHeroes = heroes.filter(h => h.status === 'INJURED' || h.status === 'CAPTURED');
+
+  // Crear un Set con los IDs de los héroes que ya tenemos (usando templateId si existe, o id)
+  const existingHeroIds = useMemo(() => {
+      const ids = new Set<string>();
+      heroes.forEach(h => {
+          if (h.templateId) ids.add(h.templateId);
+          ids.add(h.id);
+      });
+      return ids;
+  }, [heroes]);
 
   const threatAnalysis = {
       magneto: { shield: 2, enemy: 5, color: 'text-red-500' },
@@ -290,13 +300,13 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
 
         {/* MODALES Y OVERLAYS */}
         
-        {/* 2. RENDERIZAR EL MODAL DE RECLUTAMIENTO AQUÍ */}
         {showRecruitModal && (
             <RecruitModal 
                 isOpen={showRecruitModal}
                 onClose={() => setShowRecruitModal(false)}
                 onRecruit={onAddHero}
                 templates={dbTemplates}
+                existingHeroIds={existingHeroIds} // <--- PASAMOS LOS IDS AQUÍ
                 language={language}
                 playerAlignment={playerAlignment || 'ALIVE'}
             />
