@@ -8,6 +8,13 @@ export interface HeroStats {
     intellect: number;
 }
 
+// NUEVA INTERFAZ PARA EL ENCUADRE
+export interface ImageParams {
+    scale: number;
+    x: number;
+    y: number;
+}
+
 export interface Hero {
     id: string;
     templateId?: string;
@@ -24,7 +31,8 @@ export interface Hero {
     stats: HeroStats;
     assignedMissionId: string | null;
     expansionId?: string;
-    relatedHeroId?: string; // <--- NUEVO: ID de la versión alternativa
+    relatedHeroId?: string;
+    imageParams?: ImageParams; // <--- NUEVO CAMPO
 }
 
 export interface HeroTemplate {
@@ -34,13 +42,14 @@ export interface HeroTemplate {
     defaultStats: HeroStats;
     imageUrl: string;
     bio?: string;
-    alias: string; // Alias es obligatorio ahora para la lógica
+    alias: string;
     currentStory?: string;
     objectives?: string[];
     characterSheetUrl?: string;
     defaultAlignment?: 'ALIVE' | 'ZOMBIE'; 
     expansionId?: string;
-    relatedHeroId?: string; // <--- NUEVO: ID de la versión alternativa en BBDD
+    relatedHeroId?: string;
+    imageParams?: ImageParams; // <--- NUEVO CAMPO
 }
 
 export interface Location {

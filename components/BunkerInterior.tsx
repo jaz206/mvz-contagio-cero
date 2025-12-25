@@ -65,20 +65,31 @@ const HeroCard = ({ hero, onClick, actionIcon, onAction }: { hero: Hero, onClick
         CAPTURED: 'border-red-900 shadow-red-900/20 grayscale'
     };
     const colorClass = statusColors[hero.status] || 'border-slate-600';
+
+    // Estilo dinámico para la imagen
+    const imgStyle = hero.imageParams ? {
+        transform: `scale(${hero.imageParams.scale}) translate(${hero.imageParams.x}%, ${hero.imageParams.y}%)`
+    } : {};
+
     return (
         <div onClick={onClick} className={`group relative h-28 w-full cursor-pointer overflow-hidden border-l-4 bg-slate-900/50 transition-all duration-300 hover:bg-slate-800 hover:scale-[1.02] hover:z-10 ${colorClass} border-b border-slate-800`}>
-            <div className="absolute inset-0">
-                <img src={hero.imageUrl} alt={hero.alias} className="w-full h-full object-cover object-top opacity-50 group-hover:opacity-80 transition-opacity duration-500" />
-                <div className="absolute inset-0 bg-gradient-to-r from-slate-950 via-slate-950/80 to-transparent"></div>
+            <div className="absolute inset-0 overflow-hidden">
+                <img 
+                    src={hero.imageUrl} 
+                    alt={hero.alias} 
+                    className="w-full h-full object-cover object-top opacity-50 group-hover:opacity-80 transition-all duration-500" 
+                    style={imgStyle}
+                />
+                <div className="absolute inset-0 bg-gradient-to-r from-slate-950 via-slate-950/80 to-transparent pointer-events-none"></div>
             </div>
-            <div className="absolute inset-0 p-4 flex flex-col justify-center z-10 pl-6">
+            <div className="absolute inset-0 p-4 flex flex-col justify-center z-10 pl-6 pointer-events-none">
                 <h3 className="text-lg font-black uppercase tracking-wider truncate text-white group-hover:text-cyan-400 drop-shadow-md" style={{fontFamily: 'Impact, sans-serif'}}>{hero.alias}</h3>
                 <div className="flex items-center gap-2 mt-1">
                     <span className="text-[8px] font-bold bg-black/80 px-2 py-0.5 border border-slate-700 text-cyan-500 tracking-widest uppercase">{hero.class}</span>
                     {hero.status !== 'AVAILABLE' && (<span className={`text-[8px] font-bold px-2 py-0.5 border uppercase tracking-widest ${hero.status === 'DEPLOYED' ? 'bg-yellow-900/50 text-yellow-500 border-yellow-700' : 'bg-red-900/50 text-red-500 border-red-700'}`}>{hero.status}</span>)}
                 </div>
             </div>
-            {actionIcon && onAction && (<button onClick={(e) => { e.stopPropagation(); onAction(); }} className="absolute right-2 top-2 w-8 h-8 flex items-center justify-center bg-black/50 border border-white/20 hover:bg-red-600 hover:border-red-500 text-white transition-all rounded-sm z-20 backdrop-blur-sm">{actionIcon}</button>)}
+            {actionIcon && onAction && (<button onClick={(e) => { e.stopPropagation(); onAction(); }} className="absolute right-2 top-2 w-8 h-8 flex items-center justify-center bg-black/50 border border-white/20 hover:bg-red-600 hover:border-red-500 text-white transition-all rounded-sm z-20 backdrop-blur-sm pointer-events-auto">{actionIcon}</button>)}
             <div className="absolute inset-0 bg-scan opacity-0 group-hover:opacity-10 pointer-events-none transition-opacity"></div>
         </div>
     );

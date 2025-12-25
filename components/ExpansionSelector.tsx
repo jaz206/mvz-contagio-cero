@@ -73,7 +73,8 @@ export const ExpansionSelector: React.FC<ExpansionSelectorProps> = ({
                         class: dbVersion.defaultClass,
                         stats: dbVersion.defaultStats,
                         imageUrl: dbVersion.imageUrl,
-                        bio: dbVersion.bio || localHero.bio
+                        bio: dbVersion.bio || localHero.bio,
+                        imageParams: dbVersion.imageParams // <--- COPIAR PARAMS
                     };
                 }
                 return localHero;
@@ -105,7 +106,8 @@ export const ExpansionSelector: React.FC<ExpansionSelectorProps> = ({
                 stats: h.defaultStats,
                 assignedMissionId: null,
                 objectives: h.objectives || [],
-                currentStory: h.currentStory || ''
+                currentStory: h.currentStory || '',
+                imageParams: h.imageParams // <--- COPIAR PARAMS
             }));
             allHeroes = [...allHeroes, ...formattedCustomHeroes];
         }
@@ -228,6 +230,11 @@ export const ExpansionSelector: React.FC<ExpansionSelectorProps> = ({
                                     const isSelected = selectedHeroes.some(h => h.id === hero.id);
                                     const isDisabled = !isSelected && selectedHeroes.length >= 6;
 
+                                    // Estilo dinámico
+                                    const imgStyle = hero.imageParams ? {
+                                        transform: `scale(${hero.imageParams.scale}) translate(${hero.imageParams.x}%, ${hero.imageParams.y}%)`
+                                    } : {};
+
                                     return (
                                         <div 
                                             key={hero.id} 
@@ -242,14 +249,21 @@ export const ExpansionSelector: React.FC<ExpansionSelectorProps> = ({
                                                 }
                                             `}
                                         >
-                                            {/* Imagen */}
-                                            <img src={hero.imageUrl} alt={hero.alias} className="w-full h-full object-cover" />
+                                            {/* Imagen con encuadre */}
+                                            <div className="absolute inset-0 overflow-hidden">
+                                                <img 
+                                                    src={hero.imageUrl} 
+                                                    alt={hero.alias} 
+                                                    className="w-full h-full object-cover" 
+                                                    style={imgStyle}
+                                                />
+                                            </div>
                                             
                                             {/* Overlay Gradiente */}
-                                            <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent opacity-80"></div>
+                                            <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent opacity-80 pointer-events-none"></div>
 
                                             {/* Info */}
-                                            <div className="absolute bottom-0 left-0 right-0 p-2">
+                                            <div className="absolute bottom-0 left-0 right-0 p-2 pointer-events-none">
                                                 <div className={`text-[10px] font-black uppercase truncate ${isSelected ? textColor : 'text-white'}`}>{hero.alias}</div>
                                                 <div className="text-[8px] text-gray-400 font-mono">{hero.class}</div>
                                             </div>
@@ -281,6 +295,12 @@ export const ExpansionSelector: React.FC<ExpansionSelectorProps> = ({
                         {/* Slots Vacíos o Llenos */}
                         {[...Array(6)].map((_, i) => {
                             const hero = selectedHeroes[i];
+                            
+                            // Estilo dinámico para el slot
+                            const imgStyle = hero?.imageParams ? {
+                                transform: `scale(${hero.imageParams.scale}) translate(${hero.imageParams.x}%, ${hero.imageParams.y}%)`
+                            } : {};
+
                             return (
                                 <div 
                                     key={i} 
@@ -296,9 +316,14 @@ export const ExpansionSelector: React.FC<ExpansionSelectorProps> = ({
                                     {hero ? (
                                         <>
                                             <div className="absolute inset-0 flex">
-                                                <div className="w-20 h-full shrink-0 relative">
-                                                    <img src={hero.imageUrl} className="w-full h-full object-cover" alt="" />
-                                                    <div className="absolute inset-0 bg-gradient-to-r from-transparent to-slate-800"></div>
+                                                <div className="w-20 h-full shrink-0 relative overflow-hidden">
+                                                    <img 
+                                                        src={hero.imageUrl} 
+                                                        className="w-full h-full object-cover" 
+                                                        alt="" 
+                                                        style={imgStyle}
+                                                    />
+                                                    <div className="absolute inset-0 bg-gradient-to-r from-transparent to-slate-800 pointer-events-none"></div>
                                                 </div>
                                                 <div className="flex-1 p-2 flex flex-col justify-center min-w-0">
                                                     <div className={`text-[10px] font-bold truncate ${textColor}`}>{hero.alias}</div>

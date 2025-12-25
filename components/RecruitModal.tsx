@@ -68,7 +68,8 @@ export const RecruitModal: React.FC<RecruitModalProps> = ({
             objectives: template.objectives || [],
             completedObjectiveIndices: [],
             currentStory: template.currentStory || '',
-            relatedHeroId: template.relatedHeroId // <--- IMPORTANTE: Copiar la relación
+            relatedHeroId: template.relatedHeroId,
+            imageParams: template.imageParams // <--- COPIAR PARÁMETROS
         };
 
         onRecruit(newHero);
@@ -135,35 +136,47 @@ export const RecruitModal: React.FC<RecruitModalProps> = ({
                 {/* Grid */}
                 <div className="flex-1 overflow-y-auto p-4 scrollbar-thin scrollbar-thumb-cyan-900 bg-slate-950">
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                        {filteredTemplates.map(template => (
-                            <div 
-                                key={template.id} 
-                                onClick={() => handleActionClick(template)}
-                                className={`group relative border bg-slate-900/50 transition-all cursor-pointer flex gap-3 p-2 overflow-hidden
-                                    ${mode === 'RECRUIT' 
-                                        ? 'border-cyan-900 hover:bg-cyan-900/20 hover:border-cyan-500' 
-                                        : 'border-red-900 hover:bg-red-900/20 hover:border-red-500'}
-                                `}
-                            >
-                                <div className="w-16 h-16 shrink-0 border border-slate-700 group-hover:border-white overflow-hidden bg-black">
-                                    <img src={template.imageUrl} alt={template.alias} className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity" />
-                                </div>
-                                <div className="flex flex-col justify-center min-w-0">
-                                    <div className={`text-xs font-black truncate group-hover:text-white ${mode === 'RECRUIT' ? 'text-cyan-400' : 'text-red-400'}`}>
-                                        {template.alias}
+                        {filteredTemplates.map(template => {
+                            // Estilo dinámico
+                            const imgStyle = template.imageParams ? {
+                                transform: `scale(${template.imageParams.scale}) translate(${template.imageParams.x}%, ${template.imageParams.y}%)`
+                            } : {};
+
+                            return (
+                                <div 
+                                    key={template.id} 
+                                    onClick={() => handleActionClick(template)}
+                                    className={`group relative border bg-slate-900/50 transition-all cursor-pointer flex gap-3 p-2 overflow-hidden
+                                        ${mode === 'RECRUIT' 
+                                            ? 'border-cyan-900 hover:bg-cyan-900/20 hover:border-cyan-500' 
+                                            : 'border-red-900 hover:bg-red-900/20 hover:border-red-500'}
+                                    `}
+                                >
+                                    <div className="w-16 h-16 shrink-0 border border-slate-700 group-hover:border-white overflow-hidden bg-black relative">
+                                        <img 
+                                            src={template.imageUrl} 
+                                            alt={template.alias} 
+                                            className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity absolute inset-0" 
+                                            style={imgStyle}
+                                        />
                                     </div>
-                                    <div className="text-[9px] text-gray-500 font-mono truncate">{template.defaultName}</div>
-                                    <div className="mt-1 inline-block px-1.5 py-0.5 bg-slate-800 text-[8px] text-gray-400 border border-slate-700 uppercase font-bold w-fit">
-                                        {template.defaultClass}
+                                    <div className="flex flex-col justify-center min-w-0">
+                                        <div className={`text-xs font-black truncate group-hover:text-white ${mode === 'RECRUIT' ? 'text-cyan-400' : 'text-red-400'}`}>
+                                            {template.alias}
+                                        </div>
+                                        <div className="text-[9px] text-gray-500 font-mono truncate">{template.defaultName}</div>
+                                        <div className="mt-1 inline-block px-1.5 py-0.5 bg-slate-800 text-[8px] text-gray-400 border border-slate-700 uppercase font-bold w-fit">
+                                            {template.defaultClass}
+                                        </div>
+                                    </div>
+                                    <div className="absolute right-2 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                        <div className={`w-8 h-8 flex items-center justify-center text-black font-bold text-lg shadow-lg ${mode === 'RECRUIT' ? 'bg-cyan-600' : 'bg-red-600'}`}>
+                                            {mode === 'RECRUIT' ? '+' : '⛓'}
+                                        </div>
                                     </div>
                                 </div>
-                                <div className="absolute right-2 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                    <div className={`w-8 h-8 flex items-center justify-center text-black font-bold text-lg shadow-lg ${mode === 'RECRUIT' ? 'bg-cyan-600' : 'bg-red-600'}`}>
-                                        {mode === 'RECRUIT' ? '+' : '⛓'}
-                                    </div>
-                                </div>
-                            </div>
-                        ))}
+                            );
+                        })}
                         
                         {filteredTemplates.length === 0 && (
                             <div className="col-span-full text-center py-10 text-gray-600 font-mono flex flex-col items-center gap-2">
