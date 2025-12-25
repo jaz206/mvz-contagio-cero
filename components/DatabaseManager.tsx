@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { HeroTemplate, Mission } from '../types';
+import { HeroTemplate, Mission, HeroClass } from '../types';
 import { 
     getHeroTemplates, 
     getCustomMissions, 
@@ -42,8 +42,12 @@ export const DatabaseManager: React.FC<DatabaseManagerProps> = ({ isOpen, onClos
     const [loading, setLoading] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
     
-    // Filtros
-    const [heroFilter, setHeroFilter] = useState<'ALL' | 'ALIVE' | 'ZOMBIE'>('ALL'); // NUEVO FILTRO
+    // --- FILTROS DE HÉROES ---
+    const [heroFilterAlignment, setHeroFilterAlignment] = useState<'ALL' | 'ALIVE' | 'ZOMBIE'>('ALL');
+    const [heroFilterClass, setHeroFilterClass] = useState<'ALL' | HeroClass>('ALL'); // NUEVO
+    const [heroFilterLinked, setHeroFilterLinked] = useState<'ALL' | 'LINKED' | 'UNLINKED'>('ALL'); // NUEVO
+
+    // --- FILTROS DE MISIONES ---
     const [missionFilterAlignment, setMissionFilterAlignment] = useState<'ALL' | 'ALIVE' | 'ZOMBIE' | 'BOTH'>('ALL');
     const [missionFilterDifficulty, setMissionFilterDifficulty] = useState<string>('ALL');
 
@@ -72,7 +76,6 @@ export const DatabaseManager: React.FC<DatabaseManagerProps> = ({ isOpen, onClos
         if (isOpen) loadData();
     }, [isOpen]);
 
-    // --- NUEVA FUNCIÓN: EXPORTAR A JSON ---
     const handleExportData = () => {
         const dataToExport = activeTab === 'HEROES' ? heroes : missions;
         const fileName = activeTab === 'HEROES' ? 'shield_heroes_backup.json' : 'shield_missions_backup.json';
@@ -125,7 +128,6 @@ export const DatabaseManager: React.FC<DatabaseManagerProps> = ({ isOpen, onClos
         });
     };
 
-    // --- SEGURIDAD: VERIFICACIÓN DE CONTRASEÑA ---
     const verifyAdmin = (): boolean => {
         const envPassword = import.meta.env.VITE_ADMIN_PASSWORD;
         if (!envPassword) {
@@ -171,11 +173,26 @@ export const DatabaseManager: React.FC<DatabaseManagerProps> = ({ isOpen, onClos
         return 'border-gray-500 text-gray-400';
     };
 
-    // --- FILTRADO DE HÉROES ---
+    // --- FILTRADO DE HÉROES ACTUALIZADO ---
     const filteredHeroes = heroes.filter(h => {
+        // 1. Búsqueda por Texto (Nombre o Alias)
         const matchesSearch = (h.alias + h.defaultName).toLowerCase().includes(searchTerm.toLowerCase());
-        const matchesFilter = heroFilter === 'ALL' || h.defaultAlignment === heroFilter;
-        return matchesSearch && matchesFilter;
+        
+        // 2. Filtro por Alineación (Vivo/Zombie)
+        const matchesAlignment = heroFilterAlignment === 'ALL' || h.defaultAlignment === heroFilterAlignment;
+        
+        // 3. Filtro por Clase (Brawler, Scout, etc.)
+        const matchesClass = heroFilterClass === 'ALL' || h.defaultClass === heroFilterClass;
+
+        // 4. Filtro por Vinculación (Tiene relatedHeroId o no)
+        let matchesLinked = true;
+        if (heroFilterLinked === 'LINKED') {
+            matchesLinked = !!h.relatedHeroId;
+        } else if (heroFilterLinked === 'UNLINKED') {
+            matchesLinked = !h.relatedHeroId;
+        }
+
+        return matchesSearch && matchesAlignment && matchesClass && matchesLinked;
     });
 
     if (!isOpen) return null;
@@ -221,11 +238,30 @@ export const DatabaseManager: React.FC<DatabaseManagerProps> = ({ isOpen, onClos
                 <input type="text" placeholder="BUSCAR..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="bg-slate-950 border border-cyan-700 p-2 text-cyan-200 text-xs w-64 focus:outline-none focus:border-cyan-400" />
                 
                 {activeTab === 'HEROES' && (
-                    <select value={heroFilter} onChange={e => setHeroFilter(e.target.value as any)} className="bg-slate-950 border border-cyan-800 text-xs text-cyan-300 p-2">
-                        <option value="ALL">TODOS LOS HÉROES</option>
-                        <option value="ALIVE">🛡️ VIVOS (ALIVE)</option>
-                        <option value="ZOMBIE">🧟 ZOMBIES</option>
-                    </select>
+                    <>
+                        {/* Filtro Bando */}
+                        <select value={heroFilterAlignment} onChange={e => setHeroFilterAlignment(e.target.value as any)} className="bg-slate-950 border border-cyan-800 text-xs text-cyan-300 p-2">
+                            <option value="ALL">TODOS LOS BANDOS</option>
+                            <option value="ALIVE">🛡️ VIVOS (ALIVE)</option>
+                            <option value="ZOMBIE">🧟 ZOMBIES</option>
+                        </select>
+
+                        {/* Filtro Clase */}
+                        <select value={heroFilterClass} onChange={e => setHeroFilterClass(e.target.value as any)} className="bg-slate-950 border border-cyan-800 text-xs text-cyan-300 p-2">
+                            <option value="ALL">TODAS LAS CLASES</option>
+                            <option value="BRAWLER">👊 BRAWLER</option>
+                            <option value="SCOUT">⚡ SCOUT</option>
+                            <option value="TACTICIAN">🧠 TACTICIAN</option>
+                            <option value="BLASTER">💥 BLASTER</option>
+                        </select>
+
+                        {/* Filtro Vinculación */}
+                        <select value={heroFilterLinked} onChange={e => setHeroFilterLinked(e.target.value as any)} className="bg-slate-950 border border-purple-800 text-xs text-purple-300 p-2">
+                            <option value="ALL">VINCULACIÓN (TODOS)</option>
+                            <option value="LINKED">🔗 VINCULADOS (CONTRAPARTE)</option>
+                            <option value="UNLINKED">🚫 SIN VINCULAR</option>
+                        </select>
+                    </>
                 )}
 
                 {activeTab === 'MISSIONS' && (
@@ -254,15 +290,31 @@ export const DatabaseManager: React.FC<DatabaseManagerProps> = ({ isOpen, onClos
                 {activeTab === 'HEROES' ? (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                         {filteredHeroes.map(h => (
-                            <div key={h.id} className="p-3 border border-cyan-900 bg-cyan-950/10 flex gap-3 group relative">
-                                <div className="w-12 h-12 bg-black border border-gray-700 shrink-0"><img src={h.imageUrl} alt="" className="w-full h-full object-cover" /></div>
-                                <div>
-                                    <div className="font-bold text-xs text-cyan-400">{h.alias}</div>
-                                    <div className={`text-[9px] font-bold ${h.defaultAlignment === 'ZOMBIE' ? 'text-lime-500' : 'text-blue-400'}`}>{h.defaultAlignment}</div>
+                            <div key={h.id} className={`p-3 border flex gap-3 group relative transition-all ${h.relatedHeroId ? 'border-purple-500/50 bg-purple-900/10' : 'border-cyan-900 bg-cyan-950/10'}`}>
+                                <div className="w-12 h-12 bg-black border border-gray-700 shrink-0 relative">
+                                    <img src={h.imageUrl} alt="" className="w-full h-full object-cover" />
+                                    {/* Indicador de Vinculación */}
+                                    {h.relatedHeroId && (
+                                        <div className="absolute -top-1 -right-1 w-4 h-4 bg-purple-600 rounded-full flex items-center justify-center text-[8px] text-white font-bold border border-white" title="Vinculado Cuánticamente">
+                                            ∞
+                                        </div>
+                                    )}
                                 </div>
-                                <div className="absolute right-2 bottom-2 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                    <button onClick={() => setEditingHero(h)} className="bg-blue-900 text-blue-300 px-2 py-1 text-[9px] border border-blue-700">EDIT</button>
-                                    <button onClick={() => handleDeleteHero(h.id)} className="bg-red-900 text-red-300 px-2 py-1 text-[9px] border border-red-700">DEL</button>
+                                <div className="min-w-0 flex-1">
+                                    <div className="font-bold text-xs text-cyan-400 truncate" title={h.alias}>{h.alias}</div>
+                                    <div className="text-[9px] text-gray-500 truncate">{h.defaultName}</div>
+                                    <div className="flex gap-2 mt-1">
+                                        <span className={`text-[8px] font-bold px-1 rounded border ${h.defaultAlignment === 'ZOMBIE' ? 'border-lime-600 text-lime-500' : 'border-blue-600 text-blue-400'}`}>
+                                            {h.defaultAlignment}
+                                        </span>
+                                        <span className="text-[8px] font-bold px-1 rounded border border-gray-600 text-gray-400">
+                                            {h.defaultClass}
+                                        </span>
+                                    </div>
+                                </div>
+                                <div className="absolute right-2 bottom-2 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity bg-slate-900/90 p-1 rounded z-10">
+                                    <button onClick={() => setEditingHero(h)} className="bg-blue-900 text-blue-300 px-2 py-1 text-[9px] border border-blue-700 hover:bg-blue-800">EDIT</button>
+                                    <button onClick={() => handleDeleteHero(h.id)} className="bg-red-900 text-red-300 px-2 py-1 text-[9px] border border-red-700 hover:bg-red-800">DEL</button>
                                 </div>
                             </div>
                         ))}
