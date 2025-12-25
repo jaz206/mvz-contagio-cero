@@ -2,6 +2,7 @@ import React, { useState, useMemo } from "react";
 import { translations, Language } from "../translations";
 import { Hero, Mission, HeroClass, HeroTemplate } from "../types";
 import { getHeroTemplates } from "../services/dbService";
+import { RecruitModal } from "./RecruitModal"; // <--- 1. IMPORTAR AQUÍ
 
 interface BunkerInteriorProps {
   heroes: Hero[];
@@ -29,9 +30,7 @@ const TacticalBar = ({ label, shieldVal, enemyVal, enemyColor }: { label: string
     const total = shieldVal + enemyVal;
     const shieldPct = total === 0 ? 50 : (shieldVal / total) * 100;
     
-    // Clases de color dinámicas
     const enemyBg = enemyColor.replace('text-', 'bg-');
-    const enemyBorder = enemyColor.replace('text-', 'border-');
 
     return (
         <div className="mb-4 group">
@@ -40,11 +39,9 @@ const TacticalBar = ({ label, shieldVal, enemyVal, enemyColor }: { label: string
                 <span className={`${enemyColor} drop-shadow-[0_0_3px_currentColor]`}>{label} <span className="text-xs">[{enemyVal}]</span></span>
             </div>
             <div className="h-4 w-full bg-slate-950 border border-slate-700 relative overflow-hidden flex skew-x-[-10deg]">
-                {/* Lado Shield */}
                 <div className="h-full bg-gradient-to-r from-cyan-900 to-cyan-500 transition-all duration-1000 ease-out relative border-r-2 border-white" style={{ width: `${shieldPct}%` }}>
                     <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/diagmonds-light.png')] opacity-30"></div>
                 </div>
-                {/* Lado Enemigo */}
                 <div className={`flex-1 h-full bg-gradient-to-l from-slate-900 to-${enemyBg.split('-')[1]}-600 opacity-80 relative`}>
                      <div className={`absolute inset-0 ${enemyBg} opacity-40`}></div>
                 </div>
@@ -53,7 +50,7 @@ const TacticalBar = ({ label, shieldVal, enemyVal, enemyColor }: { label: string
     );
 };
 
-// --- COMPONENTE: CARTA DE HÉROE (ESTILO MVC2) ---
+// --- COMPONENTE: CARTA DE HÉROE ---
 const HeroCard = ({ hero, onClick, actionIcon, onAction }: { hero: Hero, onClick: () => void, actionIcon?: string, onAction?: () => void }) => {
     const statusColors = {
         AVAILABLE: 'border-emerald-500 shadow-emerald-500/20',
@@ -73,7 +70,6 @@ const HeroCard = ({ hero, onClick, actionIcon, onAction }: { hero: Hero, onClick
                 ${colorClass} border-b border-slate-800
             `}
         >
-            {/* Fondo Imagen */}
             <div className="absolute inset-0">
                 <img 
                     src={hero.imageUrl} 
@@ -83,7 +79,6 @@ const HeroCard = ({ hero, onClick, actionIcon, onAction }: { hero: Hero, onClick
                 <div className="absolute inset-0 bg-gradient-to-r from-slate-950 via-slate-950/80 to-transparent"></div>
             </div>
 
-            {/* Contenido Texto */}
             <div className="absolute inset-0 p-4 flex flex-col justify-center z-10 pl-6">
                 <h3 className="text-lg font-black uppercase tracking-wider truncate text-white group-hover:text-cyan-400 drop-shadow-md" style={{fontFamily: 'Impact, sans-serif'}}>
                     {hero.alias}
@@ -100,7 +95,6 @@ const HeroCard = ({ hero, onClick, actionIcon, onAction }: { hero: Hero, onClick
                 </div>
             </div>
 
-            {/* Botón de Acción (X para desasignar) */}
             {actionIcon && onAction && (
                 <button 
                     onClick={(e) => { e.stopPropagation(); onAction(); }} 
@@ -110,7 +104,6 @@ const HeroCard = ({ hero, onClick, actionIcon, onAction }: { hero: Hero, onClick
                 </button>
             )}
             
-            {/* Scanlines Decorativos */}
             <div className="absolute inset-0 bg-scan opacity-0 group-hover:opacity-10 pointer-events-none transition-opacity"></div>
         </div>
     );
@@ -123,9 +116,6 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
   const [selectedHeroId, setSelectedHeroId] = useState<string | null>(null);
   const [showRecruitModal, setShowRecruitModal] = useState(false);
   
-  // Lógica de Reclutamiento (Simplificada para el ejemplo visual)
-  const [recruitMode, setRecruitMode] = useState<'ALLY' | 'CAPTURE'>('ALLY');
-  const [searchTerm, setSearchTerm] = useState("");
   const [dbTemplates, setDbTemplates] = useState<HeroTemplate[]>([]);
 
   const t = translations[language];
@@ -135,7 +125,6 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
   const deployedHeroes = heroes.filter(h => h.status === 'DEPLOYED');
   const injuredHeroes = heroes.filter(h => h.status === 'INJURED' || h.status === 'CAPTURED');
 
-  // Cálculo de Amenaza (Mockup visual basado en props)
   const threatAnalysis = {
       magneto: { shield: 2, enemy: 5, color: 'text-red-500' },
       kingpin: { shield: 4, enemy: 3, color: 'text-purple-500' },
@@ -242,7 +231,6 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
                                         {heroes.filter(h => h.assignedMissionId === m.id).length} AGENTES
                                     </div>
                                 </div>
-                                {/* Background Hover Effect */}
                                 <div className="absolute inset-0 bg-gradient-to-r from-cyan-900/0 via-cyan-900/10 to-cyan-900/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000 pointer-events-none"></div>
                             </div>
                         ))}
@@ -300,11 +288,23 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
             </div>
         </div>
 
-        {/* MODALES Y OVERLAYS (Simplificado para el ejemplo) */}
+        {/* MODALES Y OVERLAYS */}
+        
+        {/* 2. RENDERIZAR EL MODAL DE RECLUTAMIENTO AQUÍ */}
+        {showRecruitModal && (
+            <RecruitModal 
+                isOpen={showRecruitModal}
+                onClose={() => setShowRecruitModal(false)}
+                onRecruit={onAddHero}
+                templates={dbTemplates}
+                language={language}
+                playerAlignment={playerAlignment || 'ALIVE'}
+            />
+        )}
+
         {selectedHero && (
              <div className="absolute inset-0 z-50 bg-slate-950/90 backdrop-blur-md flex items-center justify-center p-12" onClick={() => setSelectedHeroId(null)}>
                  <div className="bg-slate-900 border-2 border-cyan-500 w-full max-w-5xl h-[70vh] shadow-[0_0_100px_rgba(6,182,212,0.2)] flex clip-tactical" onClick={e => e.stopPropagation()}>
-                    {/* Contenido del Modal de Héroe (Se puede expandir igual que el resto) */}
                     <div className="w-1/3 h-full relative">
                         <img src={selectedHero.imageUrl} className="w-full h-full object-cover" />
                         <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-transparent to-transparent"></div>
@@ -317,7 +317,6 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
                         <div className="absolute top-0 right-0 p-4">
                             <button onClick={() => setSelectedHeroId(null)} className="text-cyan-500 hover:text-white font-bold text-xl">✕</button>
                         </div>
-                        {/* Stats Grid */}
                         <div className="grid grid-cols-3 gap-4 mb-8">
                              <div className="bg-slate-950 p-4 border border-red-900/50 text-center">
                                  <div className="text-[9px] text-gray-500 uppercase">FUERZA</div>
