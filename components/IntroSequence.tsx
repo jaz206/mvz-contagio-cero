@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { translations, Language } from '../translations';
 
 interface IntroSequenceProps {
@@ -7,43 +7,106 @@ interface IntroSequenceProps {
     playerAlignment: 'ALIVE' | 'ZOMBIE';
 }
 
+// --- COMPONENTE INTERNO: PANTALLA DE CARGA TEMÁTICA ---
+const DataLoaderOverlay = ({ isZombie }: { isZombie: boolean }) => {
+    const [progress, setProgress] = useState(0);
+    const [logLine, setLogLine] = useState("");
+
+    // Textos aleatorios de "hackeo"
+    const logsAlive = ["HANDSHAKE_INIT...", "BYPASSING FIREWALL...", "DECRYPTING PACKET...", "BUFFERING VIDEO STREAM...", "SECURING CONNECTION..."];
+    const logsZombie = ["HUNTING SIGNAL...", "CORRUPTING DATA...", "INFECTING SYSTEM...", "CONSUMING BANDWIDTH...", "SPREADING VIRUS..."];
+    const logs = isZombie ? logsZombie : logsAlive;
+
+    const color = isZombie ? "text-lime-500" : "text-cyan-500";
+    const barColor = isZombie ? "bg-lime-600" : "bg-cyan-600";
+
+    useEffect(() => {
+        // Simular progreso visual rápido
+        const interval = setInterval(() => {
+            setProgress(prev => (prev >= 100 ? 100 : prev + Math.random() * 15));
+            setLogLine(logs[Math.floor(Math.random() * logs.length)]);
+        }, 150);
+        return () => clearInterval(interval);
+    }, [isZombie]);
+
+    return (
+        <div className="absolute inset-0 z-50 bg-black flex flex-col items-center justify-center font-mono p-8">
+            {/* Ruido de fondo */}
+            <div className="absolute inset-0 opacity-10 pointer-events-none bg-[url('https://www.transparenttextures.com/patterns/stardust.png')] animate-pulse"></div>
+            
+            <div className={`text-4xl mb-4 animate-spin ${color}`}>
+                {isZombie ? '☣' : '✇'}
+            </div>
+            
+            <div className={`text-xl font-black tracking-[0.3em] mb-2 ${color} animate-pulse`}>
+                {isZombie ? 'FEEDING...' : 'LOADING...'}
+            </div>
+
+            {/* Barra de carga */}
+            <div className="w-64 h-2 bg-gray-800 border border-gray-600 relative overflow-hidden mb-2">
+                <div 
+                    className={`h-full ${barColor} transition-all duration-200 ease-out`} 
+                    style={{ width: `${progress}%` }}
+                ></div>
+            </div>
+
+            <div className="text-[10px] text-gray-500 h-4">
+                &gt; {logLine}
+            </div>
+        </div>
+    );
+};
+
 export const IntroSequence: React.FC<IntroSequenceProps> = ({ language, onComplete, playerAlignment }) => {
     const [currentIndex, setCurrentIndex] = useState(0);
-    const [isAnimating, setIsAnimating] = useState(false);
+    const [isTransitioning, setIsTransitioning] = useState(false); // Estado para controlar la carga
     const [textVisible, setTextVisible] = useState(false);
 
     const slides = translations[language].introSequence[playerAlignment === 'ZOMBIE' ? 'zombie' : 'alive'];
     const currentSlide = slides[currentIndex];
 
-    // --- NUEVO: PRE-CARGA DE IMÁGENES ---
-    // Esto descarga todos los GIFs en segundo plano nada más montar el componente
+    // Efecto de entrada para el texto
     useEffect(() => {
-        slides.forEach((slide) => {
-            const img = new Image();
-            img.src = slide.image;
-        });
-    }, [slides]);
-
-    // Efecto de entrada para el texto cada vez que cambia la slide
-    useEffect(() => {
-        setTextVisible(false);
-        const timer = setTimeout(() => setTextVisible(true), 500);
-        return () => clearTimeout(timer);
-    }, [currentIndex]);
+        if (!isTransitioning) {
+            setTextVisible(false);
+            const timer = setTimeout(() => setTextVisible(true), 300);
+            return () => clearTimeout(timer);
+        }
+    }, [currentIndex, isTransitioning]);
 
     const handleNext = () => {
-        if (isAnimating) return;
-        setIsAnimating(true);
+        if (isTransitioning) return;
+
+        const nextIndex = currentIndex + 1;
+
+        // Si es el final, terminar
+        if (nextIndex >= slides.length) {
+            onComplete();
+            return;
+        }
+
+        // 1. ACTIVAR MODO CARGA (Muestra el overlay)
+        setIsTransitioning(true);
         setTextVisible(false);
 
-        setTimeout(() => {
-            if (currentIndex < slides.length - 1) {
-                setCurrentIndex(prev => prev + 1);
-                setIsAnimating(false);
-            } else {
-                onComplete();
-            }
-        }, 800); // Tiempo para la transición de salida
+        // 2. PRECARGAR LA SIGUIENTE IMAGEN REALMENTE
+        const img = new Image();
+        img.src = slides[nextIndex].image;
+
+        // Definir tiempo mínimo de "efecto" para que no sea un parpadeo feo si carga muy rápido
+        const minTimePromise = new Promise(resolve => setTimeout(resolve, 1500)); 
+        
+        // Promesa de carga de imagen
+        const imgLoadPromise = new Promise((resolve) => {
+            img.onload = resolve;
+            img.onerror = resolve; // Si falla, avanzamos igual para no bloquear
+        });
+
+        // 3. ESPERAR A QUE AMBAS COSAS TERMINEN (Tiempo mínimo + Carga real)
+        Promise.all([imgLoadPromise, minTimePromise]).then(() => {
+            setCurrentIndex(nextIndex);
+            setIsTransitioning(false);
+        });
     };
 
     if (!currentSlide) return null;
@@ -60,10 +123,9 @@ export const IntroSequence: React.FC<IntroSequenceProps> = ({ language, onComple
         <div className="fixed inset-0 z-[100] bg-black font-mono overflow-hidden flex flex-col md:flex-row">
             
             {/* --- FONDO AMBIENTAL (Blur Trick) --- */}
-            {/* Esto asegura que no haya bordes negros feos, usa la misma imagen borrosa para llenar huecos */}
             <div className="absolute inset-0 z-0 opacity-30 pointer-events-none">
                 <div 
-                    className={`absolute inset-0 bg-cover bg-center transition-all duration-1000 blur-3xl scale-110 ${isAnimating ? 'opacity-0' : 'opacity-100'}`}
+                    className={`absolute inset-0 bg-cover bg-center transition-all duration-1000 blur-3xl scale-110`}
                     style={{ backgroundImage: `url('${currentSlide.image}')` }}
                 ></div>
             </div>
@@ -83,20 +145,27 @@ export const IntroSequence: React.FC<IntroSequenceProps> = ({ language, onComple
                     <div className={`absolute bottom-0 left-0 w-4 h-4 border-b-2 border-l-2 ${borderColor} z-20`}></div>
                     <div className={`absolute bottom-0 right-0 w-4 h-4 border-b-2 border-r-2 ${borderColor} z-20`}></div>
 
-                    {/* IMAGEN PRINCIPAL (Object Contain para no cortar nada) */}
+                    {/* --- AQUÍ ESTÁ LA MAGIA: OVERLAY DE CARGA --- */}
+                    {isTransitioning && <DataLoaderOverlay isZombie={isZombie} />}
+
+                    {/* IMAGEN PRINCIPAL */}
+                    {/* Usamos key={currentIndex} para forzar que React recree la imagen y no intente transicionar la anterior */}
                     <img 
+                        key={currentIndex}
                         src={currentSlide.image} 
                         alt="Evidence" 
-                        className={`w-full h-full object-contain transition-all duration-1000 ${isAnimating ? 'scale-110 opacity-0 blur-sm' : 'scale-100 opacity-100 blur-0'}`}
+                        className={`w-full h-full object-contain transition-opacity duration-500 ${isTransitioning ? 'opacity-0' : 'opacity-100'}`}
                     />
 
                     {/* Etiqueta de "LIVE FEED" o "ARCHIVE" */}
-                    <div className="absolute top-4 left-4 bg-black/80 px-3 py-1 border border-gray-700 flex items-center gap-2">
-                        <div className={`w-2 h-2 rounded-full ${isZombie ? 'bg-red-500 animate-pulse' : 'bg-green-500'}`}></div>
-                        <span className="text-[10px] text-gray-300 tracking-widest font-bold">
-                            IMG_SEQ_{1024 + currentIndex} // {isZombie ? 'CORRUPTED' : 'RESTORED'}
-                        </span>
-                    </div>
+                    {!isTransitioning && (
+                        <div className="absolute top-4 left-4 bg-black/80 px-3 py-1 border border-gray-700 flex items-center gap-2 animate-fade-in">
+                            <div className={`w-2 h-2 rounded-full ${isZombie ? 'bg-red-500 animate-pulse' : 'bg-green-500'}`}></div>
+                            <span className="text-[10px] text-gray-300 tracking-widest font-bold">
+                                IMG_SEQ_{1024 + currentIndex} // {isZombie ? 'CORRUPTED' : 'RESTORED'}
+                            </span>
+                        </div>
+                    )}
                 </div>
             </div>
 
@@ -126,39 +195,52 @@ export const IntroSequence: React.FC<IntroSequenceProps> = ({ language, onComple
 
                 {/* Cuerpo del Texto (Scrollable) */}
                 <div className="flex-1 p-6 md:p-8 overflow-y-auto relative">
-                    <div className={`transition-all duration-700 ${textVisible ? 'opacity-100 translate-x-0' : 'opacity-0 translate-x-4'}`}>
-                        
-                        {/* Decoración de código antes del texto */}
-                        <div className="text-[10px] text-gray-600 mb-4 font-mono select-none">
-                            &gt; DECRYPTING AUDIO LOG...<br/>
-                            &gt; SUBJECT: UNKNOWN<br/>
-                            &gt; LOCATION: SECTOR 7<br/>
-                            &gt; STATUS: <span className={isZombie ? 'text-red-500' : 'text-emerald-500'}>{isZombie ? 'CRITICAL' : 'STABLE'}</span>
+                    {/* Si está cargando, mostramos estática o vacío en el texto también */}
+                    {isTransitioning ? (
+                        <div className="flex flex-col gap-2 opacity-50 animate-pulse">
+                            <div className="h-2 bg-gray-800 w-3/4"></div>
+                            <div className="h-2 bg-gray-800 w-full"></div>
+                            <div className="h-2 bg-gray-800 w-5/6"></div>
+                            <div className="h-2 bg-gray-800 w-1/2"></div>
                         </div>
+                    ) : (
+                        <div className={`transition-all duration-500 ${textVisible ? 'opacity-100 translate-x-0' : 'opacity-0 translate-x-4'}`}>
+                            
+                            {/* Decoración de código antes del texto */}
+                            <div className="text-[10px] text-gray-600 mb-4 font-mono select-none">
+                                &gt; DECRYPTING AUDIO LOG...<br/>
+                                &gt; SUBJECT: UNKNOWN<br/>
+                                &gt; LOCATION: SECTOR 7<br/>
+                                &gt; STATUS: <span className={isZombie ? 'text-red-500' : 'text-emerald-500'}>{isZombie ? 'CRITICAL' : 'STABLE'}</span>
+                            </div>
 
-                        <p className="text-sm md:text-base text-gray-300 leading-relaxed font-mono whitespace-pre-wrap border-l-2 border-gray-800 pl-4">
-                            {currentSlide.text}
-                        </p>
+                            <p className="text-sm md:text-base text-gray-300 leading-relaxed font-mono whitespace-pre-wrap border-l-2 border-gray-800 pl-4">
+                                {currentSlide.text}
+                            </p>
 
-                        {/* Cursor parpadeante al final */}
-                        <span className={`inline-block w-2 h-4 ml-1 align-middle ${progressColor} animate-pulse`}></span>
-                    </div>
+                            {/* Cursor parpadeante al final */}
+                            <span className={`inline-block w-2 h-4 ml-1 align-middle ${progressColor} animate-pulse`}></span>
+                        </div>
+                    )}
                 </div>
 
                 {/* Pie del Terminal (Botones) */}
                 <div className="p-6 border-t border-gray-800 bg-black/20">
                     <button 
                         onClick={handleNext}
-                        disabled={isAnimating}
+                        disabled={isTransitioning}
                         className={`
                             w-full py-4 text-xs font-black tracking-[0.3em] uppercase border transition-all duration-300 group relative overflow-hidden
                             ${isZombie 
                                 ? 'border-lime-600 text-lime-500 hover:bg-lime-900/20' 
                                 : 'border-cyan-600 text-cyan-500 hover:bg-cyan-900/20'}
+                            ${isTransitioning ? 'opacity-50 cursor-wait' : ''}
                         `}
                     >
                         <span className="relative z-10 group-hover:translate-x-2 transition-transform inline-block">
-                            {currentIndex === slides.length - 1 ? "INICIAR SIMULACIÓN" : "SIGUIENTE ENTRADA >>"}
+                            {isTransitioning 
+                                ? (isZombie ? "HUNTING..." : "BUFFERING...") 
+                                : (currentIndex === slides.length - 1 ? "INICIAR SIMULACIÓN" : "SIGUIENTE ENTRADA >>")}
                         </span>
                         {/* Efecto de barrido al hacer hover */}
                         <div className={`absolute inset-0 opacity-0 group-hover:opacity-10 transition-opacity ${progressColor}`}></div>
