@@ -405,7 +405,7 @@ export const USAMap: React.FC<USAMapProps> = ({
         
         // --- CAMBIO AQUÍ: LOGO DINÁMICO ---
         const bunkerLogo = playerAlignment === 'ZOMBIE' 
-            ? "https://i.pinimg.com/474x/7b/e8/d2/7be8d2f25242523d131ff8d81b1385fc.jpg"
+            ? "https://i.pinimg.com/736x/7f/31/38/7f31382d4a5c35daa4ba1768a366a917.jpg"
             : "https://i.pinimg.com/736x/63/1e/3a/631e3a68228c97963e78381ad11bf3bb.jpg";
         
         const bunkerColor = playerAlignment === 'ZOMBIE' ? '#65a30d' : '#06b6d4'; // Lime vs Cyan
