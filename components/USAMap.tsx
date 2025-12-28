@@ -152,14 +152,11 @@ export const USAMap: React.FC<USAMapProps> = ({
   }, [usData, dimensions]);
 
   // --- LÓGICA DE DESBLOQUEO DE ZONAS (HELPER) ---
-  // Esta función determina si una zona está desbloqueada en modo Zombie
   const isZoneUnlocked = (zone: 'magneto' | 'kingpin' | 'hulk' | 'doom') => {
-      if (playerAlignment !== 'ZOMBIE') return true; // En modo Alive siempre se ven
+      if (playerAlignment !== 'ZOMBIE') return true; 
 
-      // AQUÍ ES DONDE PONDREMOS LAS MISIONES EN EL FUTURO
-      // Por ahora todo es false para mantener el mapa unificado
       const unlocks = {
-          magneto: false, // Ej: completedMissionIds.has('m_conquest_magneto')
+          magneto: false, 
           kingpin: false,
           hulk: false,
           doom: false
@@ -168,18 +165,15 @@ export const USAMap: React.FC<USAMapProps> = ({
   };
 
   const getFactionName = (state: string) => {
-      // Si es Zombie, verificamos si la zona está desbloqueada para mostrar su nombre real
       if (playerAlignment === 'ZOMBIE') {
           if (factionStates.magneto.has(state) && isZoneUnlocked('magneto')) return t.factions.magneto.name;
           if (factionStates.kingpin.has(state) && isZoneUnlocked('kingpin')) return t.factions.kingpin.name;
           if (factionStates.hulk.has(state) && isZoneUnlocked('hulk')) return t.factions.hulk.name;
           if (factionStates.doom.has(state) && isZoneUnlocked('doom')) return t.factions.doom.name;
           
-          // Si no está desbloqueada, nombre genérico
           return "TERRITORIO DE CAZA (EEUU)";
       }
 
-      // Modo Alive (Normal)
       if (factionStates.magneto.has(state)) return t.factions.magneto.name;
       if (factionStates.kingpin.has(state)) return t.factions.kingpin.name;
       if (factionStates.hulk.has(state)) return t.factions.hulk.name;
@@ -408,14 +402,24 @@ export const USAMap: React.FC<USAMapProps> = ({
             .attr('transform', `translate(${bunkerCoords[0]}, ${bunkerCoords[1]})`)
             .attr('data-coords', `${bunkerCoords[0]},${bunkerCoords[1]}`)
             .on('click', (e) => { e.stopPropagation(); onBunkerClick(); });
-        bunkerGroup.append('circle').attr('r', 12).attr('fill', 'none').attr('stroke', '#06b6d4').attr('stroke-width', 1)
+        
+        // --- CAMBIO AQUÍ: LOGO DINÁMICO ---
+        const bunkerLogo = playerAlignment === 'ZOMBIE' 
+            ? "https://i.pinimg.com/474x/7b/e8/d2/7be8d2f25242523d131ff8d81b1385fc.jpg"
+            : "https://i.pinimg.com/736x/63/1e/3a/631e3a68228c97963e78381ad11bf3bb.jpg";
+        
+        const bunkerColor = playerAlignment === 'ZOMBIE' ? '#65a30d' : '#06b6d4'; // Lime vs Cyan
+
+        bunkerGroup.append('circle').attr('r', 12).attr('fill', 'none').attr('stroke', bunkerColor).attr('stroke-width', 1)
             .append('animate').attr('attributeName', 'r').attr('from', '12').attr('to', '25').attr('dur', '2s').attr('repeatCount', 'indefinite');
-        bunkerGroup.append('image').attr('href', 'https://i.pinimg.com/736x/63/1e/3a/631e3a68228c97963e78381ad11bf3bb.jpg')
+        
+        bunkerGroup.append('image').attr('href', bunkerLogo)
             .attr('x', -12).attr('y', -12).attr('width', 24).attr('height', 24).attr('clip-path', 'url(#bunker-clip)');
+        
         bunkerGroup.raise();
     }
 
-  }, [usData, dimensions, projection, pathGenerator, factionStates, playerAlignment, completedMissionIds]); // Añadido completedMissionIds
+  }, [usData, dimensions, projection, pathGenerator, factionStates, playerAlignment, completedMissionIds]); 
 
   useEffect(() => {
       if (!projection || !gMissionsRef.current || !gTokensRef.current || !svgRef.current) return;

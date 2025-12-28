@@ -46,6 +46,10 @@ const getFactionForState = (state: string) => {
     return 'neutral';
 };
 
+// URLs de los logos
+const LOGO_SHIELD = "https://i.pinimg.com/736x/63/1e/3a/631e3a68228c97963e78381ad11bf3bb.jpg";
+const LOGO_ZOMBIE = "https://i.pinimg.com/474x/7b/e8/d2/7be8d2f25242523d131ff8d81b1385fc.jpg";
+
 const App: React.FC = () => {
     const [user, setUser] = useState<User | null>(null);
     const [loading, setLoading] = useState(true);
@@ -338,66 +342,61 @@ const App: React.FC = () => {
 
         const currentHero = heroes[heroIndex];
 
-        // Función de limpieza más agresiva para encontrar coincidencias
-        const cleanString = (str: string) => {
-            return str.toLowerCase()
-                .replace(/\(z\)/g, '')       
-                .replace(/\(artist\)/g, '')  
-                .replace(/\(old man\)/g, '') 
-                .replace(/zombie/g, '') // Elimina prefijo "zombie"
-                .replace(/hero/g, '')   // Elimina prefijo "hero"
-                .replace(/[^a-z0-9]/g, '')   
-                .trim();
-        };
-
-        const currentAliasClean = cleanString(currentHero.alias);
-        const currentNameClean = cleanString(currentHero.name);
-
-        const findMatch = (list: HeroTemplate[] | Hero[]) => {
-            return list.find(h => {
-                const hAliasClean = cleanString(h.alias);
-                const hNameClean = cleanString(h.name || (h as HeroTemplate).defaultName);
-                
-                // Coincidencia exacta del string limpio
-                if (hAliasClean === currentAliasClean) return true;
-                if (hNameClean === currentNameClean) return true;
-                
-                // Coincidencia parcial (útil para variantes)
-                if (hAliasClean.includes(currentAliasClean) || currentAliasClean.includes(hAliasClean)) return true;
-
-                return false;
-            });
-        };
-
-        let targetTemplate: HeroTemplate | null = null;
-
-        // 1. PRIORIDAD: Buscar en BBDD (Customs y datos actualizados)
+        // 1. OBTENER TODAS LAS PLANTILLAS
         const allTemplates = await getHeroTemplates();
-        const candidates = allTemplates.filter(t => t.defaultAlignment === targetAlignment);
-        const foundInDb = findMatch(candidates);
-        
-        if (foundInDb) {
-            targetTemplate = foundInDb;
-        } else {
-            // 2. FALLBACK: Buscar en Expansiones Locales
-            for (const exp of GAME_EXPANSIONS) {
-                const list = targetAlignment === 'ALIVE' ? exp.heroes : exp.zombieHeroes;
-                const found = findMatch(list);
-                
-                if (found) {
-                    targetTemplate = {
-                        id: found.id,
-                        defaultName: found.name,
-                        alias: found.alias,
-                        defaultClass: found.class,
-                        defaultStats: found.stats,
-                        imageUrl: found.imageUrl || '',
-                        bio: found.bio,
-                        defaultAlignment: targetAlignment,
-                        objectives: found.objectives,
-                        currentStory: found.currentStory
-                    };
-                    break;
+
+        // 2. BUSCAR POR ID VINCULADO (MÉTODO ROBUSTO)
+        // Si el héroe actual tiene un relatedHeroId, lo usamos directamente
+        let targetTemplate: HeroTemplate | undefined;
+
+        if (currentHero.relatedHeroId && currentHero.relatedHeroId !== 'NO_VARIANT') {
+            targetTemplate = allTemplates.find(t => t.id === currentHero.relatedHeroId);
+        }
+
+        // 3. SI NO HAY VINCULACIÓN, BUSCAR POR NOMBRE (FALLBACK)
+        if (!targetTemplate) {
+            const cleanString = (str: string) => {
+                return str.toLowerCase()
+                    .replace(/\(z\)/g, '')       
+                    .replace(/\(artist\)/g, '')  
+                    .replace(/\(old man\)/g, '') 
+                    .replace(/zombie/g, '') 
+                    .replace(/hero/g, '')   
+                    .replace(/[^a-z0-9]/g, '')   
+                    .trim();
+            };
+
+            const currentAliasClean = cleanString(currentHero.alias);
+            
+            // Buscar en BBDD primero
+            targetTemplate = allTemplates.find(t => {
+                if (t.defaultAlignment !== targetAlignment) return false;
+                const tAliasClean = cleanString(t.alias);
+                return tAliasClean === currentAliasClean;
+            });
+
+            // Si no está en BBDD, buscar en expansiones locales
+            if (!targetTemplate) {
+                for (const exp of GAME_EXPANSIONS) {
+                    const list = targetAlignment === 'ALIVE' ? exp.heroes : exp.zombieHeroes;
+                    const found = list.find(h => cleanString(h.alias) === currentAliasClean);
+                    if (found) {
+                        // Convertir Hero local a HeroTemplate temporal
+                        targetTemplate = {
+                            id: found.id,
+                            defaultName: found.name,
+                            alias: found.alias,
+                            defaultClass: found.class,
+                            defaultStats: found.stats,
+                            imageUrl: found.imageUrl || '',
+                            bio: found.bio,
+                            defaultAlignment: targetAlignment,
+                            objectives: found.objectives,
+                            currentStory: found.currentStory,
+                            imageParams: found.imageParams
+                        };
+                        break;
+                    }
                 }
             }
         }
@@ -419,7 +418,9 @@ const App: React.FC = () => {
                 assignedMissionId: null,
                 objectives: targetTemplate.objectives || [],
                 completedObjectiveIndices: [],
-                currentStory: targetTemplate.currentStory || ''
+                currentStory: targetTemplate.currentStory || '',
+                relatedHeroId: currentHero.templateId || currentHero.id, // Vinculamos de vuelta al original
+                imageParams: targetTemplate.imageParams // Copiar parámetros de imagen
             };
 
             const newHeroes = [...heroes];
@@ -506,7 +507,13 @@ const App: React.FC = () => {
                 <>
                     <header className="flex-none h-16 border-b border-cyan-900 bg-slate-900/90 flex items-center justify-between px-6 z-30 relative">
                         <div className="flex items-center gap-4">
-                            <div className="w-10 h-10 border-2 border-cyan-500 rounded-full flex items-center justify-center overflow-hidden bg-slate-950 shadow-[0_0_10px_rgba(6,182,212,0.3)]"><img src="https://i.pinimg.com/736x/63/1e/3a/631e3a68228c97963e78381ad11bf3bb.jpg" alt="Logo" className="w-full h-full object-cover" /></div>
+                            <div className={`w-10 h-10 border-2 ${playerAlignment === 'ZOMBIE' ? 'border-lime-600' : 'border-cyan-500'} rounded-full flex items-center justify-center overflow-hidden bg-slate-950 shadow-[0_0_10px_rgba(6,182,212,0.3)]`}>
+                                <img 
+                                    src={playerAlignment === 'ZOMBIE' ? LOGO_ZOMBIE : LOGO_SHIELD} 
+                                    alt="Logo" 
+                                    className="w-full h-full object-cover" 
+                                />
+                            </div>
                             <div><h1 className="text-xl font-bold tracking-[0.2em] text-cyan-100 leading-none">{t.header.project}</h1><div className="text-[10px] text-red-500 font-bold tracking-widest animate-pulse">{t.header.failure}</div></div>
                         </div>
                         <div className="flex items-center gap-6">

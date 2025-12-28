@@ -8,6 +8,7 @@ import {
 } from '../services/dbService';
 import { CharacterEditor } from './CharacterEditor';
 import { MissionEditor } from './MissionEditor';
+import { auth } from '../firebaseConfig'; // Importamos auth para verificar identidad real
 
 // --- CONSTANTES DE FACCIONES ---
 const FACTION_STATES = {
@@ -128,16 +129,31 @@ export const DatabaseManager: React.FC<DatabaseManagerProps> = ({ isOpen, onClos
         });
     };
 
+    // --- SEGURIDAD MEJORADA ---
     const verifyAdmin = (): boolean => {
-        const envPassword = import.meta.env.VITE_ADMIN_PASSWORD;
-        if (!envPassword) {
-            alert("ERROR DE CONFIGURACIÓN: No se ha definido una contraseña de administrador en el entorno.");
+        const currentUser = auth?.currentUser;
+        
+        // REEMPLAZA ESTO CON TU UID REAL DE FIREBASE (Lo puedes ver en la consola de Firebase Auth)
+        // Esto es mucho más seguro que una contraseña en el código cliente.
+        const ALLOWED_ADMIN_UIDS = [
+            "TU_UID_DE_FIREBASE_AQUI", 
+            "OTRO_UID_SI_ES_NECESARIO" 
+        ];
+
+        // Si no hay usuario o no está en la lista blanca
+        if (!currentUser || !ALLOWED_ADMIN_UIDS.includes(currentUser.uid)) {
+            // Fallback para desarrollo local si no has configurado el UID aún
+            const devPassword = import.meta.env.VITE_ADMIN_PASSWORD;
+            if (devPassword) {
+                 const input = prompt("⚠ MODO DESARROLLO ⚠\nIntroduce contraseña de admin:");
+                 return input === devPassword;
+            }
+            
+            alert("⛔ ACCESO DENEGADO: No tienes permisos de administrador (UID no autorizado).");
             return false;
         }
-        const password = prompt("⚠ ACCESO DE ADMINISTRADOR ⚠\n\nIntroduce la contraseña para confirmar la eliminación:");
-        if (password === envPassword) return true;
-        alert("⛔ ACCESO DENEGADO: Contraseña incorrecta.");
-        return false;
+
+        return true;
     };
 
     const handleDeleteMission = async (id: string) => { 
@@ -181,7 +197,6 @@ export const DatabaseManager: React.FC<DatabaseManagerProps> = ({ isOpen, onClos
 
         let matchesLinked = true;
         if (heroFilterLinked === 'LINKED') {
-            // Consideramos "NO_VARIANT" como vinculado (ya está resuelto)
             matchesLinked = !!h.relatedHeroId;
         } else if (heroFilterLinked === 'UNLINKED') {
             matchesLinked = !h.relatedHeroId;
