@@ -395,26 +395,52 @@ export const USAMap: React.FC<USAMapProps> = ({
       .text((d: any) => d.properties.name ? d.properties.name.toUpperCase() : '')
       .raise();
 
+    // --- LÓGICA DEL BÚNKER CORREGIDA ---
     const bunkerCoords = projection([-82.9, 40.0]);
-    if (bunkerCoords && gMap.select('.bunker').empty()) {
-        const bunkerGroup = gMap.append('g')
-            .attr('class', 'bunker cursor-pointer hover:opacity-100')
-            .attr('transform', `translate(${bunkerCoords[0]}, ${bunkerCoords[1]})`)
-            .attr('data-coords', `${bunkerCoords[0]},${bunkerCoords[1]}`)
-            .on('click', (e) => { e.stopPropagation(); onBunkerClick(); });
-        
-        // --- CAMBIO AQUÍ: LOGO DINÁMICO ---
-        const bunkerLogo = playerAlignment === 'ZOMBIE' 
-            ? "https://i.pinimg.com/736x/7f/31/38/7f31382d4a5c35daa4ba1768a366a917.jpg"
-            : "https://i.pinimg.com/736x/63/1e/3a/631e3a68228c97963e78381ad11bf3bb.jpg";
-        
-        const bunkerColor = playerAlignment === 'ZOMBIE' ? '#65a30d' : '#06b6d4'; // Lime vs Cyan
+    
+    // Definir assets dinámicos fuera del bloque de creación
+    const bunkerLogo = playerAlignment === 'ZOMBIE' 
+        ? "https://i.pinimg.com/736x/7f/31/38/7f31382d4a5c35daa4ba1768a366a917.jpg"
+        : "https://i.pinimg.com/736x/63/1e/3a/631e3a68228c97963e78381ad11bf3bb.jpg";
+    const bunkerColor = playerAlignment === 'ZOMBIE' ? '#65a30d' : '#06b6d4';
 
-        bunkerGroup.append('circle').attr('r', 12).attr('fill', 'none').attr('stroke', bunkerColor).attr('stroke-width', 1)
-            .append('animate').attr('attributeName', 'r').attr('from', '12').attr('to', '25').attr('dur', '2s').attr('repeatCount', 'indefinite');
+    if (bunkerCoords) {
+        // 1. Seleccionar el grupo del búnker (si existe)
+        let bunkerGroup = gMap.select<SVGGElement>('.bunker');
+
+        // 2. Si no existe, crearlo (ENTER)
+        if (bunkerGroup.empty()) {
+            bunkerGroup = gMap.append('g')
+                .attr('class', 'bunker cursor-pointer hover:opacity-100')
+                .on('click', (e) => { e.stopPropagation(); onBunkerClick(); });
+            
+            bunkerGroup.append('circle')
+                .attr('r', 12)
+                .attr('fill', 'none')
+                .attr('stroke-width', 1)
+                .append('animate')
+                .attr('attributeName', 'r')
+                .attr('from', '12')
+                .attr('to', '25')
+                .attr('dur', '2s')
+                .attr('repeatCount', 'indefinite');
+            
+            bunkerGroup.append('image')
+                .attr('x', -12)
+                .attr('y', -12)
+                .attr('width', 24)
+                .attr('height', 24)
+                .attr('clip-path', 'url(#bunker-clip)');
+        }
+
+        // 3. ACTUALIZAR SIEMPRE (UPDATE)
+        // Esto asegura que si cambia el bando, cambie el logo y el color
+        bunkerGroup
+            .attr('transform', `translate(${bunkerCoords[0]}, ${bunkerCoords[1]})`)
+            .attr('data-coords', `${bunkerCoords[0]},${bunkerCoords[1]}`);
         
-        bunkerGroup.append('image').attr('href', bunkerLogo)
-            .attr('x', -12).attr('y', -12).attr('width', 24).attr('height', 24).attr('clip-path', 'url(#bunker-clip)');
+        bunkerGroup.select('circle').attr('stroke', bunkerColor);
+        bunkerGroup.select('image').attr('href', bunkerLogo);
         
         bunkerGroup.raise();
     }
