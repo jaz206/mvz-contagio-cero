@@ -15,6 +15,15 @@ export const IntroSequence: React.FC<IntroSequenceProps> = ({ language, onComple
     const slides = translations[language].introSequence[playerAlignment === 'ZOMBIE' ? 'zombie' : 'alive'];
     const currentSlide = slides[currentIndex];
 
+    // --- NUEVO: PRE-CARGA DE IMÁGENES ---
+    // Esto descarga todos los GIFs en segundo plano nada más montar el componente
+    useEffect(() => {
+        slides.forEach((slide) => {
+            const img = new Image();
+            img.src = slide.image;
+        });
+    }, [slides]);
+
     // Efecto de entrada para el texto cada vez que cambia la slide
     useEffect(() => {
         setTextVisible(false);
