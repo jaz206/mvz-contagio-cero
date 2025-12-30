@@ -102,6 +102,7 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
   const [selectedHeroId, setSelectedHeroId] = useState<string | null>(null);
   const [showRecruitModal, setShowRecruitModal] = useState(false);
   const [dbTemplates, setDbTemplates] = useState<HeroTemplate[]>([]);
+  const [viewingSheet, setViewingSheet] = useState<string | null>(null); // <--- NUEVO ESTADO
 
   // ESTADO PARA EL MODAL DE CONFIRMACIÓN
   const [confirmModal, setConfirmModal] = useState<{
@@ -393,6 +394,29 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
             />
         )}
 
+        {/* --- VISOR DE FICHA DE JUEGO (NUEVO) --- */}
+        {viewingSheet && (
+            <div className="fixed inset-0 z-[200] bg-black/95 flex items-center justify-center p-4 backdrop-blur-sm animate-fade-in" onClick={() => setViewingSheet(null)}>
+                <div className="relative max-w-full max-h-full flex flex-col items-center">
+                    {/* Imagen de la ficha */}
+                    <img 
+                        src={viewingSheet} 
+                        alt="Tactical Sheet" 
+                        className="max-w-[95vw] max-h-[85vh] object-contain border-2 border-yellow-500 shadow-[0_0_50px_rgba(234,179,8,0.3)] rounded-lg" 
+                        onClick={(e) => e.stopPropagation()} 
+                    />
+                    
+                    {/* Botón cerrar */}
+                    <button 
+                        onClick={() => setViewingSheet(null)} 
+                        className="mt-6 px-8 py-2 bg-red-900/80 text-white font-bold tracking-widest border border-red-600 hover:bg-red-800 uppercase text-xs shadow-lg"
+                    >
+                        CERRAR VISOR TÁCTICO
+                    </button>
+                </div>
+            </div>
+        )}
+
         {selectedHero && (
              <div className="absolute inset-0 z-50 bg-slate-950/90 backdrop-blur-md flex items-center justify-center p-12" onClick={() => setSelectedHeroId(null)}>
                  <div className="bg-slate-900 border-2 border-cyan-500 w-full max-w-5xl h-[70vh] shadow-[0_0_100px_rgba(6,182,212,0.2)] flex clip-tactical" onClick={e => e.stopPropagation()}>
@@ -404,7 +428,7 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
                             <p className="text-cyan-400 font-mono text-sm">{selectedHero.name}</p>
                         </div>
                     </div>
-                    <div className="flex-1 p-8 bg-slate-900/95 relative overflow-hidden">
+                    <div className="flex-1 p-8 bg-slate-900/95 relative overflow-hidden flex flex-col">
                         <div className="absolute top-0 right-0 p-4">
                             <button onClick={() => setSelectedHeroId(null)} className="text-cyan-500 hover:text-white font-bold text-xl">✕</button>
                         </div>
@@ -422,12 +446,24 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
                                  <div className="text-2xl font-black text-blue-500">{selectedHero.stats.intellect}</div>
                              </div>
                         </div>
-                        <div className="prose prose-invert">
+                        <div className="prose prose-invert flex-1 overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-cyan-900">
                             <p className="text-gray-300 text-sm leading-relaxed border-l-2 border-cyan-800 pl-4 italic">"{selectedHero.bio}"</p>
                         </div>
                         
-                        <div className="absolute bottom-8 right-8">
-                             <button className="px-8 py-3 bg-cyan-600 hover:bg-cyan-500 text-black font-black uppercase tracking-widest clip-tactical shadow-[0_0_20px_rgba(6,182,212,0.5)]">
+                        <div className="mt-8 flex gap-4 justify-end items-center border-t border-cyan-900/50 pt-6">
+                             
+                             {/* BOTÓN FICHA DE JUEGO (Solo si existe URL) */}
+                             {selectedHero.characterSheetUrl && (
+                                 <button 
+                                    onClick={() => setViewingSheet(selectedHero.characterSheetUrl!)}
+                                    className="px-6 py-3 bg-yellow-900/20 border border-yellow-600 text-yellow-500 hover:bg-yellow-900/40 hover:text-yellow-200 font-bold uppercase tracking-widest text-xs transition-all flex items-center gap-2 group"
+                                 >
+                                     <span className="text-lg group-hover:scale-110 transition-transform">🗃</span>
+                                     FICHA TÁCTICA
+                                 </button>
+                             )}
+
+                             <button className="px-8 py-3 bg-cyan-600 hover:bg-cyan-500 text-black font-black uppercase tracking-widest clip-tactical shadow-[0_0_20px_rgba(6,182,212,0.5)] transition-all">
                                  ASIGNAR MISIÓN
                              </button>
                         </div>

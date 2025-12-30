@@ -46,6 +46,10 @@ export const getHeroTemplates = async (): Promise<HeroTemplate[]> => {
       const int = findField(data, ['intellect', 'intelecto', 'int']);
 
       const imageUrl = findField(data, ['imageUrl', 'foto', 'image', 'img', 'url', 'picture']);
+      
+      // NUEVO: Buscar la ficha del juego
+      const characterSheetUrl = findField(data, ['characterSheetUrl', 'ficha', 'gameCard', 'sheet', 'carta']);
+
       const bio = findField(data, ['bio', 'biografia', 'biography', 'historia', 'history']);
       const alias = findField(data, ['alias', 'codename', 'nombre_en_clave', 'heroname']);
       
@@ -56,7 +60,6 @@ export const getHeroTemplates = async (): Promise<HeroTemplate[]> => {
       const expansionId = findField(data, ['expansionId', 'expansion', 'caja']);
       const relatedHeroId = findField(data, ['relatedHeroId', 'relatedId', 'counterpart', 'version_contraria']);
       
-      // NUEVO: Recuperar parámetros de imagen
       const imageParams = findField(data, ['imageParams', 'ajusteImagen', 'crop']);
 
       templates.push({
@@ -69,6 +72,7 @@ export const getHeroTemplates = async (): Promise<HeroTemplate[]> => {
               intellect: Number(int) || 5 
           },
           imageUrl: imageUrl || '',
+          characterSheetUrl: characterSheetUrl || '', // <--- AÑADIDO
           bio: bio || '',
           alias: alias || '',
           currentStory: currentStory || '',
@@ -76,7 +80,7 @@ export const getHeroTemplates = async (): Promise<HeroTemplate[]> => {
           defaultAlignment: defaultAlignment || 'ALIVE',
           expansionId: expansionId || 'unknown',
           relatedHeroId: relatedHeroId || undefined,
-          imageParams: imageParams || undefined // <--- AÑADIDO
+          imageParams: imageParams || undefined
       });
     });
     return templates;
@@ -137,6 +141,13 @@ export const deleteHeroInDB = async (id: string): Promise<void> => {
         throw error;
     }
 };
+
+interface UserProfileData {
+    heroes: Hero[];
+    completedMissionIds: string[];
+    resources: { omegaCylinders: number };
+    lastUpdated: any;
+}
 
 export const getUserProfile = async (uid: string, campaignMode: 'ALIVE' | 'ZOMBIE'): Promise<UserProfileData | null> => {
     if (!isDbReady() || !db) return null;

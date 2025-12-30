@@ -27,12 +27,12 @@ export interface Hero {
     objectives?: string[];
     completedObjectiveIndices?: number[];
     imageUrl?: string;
-    characterSheetUrl?: string;
+    characterSheetUrl?: string; // <--- NUEVO CAMPO
     stats: HeroStats;
     assignedMissionId: string | null;
     expansionId?: string;
     relatedHeroId?: string;
-    imageParams?: ImageParams; // <--- NUEVO CAMPO
+    imageParams?: ImageParams;
 }
 
 export interface HeroTemplate {
@@ -41,15 +41,15 @@ export interface HeroTemplate {
     defaultClass: HeroClass;
     defaultStats: HeroStats;
     imageUrl: string;
+    characterSheetUrl?: string; // <--- NUEVO CAMPO
     bio?: string;
     alias: string;
     currentStory?: string;
     objectives?: string[];
-    characterSheetUrl?: string;
     defaultAlignment?: 'ALIVE' | 'ZOMBIE'; 
     expansionId?: string;
     relatedHeroId?: string;
-    imageParams?: ImageParams; // <--- NUEVO CAMPO
+    imageParams?: ImageParams;
 }
 
 export interface Location {

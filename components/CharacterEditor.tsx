@@ -20,6 +20,7 @@ export const CharacterEditor: React.FC<CharacterEditorProps> = ({ isOpen, onClos
     const [stats, setStats] = useState<HeroStats>({ strength: 5, agility: 5, intellect: 5 });
     const [bio, setBio] = useState('');
     const [imageUrl, setImageUrl] = useState('');
+    const [characterSheetUrl, setCharacterSheetUrl] = useState(''); // <--- NUEVO ESTADO
     const [alignment, setAlignment] = useState<'ALIVE' | 'ZOMBIE'>('ALIVE');
     const [relatedHeroId, setRelatedHeroId] = useState<string | undefined>(undefined);
     
@@ -43,6 +44,7 @@ export const CharacterEditor: React.FC<CharacterEditorProps> = ({ isOpen, onClos
             setStats(initialData.defaultStats);
             setBio(initialData.bio || '');
             setImageUrl(initialData.imageUrl);
+            setCharacterSheetUrl(initialData.characterSheetUrl || ''); // <--- CARGAR DATO
             setAlignment(initialData.defaultAlignment || 'ALIVE');
             setRelatedHeroId(initialData.relatedHeroId);
             
@@ -57,7 +59,7 @@ export const CharacterEditor: React.FC<CharacterEditorProps> = ({ isOpen, onClos
         } else {
             setName(''); setAlias(''); setHeroClass('BRAWLER');
             setStats({ strength: 5, agility: 5, intellect: 5 });
-            setBio(''); setImageUrl(''); setAlignment('ALIVE');
+            setBio(''); setImageUrl(''); setCharacterSheetUrl(''); setAlignment('ALIVE');
             setRelatedHeroId(undefined);
             setImgScale(1); setImgX(0); setImgY(0);
         }
@@ -89,6 +91,7 @@ export const CharacterEditor: React.FC<CharacterEditorProps> = ({ isOpen, onClos
             defaultStats: stats,
             bio,
             imageUrl,
+            characterSheetUrl, // <--- GUARDAR DATO
             defaultAlignment: alignment,
             objectives: initialData?.objectives || [],
             currentStory: initialData?.currentStory || '',
@@ -253,8 +256,20 @@ export const CharacterEditor: React.FC<CharacterEditorProps> = ({ isOpen, onClos
                         {/* COLUMNA DERECHA: IMAGEN Y ENCUADRE */}
                         <div className="space-y-4">
                             <div>
-                                <label className="text-[10px] text-cyan-600 font-bold block mb-1 uppercase">IMAGE URL</label>
+                                <label className="text-[10px] text-cyan-600 font-bold block mb-1 uppercase">IMAGE URL (RETRATO)</label>
                                 <input value={imageUrl} onChange={e => setImageUrl(e.target.value)} placeholder="https://..." className="w-full bg-slate-950 border border-cyan-800 p-2 text-cyan-200 text-xs" />
+                            </div>
+
+                            {/* --- NUEVO CAMPO: FICHA DE JUEGO --- */}
+                            <div>
+                                <label className="text-[10px] text-yellow-600 font-bold block mb-1 uppercase">GAME CARD URL (FICHA JUEGO)</label>
+                                <input 
+                                    value={characterSheetUrl} 
+                                    onChange={e => setCharacterSheetUrl(e.target.value)} 
+                                    placeholder="https://..." 
+                                    className="w-full bg-slate-950 border border-yellow-800 p-2 text-yellow-200 text-xs focus:border-yellow-500" 
+                                />
+                                <p className="text-[8px] text-gray-500 mt-1">URL de la imagen de la carta de Zombicide/Marvel Zombies.</p>
                             </div>
 
                             {/* --- EDITOR DE ENCUADRE --- */}
