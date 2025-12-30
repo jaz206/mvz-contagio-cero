@@ -20,9 +20,8 @@ export const ExpansionSelector: React.FC<ExpansionSelectorProps> = ({
 }) => {
     const [selectedHeroes, setSelectedHeroes] = useState<Hero[]>([]);
     const [searchTerm, setSearchTerm] = useState('');
-    const [viewingSheet, setViewingSheet] = useState<string | null>(null); // <--- ESTADO PARA EL VISOR
+    const [viewingSheet, setViewingSheet] = useState<string | null>(null);
     
-    // Estado para los datos de la BBDD
     const [dbHeroes, setDbHeroes] = useState<HeroTemplate[]>([]);
     const [loadingDb, setLoadingDb] = useState(true);
 
@@ -32,7 +31,6 @@ export const ExpansionSelector: React.FC<ExpansionSelectorProps> = ({
     const textColor = isZombie ? 'text-lime-400' : 'text-cyan-400';
     const bgColor = isZombie ? 'bg-lime-600' : 'bg-cyan-600';
 
-    // 1. CARGAR DATOS DE FIREBASE AL INICIAR
     useEffect(() => {
         const fetchFromDb = async () => {
             try {
@@ -47,14 +45,12 @@ export const ExpansionSelector: React.FC<ExpansionSelectorProps> = ({
         fetchFromDb();
     }, []);
 
-    // 2. PROCESAR Y MEZCLAR DATOS (LOCAL + BBDD)
     const availableHeroes = useMemo(() => {
         if (loadingDb) return [];
 
         let allHeroes: Hero[] = [];
         const processedIds = new Set<string>();
 
-        // A) PROCESAR CAJAS OFICIALES MARCADAS
         for (const exp of GAME_EXPANSIONS) {
             if (!ownedExpansions.has(exp.id)) continue;
 
@@ -74,7 +70,7 @@ export const ExpansionSelector: React.FC<ExpansionSelectorProps> = ({
                         imageUrl: dbVersion.imageUrl,
                         bio: dbVersion.bio || localHero.bio,
                         imageParams: dbVersion.imageParams,
-                        characterSheetUrl: dbVersion.characterSheetUrl // <--- IMPORTANTE: COPIAR URL FICHA
+                        characterSheetUrl: dbVersion.characterSheetUrl
                     };
                 }
                 return localHero;
@@ -82,7 +78,6 @@ export const ExpansionSelector: React.FC<ExpansionSelectorProps> = ({
             allHeroes = [...allHeroes, ...heroesInBox];
         }
 
-        // B) PROCESAR HÉROES CUSTOM
         const customHeroes = dbHeroes.filter(h => {
             const notProcessed = !processedIds.has(h.id);
             const matchesAlignment = h.defaultAlignment === playerAlignment;
@@ -106,7 +101,7 @@ export const ExpansionSelector: React.FC<ExpansionSelectorProps> = ({
                 completedObjectiveIndices: [],
                 currentStory: h.currentStory || '',
                 imageParams: h.imageParams,
-                characterSheetUrl: h.characterSheetUrl // <--- IMPORTANTE: COPIAR URL FICHA
+                characterSheetUrl: h.characterSheetUrl
             }));
             allHeroes = [...allHeroes, ...formattedCustomHeroes];
         }
@@ -146,16 +141,17 @@ export const ExpansionSelector: React.FC<ExpansionSelectorProps> = ({
             {/* --- VISOR DE FICHA (OVERLAY) --- */}
             {viewingSheet && (
                 <div className="fixed inset-0 z-[200] bg-black/95 flex items-center justify-center p-4 backdrop-blur-sm animate-fade-in" onClick={() => setViewingSheet(null)}>
-                    <div className="relative max-w-full max-h-full flex flex-col items-center">
+                    <div className="relative flex flex-col items-center justify-center w-full h-full">
+                        {/* IMAGEN AJUSTADA PARA TAMAÑO UNIFORME */}
                         <img 
                             src={viewingSheet} 
                             alt="Tactical Sheet" 
-                            className="max-w-[95vw] max-h-[85vh] object-contain border-2 border-yellow-500 shadow-[0_0_50px_rgba(234,179,8,0.3)] rounded-lg" 
+                            className="h-[85vh] w-auto max-w-[95vw] object-contain border-4 border-yellow-500 shadow-[0_0_50px_rgba(234,179,8,0.5)] rounded-xl bg-black" 
                             onClick={(e) => e.stopPropagation()} 
                         />
                         <button 
                             onClick={() => setViewingSheet(null)} 
-                            className="mt-6 px-8 py-2 bg-red-900/80 text-white font-bold tracking-widest border border-red-600 hover:bg-red-800 uppercase text-xs shadow-lg"
+                            className="mt-4 px-8 py-2 bg-red-900/80 text-white font-bold tracking-widest border border-red-600 hover:bg-red-800 uppercase text-xs shadow-lg rounded"
                         >
                             CERRAR
                         </button>

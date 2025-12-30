@@ -102,7 +102,7 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
   const [selectedHeroId, setSelectedHeroId] = useState<string | null>(null);
   const [showRecruitModal, setShowRecruitModal] = useState(false);
   const [dbTemplates, setDbTemplates] = useState<HeroTemplate[]>([]);
-  const [viewingSheet, setViewingSheet] = useState<string | null>(null); // <--- NUEVO ESTADO
+  const [viewingSheet, setViewingSheet] = useState<string | null>(null);
 
   // ESTADO PARA EL MODAL DE CONFIRMACIÓN
   const [confirmModal, setConfirmModal] = useState<{
@@ -397,21 +397,21 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
         {/* --- VISOR DE FICHA DE JUEGO (NUEVO) --- */}
         {viewingSheet && (
             <div className="fixed inset-0 z-[200] bg-black/95 flex items-center justify-center p-4 backdrop-blur-sm animate-fade-in" onClick={() => setViewingSheet(null)}>
-                <div className="relative max-w-full max-h-full flex flex-col items-center">
-                    {/* Imagen de la ficha */}
+                <div className="relative flex flex-col items-center justify-center w-full h-full">
+                    {/* IMAGEN AJUSTADA PARA TAMAÑO UNIFORME */}
                     <img 
                         src={viewingSheet} 
                         alt="Tactical Sheet" 
-                        className="max-w-[95vw] max-h-[85vh] object-contain border-2 border-yellow-500 shadow-[0_0_50px_rgba(234,179,8,0.3)] rounded-lg" 
+                        className="h-[85vh] w-auto max-w-[95vw] object-contain border-4 border-yellow-500 shadow-[0_0_50px_rgba(234,179,8,0.5)] rounded-xl bg-black" 
                         onClick={(e) => e.stopPropagation()} 
                     />
                     
                     {/* Botón cerrar */}
                     <button 
                         onClick={() => setViewingSheet(null)} 
-                        className="mt-6 px-8 py-2 bg-red-900/80 text-white font-bold tracking-widest border border-red-600 hover:bg-red-800 uppercase text-xs shadow-lg"
+                        className="mt-4 px-8 py-2 bg-red-900/80 text-white font-bold tracking-widest border border-red-600 hover:bg-red-800 uppercase text-xs shadow-lg rounded"
                     >
-                        CERRAR VISOR TÁCTICO
+                        CERRAR
                     </button>
                 </div>
             </div>
