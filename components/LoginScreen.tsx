@@ -92,7 +92,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin, onGoogleLogin
                 </div>
 
                 {/* ROTATING REACTOR LOGO */}
-                <div className="relative w-32 h-32 mb-8 flex items-center justify-center">
+                <div className="relative w-32 h-32 mb-8 flex items-center justify-center animate-glitch-skew">
                     <div className="absolute inset-0 border-2 border-cyan-900 rounded-full"></div>
                     <div className="absolute inset-0 border-t-2 border-cyan-400 rounded-full animate-spin" style={{ animationDuration: '3s' }}></div>
                     <div className="absolute inset-2 border-b-2 border-cyan-600 rounded-full animate-spin" style={{ animationDuration: '2s', animationDirection: 'reverse' }}></div>
@@ -112,6 +112,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin, onGoogleLogin
                 {/* STATUS DISPLAY */}
                 <div className="w-full border-x border-cyan-900/30 bg-black/40 p-2 mb-6 h-16 flex items-center justify-center relative overflow-hidden">
                     <div className="absolute inset-0 bg-scan opacity-10 pointer-events-none"></div>
+                    <div className="absolute inset-0 bg-gradient-to-b from-cyan-500/5 to-transparent h-1/2 animate-scanline-noise"></div>
 
                     {error && <div className="text-red-500 font-bold tracking-widest text-xs animate-pulse">⚠ {error}</div>}
 
@@ -123,15 +124,27 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin, onGoogleLogin
                     )}
 
                     {scanning && !success && !error && (
-                        <div className="w-full px-4">
-                            <div className="flex justify-between text-[9px] text-cyan-400 mb-1">
-                                <span>ANALYZING RETINA...</span>
+                        <div className="w-full px-4 text-center">
+                            <div className="flex justify-between text-[7px] text-cyan-700 mb-1 font-mono uppercase">
+                                <span>Enc: AES-256</span>
+                                <span>Signal: 89%</span>
+                                <span>Port: 443</span>
+                            </div>
+                            <div className="flex justify-between text-[9px] text-cyan-400 mb-1 font-bold">
+                                <span>{Math.random() > 0.5 ? 'SCANNING_RETINA...' : 'SYNCING_DNA...'}</span>
                                 <span className="animate-pulse">PROCESSING</span>
                             </div>
-                            <div className="w-full h-1 bg-cyan-900/50">
-                                <div className="h-full bg-cyan-400 shadow-[0_0_10px_#06b6d4] animate-[expandWidth_2s_ease-out_forwards]" style={{ width: '0%' }}></div>
+                            <div className="w-full h-1 bg-cyan-900/50 relative overflow-hidden">
+                                <div className="h-full bg-cyan-400 shadow-[0_0_15px_#06b6d4] animate-[expandWidth_2s_ease-out_forwards]" style={{ width: '0%' }}></div>
+                                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent w-20 animate-move-light"></div>
                             </div>
-                            <style>{`@keyframes expandWidth { to { width: 100%; } }`}</style>
+                            <style>{`
+                                @keyframes expandWidth { to { width: 100%; } }
+                                @keyframes move-light { 
+                                    0% { transform: translateX(-100%); } 
+                                    100% { transform: translateX(200%); } 
+                                }
+                            `}</style>
                         </div>
                     )}
 

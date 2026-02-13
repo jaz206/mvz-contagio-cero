@@ -7,12 +7,39 @@ interface IntroSequenceProps {
     playerAlignment: 'ALIVE' | 'ZOMBIE';
 }
 
+// --- HOOK PARA EFECTO DE TECLEADO ---
+const useTypewriter = (text: string, speed: number = 25, active: boolean = true) => {
+    const [displayedText, setDisplayedText] = useState("");
+
+    useEffect(() => {
+        if (!active) {
+            setDisplayedText("");
+            return;
+        }
+
+        let i = 0;
+        setDisplayedText("");
+        const timer = setInterval(() => {
+            if (i < text.length) {
+                setDisplayedText(prev => prev + text.charAt(i));
+                i++;
+            } else {
+                clearInterval(timer);
+            }
+        }, speed);
+
+        return () => clearInterval(timer);
+    }, [text, speed, active]);
+
+    return displayedText;
+};
+
 // --- COMPONENTE INTERNO: PANTALLA DE CARGA TEMÁTICA ---
 const DataLoaderOverlay = ({ isZombie }: { isZombie: boolean }) => {
     const [progress, setProgress] = useState(0);
     const [logLine, setLogLine] = useState("");
+    const [binaryStream, setBinaryStream] = useState("");
 
-    // Textos aleatorios de "hackeo"
     const logsAlive = ["HANDSHAKE_INIT...", "BYPASSING FIREWALL...", "DECRYPTING PACKET...", "BUFFERING VIDEO STREAM...", "SECURING CONNECTION..."];
     const logsZombie = ["HUNTING SIGNAL...", "CORRUPTING DATA...", "INFECTING SYSTEM...", "CONSUMING BANDWIDTH...", "SPREADING VIRUS..."];
     const logs = isZombie ? logsZombie : logsAlive;
@@ -21,36 +48,40 @@ const DataLoaderOverlay = ({ isZombie }: { isZombie: boolean }) => {
     const barColor = isZombie ? "bg-lime-600" : "bg-cyan-600";
 
     useEffect(() => {
-        // Simular progreso visual rápido
         const interval = setInterval(() => {
             setProgress(prev => (prev >= 100 ? 100 : prev + Math.random() * 15));
             setLogLine(logs[Math.floor(Math.random() * logs.length)]);
+
+            // Generar "stream" binario aleatorio
+            let bin = "";
+            for (let i = 0; i < 20; i++) bin += Math.random() > 0.5 ? "1" : "0";
+            setBinaryStream(bin);
         }, 150);
         return () => clearInterval(interval);
     }, [isZombie]);
 
     return (
-        <div className="absolute inset-0 z-50 bg-black flex flex-col items-center justify-center font-sans p-8">
-            {/* Ruido de fondo */}
-            <div className="absolute inset-0 opacity-10 pointer-events-none bg-[url('https://www.transparenttextures.com/patterns/stardust.png')] animate-pulse"></div>
+        <div className="absolute inset-0 z-50 bg-black flex flex-col items-center justify-center font-sans p-8 overflow-hidden">
+            <div className="absolute inset-0 opacity-10 font-mono text-[8px] flex flex-wrap gap-1 leading-none break-all p-2 text-white">
+                {Array.from({ length: 20 }).map((_, i) => <div key={i} className="w-full opacity-20">{binaryStream} {binaryStream} {binaryStream}</div>)}
+            </div>
 
             <div className={`text-4xl mb-4 animate-spin ${color}`}>
                 {isZombie ? '☣' : '✇'}
             </div>
 
-            <div className={`text-xl font-black tracking-[0.3em] mb-2 ${color} animate-pulse`}>
-                {isZombie ? 'FEEDING...' : 'LOADING...'}
+            <div className={`text-xl font-black tracking-[0.3em] mb-2 ${color} animate-pulse px-4 py-1 border-x border-current`}>
+                {isZombie ? 'FEEDING...' : 'CONNECTING...'}
             </div>
 
-            {/* Barra de carga */}
-            <div className="w-64 h-2 bg-gray-800 border border-gray-600 relative overflow-hidden mb-2">
+            <div className="w-64 h-2 bg-gray-900 border border-gray-700 relative overflow-hidden mb-2">
                 <div
-                    className={`h-full ${barColor} transition-all duration-200 ease-out`}
+                    className={`h-full ${barColor} shadow-[0_0_10px_currentColor] transition-all duration-200 ease-out`}
                     style={{ width: `${progress}%` }}
                 ></div>
             </div>
 
-            <div className="text-[10px] text-gray-500 h-4">
+            <div className="text-[10px] text-gray-500 h-4 font-mono">
                 &gt; {logLine}
             </div>
         </div>
@@ -59,17 +90,17 @@ const DataLoaderOverlay = ({ isZombie }: { isZombie: boolean }) => {
 
 export const IntroSequence: React.FC<IntroSequenceProps> = ({ language, onComplete, playerAlignment }) => {
     const [currentIndex, setCurrentIndex] = useState(0);
-    const [isTransitioning, setIsTransitioning] = useState(false); // Estado para controlar la carga
+    const [isTransitioning, setIsTransitioning] = useState(false);
     const [textVisible, setTextVisible] = useState(false);
 
     const slides = translations[language].introSequence[playerAlignment === 'ZOMBIE' ? 'zombie' : 'alive'];
     const currentSlide = slides[currentIndex];
+    const typedText = useTypewriter(currentSlide?.text || "", 20, !isTransitioning && textVisible);
 
-    // Efecto de entrada para el texto
     useEffect(() => {
         if (!isTransitioning) {
             setTextVisible(false);
-            const timer = setTimeout(() => setTextVisible(true), 300);
+            const timer = setTimeout(() => setTextVisible(true), 500);
             return () => clearTimeout(timer);
         }
     }, [currentIndex, isTransitioning]);
@@ -218,11 +249,9 @@ export const IntroSequence: React.FC<IntroSequenceProps> = ({ language, onComple
                             </div>
 
                             <p className="text-sm md:text-base text-gray-300 leading-relaxed font-mono whitespace-pre-wrap border-l-2 border-gray-800 pl-4">
-                                {currentSlide.text}
+                                {typedText}
+                                <span className="animate-typing-cursor ml-1"></span>
                             </p>
-
-                            {/* Cursor parpadeante al final */}
-                            <span className={`inline-block w-2 h-4 ml-1 align-middle ${progressColor} animate-pulse`}></span>
                         </div>
                     )}
                 </div>

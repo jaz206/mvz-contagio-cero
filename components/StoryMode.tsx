@@ -14,6 +14,7 @@ export const StoryMode: React.FC<StoryModeProps> = ({ language, onComplete, star
 
     const [currentIndex, setCurrentIndex] = useState(startAtChoice ? slides.length : 0);
     const [isFolderOpen, setIsFolderOpen] = useState(false);
+    const [isClosing, setIsClosing] = useState(false);
     const [pageTurn, setPageTurn] = useState('');
     const [isAnimating, setIsAnimating] = useState(false);
     const [selection, setSelection] = useState<'ALIVE' | 'ZOMBIE' | null>(null);
@@ -26,24 +27,51 @@ export const StoryMode: React.FC<StoryModeProps> = ({ language, onComplete, star
     }, []);
 
     const handleSkipToChoice = () => {
-        setCurrentIndex(slides.length);
+        setIsClosing(true);
+        setTimeout(() => {
+            setCurrentIndex(slides.length);
+            setIsClosing(false);
+        }, 800);
     };
 
     const handleNext = () => {
         if (isAnimating || isChoiceScreen) return;
 
+        if (currentIndex === slides.length - 1) {
+            setIsClosing(true);
+            setTimeout(() => {
+                setCurrentIndex(slides.length);
+                setIsClosing(false);
+            }, 800);
+            return;
+        }
+
         setIsAnimating(true);
         setPageTurn('turning-next');
 
         setTimeout(() => {
-            setCurrentIndex(prev => {
-                const next = prev + 1;
-                return next > slides.length ? slides.length : next;
-            });
+            setCurrentIndex(prev => prev + 1);
             setPageTurn('');
             setIsAnimating(false);
         }, 600);
     };
+
+    const DustParticles = () => (
+        <div className="absolute inset-0 pointer-events-none overflow-hidden z-[5]">
+            {[...Array(20)].map((_, i) => (
+                <div
+                    key={i}
+                    className="dust-particle"
+                    style={{
+                        left: `${Math.random() * 100}%`,
+                        top: `${Math.random() * 100}%`,
+                        animationDelay: `${Math.random() * 10}s`,
+                        opacity: Math.random() * 0.5
+                    }}
+                />
+            ))}
+        </div>
+    );
 
     const handlePrev = () => {
         if (isAnimating || currentIndex === 0) return;
@@ -232,18 +260,21 @@ export const StoryMode: React.FC<StoryModeProps> = ({ language, onComplete, star
             )}
 
             {!isChoiceScreen && (
-                <div className={`relative w-[95%] h-[85%] max-w-6xl bg-[#d1d5db] shadow-[0_20px_50px_rgba(0,0,0,0.6)] transition-all duration-1000 ease-out transform-style-3d rounded-r-md border-l-8 border-slate-400 ${isFolderOpen ? 'rotate-x-0 translate-y-0 opacity-100' : 'rotate-x-20 translate-y-[100px] opacity-0'}`}>
+                <div className={`relative w-[95%] h-[85%] max-w-6xl bg-[#d1d5db] shadow-[0_20px_50px_rgba(0,0,0,0.6)] transition-all duration-1000 ease-out transform-style-3d rounded-r-md border-l-8 border-slate-400 
+                    ${isFolderOpen && !isClosing ? 'rotate-x-0 translate-y-0 opacity-100' : 'rotate-x-20 translate-y-[100px] opacity-0 scale-95'}
+                `}>
                     <div className="absolute -top-6 left-0 w-48 h-8 bg-[#9ca3af] rounded-t-lg border-t border-x border-white/20 flex items-center px-4 shadow-inner">
                         <span className="text-[10px] font-bold text-slate-800 tracking-widest">PROJECT: LAZARUS</span>
                     </div>
 
                     <div className="w-full h-full bg-white relative overflow-hidden flex rounded-r-sm">
+                        <DustParticles />
                         {renderContent()}
                         {pageTurn && <div className={`absolute inset-0 bg-black/10 z-50 transition-opacity duration-500 ${pageTurn ? 'opacity-100' : 'opacity-0'}`}></div>}
                     </div>
 
-                    {isFolderOpen && (
-                        <div className="absolute -bottom-16 w-full flex justify-center gap-4">
+                    {isFolderOpen && !isClosing && (
+                        <div className="absolute -bottom-16 w-full flex justify-center gap-4 animate-fade-in">
                             <button onClick={handlePrev} disabled={currentIndex === 0 || isAnimating} className={`w-12 h-12 rounded-full bg-slate-800 border border-slate-600 flex items-center justify-center text-white hover:bg-cyan-600 transition-all ${currentIndex === 0 ? 'opacity-30 cursor-not-allowed' : ''}`}>←</button>
                             <div className="h-12 px-6 bg-slate-900/90 border border-slate-700 rounded-full flex items-center justify-center text-cyan-400 font-mono text-xs tracking-widest shadow-lg">SLIDE {currentIndex + 1} / {slides.length}</div>
                             <button onClick={handleNext} disabled={isAnimating} className="w-12 h-12 rounded-full bg-slate-800 border border-slate-600 flex items-center justify-center text-white hover:bg-cyan-600 transition-all">→</button>
