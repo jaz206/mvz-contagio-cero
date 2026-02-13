@@ -543,15 +543,15 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
                                     <BiometricMonitor alignment={playerAlignment || 'ALIVE'} />
 
                                     <div className="grid grid-cols-3 gap-4">
-                                        <div className="bg-slate-900/80 p-4 border-l-2 border-red-600">
+                                        <div className="bg-slate-950/80 p-4 border-l-2 border-red-600">
                                             <div className="text-[8px] text-red-500 font-bold uppercase mb-1">STRENGTH</div>
                                             <div className="text-2xl font-black text-white">{selectedHero.stats.strength}</div>
                                         </div>
-                                        <div className="bg-slate-900/80 p-4 border-l-2 border-emerald-600">
+                                        <div className="bg-slate-950/80 p-4 border-l-2 border-emerald-600">
                                             <div className="text-[8px] text-emerald-500 font-bold uppercase mb-1">AGILITY</div>
                                             <div className="text-2xl font-black text-white">{selectedHero.stats.agility}</div>
                                         </div>
-                                        <div className="bg-slate-900/80 p-4 border-l-2 border-blue-600">
+                                        <div className="bg-slate-950/80 p-4 border-l-2 border-blue-600">
                                             <div className="text-[8px] text-blue-500 font-bold uppercase mb-1">INTELLECT</div>
                                             <div className="text-2xl font-black text-white">{selectedHero.stats.intellect}</div>
                                         </div>
@@ -614,5 +614,5 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
                 </div>
             )}
         </div>
-    );} ;  
- 
+    );
+};
