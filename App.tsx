@@ -16,6 +16,7 @@ import { NewsTicker } from './components/NewsTicker';
 import { ExpansionSelector } from './components/ExpansionSelector';
 import { ExpansionConfigModal } from './components/ExpansionConfigModal';
 import { DatabaseManager } from './components/DatabaseManager';
+import { NotFound } from './components/NotFound';
 import { GAME_EXPANSIONS } from './data/gameContent';
 
 // URLs de los logos
@@ -36,8 +37,12 @@ const GameLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const circumference = 2 * Math.PI * 18;
     const strokeDashoffset = circumference - (progressPercentage / 100) * circumference;
 
+    React.useEffect(() => {
+        document.body.setAttribute('data-alignment', playerAlignment || 'ALIVE');
+    }, [playerAlignment]);
+
     return (
-        <div className={`flex flex-col h-screen w-full bg-slate-950 text-cyan-400 font-sans overflow-hidden relative ${playerAlignment === 'ZOMBIE' ? 'animate-pulse-slow grayscale-[0.3] sepia-[0.2] contrast-125' : ''}`}>
+        <div className={`flex flex-col h-screen w-full font-sans overflow-hidden relative transition-colors duration-500`}>
             <CharacterEditor isOpen={state.showCharacterEditor} onClose={() => actions.setShowCharacterEditor(false)} language={lang} />
             <MissionEditor
                 isOpen={state.showMissionEditor}
@@ -75,17 +80,29 @@ const GameLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
                 language={lang}
             />
 
-            <header className="flex-none h-16 border-b border-cyan-900 bg-slate-900/90 flex items-center justify-between px-6 z-30 relative">
+            <header className="flex-none h-16 border-b border-cyan-900/50 bg-slate-900/40 backdrop-blur-md flex items-center justify-between px-6 z-30 relative overflow-hidden">
+                {/* Background hardware scanning line */}
+                <div className="absolute top-0 left-0 w-full h-[1px] bg-cyan-500/20 animate-scanline"></div>
+
                 <div className="flex items-center gap-4">
-                    <div className={`w-10 h-10 border-2 ${playerAlignment === 'ZOMBIE' ? 'border-lime-600' : 'border-cyan-500'} rounded-full flex items-center justify-center overflow-hidden bg-slate-950 shadow-[0_0_10px_rgba(6,182,212,0.3)]`}>
+                    <div className={`w-10 h-10 border-2 ${playerAlignment === 'ZOMBIE' ? 'border-lime-600' : 'border-cyan-500'} rounded-full flex items-center justify-center overflow-hidden bg-slate-950 shadow-[0_0_15px_rgba(6,182,212,0.4)] relative`}>
                         <img
                             src={playerAlignment === 'ZOMBIE' ? LOGO_ZOMBIE : LOGO_SHIELD}
                             alt="Logo"
                             className="w-full h-full object-cover"
                             referrerPolicy="no-referrer"
                         />
+                        <div className="absolute inset-0 bg-scan opacity-20 pointer-events-none"></div>
                     </div>
-                    <div><h1 className="text-xl font-bold tracking-[0.2em] text-cyan-100 leading-none">{t.header.project}</h1><div className="text-[10px] text-red-500 font-bold tracking-widest animate-pulse">{t.header.failure}</div></div>
+                    <div className="flex flex-col">
+                        <h1 className="text-xl font-black tracking-[0.25em] text-white leading-none drop-shadow-md">{t.header.project}</h1>
+                        <div className="flex items-center gap-2">
+                            <div className="text-[9px] text-red-500 font-black tracking-widest animate-pulse flex items-center gap-1">
+                                <span className="w-1.5 h-1.5 bg-red-600 rounded-full"></span> {t.header.failure}
+                            </div>
+                            <span className="text-[8px] text-cyan-700 font-mono">SIGNAL_STRENGTH: 88%</span>
+                        </div>
+                    </div>
                 </div>
                 <div className="flex items-center gap-6">
                     <button onClick={actions.toggleDimension} className={`hidden md:flex items-center gap-2 px-3 py-1 border rounded transition-all duration-500 ${playerAlignment === 'ZOMBIE' ? 'border-lime-600 bg-lime-900/20 text-lime-400 hover:bg-lime-900/40' : 'border-cyan-500 bg-cyan-900/20 text-cyan-300 hover:bg-cyan-900/40'}`}>
@@ -204,7 +221,8 @@ const GameContent: React.FC = () => {
                 </div>
             } />
 
-            <Route path="*" element={<Navigate to="/" />} />
+            <Route path="/404" element={<NotFound />} />
+            <Route path="*" element={<Navigate to="/404" />} />
         </Routes>
     );
 }

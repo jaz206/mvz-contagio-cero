@@ -722,8 +722,6 @@ export const USAMap: React.FC<USAMapProps> = ({
 
     return (
         <div ref={containerRef} className="w-full h-full relative bg-transparent overflow-hidden group">
-            <div className="absolute inset-0 z-0 pointer-events-none" style={{ backgroundImage: 'radial-gradient(circle, #0e7490 1px, transparent 1px)', backgroundSize: '20px 20px', opacity: 0.2 }}></div>
-
             {worldStage === 'GALACTUS' && (
                 <div className="absolute inset-0 z-30 pointer-events-none overflow-hidden flex items-center justify-center">
                     <div className="absolute inset-0 bg-purple-900/30 mix-blend-overlay animate-pulse-slow"></div>
@@ -736,6 +734,20 @@ export const USAMap: React.FC<USAMapProps> = ({
                     </div>
                 </div>
             )}
+
+            {/* Infection / Static Noise Overlay */}
+            {playerAlignment === 'ZOMBIE' && (
+                <div className="absolute inset-0 z-20 pointer-events-none opacity-[0.05] bg-[url('https://www.transparenttextures.com/patterns/stardust.png')] animate-pulse"></div>
+            )}
+
+            <div className={`absolute inset-0 z-0 pointer-events-none transition-opacity duration-1000 ${playerAlignment === 'ZOMBIE' ? 'opacity-40' : 'opacity-10'}`}
+                style={{
+                    backgroundImage: playerAlignment === 'ZOMBIE'
+                        ? 'radial-gradient(circle, #84cc16 1px, transparent 1px)'
+                        : 'radial-gradient(circle, #0e7490 1px, transparent 1px)',
+                    backgroundSize: '30px 30px'
+                }}>
+            </div>
 
             <svg ref={svgRef} className="w-full h-full relative z-10"></svg>
 

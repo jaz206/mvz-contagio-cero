@@ -96,6 +96,13 @@ const HeroCard = ({ hero, onClick, actionIcon, onAction }: { hero: Hero, onClick
     );
 };
 
+// --- COMPONENTE: ESCÁNER DE ADN (PARA MEDBAY) ---
+const DnaScanner = () => (
+    <div className="absolute inset-x-0 top-0 h-1 bg-red-500/20 z-0 pointer-events-none overflow-hidden">
+        <div className="h-full bg-red-500 shadow-[0_0_15px_#ef4444] animate-scanline"></div>
+    </div>
+);
+
 export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
     heroes, missions, completedMissionIds = new Set(), onAssign, onUnassign, onAddHero, onToggleObjective, onBack, language, playerAlignment, onTransformHero, onTickerUpdate, omegaCylinders = 0, onFindCylinder
 }) => {
@@ -189,7 +196,9 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
                         </button>
                     </div>
 
-                    <div className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-cyan-900 pb-24">
+                    <div className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-cyan-900 pb-24 relative">
+                        {activeTab === 'MEDBAY' && <DnaScanner />}
+                        <div className={`absolute inset-0 pointer-events-none opacity-5 ${activeTab === 'MEDBAY' ? 'bg-[radial-gradient(circle,#ef4444_1px,transparent_1px)] bg-[length:20px_20px]' : ''}`}></div>
                         {activeTab === 'ROSTER' ? (
                             <>
                                 {availableHeroes.map(h => <HeroCard key={h.id} hero={h} onClick={() => setSelectedHeroId(h.id)} />)}
@@ -300,8 +309,12 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
                     </div>
 
                     {/* MISSION LOG */}
-                    <div className="flex-1 p-6 overflow-y-auto pb-24">
-                        <h3 className="text-[10px] font-black text-cyan-600 uppercase tracking-[0.2em] mb-4">REGISTRO DE OPERACIONES</h3>
+                    <div className="flex-1 p-6 overflow-y-auto pb-24 relative">
+                        <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/diagmonds-light.png')] opacity-5 pointer-events-none"></div>
+                        <h3 className="text-[10px] font-black text-cyan-600 uppercase tracking-[0.2em] mb-4 flex items-center gap-2">
+                            <span className="w-2 h-2 bg-cyan-500 rounded-full animate-pulse"></span>
+                            REGISTRO DE OPERACIONES
+                        </h3>
                         <div className="space-y-3">
                             {missions.map(m => (
                                 <div key={m.id} className="bg-slate-900/80 border-l-4 border-cyan-500 p-4 hover:bg-cyan-900/20 transition-all group cursor-pointer relative overflow-hidden shadow-lg">
@@ -324,12 +337,21 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
                 {/* RIGHT COLUMN: RESOURCES */}
                 <div className="col-span-3 border-l border-cyan-900 bg-slate-900/30 flex flex-col h-full overflow-hidden">
                     <div className="p-6 border-b border-cyan-900 shrink-0">
-                        <button onClick={handleOpenRecruit} className="w-full aspect-square border-2 border-dashed border-cyan-800 hover:border-cyan-400 hover:bg-cyan-900/20 transition-all group flex flex-col items-center justify-center gap-4 rounded-xl relative overflow-hidden">
-                            <div className="absolute inset-0 bg-cyan-500/5 scale-0 group-hover:scale-100 transition-transform duration-500 rounded-full"></div>
-                            <div className="w-16 h-16 rounded-full bg-slate-950 border-2 border-cyan-600 flex items-center justify-center group-hover:scale-110 transition-transform shadow-[0_0_20px_rgba(6,182,212,0.3)] z-10">
-                                <span className="text-3xl text-cyan-400 font-light">+</span>
+                        <button onClick={handleOpenRecruit} className="w-full aspect-square border-2 border-cyan-800 hover:border-cyan-400 hover:bg-cyan-900/20 transition-all group flex flex-col items-center justify-center gap-4 rounded-xl relative overflow-hidden bg-slate-950/50">
+                            <div className="absolute inset-0 bg-cyan-500/5 scale-0 group-hover:scale-150 transition-transform duration-1000 rounded-full"></div>
+
+                            {/* Cerebro Rings effect */}
+                            <div className="absolute w-32 h-32 border border-cyan-500/10 rounded-full animate-ping opacity-0 group-hover:opacity-100"></div>
+                            <div className="absolute w-24 h-24 border border-cyan-500/20 rounded-full animate-pulse opacity-0 group-hover:opacity-100" style={{ animationDelay: '0.5s' }}></div>
+
+                            <div className="w-16 h-16 rounded-full bg-slate-950 border-2 border-cyan-600 flex items-center justify-center group-hover:scale-110 transition-transform shadow-[0_0_30px_rgba(6,182,212,0.4)] z-10 relative">
+                                <span className="text-3xl text-cyan-400 font-black animate-pulse">+</span>
+                                <div className="absolute inset-0 rounded-full bg-cyan-500/10 animate-ping" style={{ animationDuration: '3s' }}></div>
                             </div>
-                            <span className="text-[10px] font-black tracking-[0.2em] text-cyan-400 uppercase z-10">ACCESO CEREBRO</span>
+                            <div className="flex flex-col items-center z-10">
+                                <span className="text-[11px] font-black tracking-[0.25em] text-white uppercase">{playerAlignment === 'ZOMBIE' ? 'NEXO COLMENA' : 'INTERFAZ CEREBRO'}</span>
+                                <span className="text-[7px] text-cyan-600 tracking-[0.4em] font-mono mt-1">SEARCHING_BIO_SIGNALS...</span>
+                            </div>
                         </button>
                     </div>
 
