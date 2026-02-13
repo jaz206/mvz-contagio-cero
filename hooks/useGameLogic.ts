@@ -483,7 +483,7 @@ export const useGameLogic = () => {
             tickerMessage, isEditorMode, showMissionEditor, missionToEdit,
             showCharacterEditor, showDbManager, customMissions, selectedMission,
             showStory, showTutorial, expandedZones, isSidebarCollapsed,
-            ownedExpansions, showExpansionConfig,
+            ownedExpansions, showExpansionConfig, startStoryAtChoice,
             introMission, allMissions, visibleMissions, groupedMissions,
             FACTION_STATES
         },

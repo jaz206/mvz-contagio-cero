@@ -1,5 +1,5 @@
 import React from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import { GameProvider, useGame } from './context/GameContext';
 import { translations } from './translations';
 import { LoginScreen } from './components/LoginScreen';
@@ -24,6 +24,7 @@ const LOGO_ZOMBIE = "https://i.pinimg.com/736x/7f/31/38/7f31382d4a5c35daa4ba1768
 
 const GameLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const { state, actions } = useGame();
+    const navigate = useNavigate();
     const {
         lang, playerAlignment, completedMissionIds,
         isSaving, tickerMessage, worldStage
@@ -111,7 +112,7 @@ const GameLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
                                 <div className="relative w-14 h-14 flex items-center justify-center"><svg className="w-full h-full transform -rotate-90" viewBox="0 0 44 44"><circle cx="22" cy="22" r="18" stroke="#1e293b" strokeWidth="4" fill="transparent" /><circle cx="22" cy="22" r="18" stroke="#10b981" strokeWidth="4" fill="transparent" strokeDasharray={circumference} strokeDashoffset={strokeDashoffset} className="transition-all duration-1000 ease-out" /></svg><span className="absolute text-[10px] font-bold text-emerald-400">{progressPercentage}%</span></div>
                             </div>
                             <div className="p-3 border-b border-cyan-900">
-                                <button id="tutorial-bunker-btn" onClick={() => actions.setViewMode('bunker')} className={`w-full py-3 border-2 flex items-center justify-center gap-2 transition-all duration-300 group relative overflow-hidden ${playerAlignment === 'ZOMBIE' ? 'border-lime-600 bg-lime-900/10 hover:bg-lime-900/30 text-lime-400' : 'border-cyan-500 bg-cyan-900/10 hover:bg-cyan-900/30 text-cyan-300'}`}>
+                                <button id="tutorial-bunker-btn" onClick={() => navigate('/bunker')} className={`w-full py-3 border-2 flex items-center justify-center gap-2 transition-all duration-300 group relative overflow-hidden ${playerAlignment === 'ZOMBIE' ? 'border-lime-600 bg-lime-900/10 hover:bg-lime-900/30 text-lime-400' : 'border-cyan-500 bg-cyan-900/10 hover:bg-cyan-900/30 text-cyan-300'}`}>
                                     <div className={`absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 ${playerAlignment === 'ZOMBIE' ? 'bg-[linear-gradient(45deg,transparent_25%,rgba(132,204,22,0.1)_50%,transparent_75%)]' : 'bg-[linear-gradient(45deg,transparent_25%,rgba(6,182,212,0.1)_50%,transparent_75%)]'} bg-[length:250%_250%] animate-[shimmer_2s_linear_infinite]`}></div>
                                     <span className="text-xl group-hover:scale-110 transition-transform">{playerAlignment === 'ZOMBIE' ? '☣' : '🛡'}</span><span className="font-bold tracking-widest text-[10px]">{playerAlignment === 'ZOMBIE' ? t.sidebar.hiveBtn : t.sidebar.bunkerBtn}</span>
                                 </button>
@@ -136,7 +137,7 @@ const GameLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
                             </div>
                         </>
                     ) : (
-                        <div className="flex flex-col items-center py-4 gap-4 h-full"><div className="w-8 h-8 rounded-full border-2 border-red-600 flex items-center justify-center bg-red-900/20 animate-pulse" title="Nivel de Amenaza: CRÍTICO"><span className="text-xs">⚠</span></div><button onClick={() => actions.setViewMode('bunker')} className="w-8 h-8 rounded border border-cyan-500 flex items-center justify-center hover:bg-cyan-900/50 text-cyan-300" title="Búnker"><span className="text-xs">🛡</span></button><div className="flex-1 w-full flex flex-col items-center justify-end pb-4"><div className="relative w-8 h-8 flex items-center justify-center" title={`Progreso: ${progressPercentage}%`}><svg className="w-full h-full transform -rotate-90"><circle cx="16" cy="16" r="14" stroke="#1e293b" strokeWidth="3" fill="transparent" /><circle cx="16" cy="16" r="14" stroke="#10b981" strokeWidth="3" fill="transparent" strokeDasharray={2 * Math.PI * 14} strokeDashoffset={2 * Math.PI * 14 - (progressPercentage / 100) * 2 * Math.PI * 14} /></svg></div></div></div>
+                        <div className="flex flex-col items-center py-4 gap-4 h-full"><div className="w-8 h-8 rounded-full border-2 border-red-600 flex items-center justify-center bg-red-900/20 animate-pulse" title="Nivel de Amenaza: CRÍTICO"><span className="text-xs">⚠</span></div><button onClick={() => navigate('/bunker')} className="w-8 h-8 rounded border border-cyan-500 flex items-center justify-center hover:bg-cyan-900/50 text-cyan-300" title="Búnker"><span className="text-xs">🛡</span></button><div className="flex-1 w-full flex flex-col items-center justify-end pb-4"><div className="relative w-8 h-8 flex items-center justify-center" title={`Progreso: ${progressPercentage}%`}><svg className="w-full h-full transform -rotate-90"><circle cx="16" cy="16" r="14" stroke="#1e293b" strokeWidth="3" fill="transparent" /><circle cx="16" cy="16" r="14" stroke="#10b981" strokeWidth="3" fill="transparent" strokeDasharray={2 * Math.PI * 14} strokeDashoffset={2 * Math.PI * 14 - (progressPercentage / 100) * 2 * Math.PI * 14} /></svg></div></div></div>
                     )}
                 </aside>
 
@@ -152,6 +153,7 @@ const GameLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 
 const GameContent: React.FC = () => {
     const { state, actions } = useGame();
+    const navigate = useNavigate();
     const {
         loading, loadingAuth, lang, playerAlignment, heroes, completedMissionIds,
         omegaCylinders, worldStage, isEditorMode, surferTurnCount
@@ -163,17 +165,17 @@ const GameContent: React.FC = () => {
         <Routes>
             <Route path="/" element={<LoginScreen onLogin={actions.handleGuestLogin} onGoogleLogin={() => { }} onEditorLogin={actions.handleEditorLogin} language={lang} setLanguage={actions.setLang} />} />
 
-            <Route path="/story" element={<StoryMode language={lang} onComplete={(choice) => { actions.setPlayerAlignment(choice); actions.setViewMode('setup'); }} onSkip={() => { actions.setPlayerAlignment('ALIVE'); const core = GAME_EXPANSIONS.find(e => e.id === 'core_box'); if (core) actions.setHeroes(core.heroes); actions.setViewMode('map'); }} startAtChoice={state.startStoryAtChoice} />} />
+            <Route path="/story" element={<StoryMode language={lang} onComplete={(choice) => { actions.setPlayerAlignment(choice); navigate('/setup'); }} onSkip={() => { actions.setPlayerAlignment('ALIVE'); const core = GAME_EXPANSIONS.find(e => e.id === 'core_box'); if (core) actions.setHeroes(core.heroes); navigate('/map'); }} startAtChoice={state.startStoryAtChoice} />} />
 
-            <Route path="/setup" element={playerAlignment ? <ExpansionSelector language={lang} playerAlignment={playerAlignment} onConfirm={actions.handleExpansionConfirm} onBack={() => { actions.setPlayerAlignment(null); actions.setStartStoryAtChoice(true); actions.setViewMode('story'); }} ownedExpansions={state.ownedExpansions} onToggleExpansion={actions.toggleExpansion} onToggleAllExpansions={actions.toggleAllExpansions} /> : <Navigate to="/" />} />
+            <Route path="/setup" element={playerAlignment ? <ExpansionSelector language={lang} playerAlignment={playerAlignment} onConfirm={actions.handleExpansionConfirm} onBack={() => { actions.setPlayerAlignment(null); navigate('/story'); }} ownedExpansions={state.ownedExpansions} onToggleExpansion={actions.toggleExpansion} onToggleAllExpansions={actions.toggleAllExpansions} /> : <Navigate to="/" />} />
 
-            <Route path="/intro" element={playerAlignment ? <IntroSequence language={lang} playerAlignment={playerAlignment} onComplete={() => { if (state.introMission) { actions.setViewMode('mission0'); } else { actions.setViewMode('tutorial'); } }} /> : <Navigate to="/" />} />
+            <Route path="/intro" element={playerAlignment ? <IntroSequence language={lang} playerAlignment={playerAlignment} onComplete={() => { if (state.introMission) { navigate('/mission0'); } else { navigate('/tutorial'); } }} /> : <Navigate to="/" />} />
 
-            <Route path="/mission0" element={(playerAlignment && state.introMission) ? <MissionModal mission={state.introMission} isOpen={true} onClose={() => actions.setViewMode('tutorial')} onComplete={() => { actions.handleMissionComplete(state.introMission!.id); actions.setViewMode('tutorial'); }} language={lang} isCompleted={false} /> : <Navigate to="/map" />} />
+            <Route path="/mission0" element={(playerAlignment && state.introMission) ? <MissionModal mission={state.introMission} isOpen={true} onClose={() => navigate('/tutorial')} onComplete={() => { actions.handleMissionComplete(state.introMission!.id); navigate('/tutorial'); }} language={lang} isCompleted={false} /> : <Navigate to="/map" />} />
 
             <Route path="/map" element={
                 <GameLayout>
-                    <USAMap language={lang} missions={state.visibleMissions} completedMissionIds={completedMissionIds} onMissionComplete={actions.handleMissionComplete} onMissionSelect={actions.handleMissionSelect} onBunkerClick={() => actions.setViewMode('bunker')} factionStates={state.FACTION_STATES} playerAlignment={playerAlignment} worldStage={worldStage} surferTurnCount={surferTurnCount} />
+                    <USAMap language={lang} missions={state.visibleMissions} completedMissionIds={completedMissionIds} onMissionComplete={actions.handleMissionComplete} onMissionSelect={actions.handleMissionSelect} onBunkerClick={() => navigate('/bunker')} factionStates={state.FACTION_STATES} playerAlignment={playerAlignment} worldStage={worldStage} surferTurnCount={surferTurnCount} />
                     {isEditorMode && (
                         <div className="absolute top-20 right-4 z-50 flex flex-col gap-2 bg-slate-900/95 p-4 border border-cyan-500 shadow-[0_0_20px_rgba(6,182,212,0.3)] rounded-sm min-w-[200px] max-h-[80vh] overflow-y-auto scrollbar-thin scrollbar-thumb-cyan-700">
                             <h3 className="text-xs font-bold text-cyan-400 border-b border-cyan-800 pb-1 mb-2 tracking-widest uppercase">EDITOR TOOLS</h3>
@@ -191,14 +193,14 @@ const GameContent: React.FC = () => {
 
             <Route path="/bunker" element={
                 <GameLayout>
-                    <BunkerInterior heroes={heroes} missions={state.visibleMissions.filter(m => m && !completedMissionIds.has(m.id))} onAssign={(heroId, missionId) => { const hIndex = heroes.findIndex(h => h.id === heroId); if (hIndex >= 0) { const newHeroes = [...heroes]; newHeroes[hIndex] = { ...newHeroes[hIndex], status: 'DEPLOYED', assignedMissionId: missionId }; actions.setHeroes(newHeroes); return true; } return false; }} onUnassign={(heroId) => { const hIndex = heroes.findIndex(h => h.id === heroId); if (hIndex >= 0) { const newHeroes = [...heroes]; newHeroes[hIndex] = { ...newHeroes[hIndex], status: 'AVAILABLE', assignedMissionId: null }; actions.setHeroes(newHeroes); } }} onAddHero={(hero) => actions.setHeroes([...heroes, hero])} onToggleObjective={actions.handleToggleHeroObjective} onBack={() => actions.setViewMode('map')} language={lang} playerAlignment={playerAlignment} isEditorMode={isEditorMode} onTransformHero={actions.handleTransformHero} onTickerUpdate={actions.handleTickerUpdate} omegaCylinders={omegaCylinders} onFindCylinder={() => actions.setOmegaCylinders(prev => prev + 1)} />
+                    <BunkerInterior heroes={heroes} missions={state.visibleMissions.filter(m => m && !completedMissionIds.has(m.id))} onAssign={(heroId, missionId) => { const hIndex = heroes.findIndex(h => h.id === heroId); if (hIndex >= 0) { const newHeroes = [...heroes]; newHeroes[hIndex] = { ...newHeroes[hIndex], status: 'DEPLOYED', assignedMissionId: missionId }; actions.setHeroes(newHeroes); return true; } return false; }} onUnassign={(heroId) => { const hIndex = heroes.findIndex(h => h.id === heroId); if (hIndex >= 0) { const newHeroes = [...heroes]; newHeroes[hIndex] = { ...newHeroes[hIndex], status: 'AVAILABLE', assignedMissionId: null }; actions.setHeroes(newHeroes); } }} onAddHero={(hero) => actions.setHeroes([...heroes, hero])} onToggleObjective={actions.handleToggleHeroObjective} onBack={() => navigate('/map')} language={lang} playerAlignment={playerAlignment} isEditorMode={isEditorMode} onTransformHero={actions.handleTransformHero} onTickerUpdate={actions.handleTickerUpdate} omegaCylinders={omegaCylinders} onFindCylinder={() => actions.setOmegaCylinders(prev => prev + 1)} />
                 </GameLayout>
             } />
 
             <Route path="/tutorial" element={
                 <div className="absolute inset-0 z-40">
                     <USAMap language={lang} missions={state.visibleMissions} completedMissionIds={completedMissionIds} onMissionComplete={() => { }} onMissionSelect={() => { }} onBunkerClick={() => { }} factionStates={state.FACTION_STATES} playerAlignment={playerAlignment} worldStage={worldStage} />
-                    <TutorialOverlay language={lang} onComplete={() => { if (state.user) localStorage.setItem(`shield_tutorial_seen_${state.user.uid}`, 'true'); actions.setViewMode('map'); }} onStepChange={(stepKey) => { if (['roster', 'file', 'recruit'].includes(stepKey)) { actions.setViewMode('bunker'); } }} />
+                    <TutorialOverlay language={lang} onComplete={() => { if (state.user) localStorage.setItem(`shield_tutorial_seen_${state.user.uid}`, 'true'); navigate('/map'); }} onStepChange={(stepKey) => { if (['roster', 'file', 'recruit'].includes(stepKey)) { navigate('/bunker'); } }} />
                 </div>
             } />
 
