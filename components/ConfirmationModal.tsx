@@ -11,8 +11,8 @@ interface ConfirmationModalProps {
     type: 'CURE' | 'INFECT' | 'WARNING'; // Para cambiar el color
 }
 
-export const ConfirmationModal: React.FC<ConfirmationModalProps> = ({ 
-    isOpen, onClose, onConfirm, title, message, confirmText, cancelText = "CANCELAR", type 
+export const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
+    isOpen, onClose, onConfirm, title, message, confirmText, cancelText = "CANCELAR", type
 }) => {
     if (!isOpen) return null;
 
@@ -35,32 +35,32 @@ export const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
     }
 
     return (
-        <div className="fixed inset-0 z-[150] flex items-center justify-center bg-slate-950/95 backdrop-blur-sm p-4 animate-fade-in">
-            <div className={`w-full max-w-md bg-slate-900 border-2 ${colorClass} ${bgGlow} flex flex-col relative overflow-hidden`}>
-                
-                {/* Scanlines decorativas */}
-                <div className="absolute inset-0 bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.25)_50%),linear-gradient(90deg,rgba(255,0,0,0.06),rgba(0,255,0,0.02),rgba(0,0,255,0.06))] bg-[length:100%_4px,6px_100%] pointer-events-none opacity-20"></div>
+        <div className="fixed inset-0 z-[150] flex items-center justify-center bg-slate-950/40 backdrop-blur-md p-4 animate-fade-in">
+            <div className={`w-full max-w-md glass-panel ${colorClass} ${bgGlow} flex flex-col relative overflow-hidden shadow-2xl rounded-sm`}>
 
-                <div className={`p-4 border-b ${colorClass} bg-slate-950/50 font-black tracking-[0.2em] uppercase text-lg flex items-center gap-2`}>
+                {/* Scanlines decorativas */}
+                <div className="absolute inset-0 bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.1)_50%),linear-gradient(90deg,rgba(255,0,0,0.03),rgba(0,255,0,0.01),rgba(0,0,255,0.03))] bg-[length:100%_4px,6px_100%] pointer-events-none opacity-20"></div>
+
+                <div className={`p-4 border-b ${colorClass} bg-slate-950/20 font-black tracking-[0.2em] uppercase text-lg flex items-center gap-2 font-mono`}>
                     <span className="animate-pulse">⚠</span> {title}
                 </div>
 
                 <div className="p-6 text-center relative z-10">
-                    <p className="font-mono text-sm md:text-base text-white leading-relaxed whitespace-pre-line">
+                    <p className="font-sans text-sm md:text-base text-white/90 leading-relaxed whitespace-pre-line font-medium">
                         {message}
                     </p>
                 </div>
 
-                <div className="p-4 flex gap-4 justify-center bg-slate-950/80 border-t border-slate-800 relative z-10">
-                    <button 
+                <div className="p-4 flex gap-4 justify-center bg-slate-950/40 border-t border-slate-800/50 relative z-10">
+                    <button
                         onClick={onClose}
-                        className="px-6 py-2 border border-slate-600 text-slate-400 hover:text-white hover:border-white text-xs font-bold tracking-widest uppercase transition-all"
+                        className="px-6 py-2 border border-slate-700 text-slate-400 hover:text-white hover:border-white text-[10px] font-bold tracking-widest uppercase transition-all font-mono"
                     >
                         {cancelText}
                     </button>
-                    <button 
+                    <button
                         onClick={() => { onConfirm(); onClose(); }}
-                        className={`px-6 py-2 text-black text-xs font-bold tracking-widest uppercase transition-all shadow-lg ${btnClass}`}
+                        className={`px-8 py-2 text-black text-xs font-bold tracking-widest uppercase transition-all shadow-lg font-mono ${btnClass}`}
                     >
                         {confirmText}
                     </button>

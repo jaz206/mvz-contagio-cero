@@ -14,19 +14,19 @@ interface ExpansionSelectorProps {
     onToggleAllExpansions: (select: boolean) => void;
 }
 
-export const ExpansionSelector: React.FC<ExpansionSelectorProps> = ({ 
+export const ExpansionSelector: React.FC<ExpansionSelectorProps> = ({
     onConfirm, onBack, language, playerAlignment,
     ownedExpansions, onToggleExpansion, onToggleAllExpansions
 }) => {
     const [selectedHeroes, setSelectedHeroes] = useState<Hero[]>([]);
     const [searchTerm, setSearchTerm] = useState('');
     const [viewingSheet, setViewingSheet] = useState<string | null>(null);
-    
+
     const [dbHeroes, setDbHeroes] = useState<HeroTemplate[]>([]);
     const [loadingDb, setLoadingDb] = useState(true);
 
     const isZombie = playerAlignment === 'ZOMBIE';
-    
+
     const borderColor = isZombie ? 'border-lime-500' : 'border-cyan-500';
     const textColor = isZombie ? 'text-lime-400' : 'text-cyan-400';
     const bgColor = isZombie ? 'bg-lime-600' : 'bg-cyan-600';
@@ -107,8 +107,8 @@ export const ExpansionSelector: React.FC<ExpansionSelectorProps> = ({
         }
 
         if (searchTerm) {
-            allHeroes = allHeroes.filter(h => 
-                h.alias.toLowerCase().includes(searchTerm.toLowerCase()) || 
+            allHeroes = allHeroes.filter(h =>
+                h.alias.toLowerCase().includes(searchTerm.toLowerCase()) ||
                 h.name.toLowerCase().includes(searchTerm.toLowerCase())
             );
         }
@@ -137,20 +137,21 @@ export const ExpansionSelector: React.FC<ExpansionSelectorProps> = ({
 
     return (
         <div className="fixed inset-0 z-[80] bg-slate-950 flex flex-col font-mono h-screen w-screen overflow-hidden">
-            
+
             {/* --- VISOR DE FICHA (OVERLAY) --- */}
             {viewingSheet && (
                 <div className="fixed inset-0 z-[200] bg-black/95 flex items-center justify-center p-4 backdrop-blur-sm animate-fade-in" onClick={() => setViewingSheet(null)}>
                     <div className="relative flex flex-col items-center justify-center w-full h-full">
                         {/* IMAGEN AJUSTADA PARA TAMAÑO UNIFORME */}
-                        <img 
-                            src={viewingSheet} 
-                            alt="Tactical Sheet" 
-                            className="h-[85vh] w-auto max-w-[95vw] object-contain border-4 border-yellow-500 shadow-[0_0_50px_rgba(234,179,8,0.5)] rounded-xl bg-black" 
-                            onClick={(e) => e.stopPropagation()} 
+                        <img
+                            src={viewingSheet}
+                            alt="Tactical Sheet"
+                            className="h-[85vh] w-auto max-w-[95vw] object-contain border-4 border-yellow-500 shadow-[0_0_50px_rgba(234,179,8,0.5)] rounded-xl bg-black"
+                            onClick={(e) => e.stopPropagation()}
+                            referrerPolicy="no-referrer"
                         />
-                        <button 
-                            onClick={() => setViewingSheet(null)} 
+                        <button
+                            onClick={() => setViewingSheet(null)}
                             className="mt-4 px-8 py-2 bg-red-900/80 text-white font-bold tracking-widest border border-red-600 hover:bg-red-800 uppercase text-xs shadow-lg rounded"
                         >
                             CERRAR
@@ -169,18 +170,18 @@ export const ExpansionSelector: React.FC<ExpansionSelectorProps> = ({
                 </div>
                 <div className="flex items-center gap-4">
                     <div className="relative w-64">
-                        <input 
-                            type="text" 
-                            value={searchTerm} 
-                            onChange={(e) => setSearchTerm(e.target.value)} 
-                            placeholder={language === 'es' ? "BUSCAR AGENTE..." : "SEARCH AGENT..."} 
-                            className="w-full bg-slate-950 border border-slate-700 p-2 pl-8 text-xs text-white focus:border-cyan-500 outline-none rounded-sm" 
+                        <input
+                            type="text"
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            placeholder={language === 'es' ? "BUSCAR AGENTE..." : "SEARCH AGENT..."}
+                            className="w-full bg-slate-950 border border-slate-700 p-2 pl-8 text-xs text-white focus:border-cyan-500 outline-none rounded-sm"
                         />
                         <span className="absolute left-2 top-2 text-gray-500 text-xs">🔍</span>
                     </div>
-                    <button 
-                        onClick={handleConfirm} 
-                        disabled={selectedHeroes.length === 0} 
+                    <button
+                        onClick={handleConfirm}
+                        disabled={selectedHeroes.length === 0}
                         className={`px-6 py-2 font-bold text-xs tracking-widest uppercase transition-all ${selectedHeroes.length > 0 ? `${bgColor} text-white hover:brightness-110 shadow-lg` : 'bg-slate-800 text-gray-500 cursor-not-allowed'}`}
                     >
                         {language === 'es' ? 'DESPLEGAR EQUIPO' : 'DEPLOY SQUAD'}
@@ -190,7 +191,7 @@ export const ExpansionSelector: React.FC<ExpansionSelectorProps> = ({
 
             {/* MAIN CONTENT */}
             <div className="flex-1 flex overflow-hidden relative">
-                
+
                 {/* COLUMNA 1: EXPANSIONES */}
                 <div className="w-1/5 bg-slate-900 border-r border-slate-800 flex flex-col min-w-[250px]">
                     <div className="p-3 bg-slate-950 border-b border-slate-800 flex justify-between items-center">
@@ -205,8 +206,8 @@ export const ExpansionSelector: React.FC<ExpansionSelectorProps> = ({
                         {GAME_EXPANSIONS.map(exp => {
                             const isOwned = ownedExpansions.has(exp.id);
                             return (
-                                <div 
-                                    key={exp.id} 
+                                <div
+                                    key={exp.id}
                                     onClick={() => onToggleExpansion(exp.id)}
                                     className={`flex items-center gap-3 p-3 cursor-pointer transition-all border-l-2 ${isOwned ? `bg-slate-800 ${isZombie ? 'border-lime-500' : 'border-cyan-500'}` : 'bg-transparent border-transparent hover:bg-slate-800/50'}`}
                                 >
@@ -230,7 +231,7 @@ export const ExpansionSelector: React.FC<ExpansionSelectorProps> = ({
                         <h3 className={`text-xs font-bold uppercase tracking-widest ${textColor}`}>AGENTES DISPONIBLES ({availableHeroes.length})</h3>
                         <div className="text-[10px] text-gray-500">SELECCIONA PARA AÑADIR AL ESCUADRÓN</div>
                     </div>
-                    
+
                     <div className="flex-1 overflow-y-auto p-4 scrollbar-thin scrollbar-thumb-slate-700">
                         {loadingDb ? (
                             <div className="flex flex-col items-center justify-center h-full text-gray-500 animate-pulse">
@@ -248,33 +249,34 @@ export const ExpansionSelector: React.FC<ExpansionSelectorProps> = ({
                                     } : {};
 
                                     return (
-                                        <div 
-                                            key={hero.id} 
+                                        <div
+                                            key={hero.id}
                                             onClick={() => !isDisabled && toggleHero(hero)}
                                             className={`
                                                 relative group cursor-pointer border transition-all duration-200 overflow-hidden aspect-[3/4]
-                                                ${isSelected 
-                                                    ? `${borderColor} ring-2 ring-offset-2 ring-offset-slate-950 ${isZombie ? 'ring-lime-500/50' : 'ring-cyan-500/50'}` 
-                                                    : isDisabled 
-                                                        ? 'border-slate-800 opacity-30 grayscale cursor-not-allowed' 
+                                                ${isSelected
+                                                    ? `${borderColor} ring-2 ring-offset-2 ring-offset-slate-950 ${isZombie ? 'ring-lime-500/50' : 'ring-cyan-500/50'}`
+                                                    : isDisabled
+                                                        ? 'border-slate-800 opacity-30 grayscale cursor-not-allowed'
                                                         : 'border-slate-700 hover:border-white hover:scale-[1.02] hover:shadow-xl hover:z-10'
                                                 }
                                             `}
                                         >
                                             <div className="absolute inset-0 overflow-hidden">
-                                                <img 
-                                                    src={hero.imageUrl} 
-                                                    alt={hero.alias} 
-                                                    className="w-full h-full object-cover" 
+                                                <img
+                                                    src={hero.imageUrl}
+                                                    alt={hero.alias}
+                                                    className="w-full h-full object-cover"
                                                     style={imgStyle}
+                                                    referrerPolicy="no-referrer"
                                                 />
                                             </div>
-                                            
+
                                             <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent opacity-80 pointer-events-none"></div>
 
                                             {/* BOTÓN VER FICHA (SOLO SI EXISTE URL) */}
                                             {hero.characterSheetUrl && (
-                                                <button 
+                                                <button
                                                     onClick={(e) => { e.stopPropagation(); setViewingSheet(hero.characterSheetUrl!); }}
                                                     className="absolute top-2 left-2 w-6 h-6 bg-yellow-600 hover:bg-yellow-400 text-black flex items-center justify-center rounded-sm shadow-lg z-20 transition-transform hover:scale-110 border border-yellow-300"
                                                     title="Ver Ficha de Juego"
@@ -318,12 +320,12 @@ export const ExpansionSelector: React.FC<ExpansionSelectorProps> = ({
                             } : {};
 
                             return (
-                                <div 
-                                    key={i} 
+                                <div
+                                    key={i}
                                     className={`
                                         relative h-20 border flex items-center justify-center transition-all
-                                        ${hero 
-                                            ? `${borderColor} bg-slate-800 cursor-pointer group` 
+                                        ${hero
+                                            ? `${borderColor} bg-slate-800 cursor-pointer group`
                                             : 'border-slate-800 border-dashed bg-slate-950/50'
                                         }
                                     `}
@@ -333,11 +335,12 @@ export const ExpansionSelector: React.FC<ExpansionSelectorProps> = ({
                                         <>
                                             <div className="absolute inset-0 flex">
                                                 <div className="w-20 h-full shrink-0 relative overflow-hidden">
-                                                    <img 
-                                                        src={hero.imageUrl} 
-                                                        className="w-full h-full object-cover" 
-                                                        alt="" 
+                                                    <img
+                                                        src={hero.imageUrl}
+                                                        className="w-full h-full object-cover"
+                                                        alt=""
                                                         style={imgStyle}
+                                                        referrerPolicy="no-referrer"
                                                     />
                                                     <div className="absolute inset-0 bg-gradient-to-r from-transparent to-slate-800 pointer-events-none"></div>
                                                 </div>
@@ -359,8 +362,8 @@ export const ExpansionSelector: React.FC<ExpansionSelectorProps> = ({
                     </div>
 
                     <div className="p-4 border-t border-slate-800 bg-slate-950">
-                        <button 
-                            onClick={handleConfirm} 
+                        <button
+                            onClick={handleConfirm}
                             disabled={selectedHeroes.length === 0}
                             className={`w-full py-3 font-bold text-xs tracking-widest uppercase transition-all ${selectedHeroes.length > 0 ? `${bgColor} text-white hover:brightness-110` : 'bg-slate-800 text-gray-600 cursor-not-allowed'}`}
                         >

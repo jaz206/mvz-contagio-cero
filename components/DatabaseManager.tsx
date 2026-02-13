@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { HeroTemplate, Mission, HeroClass } from '../types';
-import { 
-    getHeroTemplates, 
-    getCustomMissions, 
-    deleteHeroInDB, 
-    deleteMissionInDB 
+import {
+    getHeroTemplates,
+    getCustomMissions,
+    deleteHeroInDB,
+    deleteMissionInDB
 } from '../services/dbService';
 import { CharacterEditor } from './CharacterEditor';
 import { MissionEditor } from './MissionEditor';
@@ -27,7 +27,7 @@ const getFactionForState = (state: string) => {
 };
 
 const BASE_GAME_MISSIONS: Mission[] = [
-    { id: 'm_intro_0', title: "MH0: CADENAS ROTAS", description: [], objectives: [], location: { state: 'Ohio', coordinates: [0,0] }, threatLevel: 'N/A' }
+    { id: 'm_intro_0', title: "MH0: CADENAS ROTAS", description: [], objectives: [], location: { state: 'Ohio', coordinates: [0, 0] }, threatLevel: 'N/A' }
 ];
 
 interface DatabaseManagerProps {
@@ -42,11 +42,11 @@ export const DatabaseManager: React.FC<DatabaseManagerProps> = ({ isOpen, onClos
     const [missions, setMissions] = useState<Mission[]>([]);
     const [loading, setLoading] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
-    
+
     // --- FILTROS DE HÉROES ---
     const [heroFilterAlignment, setHeroFilterAlignment] = useState<'ALL' | 'ALIVE' | 'ZOMBIE'>('ALL');
-    const [heroFilterClass, setHeroFilterClass] = useState<'ALL' | HeroClass>('ALL'); 
-    const [heroFilterLinked, setHeroFilterLinked] = useState<'ALL' | 'LINKED' | 'UNLINKED'>('ALL'); 
+    const [heroFilterClass, setHeroFilterClass] = useState<'ALL' | HeroClass>('ALL');
+    const [heroFilterLinked, setHeroFilterLinked] = useState<'ALL' | 'LINKED' | 'UNLINKED'>('ALL');
 
     // --- FILTROS DE MISIONES ---
     const [missionFilterAlignment, setMissionFilterAlignment] = useState<'ALL' | 'ALIVE' | 'ZOMBIE' | 'BOTH'>('ALL');
@@ -132,23 +132,23 @@ export const DatabaseManager: React.FC<DatabaseManagerProps> = ({ isOpen, onClos
     // --- SEGURIDAD MEJORADA ---
     const verifyAdmin = (): boolean => {
         const currentUser = auth?.currentUser;
-        
+
         // REEMPLAZA ESTO CON TU UID REAL DE FIREBASE (Lo puedes ver en la consola de Firebase Auth)
         // Esto es mucho más seguro que una contraseña en el código cliente.
         const ALLOWED_ADMIN_UIDS = [
-            "TU_UID_DE_FIREBASE_AQUI", 
-            "OTRO_UID_SI_ES_NECESARIO" 
+            "TU_UID_DE_FIREBASE_AQUI",
+            "OTRO_UID_SI_ES_NECESARIO"
         ];
 
         // Si no hay usuario o no está en la lista blanca
         if (!currentUser || !ALLOWED_ADMIN_UIDS.includes(currentUser.uid)) {
             // Fallback para desarrollo local si no has configurado el UID aún
-            const devPassword = import.meta.env.VITE_ADMIN_PASSWORD;
+            const devPassword = (import.meta as any).env.VITE_ADMIN_PASSWORD;
             if (devPassword) {
-                 const input = prompt("⚠ MODO DESARROLLO ⚠\nIntroduce contraseña de admin:");
-                 return input === devPassword;
+                const input = prompt("⚠ MODO DESARROLLO ⚠\nIntroduce contraseña de admin:");
+                return input === devPassword;
             }
-            
+
             alert("⛔ ACCESO DENEGADO: No tienes permisos de administrador (UID no autorizado).");
             return false;
         }
@@ -156,22 +156,22 @@ export const DatabaseManager: React.FC<DatabaseManagerProps> = ({ isOpen, onClos
         return true;
     };
 
-    const handleDeleteMission = async (id: string) => { 
+    const handleDeleteMission = async (id: string) => {
         if (verifyAdmin()) {
-            if (window.confirm("¿ESTÁS SEGURO? Esta acción es irreversible.")) { 
+            if (window.confirm("¿ESTÁS SEGURO? Esta acción es irreversible.")) {
                 setLoading(true);
-                await deleteMissionInDB(id); 
-                await loadData(); 
+                await deleteMissionInDB(id);
+                await loadData();
             }
         }
     };
 
-    const handleDeleteHero = async (id: string) => { 
+    const handleDeleteHero = async (id: string) => {
         if (verifyAdmin()) {
-            if (window.confirm("¿ESTÁS SEGURO? Esta acción es irreversible.")) { 
+            if (window.confirm("¿ESTÁS SEGURO? Esta acción es irreversible.")) {
                 setLoading(true);
-                await deleteHeroInDB(id); 
-                await loadData(); 
+                await deleteHeroInDB(id);
+                await loadData();
             }
         }
     };
@@ -209,17 +209,17 @@ export const DatabaseManager: React.FC<DatabaseManagerProps> = ({ isOpen, onClos
 
     return (
         <div className="fixed inset-0 z-[100] bg-slate-950 flex flex-col font-mono">
-            
+
             {/* EDITORES */}
             {editingHero && <CharacterEditor isOpen={true} onClose={() => setEditingHero(null)} language={language} initialData={editingHero} onSave={loadData} />}
             {editingMission && (
-                <MissionEditor 
-                    isOpen={true} 
-                    onClose={() => setEditingMission(null)} 
-                    language={language} 
-                    initialData={editingMission} 
+                <MissionEditor
+                    isOpen={true}
+                    onClose={() => setEditingMission(null)}
+                    language={language}
+                    initialData={editingMission}
                     existingMissions={[...BASE_GAME_MISSIONS, ...missions]}
-                    onSave={() => { setEditingMission(null); loadData(); }} 
+                    onSave={() => { setEditingMission(null); loadData(); }}
                 />
             )}
 
@@ -233,8 +233,8 @@ export const DatabaseManager: React.FC<DatabaseManagerProps> = ({ isOpen, onClos
                     </div>
                 </div>
                 <div className="flex gap-4">
-                    <button 
-                        onClick={handleExportData} 
+                    <button
+                        onClick={handleExportData}
                         className="bg-emerald-900/50 border border-emerald-500 text-emerald-300 px-4 py-2 text-xs font-bold hover:bg-emerald-800 flex items-center gap-2"
                     >
                         <span>💾</span> EXPORTAR JSON
@@ -246,7 +246,7 @@ export const DatabaseManager: React.FC<DatabaseManagerProps> = ({ isOpen, onClos
             {/* TOOLBAR & FILTERS */}
             <div className="bg-slate-900/50 p-4 border-b border-cyan-900 flex flex-wrap gap-4 items-center">
                 <input type="text" placeholder="BUSCAR..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="bg-slate-950 border border-cyan-700 p-2 text-cyan-200 text-xs w-64 focus:outline-none focus:border-cyan-400" />
-                
+
                 {activeTab === 'HEROES' && (
                     <>
                         <select value={heroFilterAlignment} onChange={e => setHeroFilterAlignment(e.target.value as any)} className="bg-slate-950 border border-cyan-800 text-xs text-cyan-300 p-2">
@@ -293,17 +293,17 @@ export const DatabaseManager: React.FC<DatabaseManagerProps> = ({ isOpen, onClos
             {/* CONTENT */}
             <div className="flex-1 overflow-y-auto p-4 bg-slate-950 relative">
                 {loading && <div className="absolute inset-0 flex items-center justify-center bg-slate-950/80 z-20 text-cyan-500 animate-pulse">CARGANDO DATOS...</div>}
-                
+
                 {activeTab === 'HEROES' ? (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                         {filteredHeroes.map(h => (
                             <div key={h.id} className={`p-3 border flex gap-3 group relative transition-all ${h.relatedHeroId ? 'border-purple-500/50 bg-purple-900/10' : 'border-cyan-900 bg-cyan-950/10'}`}>
                                 <div className="w-12 h-12 bg-black border border-gray-700 shrink-0 relative">
-                                    <img src={h.imageUrl} alt="" className="w-full h-full object-cover" />
+                                    <img src={h.imageUrl} alt="" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
                                     {/* Indicador de Vinculación */}
                                     {h.relatedHeroId && (
-                                        <div 
-                                            className={`absolute -top-1 -right-1 w-4 h-4 rounded-full flex items-center justify-center text-[8px] text-white font-bold border border-white ${h.relatedHeroId === 'NO_VARIANT' ? 'bg-red-600' : 'bg-purple-600'}`} 
+                                        <div
+                                            className={`absolute -top-1 -right-1 w-4 h-4 rounded-full flex items-center justify-center text-[8px] text-white font-bold border border-white ${h.relatedHeroId === 'NO_VARIANT' ? 'bg-red-600' : 'bg-purple-600'}`}
                                             title={h.relatedHeroId === 'NO_VARIANT' ? "Sin Variante" : "Vinculado"}
                                         >
                                             {h.relatedHeroId === 'NO_VARIANT' ? 'Ø' : '∞'}
@@ -334,7 +334,7 @@ export const DatabaseManager: React.FC<DatabaseManagerProps> = ({ isOpen, onClos
                         {Object.entries(groupedMissions).map(([faction, factionMissions]) => {
                             if (factionMissions.length === 0) return null;
                             const isExpanded = expandedSections.has(faction);
-                            
+
                             let headerColor = 'bg-slate-800 border-slate-600 text-slate-300';
                             if (faction === 'KINGPIN') headerColor = 'bg-purple-900/40 border-purple-600 text-purple-300';
                             if (faction === 'MAGNETO') headerColor = 'bg-red-900/40 border-red-600 text-red-300';
@@ -344,7 +344,7 @@ export const DatabaseManager: React.FC<DatabaseManagerProps> = ({ isOpen, onClos
 
                             return (
                                 <div key={faction} className="border border-gray-800 rounded overflow-hidden">
-                                    <button 
+                                    <button
                                         onClick={() => toggleSection(faction)}
                                         className={`w-full p-3 flex justify-between items-center border-b ${headerColor} transition-colors hover:brightness-110`}
                                     >
@@ -354,7 +354,7 @@ export const DatabaseManager: React.FC<DatabaseManagerProps> = ({ isOpen, onClos
                                         </div>
                                         <span className="text-xs">{isExpanded ? '▲' : '▼'}</span>
                                     </button>
-                                    
+
                                     {isExpanded && (
                                         <div className="p-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 bg-slate-900/50">
                                             {factionMissions.map(m => {
@@ -377,7 +377,7 @@ export const DatabaseManager: React.FC<DatabaseManagerProps> = ({ isOpen, onClos
                                                             <div className="flex-1 min-w-0">
                                                                 {isIntro && <div className="text-[9px] font-black text-emerald-400 uppercase tracking-widest mb-1">⭐ INTRODUCCIÓN</div>}
                                                                 {isBoss && <div className="text-[9px] font-black text-purple-400 uppercase tracking-widest mb-1">💀 JEFE DE ZONA</div>}
-                                                                
+
                                                                 <h4 className="font-bold text-xs text-white truncate" title={m.title}>{m.title}</h4>
                                                                 <div className="flex items-center gap-2 mt-1">
                                                                     <span className={`text-[9px] font-bold ${diffColor.split(' ')[1]}`}>{m.threatLevel}</span>

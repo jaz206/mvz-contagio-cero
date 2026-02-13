@@ -21,20 +21,20 @@ const normalizeAlias = (alias: string) => {
         .trim();
 };
 
-export const RecruitModal: React.FC<RecruitModalProps> = ({ 
-    isOpen, onClose, onRecruit, templates, existingAliases, language, playerAlignment 
+export const RecruitModal: React.FC<RecruitModalProps> = ({
+    isOpen, onClose, onRecruit, templates, existingAliases, language, playerAlignment
 }) => {
     const [searchTerm, setSearchTerm] = useState('');
     const [mode, setMode] = useState<'RECRUIT' | 'CAPTURE'>('RECRUIT');
     const t = translations[language].recruit;
 
     const isZombiePlayer = playerAlignment === 'ZOMBIE';
-    
+
     const filteredTemplates = useMemo(() => {
         return templates.filter(temp => {
-            const matchesSearch = temp.alias.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                                  temp.defaultName.toLowerCase().includes(searchTerm.toLowerCase());
-            
+            const matchesSearch = temp.alias.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                temp.defaultName.toLowerCase().includes(searchTerm.toLowerCase());
+
             const cleanCandidateAlias = normalizeAlias(temp.alias);
             const isAlreadyOwned = existingAliases.has(cleanCandidateAlias);
 
@@ -81,7 +81,7 @@ export const RecruitModal: React.FC<RecruitModalProps> = ({
     return (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/90 backdrop-blur-sm p-4 animate-fade-in">
             <div className="w-full max-w-4xl bg-slate-900 border-2 border-cyan-500 shadow-[0_0_50px_rgba(6,182,212,0.3)] flex flex-col max-h-[85vh] overflow-hidden relative">
-                
+
                 {/* Header */}
                 <div className="bg-cyan-900/40 p-4 border-b border-cyan-600 flex justify-between items-center shrink-0">
                     <div>
@@ -97,21 +97,21 @@ export const RecruitModal: React.FC<RecruitModalProps> = ({
 
                 {/* TABS */}
                 <div className="flex border-b border-cyan-900 bg-slate-950">
-                    <button 
+                    <button
                         onClick={() => setMode('RECRUIT')}
                         className={`flex-1 py-3 text-xs font-bold tracking-widest uppercase transition-all border-r border-cyan-900
-                            ${mode === 'RECRUIT' 
-                                ? (isZombiePlayer ? 'bg-lime-900/40 text-lime-400' : 'bg-cyan-900/40 text-cyan-400') 
+                            ${mode === 'RECRUIT'
+                                ? (isZombiePlayer ? 'bg-lime-900/40 text-lime-400' : 'bg-cyan-900/40 text-cyan-400')
                                 : 'text-gray-500 hover:text-white hover:bg-slate-800'}
                         `}
                     >
                         {isZombiePlayer ? 'EXTENDER LA COLMENA (ALIADOS)' : 'RECLUTAR AGENTES (ALIADOS)'}
                     </button>
-                    <button 
+                    <button
                         onClick={() => setMode('CAPTURE')}
                         className={`flex-1 py-3 text-xs font-bold tracking-widest uppercase transition-all
-                            ${mode === 'CAPTURE' 
-                                ? 'bg-red-900/40 text-red-400' 
+                            ${mode === 'CAPTURE'
+                                ? 'bg-red-900/40 text-red-400'
                                 : 'text-gray-500 hover:text-white hover:bg-slate-800'}
                         `}
                     >
@@ -122,8 +122,8 @@ export const RecruitModal: React.FC<RecruitModalProps> = ({
                 {/* Search Bar */}
                 <div className="p-4 bg-slate-950 border-b border-cyan-900">
                     <div className="relative">
-                        <input 
-                            type="text" 
+                        <input
+                            type="text"
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
                             placeholder={language === 'es' ? "BUSCAR POR NOMBRE O ALIAS..." : "SEARCH BY NAME OR ALIAS..."}
@@ -143,21 +143,22 @@ export const RecruitModal: React.FC<RecruitModalProps> = ({
                             } : {};
 
                             return (
-                                <div 
-                                    key={template.id} 
+                                <div
+                                    key={template.id}
                                     onClick={() => handleActionClick(template)}
                                     className={`group relative border bg-slate-900/50 transition-all cursor-pointer flex gap-3 p-2 overflow-hidden
-                                        ${mode === 'RECRUIT' 
-                                            ? 'border-cyan-900 hover:bg-cyan-900/20 hover:border-cyan-500' 
+                                        ${mode === 'RECRUIT'
+                                            ? 'border-cyan-900 hover:bg-cyan-900/20 hover:border-cyan-500'
                                             : 'border-red-900 hover:bg-red-900/20 hover:border-red-500'}
                                     `}
                                 >
                                     <div className="w-16 h-16 shrink-0 border border-slate-700 group-hover:border-white overflow-hidden bg-black relative">
-                                        <img 
-                                            src={template.imageUrl} 
-                                            alt={template.alias} 
-                                            className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity absolute inset-0" 
+                                        <img
+                                            src={template.imageUrl}
+                                            alt={template.alias}
+                                            className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity absolute inset-0"
                                             style={imgStyle}
+                                            referrerPolicy="no-referrer"
                                         />
                                     </div>
                                     <div className="flex flex-col justify-center min-w-0">
@@ -177,7 +178,7 @@ export const RecruitModal: React.FC<RecruitModalProps> = ({
                                 </div>
                             );
                         })}
-                        
+
                         {filteredTemplates.length === 0 && (
                             <div className="col-span-full text-center py-10 text-gray-600 font-mono flex flex-col items-center gap-2">
                                 <span className="text-2xl">∅</span>

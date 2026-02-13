@@ -23,14 +23,14 @@ export const CharacterEditor: React.FC<CharacterEditorProps> = ({ isOpen, onClos
     const [characterSheetUrl, setCharacterSheetUrl] = useState(''); // <--- NUEVO ESTADO
     const [alignment, setAlignment] = useState<'ALIVE' | 'ZOMBIE'>('ALIVE');
     const [relatedHeroId, setRelatedHeroId] = useState<string | undefined>(undefined);
-    
+
     // --- ESTADOS PARA ENCUADRE DE IMAGEN ---
     const [imgScale, setImgScale] = useState(1);
     const [imgX, setImgX] = useState(0);
     const [imgY, setImgY] = useState(0);
 
     const [saving, setSaving] = useState(false);
-    
+
     // Estados para el selector de contraparte
     const [showLinker, setShowLinker] = useState(false);
     const [allHeroes, setAllHeroes] = useState<HeroTemplate[]>([]);
@@ -47,7 +47,7 @@ export const CharacterEditor: React.FC<CharacterEditorProps> = ({ isOpen, onClos
             setCharacterSheetUrl(initialData.characterSheetUrl || ''); // <--- CARGAR DATO
             setAlignment(initialData.defaultAlignment || 'ALIVE');
             setRelatedHeroId(initialData.relatedHeroId);
-            
+
             // Cargar params de imagen si existen
             if (initialData.imageParams) {
                 setImgScale(initialData.imageParams.scale);
@@ -107,7 +107,7 @@ export const CharacterEditor: React.FC<CharacterEditorProps> = ({ isOpen, onClos
                 await createHeroTemplateInDB(templateData);
                 alert("PERSONAJE CREADO");
             }
-            
+
             if (onSave) onSave();
             onClose();
         } catch (error) {
@@ -135,9 +135,9 @@ export const CharacterEditor: React.FC<CharacterEditorProps> = ({ isOpen, onClos
     };
 
     return (
-        <div className="fixed inset-0 z-[120] flex items-center justify-center bg-slate-950/90 backdrop-blur-sm p-4">
-            <div className="w-full max-w-3xl bg-slate-900 border-2 border-cyan-500 shadow-2xl flex flex-col max-h-[95vh] relative">
-                
+        <div className="fixed inset-0 z-[120] flex items-center justify-center bg-slate-950/60 backdrop-blur-md p-4 animate-fade-in">
+            <div className="w-full max-w-3xl glass-panel shadow-2xl flex flex-col max-h-[95vh] relative rounded-sm shadow-cyan-900/10">
+
                 {/* --- MODAL INTERNO DE VINCULACIÓN --- */}
                 {showLinker && (
                     <div className="absolute inset-0 z-50 bg-slate-950/95 flex flex-col p-6 animate-fade-in">
@@ -145,22 +145,22 @@ export const CharacterEditor: React.FC<CharacterEditorProps> = ({ isOpen, onClos
                             <h4 className="text-cyan-400 font-bold uppercase tracking-widest">SELECCIONAR CONTRAPARTE ({alignment === 'ALIVE' ? 'ZOMBIE' : 'ALIVE'})</h4>
                             <button onClick={() => setShowLinker(false)} className="text-red-500 font-bold">CERRAR</button>
                         </div>
-                        <input 
-                            placeholder="BUSCAR POR NOMBRE..." 
-                            value={linkSearch} 
-                            onChange={e => setLinkSearch(e.target.value)} 
+                        <input
+                            placeholder="BUSCAR POR NOMBRE..."
+                            value={linkSearch}
+                            onChange={e => setLinkSearch(e.target.value)}
                             className="w-full bg-black border border-cyan-800 p-2 text-cyan-200 mb-4 uppercase"
                             autoFocus
                         />
                         <div className="flex-1 overflow-y-auto space-y-2 pr-2 scrollbar-thin scrollbar-thumb-cyan-900">
                             {linkCandidates.map(c => (
-                                <div 
-                                    key={c.id} 
+                                <div
+                                    key={c.id}
                                     onClick={() => { setRelatedHeroId(c.id); setShowLinker(false); }}
                                     className="p-3 border border-slate-700 hover:border-cyan-500 hover:bg-cyan-900/20 cursor-pointer flex justify-between items-center group"
                                 >
                                     <div className="flex items-center gap-3">
-                                        <img src={c.imageUrl} className="w-8 h-8 object-cover border border-slate-600" />
+                                        <img src={c.imageUrl} className="w-8 h-8 object-cover border border-slate-600" referrerPolicy="no-referrer" />
                                         <div>
                                             <div className="text-xs font-bold text-white group-hover:text-cyan-300">{c.alias}</div>
                                             <div className="text-[8px] text-gray-500">{c.defaultName}</div>
@@ -183,7 +183,7 @@ export const CharacterEditor: React.FC<CharacterEditorProps> = ({ isOpen, onClos
                 </div>
 
                 <form onSubmit={handleSubmit} className="p-6 overflow-y-auto font-mono flex flex-col gap-4 scrollbar-thin scrollbar-thumb-cyan-900">
-                    
+
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         {/* COLUMNA IZQUIERDA: DATOS */}
                         <div className="space-y-4">
@@ -239,15 +239,15 @@ export const CharacterEditor: React.FC<CharacterEditorProps> = ({ isOpen, onClos
                                 <div className="grid grid-cols-3 gap-4">
                                     <div>
                                         <label className="text-[9px] text-red-400 block">STRENGTH</label>
-                                        <input type="number" min="1" max="10" value={stats.strength} onChange={e => setStats({...stats, strength: parseInt(e.target.value)})} className="w-full bg-slate-950 border border-red-900 p-1 text-center text-white" />
+                                        <input type="number" min="1" max="10" value={stats.strength} onChange={e => setStats({ ...stats, strength: parseInt(e.target.value) })} className="w-full bg-slate-950 border border-red-900 p-1 text-center text-white" />
                                     </div>
                                     <div>
                                         <label className="text-[9px] text-green-400 block">AGILITY</label>
-                                        <input type="number" min="1" max="10" value={stats.agility} onChange={e => setStats({...stats, agility: parseInt(e.target.value)})} className="w-full bg-slate-950 border border-green-900 p-1 text-center text-white" />
+                                        <input type="number" min="1" max="10" value={stats.agility} onChange={e => setStats({ ...stats, agility: parseInt(e.target.value) })} className="w-full bg-slate-950 border border-green-900 p-1 text-center text-white" />
                                     </div>
                                     <div>
                                         <label className="text-[9px] text-blue-400 block">INTELLECT</label>
-                                        <input type="number" min="1" max="10" value={stats.intellect} onChange={e => setStats({...stats, intellect: parseInt(e.target.value)})} className="w-full bg-slate-950 border border-blue-900 p-1 text-center text-white" />
+                                        <input type="number" min="1" max="10" value={stats.intellect} onChange={e => setStats({ ...stats, intellect: parseInt(e.target.value) })} className="w-full bg-slate-950 border border-blue-900 p-1 text-center text-white" />
                                     </div>
                                 </div>
                             </div>
@@ -263,11 +263,11 @@ export const CharacterEditor: React.FC<CharacterEditorProps> = ({ isOpen, onClos
                             {/* --- NUEVO CAMPO: FICHA DE JUEGO --- */}
                             <div>
                                 <label className="text-[10px] text-yellow-600 font-bold block mb-1 uppercase">GAME CARD URL (FICHA JUEGO)</label>
-                                <input 
-                                    value={characterSheetUrl} 
-                                    onChange={e => setCharacterSheetUrl(e.target.value)} 
-                                    placeholder="https://..." 
-                                    className="w-full bg-slate-950 border border-yellow-800 p-2 text-yellow-200 text-xs focus:border-yellow-500" 
+                                <input
+                                    value={characterSheetUrl}
+                                    onChange={e => setCharacterSheetUrl(e.target.value)}
+                                    placeholder="https://..."
+                                    className="w-full bg-slate-950 border border-yellow-800 p-2 text-yellow-200 text-xs focus:border-yellow-500"
                                 />
                                 <p className="text-[8px] text-gray-500 mt-1">URL de la imagen de la carta de Zombicide/Marvel Zombies.</p>
                             </div>
@@ -275,17 +275,18 @@ export const CharacterEditor: React.FC<CharacterEditorProps> = ({ isOpen, onClos
                             {/* --- EDITOR DE ENCUADRE --- */}
                             <div className="bg-black border border-cyan-700 p-4">
                                 <label className="text-[10px] text-cyan-400 font-bold block mb-2 uppercase text-center">AJUSTE DE ENCUADRE (PREVIEW)</label>
-                                
+
                                 {/* Preview Box */}
                                 <div className="w-32 h-32 mx-auto border-2 border-white overflow-hidden relative bg-slate-800 mb-4 shadow-lg">
                                     {imageUrl ? (
-                                        <img 
-                                            src={imageUrl} 
-                                            alt="Preview" 
+                                        <img
+                                            src={imageUrl}
+                                            alt="Preview"
                                             className="absolute w-full h-full object-cover transition-transform duration-100"
                                             style={{
                                                 transform: `scale(${imgScale}) translate(${imgX}%, ${imgY}%)`
                                             }}
+                                            referrerPolicy="no-referrer"
                                         />
                                     ) : (
                                         <div className="w-full h-full flex items-center justify-center text-gray-600 text-xs">NO IMAGE</div>
@@ -301,8 +302,8 @@ export const CharacterEditor: React.FC<CharacterEditorProps> = ({ isOpen, onClos
                                             <span>ZOOM</span>
                                             <span>{imgScale.toFixed(1)}x</span>
                                         </div>
-                                        <input 
-                                            type="range" min="1" max="3" step="0.1" 
+                                        <input
+                                            type="range" min="1" max="3" step="0.1"
                                             value={imgScale} onChange={e => setImgScale(parseFloat(e.target.value))}
                                             className="w-full h-1 bg-cyan-900 rounded-lg appearance-none cursor-pointer accent-cyan-500"
                                         />
@@ -312,8 +313,8 @@ export const CharacterEditor: React.FC<CharacterEditorProps> = ({ isOpen, onClos
                                             <span>POSICIÓN X (Horizontal)</span>
                                             <span>{imgX}%</span>
                                         </div>
-                                        <input 
-                                            type="range" min="-50" max="50" step="1" 
+                                        <input
+                                            type="range" min="-50" max="50" step="1"
                                             value={imgX} onChange={e => setImgX(parseInt(e.target.value))}
                                             className="w-full h-1 bg-cyan-900 rounded-lg appearance-none cursor-pointer accent-cyan-500"
                                         />
@@ -323,14 +324,14 @@ export const CharacterEditor: React.FC<CharacterEditorProps> = ({ isOpen, onClos
                                             <span>POSICIÓN Y (Vertical)</span>
                                             <span>{imgY}%</span>
                                         </div>
-                                        <input 
-                                            type="range" min="-50" max="50" step="1" 
+                                        <input
+                                            type="range" min="-50" max="50" step="1"
                                             value={imgY} onChange={e => setImgY(parseInt(e.target.value))}
                                             className="w-full h-1 bg-cyan-900 rounded-lg appearance-none cursor-pointer accent-cyan-500"
                                         />
                                     </div>
-                                    <button 
-                                        type="button" 
+                                    <button
+                                        type="button"
                                         onClick={() => { setImgScale(1); setImgX(0); setImgY(0); }}
                                         className="w-full text-[9px] text-red-400 border border-red-900 py-1 hover:bg-red-900/20"
                                     >
