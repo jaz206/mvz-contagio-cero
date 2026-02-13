@@ -1,38 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { translations, Language } from '../translations';
-
-interface IntroSequenceProps {
-    language: Language;
-    onComplete: () => void;
-    playerAlignment: 'ALIVE' | 'ZOMBIE';
-}
-
-// --- HOOK PARA EFECTO DE TECLEADO ---
-const useTypewriter = (text: string, speed: number = 25, active: boolean = true) => {
-    const [displayedText, setDisplayedText] = useState("");
-
-    useEffect(() => {
-        if (!active) {
-            setDisplayedText("");
-            return;
-        }
-
-        let i = 0;
-        setDisplayedText("");
-        const timer = setInterval(() => {
-            if (i < text.length) {
-                setDisplayedText(prev => prev + text.charAt(i));
-                i++;
-            } else {
-                clearInterval(timer);
-            }
-        }, speed);
-
-        return () => clearInterval(timer);
-    }, [text, speed, active]);
-
-    return displayedText;
-};
+import { useTypewriter } from '../hooks/useTypewriter';
 
 // --- COMPONENTE INTERNO: PANTALLA DE CARGA TEMÁTICA ---
 const DataLoaderOverlay = ({ isZombie }: { isZombie: boolean }) => {

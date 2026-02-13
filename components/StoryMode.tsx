@@ -1,39 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { translations, Language } from '../translations';
-
-interface StoryModeProps {
-    language: Language;
-    onComplete: (choice: 'ALIVE' | 'ZOMBIE') => void;
-    onSkip: () => void;
-    startAtChoice?: boolean;
-}
-
-// --- HOOK PARA EFECTO DE TECLEADO ---
-const useTypewriter = (text: string, speed: number = 20, active: boolean = true) => {
-    const [displayedText, setDisplayedText] = useState("");
-
-    useEffect(() => {
-        if (!active) {
-            setDisplayedText("");
-            return;
-        }
-
-        let i = 0;
-        setDisplayedText("");
-        const timer = setInterval(() => {
-            if (i < text.length) {
-                setDisplayedText(prev => prev + text.charAt(i));
-                i++;
-            } else {
-                clearInterval(timer);
-            }
-        }, speed);
-
-        return () => clearInterval(timer);
-    }, [text, speed, active]);
-
-    return displayedText;
-};
+import { useTypewriter } from '../hooks/useTypewriter';
 
 export const StoryMode: React.FC<StoryModeProps> = ({ language, onComplete, startAtChoice = false }) => {
     const t = translations[language].story;
