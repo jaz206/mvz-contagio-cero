@@ -266,8 +266,8 @@ export const StoryMode: React.FC<StoryModeProps> = ({ language, onComplete, star
             )}
 
             {!isChoiceScreen && (
-                <div className={`relative w-[95%] h-[85%] max-w-6xl bg-[#d1d5db] shadow-[0_20px_50px_rgba(0,0,0,0.6)] transition-all duration-1000 ease-out transform-style-3d rounded-r-md border-l-8 border-slate-400 
-                    ${isFolderOpen && !isClosing ? 'rotate-x-0 translate-y-0 opacity-100' : 'rotate-x-20 translate-y-[100px] opacity-0 scale-95'}
+                <div className={`relative w-[95%] h-[85%] max-w-6xl bg-[#d1d5db] shadow-[0_30px_60px_rgba(0,0,0,0.8)] transition-all duration-1000 ease-in-out transform-style-3d rounded-r-md border-l-[12px] border-slate-500 origin-left
+                    ${isFolderOpen && !isClosing ? 'rotate-y-0 translate-x-0 opacity-100 scale-100' : 'rotate-y-[-100deg] -translate-x-full opacity-0 scale-90'}
                 `}>
                     <div className="absolute -top-6 left-0 w-48 h-8 bg-[#9ca3af] rounded-t-lg border-t border-x border-white/20 flex items-center px-4 shadow-inner">
                         <span className="text-[10px] font-bold text-slate-800 tracking-widest">PROJECT: LAZARUS</span>
