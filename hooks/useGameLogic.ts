@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { User, onAuthStateChanged } from 'firebase/auth';
 import { auth } from '../firebaseConfig';
 import { translations, Language } from '../translations';
@@ -31,12 +32,13 @@ const getFactionForState = (state: string) => {
 
 export const useGameLogic = () => {
     // --- STATE ---
+    const navigate = useNavigate();
     const [user, setUser] = useState<User | null>(null);
     const [loading, setLoading] = useState(true);
     const [loadingAuth, setLoadingAuth] = useState(true);
     const [lang, setLang] = useState<Language>('es');
 
-    const [viewMode, setViewMode] = useState<'login' | 'story' | 'setup' | 'intro' | 'mission0' | 'tutorial' | 'map' | 'bunker'>('login');
+
 
     const [playerAlignment, setPlayerAlignment] = useState<'ALIVE' | 'ZOMBIE' | null>(null);
     const [heroes, setHeroes] = useState<Hero[]>([]);
@@ -94,8 +96,8 @@ export const useGameLogic = () => {
             setLoadingAuth(false);
             if (currentUser) {
                 const hasSeenIntro = localStorage.getItem(`shield_intro_seen_${currentUser.uid}`);
-                if (!hasSeenIntro) { setShowStory(true); setStartStoryAtChoice(false); setViewMode('story'); }
-                else { setViewMode('map'); }
+                if (!hasSeenIntro) { setShowStory(true); setStartStoryAtChoice(false); navigate('/story'); }
+                else { navigate('/map'); }
 
                 // Load User Data
                 // Note: The original App.tsx didn't seem to load user data inside onAuthStateChanged directly, 
@@ -126,11 +128,11 @@ export const useGameLogic = () => {
                     }
                 } catch (e) { console.error(e); }
 
-            } else if (!isGuest) { setViewMode('login'); }
+            } else if (!isGuest) { navigate('/'); }
             setLoading(false);
         });
         return () => unsubscribe();
-    }, [isGuest]);
+    }, [isGuest, navigate]);
 
     useEffect(() => {
         const loadMissions = async () => {
@@ -162,8 +164,9 @@ export const useGameLogic = () => {
         if (isEditorMode) return;
         const tutorialKey = user ? `shield_tutorial_seen_${user.uid}` : 'shield_tutorial_seen_guest';
         const hasSeenTutorial = localStorage.getItem(tutorialKey);
-        if (!hasSeenTutorial && viewMode === 'map') { setTimeout(() => setShowTutorial(true), 500); }
-    }, [playerAlignment, showStory, user, viewMode, isEditorMode]);
+        // Note: Tutorial check might need a different condition now with routes
+        // For now, if we are on /map and haven't seen it, we show the overal
+    }, [playerAlignment, showStory, user, isEditorMode]);
 
     // --- ACTIONS ---
 
@@ -187,7 +190,7 @@ export const useGameLogic = () => {
         setPlayerAlignment('ALIVE');
         setShowStory(false);
         setShowTutorial(false);
-        setViewMode('map');
+        navigate('/map');
         const core = GAME_EXPANSIONS.find(e => e.id === 'core_box');
         setHeroes(core ? core.heroes : []);
         setCompletedMissionIds(new Set());
@@ -201,14 +204,14 @@ export const useGameLogic = () => {
         setPlayerAlignment('ALIVE');
         setShowStory(true);
         setStartStoryAtChoice(false);
-        setViewMode('story');
+        navigate('/story');
     };
 
     const handleExpansionConfirm = (selectedHeroes: Hero[]) => {
         if (!playerAlignment) return;
         setHeroes(selectedHeroes);
         if (user) localStorage.setItem(`shield_intro_seen_${user.uid}`, 'true');
-        setViewMode('intro');
+        navigate('/intro');
         isDataLoadedRef.current = true; // Mark as loaded so auto-save works
     };
 
@@ -218,7 +221,7 @@ export const useGameLogic = () => {
         setIsEditorMode(false);
         isDataLoadedRef.current = false;
         setPlayerAlignment(null);
-        setViewMode('login');
+        navigate('/');
     };
 
     const toggleDimension = () => {
@@ -228,7 +231,7 @@ export const useGameLogic = () => {
         // Original code just reset heroes to Core Box default for that alignment
         const core = GAME_EXPANSIONS.find(e => e.id === 'core_box');
         if (core) setHeroes(newAlignment === 'ZOMBIE' ? core.zombieHeroes : core.heroes);
-        setViewMode('map');
+        navigate('/map');
 
         // Reload data for this alignment if User?
         if (user) {
@@ -475,7 +478,7 @@ export const useGameLogic = () => {
     return {
         state: {
             user, loading, loadingAuth, lang,
-            viewMode, playerAlignment, heroes, completedMissionIds, omegaCylinders,
+            playerAlignment, heroes, completedMissionIds, omegaCylinders,
             worldStage, activeGlobalEvent, surferTurnCount, isGuest, isSaving,
             tickerMessage, isEditorMode, showMissionEditor, missionToEdit,
             showCharacterEditor, showDbManager, customMissions, selectedMission,
@@ -485,7 +488,7 @@ export const useGameLogic = () => {
             FACTION_STATES
         },
         actions: {
-            setLang, setViewMode, setPlayerAlignment, setHeroes, setCompletedMissionIds,
+            setLang, setPlayerAlignment, setHeroes, setCompletedMissionIds,
             setOmegaCylinders, setWorldStage, setActiveGlobalEvent, setIsGuest,
             setIsEditorMode, setIsSaving, setTickerMessage, setStartStoryAtChoice,
             setShowMissionEditor, setMissionToEdit, setShowCharacterEditor,
