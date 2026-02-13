@@ -129,28 +129,24 @@ export const DatabaseManager: React.FC<DatabaseManagerProps> = ({ isOpen, onClos
     const verifyAdmin = (): boolean => {
         const currentUser = auth?.currentUser;
 
-        // Cargar UIDs y Contraseña desde variables de entorno si existen
-        const envAdminUid = (import.meta as any).env.VITE_ADMIN_UID;
-        const envAdminPassword = (import.meta as any).env.VITE_ADMIN_PASSWORD;
+        // EL ÚNICO UID AUTORIZADO (Jazex)
+        const ADMIN_UID = "60mH4M1SClV793Nq1WjQ3CExkLp1";
+        const envAdminPassword = (import.meta as any).env.VITE_ADMIN_PASSWORD || "shield2024"; // Password de respaldo
 
-        const ALLOWED_ADMIN_UIDS = [
-            "60mH4M1SClV793Nq1WjQ3CExkLp1", // ID de jazex (ejemplo)
-            envAdminUid
-        ].filter(Boolean);
-
-        // 1. Verificar por UID si está logueado
-        if (currentUser && ALLOWED_ADMIN_UIDS.includes(currentUser.uid)) {
+        // 1. Verificar por UID (Método más seguro)
+        if (currentUser && currentUser.uid === ADMIN_UID) {
             return true;
         }
 
-        // 2. Si no coincide o no hay usuario, probar con contraseña
-        if (envAdminPassword) {
-            const input = prompt(`⚠ CONTROL DE ACCESO ⚠\nNo tienes permisos de administrador vía UID.\nUID actual: ${currentUser?.uid || 'Ninguno'}\n\nIntroduce contraseña de acceso:`);
-            if (input === envAdminPassword) return true;
+        // 2. Si no está logueado o el UID no coincide, pedir contraseña
+        const input = prompt(`⚠ SISTEMA DE SEGURIDAD S.H.I.E.L.D. ⚠\n\nEstado: ${currentUser ? 'AUTENTICADO PERO NO AUTORIZADO' : 'USUARIO NO IDENTIFICADO'}\nUID: ${currentUser?.uid || 'N/A'}\n\nIntroduce el PROTOCOLO DE ACCESO (Contraseña):`);
+
+        if (input === envAdminPassword) {
+            return true;
         }
 
-        // 3. Si todo falla, denegar
-        alert(`⛔ ACCESO DENEGADO\n\nNo tienes permisos de administrador para realizar esta acción.\n\nTU UID: ${currentUser?.uid || 'No identificado'}\n\nContacta con el administrador del sistema SHIELD.`);
+        // 3. Denegar acceso
+        alert(`⛔ ACCESO DENEGADO\n\nSolo el Agente de Nivel 10 (Jazex) tiene permisos de eliminación.\n\nSi eres tú, asegúrate de haber INICIADO SESIÓN en el Bunker para que el sistema reconozca tu UID.`);
         return false;
     };
 
