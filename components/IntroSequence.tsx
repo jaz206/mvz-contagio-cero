@@ -70,7 +70,7 @@ const DataLoaderOverlay = ({ isZombie }: { isZombie: boolean }) => {
                 {isZombie ? '☣' : '✇'}
             </div>
 
-            <div className={`text-xl font-black tracking-[0.3em] mb-2 ${color} animate-pulse px-4 py-1 border-x border-current`}>
+            <div className={`text-xl font-black tracking-[0.3em] mb-2 ${color} animate-pulse px-4 py-1 border-x border-current bg-current/5 shadow-[0_0_15px_rgba(0,0,0,0.5)]`}>
                 {isZombie ? 'FEEDING...' : 'CONNECTING...'}
             </div>
 
@@ -248,9 +248,9 @@ export const IntroSequence: React.FC<IntroSequenceProps> = ({ language, onComple
                                 &gt; STATUS: <span className={isZombie ? 'text-red-500' : 'text-emerald-500'}>{isZombie ? 'CRITICAL' : 'STABLE'}</span>
                             </div>
 
-                            <p className="text-sm md:text-base text-gray-300 leading-relaxed font-mono whitespace-pre-wrap border-l-2 border-gray-800 pl-4">
+                            <p className="text-sm md:text-base text-gray-300 leading-relaxed font-mono whitespace-pre-wrap border-l-2 border-gray-800 pl-4 relative">
                                 {typedText}
-                                <span className="animate-typing-cursor ml-1"></span>
+                                <span className={`animate-typing-cursor inline-block w-2 bg-current ml-1 align-middle translate-y-[2px]`} style={{ height: '1.2em' }}></span>
                             </p>
                         </div>
                     )}

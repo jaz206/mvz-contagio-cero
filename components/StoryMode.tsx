@@ -8,6 +8,33 @@ interface StoryModeProps {
     startAtChoice?: boolean;
 }
 
+// --- HOOK PARA EFECTO DE TECLEADO ---
+const useTypewriter = (text: string, speed: number = 20, active: boolean = true) => {
+    const [displayedText, setDisplayedText] = useState("");
+
+    useEffect(() => {
+        if (!active) {
+            setDisplayedText("");
+            return;
+        }
+
+        let i = 0;
+        setDisplayedText("");
+        const timer = setInterval(() => {
+            if (i < text.length) {
+                setDisplayedText(prev => prev + text.charAt(i));
+                i++;
+            } else {
+                clearInterval(timer);
+            }
+        }, speed);
+
+        return () => clearInterval(timer);
+    }, [text, speed, active]);
+
+    return displayedText;
+};
+
 export const StoryMode: React.FC<StoryModeProps> = ({ language, onComplete, startAtChoice = false }) => {
     const t = translations[language].story;
     const slides = t.slides;
@@ -20,6 +47,10 @@ export const StoryMode: React.FC<StoryModeProps> = ({ language, onComplete, star
     const [selection, setSelection] = useState<'ALIVE' | 'ZOMBIE' | null>(null);
 
     const isChoiceScreen = currentIndex >= slides.length;
+    const currentSlide = slides[currentIndex];
+
+    // Si estamos en la pantalla de elección, no queremos el efecto de tecleado de la historia
+    const typedStoryText = useTypewriter(currentSlide?.text || "", 15, !isChoiceScreen && !isAnimating && isFolderOpen);
 
     useEffect(() => {
         const timer = setTimeout(() => setIsFolderOpen(true), 800);
@@ -58,7 +89,7 @@ export const StoryMode: React.FC<StoryModeProps> = ({ language, onComplete, star
 
     const DustParticles = () => (
         <div className="absolute inset-0 pointer-events-none overflow-hidden z-[5]">
-            {[...Array(20)].map((_, i) => (
+            {[...Array(50)].map((_, i) => (
                 <div
                     key={i}
                     className="dust-particle"
@@ -98,7 +129,7 @@ export const StoryMode: React.FC<StoryModeProps> = ({ language, onComplete, star
         // --- PANTALLA DE SELECCIÓN REDISEÑADA ---
         if (isChoiceScreen) {
             return (
-                <div className="fixed inset-0 z-[70] bg-slate-950 flex flex-col font-mono overflow-hidden">
+                <div className={`fixed inset-0 z-[70] bg-slate-950 flex flex-col font-mono overflow-hidden animate-fade-in`}>
                     {/* Fondo de rejilla táctica */}
                     <div className="absolute inset-0 opacity-10 pointer-events-none bg-[linear-gradient(0deg,transparent_24%,rgba(6,182,212,0.3)_25%,rgba(6,182,212,0.3)_26%,transparent_27%,transparent_74%,rgba(6,182,212,0.3)_75%,rgba(6,182,212,0.3)_76%,transparent_77%,transparent),linear-gradient(90deg,transparent_24%,rgba(6,182,212,0.3)_25%,rgba(6,182,212,0.3)_26%,transparent_27%,transparent_74%,rgba(6,182,212,0.3)_75%,rgba(6,182,212,0.3)_76%,transparent_77%,transparent)] bg-[length:50px_50px]"></div>
 
@@ -232,8 +263,9 @@ export const StoryMode: React.FC<StoryModeProps> = ({ language, onComplete, star
                                 <div className="text-xs font-bold text-red-700 border-2 border-red-700 px-1 inline-block mt-1 rotate-[-2deg] opacity-80">TOP SECRET</div>
                             </div>
                         </div>
-                        <div className="font-mono text-sm md:text-base text-slate-900 leading-relaxed space-y-4 text-justify font-medium">
-                            {slide.text.split('\n').map((line, i) => <p key={i}>{line}</p>)}
+                        <div className="font-mono text-sm md:text-base text-slate-900 leading-relaxed space-y-4 text-justify font-medium min-h-[200px]">
+                            {typedStoryText.split('\n').map((line, i) => <p key={i}>{line}</p>)}
+                            <span className="animate-typing-cursor !bg-slate-400"></span>
                         </div>
                     </div>
                     <div className="mt-4 pt-4 border-t border-slate-300 flex justify-between items-center">
@@ -268,8 +300,8 @@ export const StoryMode: React.FC<StoryModeProps> = ({ language, onComplete, star
                     </div>
 
                     <div className="w-full h-full bg-white relative overflow-hidden flex rounded-r-sm">
-                        <DustParticles />
                         {renderContent()}
+                        <DustParticles />
                         {pageTurn && <div className={`absolute inset-0 bg-black/10 z-50 transition-opacity duration-500 ${pageTurn ? 'opacity-100' : 'opacity-0'}`}></div>}
                     </div>
 
