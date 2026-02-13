@@ -286,7 +286,10 @@ export const useGameLogic = () => {
         });
 
         if (isEditorMode) return expansionFiltered;
-        if (worldStage === 'GALACTUS') return expansionFiltered;
+
+        // If it's Galactus, we show all expansion-filtered missions (they are all bosses/defense)
+        // or we handle specific logic inside the filter below.
+        // Let's keep it consistent.
 
         return expansionFiltered.filter(m => {
             if (!m) return false;
@@ -299,12 +302,26 @@ export const useGameLogic = () => {
                 prereqMet = completedMissionIds.has(m.prereq);
             }
             if (introMission && m.id === introMission.id && !isCompleted) return true;
-            if (m.type === 'GALACTUS') {
-                if (m.triggerStage === 'SURFER') return worldStage === 'SURFER' || worldStage === 'GALACTUS';
-                if (m.triggerStage === 'GALACTUS') return worldStage === 'GALACTUS';
+
+            const isGalactusType = m.type === 'GALACTUS';
+            const isBossType = m.type === 'BOSS' || (m.type && m.type.startsWith('BOSS_'));
+
+            // Special handling for Galactus/WorldStage missions
+            if (isGalactusType) {
+                if (m.triggerStage === 'SURFER') {
+                    return (worldStage as string) === 'SURFER' || (worldStage as string) === 'GALACTUS';
+                }
+                if (m.triggerStage === 'GALACTUS') {
+                    return (worldStage as string) === 'GALACTUS';
+                }
                 return false;
             }
-            if (worldStage === 'GALACTUS' && !isCompleted && m.type !== 'GALACTUS' && m.type !== 'BOSS') return false;
+
+            // During Galactus stage, ONLY show completed missions, bosses, or Galactus missions (handled above)
+            if (worldStage === 'GALACTUS') {
+                return isCompleted || !!isBossType;
+            }
+
             return isCompleted || prereqMet;
         });
     }, [allMissions, completedMissionIds, isEditorMode, worldStage, playerAlignment, ownedExpansions, introMission]);
