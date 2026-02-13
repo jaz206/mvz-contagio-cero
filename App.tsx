@@ -43,7 +43,7 @@ const GameLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
                 isOpen={state.showMissionEditor}
                 onClose={() => { actions.setShowMissionEditor(false); actions.setMissionToEdit(null); }}
                 onSave={async () => {
-                    actions.setCustomMissions(await import('./services/dbService').then(m => m.getCustomMissions()));
+                    actions.setCustomMissions(await import('./services/missionService').then(m => m.getCustomMissions()));
                 }}
                 language={lang}
                 initialData={state.missionToEdit}

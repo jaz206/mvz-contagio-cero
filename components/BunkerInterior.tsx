@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from "react";
 import { translations, Language } from "../translations";
 import { Hero, Mission, HeroClass, HeroTemplate } from "../types";
-import { getHeroTemplates } from "../services/dbService";
+import { getHeroTemplates } from "../services/heroService";
 import { RecruitModal } from "./RecruitModal";
 import { ConfirmationModal } from "./ConfirmationModal";
 

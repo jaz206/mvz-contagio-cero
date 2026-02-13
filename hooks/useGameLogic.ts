@@ -3,13 +3,9 @@ import { useNavigate } from 'react-router-dom';
 import { User, onAuthStateChanged } from 'firebase/auth';
 import { auth } from '../firebaseConfig';
 import { translations, Language } from '../translations';
-import {
-    getUserProfile,
-    saveUserProfile,
-    getCustomMissions,
-    deleteMissionInDB,
-    getHeroTemplates
-} from '../services/dbService';
+import { getHeroTemplates } from '../services/heroService';
+import { getCustomMissions, deleteMissionInDB } from '../services/missionService';
+import { getUserProfile, saveUserProfile } from '../services/userService';
 import { logout } from '../services/authService';
 import { Mission, Hero, WorldStage, GlobalEvent, HeroTemplate } from '../types';
 import { GAME_EXPANSIONS } from '../data/gameContent';

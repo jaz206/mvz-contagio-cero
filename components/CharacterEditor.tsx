@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { translations, Language } from '../translations';
 import { HeroTemplate, HeroClass, HeroStats, ImageParams } from '../types';
-import { createHeroTemplateInDB, updateHeroTemplate, getHeroTemplates } from '../services/dbService';
+import { createHeroTemplateInDB, updateHeroTemplate, getHeroTemplates } from '../services/heroService';
 
 interface CharacterEditorProps {
     isOpen: boolean;

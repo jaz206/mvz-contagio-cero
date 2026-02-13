@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { GAME_EXPANSIONS } from '../data/gameContent';
-import { getHeroTemplates } from '../services/dbService';
+import { getHeroTemplates } from '../services/heroService';
 import { Language } from '../translations';
 import { Hero, HeroTemplate } from '../types';
 

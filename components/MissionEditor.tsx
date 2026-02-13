@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { translations, Language } from '../translations';
 import { Mission, Objective, WorldStage, MissionType } from '../types';
-import { createMissionInDB, updateMissionInDB } from '../services/dbService';
+import { createMissionInDB, updateMissionInDB } from '../services/missionService';
 import { GAME_EXPANSIONS } from '../data/gameContent';
 
 interface MissionEditorProps {
@@ -40,26 +40,26 @@ const THREAT_LEVELS = [
 
 export const MissionEditor: React.FC<MissionEditorProps> = ({ isOpen, onClose, onSave, language, initialData, existingMissions = [] }) => {
     const t = translations[language].missionEditor;
-    
+
     const [title, setTitle] = useState('');
     const [description, setDescription] = useState('');
     const [outcomeText, setOutcomeText] = useState('');
     const [locationState, setLocationState] = useState(STATES_LIST[0]);
-    const [threatLevel, setThreatLevel] = useState(THREAT_LEVELS[1]); 
+    const [threatLevel, setThreatLevel] = useState(THREAT_LEVELS[1]);
     const [type, setType] = useState<MissionType>('STANDARD');
     const [alignment, setAlignment] = useState<'ALIVE' | 'ZOMBIE' | 'BOTH'>('BOTH');
     const [isIntroMission, setIsIntroMission] = useState(false);
-    
+
     const [triggerStage, setTriggerStage] = useState<WorldStage>('NORMAL');
 
     const [prereqs, setPrereqs] = useState<string[]>([]);
     const [selectedPrereqToAdd, setSelectedPrereqToAdd] = useState('');
 
     const [objectives, setObjectives] = useState<Objective[]>([{ title: '', desc: '' }]);
-    
+
     const [requirements, setRequirements] = useState<string[]>([]);
     const [selectedExpansionId, setSelectedExpansionId] = useState(GAME_EXPANSIONS[0].id);
-    
+
     const [layoutUrl, setLayoutUrl] = useState('');
     const [pdfUrl, setPdfUrl] = useState(''); // NUEVO ESTADO
     const [saving, setSaving] = useState(false);
@@ -75,7 +75,7 @@ export const MissionEditor: React.FC<MissionEditorProps> = ({ isOpen, onClose, o
             setAlignment(initialData.alignment || 'BOTH');
             setTriggerStage(initialData.triggerStage || 'NORMAL');
             setIsIntroMission(initialData.isIntroMission || false);
-            
+
             if (initialData.prereqs && initialData.prereqs.length > 0) {
                 setPrereqs(initialData.prereqs);
             } else if (initialData.prereq) {
@@ -147,8 +147,8 @@ export const MissionEditor: React.FC<MissionEditorProps> = ({ isOpen, onClose, o
         if (initialData && initialData.location.state === locationState) {
             finalCoordinates = initialData.location.coordinates;
         } else {
-            const center = STATE_CENTERS[locationState] || [-98.5, 39.8]; 
-            const jitterX = (Math.random() - 0.5) * 2.0; 
+            const center = STATE_CENTERS[locationState] || [-98.5, 39.8];
+            const jitterX = (Math.random() - 0.5) * 2.0;
             const jitterY = (Math.random() - 0.5) * 1.5;
             finalCoordinates = [center[0] + jitterX, center[1] + jitterY];
         }
@@ -164,9 +164,9 @@ export const MissionEditor: React.FC<MissionEditorProps> = ({ isOpen, onClose, o
             isIntroMission,
             triggerStage: type === 'GALACTUS' ? triggerStage : null,
             objectives: objectives.filter(o => o.title && o.desc),
-            prereq: prereqs.length > 0 ? prereqs[0] : null, 
+            prereq: prereqs.length > 0 ? prereqs[0] : null,
             prereqs: prereqs,
-            requirements, 
+            requirements,
             layoutUrl: layoutUrl.trim() || null,
             pdfUrl: pdfUrl.trim() || null, // GUARDAR PDF
         };
@@ -189,9 +189,9 @@ export const MissionEditor: React.FC<MissionEditorProps> = ({ isOpen, onClose, o
     };
 
     const validPrereqOptions = existingMissions.filter(m => {
-        if (initialData && m.id === initialData.id) return false; 
-        if (prereqs.includes(m.id)) return false; 
-        
+        if (initialData && m.id === initialData.id) return false;
+        if (prereqs.includes(m.id)) return false;
+
         const mAlign = m.alignment || 'ALIVE';
         if (alignment === 'BOTH') return true;
         if (mAlign === 'BOTH') return true;
@@ -214,7 +214,7 @@ export const MissionEditor: React.FC<MissionEditorProps> = ({ isOpen, onClose, o
                 </div>
 
                 <form onSubmit={handleSubmit} className="p-6 overflow-y-auto font-mono flex flex-col gap-4 scrollbar-thin scrollbar-thumb-cyan-900">
-                    
+
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div className="space-y-4">
                             <div>
@@ -253,9 +253,9 @@ export const MissionEditor: React.FC<MissionEditorProps> = ({ isOpen, onClose, o
                                 </div>
                                 <div>
                                     <label className="text-[10px] text-cyan-600 font-bold block mb-1 uppercase">MODO</label>
-                                    <select 
-                                        value={alignment} 
-                                        onChange={e => { setAlignment(e.target.value as any); setPrereqs([]); }} 
+                                    <select
+                                        value={alignment}
+                                        onChange={e => { setAlignment(e.target.value as any); setPrereqs([]); }}
                                         className="w-full bg-slate-950 border border-cyan-800 p-2 text-white font-bold"
                                     >
                                         <option value="ALIVE">🛡️ HÉROES</option>
@@ -266,11 +266,11 @@ export const MissionEditor: React.FC<MissionEditorProps> = ({ isOpen, onClose, o
                             </div>
 
                             <div className="flex items-center gap-3 p-3 border border-emerald-500/50 bg-emerald-900/10">
-                                <input 
-                                    type="checkbox" 
+                                <input
+                                    type="checkbox"
                                     id="isIntro"
-                                    checked={isIntroMission} 
-                                    onChange={e => setIsIntroMission(e.target.checked)} 
+                                    checked={isIntroMission}
+                                    onChange={e => setIsIntroMission(e.target.checked)}
                                     className="w-5 h-5 accent-emerald-500 cursor-pointer"
                                 />
                                 <div>
@@ -282,9 +282,9 @@ export const MissionEditor: React.FC<MissionEditorProps> = ({ isOpen, onClose, o
                             {type === 'GALACTUS' && (
                                 <div className="bg-purple-900/20 border border-purple-500/50 p-2 animate-fade-in">
                                     <label className="text-[10px] text-purple-400 font-bold block mb-1 uppercase">ETAPA DE ACTIVACIÓN</label>
-                                    <select 
-                                        value={triggerStage} 
-                                        onChange={e => setTriggerStage(e.target.value as WorldStage)} 
+                                    <select
+                                        value={triggerStage}
+                                        onChange={e => setTriggerStage(e.target.value as WorldStage)}
                                         className="w-full bg-slate-950 border border-purple-500 p-2 text-purple-200 font-bold"
                                     >
                                         <option value="SURFER">LLEGADA DE SILVER SURFER (ETAPA 2)</option>
@@ -296,9 +296,9 @@ export const MissionEditor: React.FC<MissionEditorProps> = ({ isOpen, onClose, o
                             <div className="bg-slate-900/50 border border-cyan-900/30 p-3">
                                 <label className="text-[10px] text-cyan-600 font-bold block mb-2 uppercase">{t.prereq} (MÚLTIPLES)</label>
                                 <div className="flex gap-2 mb-2">
-                                    <select 
-                                        value={selectedPrereqToAdd} 
-                                        onChange={e => setSelectedPrereqToAdd(e.target.value)} 
+                                    <select
+                                        value={selectedPrereqToAdd}
+                                        onChange={e => setSelectedPrereqToAdd(e.target.value)}
                                         className="flex-1 bg-slate-950 border border-cyan-800 p-2 text-xs text-cyan-200 min-w-0"
                                     >
                                         <option value="">-- SELECCIONAR MISIÓN --</option>
@@ -308,9 +308,9 @@ export const MissionEditor: React.FC<MissionEditorProps> = ({ isOpen, onClose, o
                                             </option>
                                         ))}
                                     </select>
-                                    <button 
-                                        type="button" 
-                                        onClick={handleAddPrereq} 
+                                    <button
+                                        type="button"
+                                        onClick={handleAddPrereq}
                                         disabled={!selectedPrereqToAdd}
                                         className="bg-cyan-900/50 border border-cyan-600 text-cyan-300 px-3 py-1 text-[10px] font-bold uppercase disabled:opacity-50 shrink-0"
                                     >
@@ -334,9 +334,9 @@ export const MissionEditor: React.FC<MissionEditorProps> = ({ isOpen, onClose, o
                             <div className="bg-slate-900/50 border border-blue-900/30 p-3">
                                 <label className="text-[10px] text-blue-400 font-bold block mb-2 uppercase">REQUISITOS (EXPANSIONES)</label>
                                 <div className="flex gap-2 mb-2">
-                                    <select 
-                                        value={selectedExpansionId} 
-                                        onChange={e => setSelectedExpansionId(e.target.value)} 
+                                    <select
+                                        value={selectedExpansionId}
+                                        onChange={e => setSelectedExpansionId(e.target.value)}
                                         className="flex-1 bg-slate-950 border border-blue-800 p-2 text-xs text-blue-200 min-w-0"
                                     >
                                         {GAME_EXPANSIONS.map(exp => (
@@ -379,12 +379,12 @@ export const MissionEditor: React.FC<MissionEditorProps> = ({ isOpen, onClose, o
 
                             <div>
                                 <label className="text-[10px] text-emerald-600 font-bold block mb-1 uppercase">{t.outcome}</label>
-                                <textarea 
-                                    value={outcomeText} 
-                                    onChange={e => setOutcomeText(e.target.value)} 
-                                    rows={4} 
+                                <textarea
+                                    value={outcomeText}
+                                    onChange={e => setOutcomeText(e.target.value)}
+                                    rows={4}
                                     placeholder="Texto que aparecerá al completar la misión..."
-                                    className="w-full bg-slate-950 border border-emerald-800 p-2 text-emerald-200 text-xs focus:border-emerald-500 outline-none" 
+                                    className="w-full bg-slate-950 border border-emerald-800 p-2 text-emerald-200 text-xs focus:border-emerald-500 outline-none"
                                 />
                             </div>
                         </div>

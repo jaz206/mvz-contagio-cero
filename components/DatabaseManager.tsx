@@ -1,11 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { HeroTemplate, Mission, HeroClass } from '../types';
-import {
-    getHeroTemplates,
-    getCustomMissions,
-    deleteHeroInDB,
-    deleteMissionInDB
-} from '../services/dbService';
+import { getHeroTemplates, deleteHeroInDB } from '../services/heroService';
+import { getCustomMissions, deleteMissionInDB } from '../services/missionService';
 import { CharacterEditor } from './CharacterEditor';
 import { MissionEditor } from './MissionEditor';
 import { auth } from '../firebaseConfig'; // Importamos auth para verificar identidad real
