@@ -129,27 +129,29 @@ export const DatabaseManager: React.FC<DatabaseManagerProps> = ({ isOpen, onClos
     const verifyAdmin = (): boolean => {
         const currentUser = auth?.currentUser;
 
-        // REEMPLAZA ESTO CON TU UID REAL DE FIREBASE (Lo puedes ver en la consola de Firebase Auth)
-        // Esto es mucho más seguro que una contraseña en el código cliente.
+        // Cargar UIDs y Contraseña desde variables de entorno si existen
+        const envAdminUid = (import.meta as any).env.VITE_ADMIN_UID;
+        const envAdminPassword = (import.meta as any).env.VITE_ADMIN_PASSWORD;
+
         const ALLOWED_ADMIN_UIDS = [
-            "TU_UID_DE_FIREBASE_AQUI",
-            "OTRO_UID_SI_ES_NECESARIO"
-        ];
+            "60mH4M1SClV793Nq1WjQ3CExkLp1", // ID de jazex (ejemplo)
+            envAdminUid
+        ].filter(Boolean);
 
-        // Si no hay usuario o no está en la lista blanca
-        if (!currentUser || !ALLOWED_ADMIN_UIDS.includes(currentUser.uid)) {
-            // Fallback para desarrollo local si no has configurado el UID aún
-            const devPassword = (import.meta as any).env.VITE_ADMIN_PASSWORD;
-            if (devPassword) {
-                const input = prompt("⚠ MODO DESARROLLO ⚠\nIntroduce contraseña de admin:");
-                return input === devPassword;
-            }
-
-            alert("⛔ ACCESO DENEGADO: No tienes permisos de administrador (UID no autorizado).");
-            return false;
+        // 1. Verificar por UID si está logueado
+        if (currentUser && ALLOWED_ADMIN_UIDS.includes(currentUser.uid)) {
+            return true;
         }
 
-        return true;
+        // 2. Si no coincide o no hay usuario, probar con contraseña
+        if (envAdminPassword) {
+            const input = prompt(`⚠ CONTROL DE ACCESO ⚠\nNo tienes permisos de administrador vía UID.\nUID actual: ${currentUser?.uid || 'Ninguno'}\n\nIntroduce contraseña de acceso:`);
+            if (input === envAdminPassword) return true;
+        }
+
+        // 3. Si todo falla, denegar
+        alert(`⛔ ACCESO DENEGADO\n\nNo tienes permisos de administrador para realizar esta acción.\n\nTU UID: ${currentUser?.uid || 'No identificado'}\n\nContacta con el administrador del sistema SHIELD.`);
+        return false;
     };
 
     const handleDeleteMission = async (id: string) => {
