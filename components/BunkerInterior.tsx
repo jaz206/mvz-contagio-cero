@@ -103,6 +103,61 @@ const DnaScanner = () => (
     </div>
 );
 
+// --- COMPONENTE: MONITOR BIOMÉTRICO ---
+const BiometricMonitor = ({ alignment }: { alignment: 'ALIVE' | 'ZOMBIE' }) => {
+    const isZombie = alignment === 'ZOMBIE';
+    const color = isZombie ? '#84cc16' : '#06b6d4';
+
+    return (
+        <div className="flex flex-col gap-4 bg-black/40 p-4 border border-slate-800 rounded relative overflow-hidden">
+            <div className="flex justify-between items-center mb-1">
+                <span className={`text-[9px] font-bold ${isZombie ? 'text-lime-500' : 'text-cyan-500'} tracking-widest uppercase`}>
+                    {isZombie ? 'CORRUPTION_LEVEL' : 'BIOMETRIC_STABILITY'}
+                </span>
+                <span className="text-[10px] text-white font-mono animate-pulse">
+                    {isZombie ? 'STABLE_DECAY' : 'SIGNALS_OPTIMAL'}
+                </span>
+            </div>
+
+            {/* ECG Pulse SVG */}
+            <div className="h-16 w-full relative">
+                <svg viewBox="0 0 100 40" className="w-full h-full opacity-60">
+                    <path
+                        d="M 0 20 L 20 20 L 25 10 L 30 30 L 35 20 L 50 20 L 55 5 L 60 35 L 65 20 L 80 20 L 85 10 L 90 30 L 95 20 L 100 20"
+                        fill="none"
+                        stroke={color}
+                        strokeWidth="1.5"
+                        className="animate-ecg"
+                    />
+                </svg>
+                <div className={`absolute inset-0 bg-gradient-to-r from-black/40 via-transparent to-black/40`}></div>
+            </div>
+
+            {/* Diagnostic Bars */}
+            <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1">
+                    <div className="flex justify-between text-[8px] text-gray-500">
+                        <span>{isZombie ? 'NECROSIS' : 'ANTIBODIES'}</span>
+                        <span>{isZombie ? '88%' : '94%'}</span>
+                    </div>
+                    <div className="h-1 w-full bg-slate-900 border border-slate-800 rounded-full overflow-hidden">
+                        <div className={`h-full ${isZombie ? 'bg-lime-600' : 'bg-cyan-600'} animate-pulse`} style={{ width: isZombie ? '88%' : '94%' }}></div>
+                    </div>
+                </div>
+                <div className="space-y-1">
+                    <div className="flex justify-between text-[8px] text-gray-500">
+                        <span>DNA_STABILITY</span>
+                        <span>{isZombie ? 'ERRATIC' : '99.9%'}</span>
+                    </div>
+                    <div className="h-1 w-full bg-slate-900 border border-slate-800 rounded-full overflow-hidden">
+                        <div className={`h-full ${isZombie ? 'bg-yellow-600' : 'bg-emerald-600'} animate-pulse`} style={{ width: '90%' }}></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+};
+
 export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
     heroes, missions, completedMissionIds = new Set(), onAssign, onUnassign, onAddHero, onToggleObjective, onBack, language, playerAlignment, onTransformHero, onTickerUpdate, omegaCylinders = 0, onFindCylinder
 }) => {
@@ -442,59 +497,122 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
             )}
 
             {selectedHero && (
-                <div className="absolute inset-0 z-50 bg-slate-950/90 backdrop-blur-md flex items-center justify-center p-12" onClick={() => setSelectedHeroId(null)}>
-                    <div className="bg-slate-900 border-2 border-cyan-500 w-full max-w-5xl h-[70vh] shadow-[0_0_100px_rgba(6,182,212,0.2)] flex clip-tactical" onClick={e => e.stopPropagation()}>
-                        <div className="w-1/3 h-full relative">
-                            <img src={selectedHero.imageUrl} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
-                            <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-transparent to-transparent"></div>
-                            <div className="absolute bottom-4 left-4">
-                                <h2 className="text-3xl font-black text-white uppercase italic tracking-tighter">{selectedHero.alias}</h2>
-                                <p className="text-cyan-400 font-mono text-sm">{selectedHero.name}</p>
+                <div className="fixed inset-0 z-[150] bg-slate-950/95 backdrop-blur-xl flex items-center justify-center p-6 md:p-12 animate-fade-in" onClick={() => setSelectedHeroId(null)}>
+                    <div className={`bg-slate-900 border-2 ${playerAlignment === 'ZOMBIE' ? 'border-lime-600 shadow-lime-900/20' : 'border-cyan-600 shadow-cyan-900/20'} w-full max-w-6xl h-[85vh] shadow-[0_0_100px_rgba(0,0,0,0.5)] flex flex-col md:flex-row overflow-hidden relative group`} onClick={e => e.stopPropagation()}>
+
+                        {/* DECORATIVE GRID */}
+                        <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/grid-me.png')] opacity-5 animate-grid-pulse pointer-events-none"></div>
+
+                        {/* LEFT: PORTRAIT & SCANNER */}
+                        <div className="w-full md:w-2/5 h-64 md:h-full relative border-b md:border-b-0 md:border-r border-slate-800 shrink-0">
+                            <img src={selectedHero.imageUrl} className="w-full h-full object-cover object-top filter contrast-125 saturate-[0.8]" referrerPolicy="no-referrer" />
+
+                            {/* SCANNING BEAM */}
+                            <div className={`absolute left-0 right-0 h-0.5 ${playerAlignment === 'ZOMBIE' ? 'bg-lime-500 shadow-[0_0_15px_#84cc16]' : 'bg-cyan-500 shadow-[0_0_15px_#06b6d4]'} z-10 animate-scanning-beam`}></div>
+
+                            {/* BIO DATA OVERLAY */}
+                            <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/20 to-transparent"></div>
+                            <div className="absolute bottom-0 left-0 right-0 p-8 pt-20">
+                                <div className={`text-[10px] font-bold ${playerAlignment === 'ZOMBIE' ? 'text-lime-500' : 'text-cyan-500'} tracking-[0.4em] mb-2`}>SUBJECT_IDENTIFICATION</div>
+                                <h2 className="text-4xl md:text-5xl font-black text-white uppercase italic tracking-tighter leading-none mb-1 drop-shadow-2xl" style={{ fontFamily: 'Impact, sans-serif' }}>
+                                    {selectedHero.alias}
+                                </h2>
+                                <p className="text-gray-400 font-mono text-sm tracking-widest uppercase">{selectedHero.name}</p>
+                            </div>
+
+                            {/* Faction Seal (Transparent back) */}
+                            <div className="absolute top-4 left-4 opacity-10 pointer-events-none">
+                                <span className="text-6xl font-black text-white">{playerAlignment === 'ZOMBIE' ? 'HIVE' : 'SHIELD'}</span>
                             </div>
                         </div>
-                        <div className="flex-1 p-8 bg-slate-900/95 relative overflow-hidden flex flex-col">
-                            <div className="absolute top-0 right-0 p-4">
-                                <button onClick={() => setSelectedHeroId(null)} className="text-cyan-500 hover:text-white font-bold text-xl">✕</button>
-                            </div>
-                            <div className="grid grid-cols-3 gap-4 mb-8">
-                                <div className="bg-slate-950 p-4 border border-red-900/50 text-center">
-                                    <div className="text-[9px] text-gray-500 uppercase">FUERZA</div>
-                                    <div className="text-2xl font-black text-red-500">{selectedHero.stats.strength}</div>
+
+                        {/* RIGHT: BIOMETRICS & REPORT */}
+                        <div className="flex-1 p-6 md:p-10 bg-slate-950/50 relative overflow-hidden flex flex-col">
+                            <div className="absolute top-0 right-0 p-6 flex items-center gap-4 z-20">
+                                <div className={`px-3 py-1 border ${playerAlignment === 'ZOMBIE' ? 'border-lime-900 text-lime-500' : 'border-cyan-900 text-cyan-500'} text-[9px] font-bold tracking-[0.2em] bg-black/50`}>
+                                    REPORT_REF: {selectedHero.id.substring(0, 8).toUpperCase()}
                                 </div>
-                                <div className="bg-slate-950 p-4 border border-green-900/50 text-center">
-                                    <div className="text-[9px] text-gray-500 uppercase">AGILIDAD</div>
-                                    <div className="text-2xl font-black text-green-500">{selectedHero.stats.agility}</div>
-                                </div>
-                                <div className="bg-slate-950 p-4 border border-blue-900/50 text-center">
-                                    <div className="text-[9px] text-gray-500 uppercase">INTELECTO</div>
-                                    <div className="text-2xl font-black text-blue-500">{selectedHero.stats.intellect}</div>
-                                </div>
-                            </div>
-                            <div className="prose prose-invert flex-1 overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-cyan-900">
-                                <p className="text-gray-300 text-sm leading-relaxed border-l-2 border-cyan-800 pl-4 italic">"{selectedHero.bio}"</p>
+                                <button onClick={() => setSelectedHeroId(null)} className="text-slate-500 hover:text-white transition-colors text-2xl font-light">✕</button>
                             </div>
 
-                            <div className="mt-8 flex gap-4 justify-end items-center border-t border-cyan-900/50 pt-6">
+                            {/* DIAGNOSTIC SECTION */}
+                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8 mt-4">
+                                <div className="space-y-6">
+                                    <h4 className="text-[10px] font-black text-gray-500 tracking-[0.3em] uppercase border-b border-slate-800 pb-2">DIAGNOSTIC_SUMMARY</h4>
 
-                                {/* BOTÓN FICHA DE JUEGO (Solo si existe URL) */}
-                                {selectedHero.characterSheetUrl && (
-                                    <button
-                                        onClick={() => setViewingSheet(selectedHero.characterSheetUrl!)}
-                                        className="px-6 py-3 bg-yellow-900/20 border border-yellow-600 text-yellow-500 hover:bg-yellow-900/40 hover:text-yellow-200 font-bold uppercase tracking-widest text-xs transition-all flex items-center gap-2 group"
-                                    >
-                                        <span className="text-lg group-hover:scale-110 transition-transform">🗃</span>
-                                        FICHA TÁCTICA
-                                    </button>
-                                )}
+                                    <BiometricMonitor alignment={playerAlignment || 'ALIVE'} />
 
-                                <button className="px-8 py-3 bg-cyan-600 hover:bg-cyan-500 text-black font-black uppercase tracking-widest clip-tactical shadow-[0_0_20px_rgba(6,182,212,0.5)] transition-all">
-                                    ASIGNAR MISIÓN
+                                    <div className="grid grid-cols-3 gap-4">
+                                        <div className="bg-slate-900/80 p-4 border-l-2 border-red-600">
+                                            <div className="text-[8px] text-red-500 font-bold uppercase mb-1">STRENGTH</div>
+                                            <div className="text-2xl font-black text-white">{selectedHero.stats.strength}</div>
+                                        </div>
+                                        <div className="bg-slate-900/80 p-4 border-l-2 border-emerald-600">
+                                            <div className="text-[8px] text-emerald-500 font-bold uppercase mb-1">AGILITY</div>
+                                            <div className="text-2xl font-black text-white">{selectedHero.stats.agility}</div>
+                                        </div>
+                                        <div className="bg-slate-900/80 p-4 border-l-2 border-blue-600">
+                                            <div className="text-[8px] text-blue-500 font-bold uppercase mb-1">INTELLECT</div>
+                                            <div className="text-2xl font-black text-white">{selectedHero.stats.intellect}</div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="space-y-6">
+                                    <h4 className="text-[10px] font-black text-gray-500 tracking-[0.3em] uppercase border-b border-slate-800 pb-2">SUBJECT_LOG</h4>
+                                    <div className="bg-slate-900/30 p-6 border border-slate-800 relative min-h-[180px]">
+                                        <div className="absolute top-2 right-2 opacity-5 pointer-events-none">
+                                            <div className="w-16 h-16 border-4 border-white rotate-45"></div>
+                                        </div>
+                                        <div className="font-mono text-[11px] leading-relaxed text-slate-300 italic first-letter:text-2xl first-letter:font-black first-letter:mr-1 first-letter:float-left">
+                                            "{selectedHero.bio}"
+                                        </div>
+                                        <div className="mt-6 pt-6 border-t border-slate-800 flex justify-between items-center text-[9px] font-mono text-slate-500">
+                                            <span>CLASS_SPEC: {selectedHero.class}</span>
+                                            <span>STATUS: {selectedHero.status}</span>
+                                        </div>
+                                    </div>
+
+                                    <div className="flex gap-4">
+                                        <div className="flex-1 bg-black/40 border border-slate-800 p-3">
+                                            <div className="text-[8px] text-gray-600 font-bold mb-1">BLOOD_TYPE / STRAIN</div>
+                                            <div className="text-xs text-white font-mono">{playerAlignment === 'ZOMBIE' ? 'CEPA_G_004 (GAMMA)' : 'AB_POS_OPTIMIZED'}</div>
+                                        </div>
+                                        <div className="flex-1 bg-black/40 border border-slate-800 p-3">
+                                            <div className="text-[8px] text-gray-600 font-bold mb-1">ASSIGNED_LOCATION</div>
+                                            <div className="text-xs text-white font-mono">SECTOR_B-92</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* ACTION FOOTER */}
+                            <div className="mt-auto flex flex-col md:flex-row gap-4 justify-between items-center pt-8 border-t border-slate-800 bg-slate-900/20 -mx-10 px-10">
+                                <div className="flex gap-4 w-full md:w-auto">
+                                    {selectedHero.characterSheetUrl && (
+                                        <button
+                                            onClick={() => setViewingSheet(selectedHero.characterSheetUrl!)}
+                                            className="flex-1 md:flex-none px-6 py-4 bg-yellow-900/10 border border-yellow-600/50 text-yellow-500 hover:bg-yellow-900/40 hover:text-yellow-200 font-black uppercase tracking-[0.2em] text-[10px] transition-all flex items-center justify-center gap-3 group"
+                                        >
+                                            <span className="text-xl group-hover:scale-110 transition-transform">🗃</span>
+                                            FICHA TÁCTICA
+                                        </button>
+                                    )}
+                                </div>
+
+                                <button className={`w-full md:w-auto px-10 py-4 ${playerAlignment === 'ZOMBIE' ? 'bg-lime-600 shadow-[0_0_20px_rgba(132,204,22,0.4)]' : 'bg-cyan-600 shadow-[0_0_20px_rgba(6,182,212,0.4)]'} hover:opacity-90 text-black font-black uppercase tracking-[0.3em] text-[11px] clip-tactical transition-all transform active:scale-95`}>
+                                    {playerAlignment === 'ZOMBIE' ? 'INICIAR ASIMILACIÓN' : 'ASIGNAR OPERACIÓN'}
                                 </button>
                             </div>
+                        </div>
+
+                        {/* DECORATIVE CORNER DATA */}
+                        <div className="absolute top-2 left-2 text-[7px] text-slate-700 font-mono tracking-widest hidden lg:block">
+                            SHIELD_OS_V.4.02 // CLASSIFIED // {new Date().toISOString()}
                         </div>
                     </div>
                 </div>
             )}
         </div>
-    );
-};
+    );} ;  
+ 

@@ -2,7 +2,7 @@
   /* Common */
   --font-main: 'Inter', sans-serif;
   --font-mono: 'Roboto Mono', monospace;
-  
+
   /* Survivor Mode (Default) */
   --primary-color: #06b6d4;
   --primary-glow: rgba(6, 182, 212, 0.5);
@@ -40,8 +40,17 @@ body {
 
 /* Animations */
 @keyframes breathing {
-  0%, 100% { transform: scale(1); opacity: 0.6; }
-  50% { transform: scale(1.05); opacity: 0.8; }
+
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 0.6;
+  }
+
+  50% {
+    transform: scale(1.05);
+    opacity: 0.8;
+  }
 }
 
 .animate-breathing {
@@ -54,11 +63,30 @@ body {
 }
 
 @keyframes glitch-anim {
-  0% { transform: translate(0); clip-path: inset(0 0 0 0); }
-  25% { transform: translate(-2px, 1px); clip-path: inset(10% 0 80% 0); }
-  50% { transform: translate(2px, -1px); clip-path: inset(40% 0 40% 0); }
-  75% { transform: translate(-1px, 2px); clip-path: inset(80% 0 10% 0); }
-  100% { transform: translate(0); clip-path: inset(0 0 0 0); }
+  0% {
+    transform: translate(0);
+    clip-path: inset(0 0 0 0);
+  }
+
+  25% {
+    transform: translate(-2px, 1px);
+    clip-path: inset(10% 0 80% 0);
+  }
+
+  50% {
+    transform: translate(2px, -1px);
+    clip-path: inset(40% 0 40% 0);
+  }
+
+  75% {
+    transform: translate(-1px, 2px);
+    clip-path: inset(80% 0 10% 0);
+  }
+
+  100% {
+    transform: translate(0);
+    clip-path: inset(0 0 0 0);
+  }
 }
 
 /* Organic Pulse for Zombie Mode */
@@ -78,6 +106,73 @@ body {
 }
 
 @keyframes organic-pulse {
-  0%, 100% { transform: scale(1); opacity: 0.2; }
-  50% { transform: scale(1.1); opacity: 0.4; }
+
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 0.2;
+  }
+
+  50% {
+    transform: scale(1.1);
+    opacity: 0.4;
+  }
+}
+
+/* Biometric ECG Animation */
+@keyframes ecg-path {
+  0% {
+    stroke-dashoffset: 400;
+  }
+
+  100% {
+    stroke-dashoffset: 0;
+  }
+}
+
+.animate-ecg {
+  stroke-dasharray: 400;
+  animation: ecg-path 2s linear infinite;
+}
+
+/* Portrait Scanning Beam */
+@keyframes scanning-beam {
+  0% {
+    top: 0%;
+    opacity: 0;
+  }
+
+  10% {
+    opacity: 1;
+  }
+
+  90% {
+    opacity: 1;
+  }
+
+  100% {
+    top: 100%;
+    opacity: 0;
+  }
+}
+
+.animate-scanning-beam {
+  animation: scanning-beam 4s ease-in-out infinite;
+}
+
+/* Grid Pulse */
+@keyframes grid-pulse {
+
+  0%,
+  100% {
+    opacity: 0.05;
+  }
+
+  50% {
+    opacity: 0.15;
+  }
+}
+
+.animate-grid-pulse {
+  animation: grid-pulse 4s ease-in-out infinite;
 }
