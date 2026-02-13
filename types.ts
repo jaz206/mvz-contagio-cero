@@ -3,102 +3,106 @@ export type HeroStatus = 'AVAILABLE' | 'DEPLOYED' | 'INJURED' | 'CAPTURED';
 export type WorldStage = 'NORMAL' | 'ANOMALY' | 'SURFER' | 'GALACTUS';
 
 export interface HeroStats {
-    strength: number;
-    agility: number;
-    intellect: number;
+  strength: number;
+  agility: number;
+  intellect: number;
 }
 
 // NUEVA INTERFAZ PARA EL ENCUADRE
 export interface ImageParams {
-    scale: number;
-    x: number;
-    y: number;
+  scale: number;
+  x: number;
+  y: number;
 }
 
+export type I18nString = string | { es: string; en: string };
+
 export interface Hero {
-    id: string;
-    templateId?: string;
-    name: string;
-    alias: string;
-    status: HeroStatus;
-    class: HeroClass;
-    bio: string;
-    currentStory?: string;
-    objectives?: string[];
-    completedObjectiveIndices?: number[];
-    imageUrl?: string;
-    characterSheetUrl?: string; // <--- NUEVO CAMPO
-    stats: HeroStats;
-    assignedMissionId: string | null;
-    expansionId?: string;
-    relatedHeroId?: string;
-    imageParams?: ImageParams;
+  id: string;
+  templateId?: string;
+  name: string;
+  alias: string;
+  status: HeroStatus;
+  class: HeroClass;
+  bio: I18nString;
+  origin?: I18nString;
+  currentStory?: string;
+  objectives?: string[];
+  completedObjectiveIndices?: number[];
+  imageUrl?: string;
+  characterSheetUrl?: string;
+  stats: HeroStats;
+  assignedMissionId: string | null;
+  expansionId?: string;
+  relatedHeroId?: string;
+  imageParams?: ImageParams;
 }
 
 export interface HeroTemplate {
-    id: string;
-    defaultName: string;
-    defaultClass: HeroClass;
-    defaultStats: HeroStats;
-    imageUrl: string;
-    characterSheetUrl?: string; // <--- NUEVO CAMPO
-    bio?: string;
-    alias: string;
-    currentStory?: string;
-    objectives?: string[];
-    defaultAlignment?: 'ALIVE' | 'ZOMBIE'; 
-    expansionId?: string;
-    relatedHeroId?: string;
-    imageParams?: ImageParams;
+  id: string;
+  defaultName: string;
+  defaultClass: HeroClass;
+  defaultStats: HeroStats;
+  imageUrl: string;
+  characterSheetUrl?: string;
+  bio?: I18nString;
+  origin?: I18nString;
+  alias: string;
+  currentStory?: string;
+  objectives?: string[];
+  defaultAlignment?: 'ALIVE' | 'ZOMBIE';
+  expansionId?: string;
+  relatedHeroId?: string;
+  imageParams?: ImageParams;
 }
 
 export interface Location {
-    state: string;
-    coordinates: [number, number]; 
+  state: string;
+  coordinates: [number, number];
 }
 
 export interface Objective {
-    title: string;
-    desc: string;
+  title: string;
+  desc: string;
 }
 
-export type MissionType = 
-    | 'STANDARD' 
-    | 'INTRODUCTORY' 
-    | 'SHIELD_BASE' 
-    | 'BOSS' 
-    | 'BOSS_KINGPIN' 
-    | 'BOSS_MAGNETO' 
-    | 'BOSS_DOOM' 
-    | 'BOSS_HULK' 
-    | 'GALACTUS';
+export type MissionType =
+  | 'STANDARD'
+  | 'INTRODUCTORY'
+  | 'SHIELD_BASE'
+  | 'BOSS'
+  | 'BOSS_KINGPIN'
+  | 'BOSS_MAGNETO'
+  | 'BOSS_DOOM'
+  | 'BOSS_HULK'
+  | 'GALACTUS';
 
 export interface Mission {
-    id: string;
-    title: string;
-    description: string[];
-    objectives: Objective[];
-    location: Location;
-    threatLevel: string;
-    type?: MissionType; 
-    triggerStage?: WorldStage; 
-    prereq?: string;       
-    prereqs?: string[];    
-    pdfUrl?: string;
-    alignment?: 'ALIVE' | 'ZOMBIE' | 'BOTH';
-    requirements?: string[];
-    specialRules?: string[];      
-    setupInstructions?: string[]; 
-    layoutUrl?: string;
-    outcomeText?: string;
-    isIntroMission?: boolean;
+  id: string;
+  title: string;
+  description: string[];
+  objectives: Objective[];
+  location: Location;
+  threatLevel: string;
+  type?: MissionType;
+  triggerStage?: WorldStage;
+  prereq?: string;
+  prereqs?: string[];
+  pdfUrl?: string;
+  alignment?: 'ALIVE' | 'ZOMBIE' | 'BOTH';
+  requirements?: string[];
+  specialRules?: string[];
+  setupInstructions?: string[];
+  layoutUrl?: string;
+  outcomeText?: string;
+  isIntroMission?: boolean;
 }
 
 export interface GlobalEvent {
-    stage: WorldStage;
-    title: string;
-    description: string;
-    image?: string;
+  stage: WorldStage;
+  title: string;
+  description: string;
+  image?: string;
 }
 
 export interface USATopoJSON {

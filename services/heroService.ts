@@ -44,6 +44,7 @@ export const getHeroTemplates = async (): Promise<HeroTemplate[]> => {
             const imageUrl = findField(data, ['imageUrl', 'foto', 'image', 'img', 'url', 'picture']);
             const characterSheetUrl = findField(data, ['characterSheetUrl', 'ficha', 'gameCard', 'sheet', 'carta']);
             const bio = findField(data, ['bio', 'biografia', 'biography', 'historia', 'history']);
+            const origin = findField(data, ['origin', 'origen', 'source']);
             const alias = findField(data, ['alias', 'codename', 'nombre_en_clave', 'heroname']);
             const currentStory = findField(data, ['currentStory', 'historia_actual', 'historiaActual', 'current_story']);
             const objectives = findField(data, ['objectives', 'objetivos', 'goals', 'misiones']);
@@ -64,6 +65,7 @@ export const getHeroTemplates = async (): Promise<HeroTemplate[]> => {
                 imageUrl: imageUrl || '',
                 characterSheetUrl: characterSheetUrl || '',
                 bio: bio || '',
+                origin: origin || '',
                 alias: alias || '',
                 currentStory: currentStory || '',
                 objectives: Array.isArray(objectives) ? objectives : [],

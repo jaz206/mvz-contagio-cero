@@ -1,6 +1,13 @@
 import React, { useState, useMemo } from "react";
 import { translations, Language } from "../translations";
-import { Hero, Mission, HeroClass, HeroTemplate } from "../types";
+import { Hero, Mission, HeroClass, HeroTemplate, I18nString } from "../types";
+
+// ... utilities ...
+const resolveI18n = (text: I18nString | undefined, lang: Language): string => {
+    if (!text) return '';
+    if (typeof text === 'string') return text;
+    return text[lang] || text['es'] || '';
+};
 import { getHeroTemplates } from "../services/heroService";
 import { RecruitModal } from "./RecruitModal";
 import { ConfirmationModal } from "./ConfirmationModal";
@@ -564,8 +571,19 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
                                         <div className="absolute top-2 right-2 opacity-5 pointer-events-none">
                                             <div className="w-16 h-16 border-4 border-white rotate-45"></div>
                                         </div>
+
+                                        {selectedHero.origin && (
+                                            <div className="mb-4">
+                                                <div className="text-[8px] text-cyan-600 font-bold uppercase mb-1">ORIGIN_DATA</div>
+                                                <div className="text-[10px] text-cyan-100 font-mono italic opacity-80">
+                                                    {resolveI18n(selectedHero.origin, language)}
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        <div className="text-[8px] text-gray-600 font-bold uppercase mb-1">BEHAVIORAL_REPORT</div>
                                         <div className="font-mono text-[11px] leading-relaxed text-slate-300 italic first-letter:text-2xl first-letter:font-black first-letter:mr-1 first-letter:float-left">
-                                            "{selectedHero.bio}"
+                                            "{resolveI18n(selectedHero.bio, language)}"
                                         </div>
                                         <div className="mt-6 pt-6 border-t border-slate-800 flex justify-between items-center text-[9px] font-mono text-slate-500">
                                             <span>CLASS_SPEC: {selectedHero.class}</span>

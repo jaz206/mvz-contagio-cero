@@ -18,9 +18,12 @@ export const CharacterEditor: React.FC<CharacterEditorProps> = ({ isOpen, onClos
     const [alias, setAlias] = useState('');
     const [heroClass, setHeroClass] = useState<HeroClass>('BRAWLER');
     const [stats, setStats] = useState<HeroStats>({ strength: 5, agility: 5, intellect: 5 });
-    const [bio, setBio] = useState('');
+    const [bioEs, setBioEs] = useState('');
+    const [bioEn, setBioEn] = useState('');
+    const [originEs, setOriginEs] = useState('');
+    const [originEn, setOriginEn] = useState('');
     const [imageUrl, setImageUrl] = useState('');
-    const [characterSheetUrl, setCharacterSheetUrl] = useState(''); // <--- NUEVO ESTADO
+    const [characterSheetUrl, setCharacterSheetUrl] = useState('');
     const [alignment, setAlignment] = useState<'ALIVE' | 'ZOMBIE'>('ALIVE');
     const [relatedHeroId, setRelatedHeroId] = useState<string | undefined>(undefined);
 
@@ -42,13 +45,30 @@ export const CharacterEditor: React.FC<CharacterEditorProps> = ({ isOpen, onClos
             setAlias(initialData.alias || '');
             setHeroClass(initialData.defaultClass);
             setStats(initialData.defaultStats);
-            setBio(initialData.bio || '');
+
+            // Bio i18n
+            if (initialData.bio && typeof initialData.bio === 'object') {
+                setBioEs(initialData.bio.es);
+                setBioEn(initialData.bio.en);
+            } else {
+                setBioEs((initialData.bio as string) || '');
+                setBioEn((initialData.bio as string) || '');
+            }
+
+            // Origin i18n
+            if (initialData.origin && typeof initialData.origin === 'object') {
+                setOriginEs(initialData.origin.es);
+                setOriginEn(initialData.origin.en);
+            } else {
+                setOriginEs((initialData.origin as string) || '');
+                setOriginEn((initialData.origin as string) || '');
+            }
+
             setImageUrl(initialData.imageUrl);
-            setCharacterSheetUrl(initialData.characterSheetUrl || ''); // <--- CARGAR DATO
+            setCharacterSheetUrl(initialData.characterSheetUrl || '');
             setAlignment(initialData.defaultAlignment || 'ALIVE');
             setRelatedHeroId(initialData.relatedHeroId);
 
-            // Cargar params de imagen si existen
             if (initialData.imageParams) {
                 setImgScale(initialData.imageParams.scale);
                 setImgX(initialData.imageParams.x);
@@ -59,7 +79,8 @@ export const CharacterEditor: React.FC<CharacterEditorProps> = ({ isOpen, onClos
         } else {
             setName(''); setAlias(''); setHeroClass('BRAWLER');
             setStats({ strength: 5, agility: 5, intellect: 5 });
-            setBio(''); setImageUrl(''); setCharacterSheetUrl(''); setAlignment('ALIVE');
+            setBioEs(''); setBioEn(''); setOriginEs(''); setOriginEn('');
+            setImageUrl(''); setCharacterSheetUrl(''); setAlignment('ALIVE');
             setRelatedHeroId(undefined);
             setImgScale(1); setImgX(0); setImgY(0);
         }
@@ -89,14 +110,15 @@ export const CharacterEditor: React.FC<CharacterEditorProps> = ({ isOpen, onClos
             alias: alias.toUpperCase(),
             defaultClass: heroClass,
             defaultStats: stats,
-            bio,
+            bio: { es: bioEs, en: bioEn },
+            origin: { es: originEs, en: originEn },
             imageUrl,
-            characterSheetUrl, // <--- GUARDAR DATO
+            characterSheetUrl,
             defaultAlignment: alignment,
             objectives: initialData?.objectives || [],
             currentStory: initialData?.currentStory || '',
             relatedHeroId: relatedHeroId || null,
-            imageParams // Guardamos los ajustes
+            imageParams
         };
 
         try {
@@ -341,8 +363,17 @@ export const CharacterEditor: React.FC<CharacterEditorProps> = ({ isOpen, onClos
                             </div>
 
                             <div>
-                                <label className="text-[10px] text-cyan-600 font-bold block mb-1 uppercase">BIO / LORE</label>
-                                <textarea value={bio} onChange={e => setBio(e.target.value)} rows={4} className="w-full bg-slate-950 border border-cyan-800 p-2 text-cyan-200 text-xs" />
+                                <label className="text-[10px] text-cyan-600 font-bold block mb-1 uppercase">ORÍGEN (ES)</label>
+                                <textarea value={originEs} onChange={e => setOriginEs(e.target.value)} rows={2} className="w-full bg-slate-950 border border-cyan-800 p-2 text-cyan-200 text-xs mb-2" />
+                                <label className="text-[10px] text-cyan-600 font-bold block mb-1 uppercase">ORIGIN (EN)</label>
+                                <textarea value={originEn} onChange={e => setOriginEn(e.target.value)} rows={2} className="w-full bg-slate-950 border border-cyan-800 p-2 text-cyan-200 text-xs" />
+                            </div>
+
+                            <div>
+                                <label className="text-[10px] text-cyan-600 font-bold block mb-1 uppercase">BIO / LORE (ES)</label>
+                                <textarea value={bioEs} onChange={e => setBioEs(e.target.value)} rows={3} className="w-full bg-slate-950 border border-cyan-800 p-2 text-cyan-200 text-xs mb-2" />
+                                <label className="text-[10px] text-cyan-600 font-bold block mb-1 uppercase">BIO / LORE (EN)</label>
+                                <textarea value={bioEn} onChange={e => setBioEn(e.target.value)} rows={3} className="w-full bg-slate-950 border border-cyan-800 p-2 text-cyan-200 text-xs" />
                             </div>
                         </div>
                     </div>
