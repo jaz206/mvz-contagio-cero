@@ -203,213 +203,254 @@ export const MissionEditor: React.FC<MissionEditorProps> = ({ isOpen, onClose, o
         return exp ? exp.name : id;
     };
 
+    const isZombie = alignment === 'ZOMBIE';
+    const isBoth = alignment === 'BOTH';
+    const themeColor = isZombie ? 'lime' : (isBoth ? 'yellow' : 'cyan');
+    const accentClass = isZombie ? 'text-lime-500' : (isBoth ? 'text-yellow-500' : 'text-cyan-500');
+    const borderClass = isZombie ? 'border-lime-800' : (isBoth ? 'border-yellow-800' : 'border-cyan-800');
+    const focusClass = isZombie ? 'focus:border-lime-400' : (isBoth ? 'focus:border-yellow-400' : 'focus:border-cyan-400');
+    const bgHeaderClass = isZombie ? 'bg-lime-900/40' : (isBoth ? 'bg-yellow-900/40' : 'bg-cyan-900/40');
+    const buttonClass = isZombie ? 'bg-lime-600 hover:bg-lime-500' : (isBoth ? 'bg-yellow-600 hover:bg-yellow-500' : 'bg-cyan-600 hover:bg-cyan-500');
+
     return (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/90 backdrop-blur-sm p-4">
-            <div className="w-full max-w-4xl bg-slate-900 border-2 border-cyan-500 shadow-2xl flex flex-col max-h-[90vh]">
-                <div className="bg-cyan-900/40 p-4 border-b border-cyan-600 flex justify-between items-center">
-                    <h3 className="text-cyan-300 font-bold tracking-widest uppercase">
-                        {initialData ? `EDITING: ${initialData.title}` : t.title}
-                    </h3>
-                    <button onClick={onClose} className="text-cyan-500 hover:text-white">✕</button>
+        <div className="fixed inset-0 z-[120] flex items-center justify-center bg-slate-950/80 backdrop-blur-md p-4 animate-fade-in overflow-hidden">
+            <div className={`w-full max-w-7xl glass-panel shadow-2xl flex flex-col max-h-[95vh] relative rounded-sm border-t-2 ${isZombie ? 'border-lime-500 shadow-lime-900/20' : (isBoth ? 'border-yellow-500 shadow-yellow-900/20' : 'border-cyan-500 shadow-cyan-900/20')}`}>
+
+                <div className={`${bgHeaderClass} p-4 border-b ${borderClass} flex justify-between items-center`}>
+                    <div className="flex items-center gap-4">
+                        <div className={`text-2xl ${accentClass} font-black animate-pulse`}>
+                            {isZombie ? '☣' : (isBoth ? '⚖' : '🛡️')}
+                        </div>
+                        <h3 className={`${accentClass} font-black tracking-[0.2em] uppercase text-sm`}>
+                            {initialData ? `MODIFICANDO PROTOCOLO DE MISIÓN: ${initialData.title}` : 'ESTABLECER NUEVA OPERACIÓN TÁCTICA'}
+                        </h3>
+                    </div>
+                    <button onClick={onClose} className="text-gray-500 hover:text-white transition-colors">
+                        <span className="text-xs mr-2 font-mono">[ESC]</span> ✕
+                    </button>
                 </div>
 
-                <form onSubmit={handleSubmit} className="p-6 overflow-y-auto font-mono flex flex-col gap-4 scrollbar-thin scrollbar-thumb-cyan-900">
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div className="space-y-4">
-                            <div>
-                                <label className="text-[10px] text-cyan-600 font-bold block mb-1 uppercase">{t.missionTitle}</label>
-                                <input value={title} onChange={e => setTitle(e.target.value)} required className="w-full bg-slate-950 border border-cyan-800 p-2 text-cyan-200 focus:border-cyan-400 outline-none" />
-                            </div>
-
-                            <div className="grid grid-cols-2 gap-2">
+                <div className="flex-1 flex overflow-hidden font-mono">
+                    {/* FORMULARIO */}
+                    <form onSubmit={handleSubmit} className="flex-1 p-6 overflow-y-auto flex flex-col gap-6 scrollbar-thin scrollbar-thumb-slate-800 border-r border-slate-800">
+                        <div className="grid grid-cols-2 gap-6">
+                            {/* COLUMNA 1: BÁSICOS */}
+                            <div className="space-y-6">
                                 <div>
-                                    <label className="text-[10px] text-cyan-600 font-bold block mb-1 uppercase">{t.location}</label>
-                                    <select value={locationState} onChange={e => setLocationState(e.target.value)} className="w-full bg-slate-950 border border-cyan-800 p-2 text-cyan-200">
-                                        {STATES_LIST.map(s => <option key={s} value={s}>{s}</option>)}
-                                    </select>
+                                    <label className={`text-[10px] ${accentClass} font-black block mb-1 uppercase tracking-widest`}>NOMBRE DEL OPERATIVO</label>
+                                    <input value={title} onChange={e => setTitle(e.target.value)} required className={`w-full bg-slate-950 border ${borderClass} p-2 text-white ${focusClass} outline-none transition-all uppercase`} />
                                 </div>
+
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label className={`text-[10px] ${accentClass} font-black block mb-1 uppercase tracking-widest`}>CLASIFICACIÓN</label>
+                                        <select value={type} onChange={e => setType(e.target.value as MissionType)} className={`w-full bg-slate-950 border ${borderClass} p-2 text-white outline-none cursor-pointer text-xs`}>
+                                            <option value="STANDARD">ESTÁNDAR</option>
+                                            <option value="INTRODUCTORY">INTRODUCTORIA</option>
+                                            <option value="SHIELD_BASE">BASE S.H.I.E.L.D.</option>
+                                            <option value="BOSS_KINGPIN">JEFE: KINGPIN</option>
+                                            <option value="BOSS_MAGNETO">JEFE: MAGNETO</option>
+                                            <option value="BOSS_DOOM">JEFE: DOOM</option>
+                                            <option value="BOSS_HULK">JEFE: HULK</option>
+                                            <option value="GALACTUS">LLEGADA DE GALACTUS</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label className={`text-[10px] ${accentClass} font-black block mb-1 uppercase tracking-widest`}>BANDO OPERATIVO</label>
+                                        <select value={alignment} onChange={e => setAlignment(e.target.value as any)} className={`w-full bg-slate-950 border ${borderClass} p-2 text-white font-black outline-none cursor-pointer text-xs`}>
+                                            <option value="ALIVE">🛡️ HÉROES (HUMANOS)</option>
+                                            <option value="ZOMBIE">🧟 ZOMBIES (INFECTADOS)</option>
+                                            <option value="BOTH">⚖️ AMBOS (COOPERATIVO)</option>
+                                        </select>
+                                    </div>
+                                </div>
+
                                 <div>
-                                    <label className="text-[10px] text-cyan-600 font-bold block mb-1 uppercase">{t.threat}</label>
-                                    <select value={threatLevel} onChange={e => setThreatLevel(e.target.value)} className="w-full bg-slate-950 border border-cyan-800 p-2 text-yellow-400 font-bold">
+                                    <label className={`text-[10px] ${accentClass} font-black block mb-1 uppercase tracking-widest`}>NIVEL DE AMENAZA BIOLÓGICA</label>
+                                    <select value={threatLevel} onChange={e => setThreatLevel(e.target.value)} className={`w-full bg-slate-950 border ${borderClass} p-2 text-yellow-500 font-bold outline-none cursor-pointer text-xs`}>
                                         {THREAT_LEVELS.map(lvl => <option key={lvl} value={lvl}>{lvl}</option>)}
                                     </select>
                                 </div>
-                            </div>
 
-                            <div className="grid grid-cols-2 gap-2">
-                                <div>
-                                    <label className="text-[10px] text-cyan-600 font-bold block mb-1 uppercase">{t.type}</label>
-                                    <select value={type} onChange={e => setType(e.target.value as MissionType)} className="w-full bg-slate-950 border border-cyan-800 p-2 text-cyan-200">
-                                        <option value="STANDARD">STANDARD</option>
-                                        <option value="INTRODUCTORY">INTRODUCTORIA (VERDE)</option>
-                                        <option value="SHIELD_BASE">BASE S.H.I.E.L.D.</option>
-                                        <option value="BOSS_KINGPIN">BOSS - KINGPIN</option>
-                                        <option value="BOSS_MAGNETO">BOSS - MAGNETO</option>
-                                        <option value="BOSS_DOOM">BOSS - DOOM</option>
-                                        <option value="BOSS_HULK">BOSS - HULK</option>
-                                        <option value="GALACTUS">EVENTO GALACTUS</option>
-                                    </select>
+                                <div className={`p-4 border ${isIntroMission ? 'border-emerald-500 bg-emerald-900/10' : 'border-slate-800 bg-slate-900/20'} flex items-center gap-4 transition-all`}>
+                                    <input type="checkbox" id="isIntro" checked={isIntroMission} onChange={e => setIsIntroMission(e.target.checked)} className="w-5 h-5 accent-emerald-500 cursor-pointer" />
+                                    <label htmlFor="isIntro" className={`text-[10px] font-black ${isIntroMission ? 'text-emerald-400' : 'text-gray-500'} cursor-pointer uppercase tracking-tighter`}>
+                                        ESTABLECER COMO MISIÓN DE INICIO (AUTO-DESPLIEGUE)
+                                    </label>
                                 </div>
-                                <div>
-                                    <label className="text-[10px] text-cyan-600 font-bold block mb-1 uppercase">MODO</label>
-                                    <select
-                                        value={alignment}
-                                        onChange={e => { setAlignment(e.target.value as any); setPrereqs([]); }}
-                                        className="w-full bg-slate-950 border border-cyan-800 p-2 text-white font-bold"
-                                    >
-                                        <option value="ALIVE">🛡️ HÉROES</option>
-                                        <option value="ZOMBIE">🧟 ZOMBIES</option>
-                                        <option value="BOTH">⚖️ AMBOS</option>
-                                    </select>
-                                </div>
-                            </div>
 
-                            <div className="flex items-center gap-3 p-3 border border-emerald-500/50 bg-emerald-900/10">
-                                <input
-                                    type="checkbox"
-                                    id="isIntro"
-                                    checked={isIntroMission}
-                                    onChange={e => setIsIntroMission(e.target.checked)}
-                                    className="w-5 h-5 accent-emerald-500 cursor-pointer"
-                                />
-                                <div>
-                                    <label htmlFor="isIntro" className="text-xs font-bold text-emerald-400 cursor-pointer uppercase">ES MISIÓN INICIAL (INTRO)</label>
-                                    <div className="text-[9px] text-emerald-600">Aparecerá automáticamente tras la intro.</div>
-                                </div>
-                            </div>
-
-                            {type === 'GALACTUS' && (
-                                <div className="bg-purple-900/20 border border-purple-500/50 p-2 animate-fade-in">
-                                    <label className="text-[10px] text-purple-400 font-bold block mb-1 uppercase">ETAPA DE ACTIVACIÓN</label>
-                                    <select
-                                        value={triggerStage}
-                                        onChange={e => setTriggerStage(e.target.value as WorldStage)}
-                                        className="w-full bg-slate-950 border border-purple-500 p-2 text-purple-200 font-bold"
-                                    >
-                                        <option value="SURFER">LLEGADA DE SILVER SURFER (ETAPA 2)</option>
-                                        <option value="GALACTUS">LLEGADA DE GALACTUS (ETAPA 3)</option>
-                                    </select>
-                                </div>
-                            )}
-
-                            <div className="bg-slate-900/50 border border-cyan-900/30 p-3">
-                                <label className="text-[10px] text-cyan-600 font-bold block mb-2 uppercase">{t.prereq} (MÚLTIPLES)</label>
-                                <div className="flex gap-2 mb-2">
-                                    <select
-                                        value={selectedPrereqToAdd}
-                                        onChange={e => setSelectedPrereqToAdd(e.target.value)}
-                                        className="flex-1 bg-slate-950 border border-cyan-800 p-2 text-xs text-cyan-200 min-w-0"
-                                    >
-                                        <option value="">-- SELECCIONAR MISIÓN --</option>
-                                        {validPrereqOptions.map(m => (
-                                            <option key={m.id} value={m.id}>
-                                                {m.title} (ID: {m.id})
-                                            </option>
-                                        ))}
-                                    </select>
-                                    <button
-                                        type="button"
-                                        onClick={handleAddPrereq}
-                                        disabled={!selectedPrereqToAdd}
-                                        className="bg-cyan-900/50 border border-cyan-600 text-cyan-300 px-3 py-1 text-[10px] font-bold uppercase disabled:opacity-50 shrink-0"
-                                    >
-                                        + AÑADIR
-                                    </button>
-                                </div>
-                                <div className="flex flex-wrap gap-2">
-                                    {prereqs.map((pid) => {
-                                        const m = existingMissions.find(em => em.id === pid);
-                                        return (
-                                            <div key={pid} className="flex items-center gap-2 bg-cyan-950 border border-cyan-800 px-2 py-1 rounded">
-                                                <span className="text-[10px] text-cyan-300 truncate max-w-[150px]">{m ? m.title : pid}</span>
-                                                <button type="button" onClick={() => handleRemovePrereq(pid)} className="text-red-400 font-bold hover:text-red-200">×</button>
+                                {/* REQUISITOS */}
+                                <div className="bg-slate-900/30 border border-slate-800 p-4 space-y-4">
+                                    <label className="text-[10px] text-cyan-600 font-black block uppercase tracking-widest">CADENA DE MANDO (PRERREQUISITOS)</label>
+                                    <div className="flex gap-2">
+                                        <select value={selectedPrereqToAdd} onChange={e => setSelectedPrereqToAdd(e.target.value)} className="flex-1 bg-black border border-slate-800 p-2 text-[10px] text-gray-400 outline-none">
+                                            <option value="">-- VINCULAR CON MISIÓN ANTERIOR --</option>
+                                            {validPrereqOptions.map(m => <option key={m.id} value={m.id}>{m.title}</option>)}
+                                        </select>
+                                        <button type="button" onClick={handleAddPrereq} disabled={!selectedPrereqToAdd} className="bg-cyan-900/30 border border-cyan-700 text-cyan-400 px-3 py-1 text-[10px] font-black uppercase hover:bg-cyan-800 transition-all disabled:opacity-30">AÑADIR</button>
+                                    </div>
+                                    <div className="flex flex-wrap gap-2">
+                                        {prereqs.map(pid => (
+                                            <div key={pid} className="bg-cyan-950 border border-cyan-800 px-2 py-1 flex items-center gap-2">
+                                                <span className="text-[9px] text-cyan-300 uppercase truncate max-w-[100px]">{existingMissions.find(em => em.id === pid)?.title || pid}</span>
+                                                <button type="button" onClick={() => handleRemovePrereq(pid)} className="text-red-500 hover:text-white">✕</button>
                                             </div>
-                                        );
-                                    })}
-                                    {prereqs.length === 0 && <span className="text-[10px] text-gray-600 italic">Sin requisitos previos</span>}
+                                        ))}
+                                    </div>
                                 </div>
                             </div>
 
-                            <div className="bg-slate-900/50 border border-blue-900/30 p-3">
-                                <label className="text-[10px] text-blue-400 font-bold block mb-2 uppercase">REQUISITOS (EXPANSIONES)</label>
-                                <div className="flex gap-2 mb-2">
-                                    <select
-                                        value={selectedExpansionId}
-                                        onChange={e => setSelectedExpansionId(e.target.value)}
-                                        className="flex-1 bg-slate-950 border border-blue-800 p-2 text-xs text-blue-200 min-w-0"
-                                    >
-                                        {GAME_EXPANSIONS.map(exp => (
-                                            <option key={exp.id} value={exp.id}>{exp.name}</option>
+                            {/* COLUMNA 2: LOCALIZACIÓN Y RECURSOS */}
+                            <div className="space-y-6">
+                                <div>
+                                    <label className={`text-[10px] ${accentClass} font-black block mb-4 uppercase tracking-widest`}>SITUACIÓN GEOGRÁFICA (ESTADO)</label>
+                                    {/* GRID DE ESTADOS SIMPLIFICADO Y TÁCTICO */}
+                                    <div className="bg-black border border-slate-800 p-3 max-h-48 overflow-y-auto grid grid-cols-4 gap-1 scrollbar-thin scrollbar-thumb-slate-800">
+                                        {STATES_LIST.map(s => (
+                                            <button
+                                                key={s}
+                                                type="button"
+                                                onClick={() => setLocationState(s)}
+                                                className={`text-[8px] p-2 border ${locationState === s ? 'bg-cyan-900 border-cyan-400 text-white' : 'border-slate-900 text-gray-600 hover:border-slate-700'} font-black transition-all uppercase truncate`}
+                                            >
+                                                {s}
+                                            </button>
                                         ))}
-                                    </select>
-                                    <button type="button" onClick={handleAddRequirement} className="bg-blue-900/50 border border-blue-600 text-blue-300 px-3 py-1 text-[10px] font-bold uppercase shrink-0">+ AÑADIR</button>
+                                    </div>
                                 </div>
-                                <div className="flex flex-wrap gap-2">
-                                    {requirements.map((reqId, idx) => (
-                                        <div key={idx} className="flex items-center gap-2 bg-blue-950 border border-blue-800 px-2 py-1 rounded">
-                                            <span className="text-[10px] text-blue-300">{getExpansionName(reqId)}</span>
-                                            <button type="button" onClick={() => handleRemoveRequirement(reqId)} className="text-red-400 font-bold">×</button>
+
+                                <div className="bg-slate-900/30 border border-slate-800 p-4 space-y-4">
+                                    <label className="text-[10px] text-blue-500 font-black block uppercase tracking-widest text-center border-b border-blue-900 pb-2">SUMINISTROS REQUERIDOS (EXPANSIONES)</label>
+                                    <div className="flex gap-2">
+                                        <select value={selectedExpansionId} onChange={e => setSelectedExpansionId(e.target.value)} className="flex-1 bg-black border border-slate-800 p-2 text-[10px] text-blue-400 outline-none">
+                                            {GAME_EXPANSIONS.map(exp => <option key={exp.id} value={exp.id}>{exp.name}</option>)}
+                                        </select>
+                                        <button type="button" onClick={handleAddRequirement} className="bg-blue-900/30 border border-blue-700 text-blue-400 px-3 py-1 text-[10px] font-black uppercase hover:bg-blue-800">AÑADIR</button>
+                                    </div>
+                                    <div className="flex flex-wrap gap-2">
+                                        {requirements.map(reqId => (
+                                            <div key={reqId} className="bg-blue-950 border border-blue-800 px-2 py-1 flex items-center gap-2">
+                                                <span className="text-[9px] text-blue-300 uppercase truncate max-w-[100px]">{getExpansionName(reqId)}</span>
+                                                <button type="button" onClick={() => handleRemoveRequirement(reqId)} className="text-red-500 hover:text-white">✕</button>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                <div className="grid grid-cols-1 gap-4">
+                                    <div>
+                                        <label className={`text-[10px] ${accentClass} font-black block mb-1 uppercase tracking-widest`}>URL TÁCTICA (MAPA/LAYOUT)</label>
+                                        <input value={layoutUrl} onChange={e => setLayoutUrl(e.target.value)} placeholder="https://..." className={`w-full bg-slate-950 border ${borderClass} p-2 text-white text-[10px] ${focusClass} outline-none transition-all`} />
+                                    </div>
+                                    <div>
+                                        <label className={`text-[10px] text-yellow-600 font-black block mb-1 uppercase tracking-widest`}>ENLACE EXPEDIENTE FÍSICO (PDF)</label>
+                                        <input value={pdfUrl} onChange={e => setPdfUrl(e.target.value)} placeholder="https://..." className={`w-full bg-slate-950 border border-yellow-900 p-2 text-yellow-200 text-[10px] focus:border-yellow-500 outline-none transition-all`} />
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* DESCRIPCIÓN Y OBJETIVOS */}
+                        <div className="space-y-6">
+                            <div>
+                                <label className={`text-[10px] ${accentClass} font-black block mb-1 uppercase tracking-widest`}>RESUMEN DE INTELIGENCIA (DESCRIPCIÓN)</label>
+                                <textarea value={description} onChange={e => setDescription(e.target.value)} rows={4} className={`w-full bg-slate-950 border ${borderClass} p-3 text-white text-xs ${focusClass} outline-none resize-none leading-relaxed italic`} placeholder="FLAVOR TEXT..." />
+                            </div>
+
+                            <div className="bg-slate-900/30 border border-slate-800 p-4">
+                                <div className="flex justify-between items-center mb-4 border-b border-slate-800 pb-2">
+                                    <label className={`text-[10px] ${accentClass} font-black uppercase tracking-widest`}>DIRECTIVAS OPERACIONALES (OBJETIVOS)</label>
+                                    <button type="button" onClick={handleAddObjective} className={`text-[9px] ${accentClass} border border-current px-4 py-1 font-black hover:bg-white/5`}>NUEVA DIRECTIVA</button>
+                                </div>
+                                <div className="space-y-4">
+                                    {objectives.map((obj, i) => (
+                                        <div key={i} className="flex gap-4 items-start group">
+                                            <div className={`w-6 h-6 border ${borderClass} flex items-center justify-center text-[10px] font-black shrink-0 mt-1 uppercase`}>{i + 1}</div>
+                                            <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-2">
+                                                <input placeholder="TÍTULO DIRECTIVA" value={obj.title} onChange={e => handleObjectiveChange(i, 'title', e.target.value)} className={`bg-slate-950 border ${borderClass} p-2 text-xs text-white outline-none focus:border-white transition-all uppercase`} />
+                                                <input placeholder="PARÁMETROS DE ÉXITO" value={obj.desc} onChange={e => handleObjectiveChange(i, 'desc', e.target.value)} className="bg-slate-950 border border-slate-800 p-2 text-xs text-gray-500 outline-none focus:border-white transition-all" />
+                                            </div>
+                                            <button type="button" onClick={() => setObjectives(objectives.filter((_, idx) => idx !== i))} className="text-red-900 hover:text-red-500 mt-2 opacity-0 group-hover:opacity-100 transition-opacity">✕</button>
                                         </div>
                                     ))}
                                 </div>
                             </div>
+
+                            <div>
+                                <label className="text-[10px] text-emerald-600 font-black block mb-1 uppercase tracking-widest">PROTOCOLO DE RECOMPRENSA (OUTCOME TEXT)</label>
+                                <textarea value={outcomeText} onChange={e => setOutcomeText(e.target.value)} rows={3} className="w-full bg-slate-950 border border-emerald-900 p-3 text-emerald-200 text-xs focus:border-emerald-400 outline-none resize-none" placeholder="Texto al completar..." />
+                            </div>
                         </div>
 
-                        <div className="space-y-4">
-                            <div className="bg-slate-900/50 border border-cyan-900/30 p-3">
-                                <label className="text-[10px] text-cyan-500 font-bold block mb-2 uppercase">RECURSOS EXTERNOS</label>
-                                <div className="space-y-2">
-                                    <div>
-                                        <label className="text-[9px] text-cyan-700 block mb-1">URL IMAGEN MAPA (LAYOUT)</label>
-                                        <input value={layoutUrl} onChange={e => setLayoutUrl(e.target.value)} placeholder="https://..." className="w-full bg-slate-950 border border-cyan-800 p-2 text-cyan-200 text-xs" />
-                                    </div>
-                                    {/* --- NUEVO CAMPO PDF --- */}
-                                    <div>
-                                        <label className="text-[9px] text-cyan-700 block mb-1">URL ARCHIVO PDF (MISIÓN)</label>
-                                        <input value={pdfUrl} onChange={e => setPdfUrl(e.target.value)} placeholder="https://... (Drive/Dropbox/Direct Link)" className="w-full bg-slate-950 border border-cyan-800 p-2 text-cyan-200 text-xs" />
-                                    </div>
+                        {/* ACCIONES */}
+                        <div className="flex justify-end gap-3 pt-6 border-t border-slate-800">
+                            <button type="button" onClick={onClose} className="px-6 py-2 border border-red-900 text-red-500 text-[10px] font-black uppercase hover:bg-red-900/20 transition-all">ABORTAR</button>
+                            <button type="submit" disabled={saving} className={`px-10 py-2 ${buttonClass} text-white text-[10px] font-black uppercase shadow-lg transition-all active:scale-95 disabled:opacity-50`}>
+                                {saving ? 'TRANSMITIENDO...' : (initialData ? 'ACTUALIZAR PROTOCOLO' : 'REGISTRAR OPERACIÓN')}
+                            </button>
+                        </div>
+                    </form>
+
+                    {/* BRIEFING PREVIEW PANEL */}
+                    <div className="hidden xl:flex w-96 bg-black/60 p-6 flex-col border-l border-slate-800 overflow-y-auto scrollbar-thin scrollbar-thumb-slate-800 select-none">
+                        <div className="mb-4">
+                            <h4 className={`text-[10px] ${accentClass} font-black uppercase tracking-[0.4em] mb-1`}>LIVE BRIEFING</h4>
+                            <div className={`h-px bg-gradient-to-r ${isZombie ? 'from-lime-500' : (isBoth ? 'from-yellow-500' : 'from-cyan-500')} to-transparent`}></div>
+                        </div>
+
+                        <div className="space-y-6">
+                            {/* MINI TACTICAL HEADER */}
+                            <div className="bg-slate-900/40 border-l-4 border-current p-4" style={{ color: isZombie ? '#84cc16' : (isBoth ? '#eab308' : '#06b6d4') }}>
+                                <div className="text-[8px] opacity-70 mb-1 font-mono uppercase">LOCALIZACIÓN: {locationState}</div>
+                                <h1 className="text-xl font-black text-white uppercase tracking-tighter leading-none mb-2">{title || 'OPERACIÓN_SIN_NOMBRE'}</h1>
+                                <div className="flex gap-2">
+                                    <span className="text-[8px] font-black border border-current px-2 py-0.5">{threatLevel.split(' (')[0].toUpperCase()}</span>
+                                    <span className="text-[8px] font-black bg-white/10 px-2 py-0.5">{type}</span>
                                 </div>
                             </div>
 
-                            <div>
-                                <label className="text-[10px] text-cyan-600 font-bold block mb-1 uppercase">{t.description} (FLAVOR TEXT)</label>
-                                <textarea value={description} onChange={e => setDescription(e.target.value)} rows={8} className="w-full bg-slate-950 border border-cyan-800 p-2 text-cyan-200 text-xs" />
+                            {/* DECODED INTEL */}
+                            <div className="space-y-2">
+                                <div className="text-[8px] text-gray-500 font-black tracking-widest uppercase font-mono">INTELIGENCIA DE CAMPO</div>
+                                <div className="text-[10px] text-gray-300 italic leading-relaxed font-serif border-l border-slate-800 pl-4 py-1">
+                                    {description || 'ESPERANDO TRANSMISIÓN DE DATOS...'}
+                                </div>
                             </div>
 
-                            <div>
-                                <label className="text-[10px] text-emerald-600 font-bold block mb-1 uppercase">{t.outcome}</label>
-                                <textarea
-                                    value={outcomeText}
-                                    onChange={e => setOutcomeText(e.target.value)}
-                                    rows={4}
-                                    placeholder="Texto que aparecerá al completar la misión..."
-                                    className="w-full bg-slate-950 border border-emerald-800 p-2 text-emerald-200 text-xs focus:border-emerald-500 outline-none"
-                                />
+                            {/* TACTICAL OBJECTIVES */}
+                            <div className="space-y-4">
+                                <div className="text-[8px] text-gray-500 font-black tracking-widest uppercase font-mono">DIRECTIVAS ASIGNADAS</div>
+                                {objectives.filter(o => o.title).map((obj, i) => (
+                                    <div key={i} className="flex gap-3">
+                                        <div className={`w-1 h-1 rounded-full bg-current mt-1 ${accentClass}`}></div>
+                                        <div>
+                                            <div className="text-[10px] font-black text-white uppercase tracking-tight leading-tight">{obj.title}</div>
+                                            <div className="text-[9px] text-gray-500 font-mono italic">{obj.desc}</div>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+
+                            {/* SCANLINE OVERLAY PREVIEW */}
+                            <div className="relative aspect-video bg-slate-950 border border-slate-800 flex items-center justify-center overflow-hidden">
+                                {layoutUrl ? (
+                                    <img src={layoutUrl} className="w-full h-full object-cover opacity-50 grayscale" referrerPolicy="no-referrer" />
+                                ) : (
+                                    <div className="text-gray-800 text-[9px] font-mono">[LAYOUT_PENDIENTE]</div>
+                                )}
+                                <div className="absolute inset-0 pointer-events-none opacity-10 bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.25)_50%),linear-gradient(90deg,rgba(255,0,0,0.06),rgba(0,255,0,0.02),rgba(0,0,255,0.06))] bg-[length:100%_2px,3px_100%]"></div>
+                                <div className="absolute top-2 left-2 text-[7px] text-cyan-500 font-mono animate-pulse uppercase tracking-[0.2em]">REC ● LIVE_FEED</div>
+                            </div>
+
+                            <div className="p-4 border border-slate-800 bg-slate-900/20 text-[8px] text-gray-600 font-mono leading-tight">
+                                // SYNC_STATUS: PENDING<br />
+                                // BYTES_RECEIVED: {title.length * 1024} KB<br />
+                                // AUTH_LEVEL: ADM_ONLY<br />
+                                // ENCRYPTION: MIL_SPEC_2048
                             </div>
                         </div>
                     </div>
-
-                    <div className="bg-slate-950/50 p-4 border border-cyan-900/50 mt-2">
-                        <div className="flex justify-between mb-2">
-                            <label className="text-[10px] text-cyan-600 font-bold uppercase">{t.objectives}</label>
-                            <button type="button" onClick={handleAddObjective} className="text-[10px] text-cyan-400 hover:text-white border border-cyan-700 px-2 uppercase">+ {t.addObjective}</button>
-                        </div>
-                        {objectives.map((obj, i) => (
-                            <div key={i} className="mb-2 grid grid-cols-1 md:grid-cols-2 gap-2">
-                                <input placeholder={t.objTitle} value={obj.title} onChange={e => handleObjectiveChange(i, 'title', e.target.value)} className="bg-slate-900 border border-cyan-900 p-1 text-xs text-cyan-200" />
-                                <input placeholder={t.objDesc} value={obj.desc} onChange={e => handleObjectiveChange(i, 'desc', e.target.value)} className="bg-slate-900 border border-cyan-900 p-1 text-xs text-gray-400" />
-                            </div>
-                        ))}
-                    </div>
-
-                    <div className="flex justify-end gap-4 pt-4 border-t border-cyan-800">
-                        <button type="button" onClick={onClose} className="px-4 py-2 border border-red-900 text-red-500 text-xs font-bold uppercase hover:bg-red-900/20">{t.cancel}</button>
-                        <button type="submit" disabled={saving} className="px-6 py-2 bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-bold uppercase shadow-[0_0_15px_rgba(6,182,212,0.4)] transition-all">
-                            {saving ? 'GUARDANDO...' : t.save}
-                        </button>
-                    </div>
-                </form>
+                </div>
             </div>
         </div>
     );
