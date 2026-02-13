@@ -176,3 +176,117 @@ body {
 .animate-grid-pulse {
   animation: grid-pulse 4s ease-in-out infinite;
 }
+
+/* --- POLISH ANIMATIONS --- */
+
+/* Glitch Skew (Subtle) */
+@keyframes glitch-skew {
+  0% {
+    transform: skew(0deg);
+  }
+
+  20% {
+    transform: skew(0deg);
+  }
+
+  21% {
+    transform: skew(-5deg);
+  }
+
+  22% {
+    transform: skew(5deg);
+  }
+
+  23% {
+    transform: skew(0deg);
+  }
+
+  50% {
+    transform: skew(0deg);
+  }
+
+  51% {
+    transform: skew(10deg);
+  }
+
+  52% {
+    transform: skew(-10deg);
+  }
+
+  53% {
+    transform: skew(0deg);
+  }
+
+  100% {
+    transform: skew(0deg);
+  }
+}
+
+.animate-glitch-skew {
+  animation: glitch-skew 4s infinite step-end;
+}
+
+/* Floating Dust (Visible in Story Mode) */
+@keyframes floating-dust {
+  0% {
+    transform: translateY(0px) translateX(0px);
+    opacity: 0;
+  }
+
+  50% {
+    opacity: 0.5;
+  }
+
+  100% {
+    transform: translateY(-100px) translateX(20px);
+    opacity: 0;
+  }
+}
+
+.dust-particle {
+  position: absolute;
+  width: 3px;
+  height: 3px;
+  background: rgba(100, 116, 139, 0.6);
+  border-radius: 50%;
+  pointer-events: none;
+  animation: floating-dust 10s infinite linear;
+}
+
+/* Typing Cursor */
+@keyframes typing-cursor {
+
+  from,
+  to {
+    opacity: 0;
+  }
+
+  50% {
+    opacity: 1;
+  }
+}
+
+.animate-typing-cursor {
+  display: inline-block;
+  width: 8px;
+  height: 1.2em;
+  background: currentColor;
+  margin-left: 2px;
+  vertical-align: middle;
+  animation: typing-cursor 1s infinite step-end;
+}
+
+/* Scanline Noise (Login) */
+@keyframes scanline-noise {
+  0% {
+    transform: translateY(-100%);
+  }
+
+  100% {
+    transform: translateY(100%);
+  }
+}
+
+.animate-scanline-noise {
+  animation: scanline-noise 8s linear infinite;
+}
