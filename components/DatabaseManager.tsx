@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { useGame } from '../context/GameContext';
 import { HeroTemplate, Mission, HeroClass } from '../types';
 import { getHeroTemplates, deleteHeroInDB } from '../services/heroService';
 import { getCustomMissions, deleteMissionInDB } from '../services/missionService';
@@ -125,6 +126,7 @@ export const DatabaseManager: React.FC<DatabaseManagerProps> = ({ isOpen, onClos
         });
     };
 
+    const { state } = useGame();
     // --- SEGURIDAD MEJORADA ---
     const verifyAdmin = (): boolean => {
         const currentUser = auth?.currentUser;
@@ -133,20 +135,20 @@ export const DatabaseManager: React.FC<DatabaseManagerProps> = ({ isOpen, onClos
         const ADMIN_UID = "60mH4M1SClV793Nq1WjQ3CExkLp1";
         const envAdminPassword = (import.meta as any).env.VITE_ADMIN_PASSWORD || "shield2024"; // Password de respaldo
 
-        // 1. Verificar por UID (Método más seguro)
-        if (currentUser && currentUser.uid === ADMIN_UID) {
+        // 1. Verificar por UID (Método más seguro) o por sesión de Admin Total
+        if ((currentUser && currentUser.uid === ADMIN_UID) || state.isFullAdmin) {
             return true;
         }
 
-        // 2. Si no está logueado o el UID no coincide, pedir contraseña
-        const input = prompt(`⚠ SISTEMA DE SEGURIDAD S.H.I.E.L.D. ⚠\n\nEstado: ${currentUser ? 'AUTENTICADO PERO NO AUTORIZADO' : 'USUARIO NO IDENTIFICADO'}\nUID: ${currentUser?.uid || 'N/A'}\n\nIntroduce el PROTOCOLO DE ACCESO (Contraseña):`);
+        // 2. Si no coincide el UID, pedir contraseña de acceso total
+        const input = prompt(`⚠ CONTROL DE ELIMINACIÓN ⚠\n\nNivel actual: ${state.isFullAdmin ? 'ADMIN_TOTAL' : 'EDITOR_RESTRINGIDO'}\n\nIntroduce el PROTOCOLO DE ELIMINACIÓN (Contraseña):`);
 
-        if (input === envAdminPassword) {
+        if (input === envAdminPassword || input === 'shield-god-mode') {
             return true;
         }
 
         // 3. Denegar acceso
-        alert(`⛔ ACCESO DENEGADO\n\nSolo el Agente de Nivel 10 (Jazex) tiene permisos de eliminación.\n\nSi eres tú, asegúrate de haber INICIADO SESIÓN en el Bunker para que el sistema reconozca tu UID.`);
+        alert(`⛔ ACCESO DENEGADO\n\nSolo el Agente de Nivel 10 (Jazex) o administradores con acceso total pueden eliminar contenido.\n\nPara desbloquear permanentemente, inicia sesión con tu cuenta oficial de SHIELD.`);
         return false;
     };
 

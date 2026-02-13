@@ -52,6 +52,7 @@ export const useGameLogic = () => {
     const isDataLoadedRef = useRef(false);
 
     const [isEditorMode, setIsEditorMode] = useState(false);
+    const [isFullAdmin, setIsFullAdmin] = useState(false);
     const [showMissionEditor, setShowMissionEditor] = useState(false);
     const [missionToEdit, setMissionToEdit] = useState<Mission | null>(null);
 
@@ -180,9 +181,10 @@ export const useGameLogic = () => {
         else { updateOwnedExpansions(new Set(['core_box'])); }
     };
 
-    const handleEditorLogin = () => {
+    const handleEditorLogin = (fullAdmin: boolean = false) => {
         setIsGuest(true);
         setIsEditorMode(true);
+        setIsFullAdmin(fullAdmin);
         setPlayerAlignment('ALIVE');
         setShowStory(false);
         setShowTutorial(false);
@@ -215,6 +217,7 @@ export const useGameLogic = () => {
         if (auth) await logout();
         setIsGuest(false);
         setIsEditorMode(false);
+        setIsFullAdmin(false);
         isDataLoadedRef.current = false;
         setPlayerAlignment(null);
         navigate('/');
@@ -493,7 +496,7 @@ export const useGameLogic = () => {
             user, loading, loadingAuth, lang,
             playerAlignment, heroes, completedMissionIds, omegaCylinders,
             worldStage, activeGlobalEvent, surferTurnCount, isGuest, isSaving,
-            tickerMessage, isEditorMode, showMissionEditor, missionToEdit,
+            tickerMessage, isEditorMode, isFullAdmin, showMissionEditor, missionToEdit,
             showCharacterEditor, showDbManager, customMissions, selectedMission,
             showStory, showTutorial, expandedZones, isSidebarCollapsed,
             ownedExpansions, showExpansionConfig, startStoryAtChoice,
@@ -503,7 +506,7 @@ export const useGameLogic = () => {
         actions: {
             setLang, setPlayerAlignment, setHeroes, setCompletedMissionIds,
             setOmegaCylinders, setWorldStage, setActiveGlobalEvent, setIsGuest,
-            setIsEditorMode, setIsSaving, setTickerMessage, setStartStoryAtChoice,
+            setIsEditorMode, setIsFullAdmin, setIsSaving, setTickerMessage, setStartStoryAtChoice,
             setShowMissionEditor, setMissionToEdit, setShowCharacterEditor,
             setShowDbManager, setCustomMissions, setSelectedMission,
             setShowStory, setShowTutorial, setExpandedZones, setIsSidebarCollapsed,

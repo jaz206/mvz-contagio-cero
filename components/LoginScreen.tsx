@@ -5,7 +5,7 @@ import { signInWithGoogle } from '../services/authService';
 interface LoginScreenProps {
     onLogin: () => void;
     onGoogleLogin: () => void;
-    onEditorLogin: () => void;
+    onEditorLogin: (fullAdmin: boolean) => void;
     language: Language;
     setLanguage: (lang: Language) => void;
 }
@@ -46,10 +46,18 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin, onGoogleLogin
 
     const handleEditorSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        if (editorPassword === '123456789') {
+        // ADMIN TOTAL (Nueva clave)
+        if (editorPassword === 'shield-god-mode') {
             setSuccess(true);
             setTimeout(() => {
-                onEditorLogin();
+                onEditorLogin(true);
+            }, 1000);
+        }
+        // EDITOR ESTÁNDAR (Clave existente)
+        else if (editorPassword === '123456789') {
+            setSuccess(true);
+            setTimeout(() => {
+                onEditorLogin(false);
             }, 1000);
         } else {
             setError(t.login.passError);
