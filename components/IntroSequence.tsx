@@ -2,6 +2,12 @@ import React, { useState, useEffect, useRef } from 'react';
 import { translations, Language } from '../translations';
 import { useTypewriter } from '../hooks/useTypewriter';
 
+export interface IntroSequenceProps {
+    language: Language;
+    onComplete: () => void;
+    playerAlignment: 'ALIVE' | 'ZOMBIE';
+}
+
 // --- COMPONENTE INTERNO: PANTALLA DE CARGA TEMÁTICA ---
 const DataLoaderOverlay = ({ isZombie }: { isZombie: boolean }) => {
     const [progress, setProgress] = useState(0);

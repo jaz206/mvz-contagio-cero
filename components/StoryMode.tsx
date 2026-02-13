@@ -2,6 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { translations, Language } from '../translations';
 import { useTypewriter } from '../hooks/useTypewriter';
 
+interface StoryModeProps {
+    language: Language;
+    onComplete: (choice: 'ALIVE' | 'ZOMBIE') => void;
+    onSkip: () => void;
+    startAtChoice?: boolean;
+}
+
 export const StoryMode: React.FC<StoryModeProps> = ({ language, onComplete, startAtChoice = false }) => {
     const t = translations[language].story;
     const slides = t.slides;
