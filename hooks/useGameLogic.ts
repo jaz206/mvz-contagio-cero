@@ -6,8 +6,9 @@ import { translations, Language } from '../translations';
 import { getHeroTemplates } from '../services/heroService';
 import { getCustomMissions, deleteMissionInDB } from '../services/missionService';
 import { getUserProfile, saveUserProfile } from '../services/userService';
-import { logout } from '../services/authService';
-import { Mission, Hero, WorldStage, GlobalEvent, HeroTemplate } from '../types';
+import { logout, signInEditor } from '../services/authService';
+import { ensureAdminStaffAccount, getStaffAccount } from '../services/staffService';
+import { Mission, Hero, WorldStage, GlobalEvent, HeroTemplate, StaffAccount, StaffPermissions } from '../types';
 import { GAME_EXPANSIONS } from '../data/gameContent';
 import { getInitialMissions } from '../data/initialMissions';
 
@@ -16,6 +17,14 @@ const FACTION_STATES = {
     kingpin: new Set(['Maine', 'New Hampshire', 'Vermont', 'New York', 'Massachusetts', 'Rhode Island', 'Connecticut', 'New Jersey', 'Pennsylvania', 'Delaware', 'Maryland', 'West Virginia', 'Virginia', 'District of Columbia']),
     hulk: new Set(['North Dakota', 'South Dakota', 'Nebraska', 'Kansas', 'Oklahoma', 'Texas', 'New Mexico', 'Minnesota', 'Iowa', 'Missouri', 'Wisconsin', 'Illinois', 'Michigan', 'Indiana', 'Ohio']),
     doom: new Set(['Arkansas', 'Louisiana', 'Mississippi', 'Alabama', 'Tennessee', 'Kentucky', 'Georgia', 'Florida', 'South Carolina', 'North Carolina'])
+};
+
+const ADMIN_UID = (import.meta as any).env.VITE_ADMIN_UID || '60mH4M1SClV793Nq1WjQ3CExkLp1';
+const ADMIN_EMAIL = ((import.meta as any).env.VITE_ADMIN_EMAIL || 'jorgeaz206@gmail.com').toLowerCase();
+
+const EMPTY_PERMISSIONS: StaffPermissions = {
+    missions: { view: false, create: false, edit: false, delete: false },
+    characters: { view: false, create: false, edit: false, delete: false }
 };
 
 const getFactionForState = (state: string) => {
@@ -27,14 +36,11 @@ const getFactionForState = (state: string) => {
 };
 
 export const useGameLogic = () => {
-    // --- STATE ---
     const navigate = useNavigate();
     const [user, setUser] = useState<User | null>(null);
     const [loading, setLoading] = useState(true);
     const [loadingAuth, setLoadingAuth] = useState(true);
     const [lang, setLang] = useState<Language>('es');
-
-
 
     const [playerAlignment, setPlayerAlignment] = useState<'ALIVE' | 'ZOMBIE' | null>(null);
     const [heroes, setHeroes] = useState<Hero[]>([]);
@@ -53,16 +59,18 @@ export const useGameLogic = () => {
 
     const [isEditorMode, setIsEditorMode] = useState(false);
     const [isFullAdmin, setIsFullAdmin] = useState(false);
+    const [staffAccount, setStaffAccount] = useState<StaffAccount | null>(null);
+    const [staffPermissions, setStaffPermissions] = useState<StaffPermissions>(EMPTY_PERMISSIONS);
+
     const [showMissionEditor, setShowMissionEditor] = useState(false);
     const [missionToEdit, setMissionToEdit] = useState<Mission | null>(null);
-
     const [showCharacterEditor, setShowCharacterEditor] = useState(false);
     const [showDbManager, setShowDbManager] = useState(false);
+    const [showAdminPanel, setShowAdminPanel] = useState(false);
 
     const [customMissions, setCustomMissions] = useState<Mission[]>([]);
     const [selectedMission, setSelectedMission] = useState<Mission | null>(null);
 
-    // UI Local State (kept here for context access if needed, or could be local to components)
     const [showStory, setShowStory] = useState(false);
     const [showTutorial, setShowTutorial] = useState(false);
     const [expandedZones, setExpandedZones] = useState<Set<string>>(new Set(['kingpin', 'magneto', 'hulk', 'doom', 'neutral']));
@@ -72,62 +80,128 @@ export const useGameLogic = () => {
 
     const t = translations[lang];
 
-    // --- EFFECTS ---
-
     useEffect(() => {
-        const savedExp = localStorage.getItem('shield_owned_expansions');
-        if (savedExp) {
-            try { setOwnedExpansions(new Set(JSON.parse(savedExp))); } catch (e) { console.error(e); }
+        const savedExpansions = localStorage.getItem('shield_owned_expansions');
+        if (!savedExpansions) return;
+
+        try {
+            setOwnedExpansions(new Set(JSON.parse(savedExpansions)));
+        } catch (error) {
+            console.error(error);
         }
     }, []);
 
     useEffect(() => {
         if (!auth) {
-            console.warn("Auth no inicializado. Modo offline/limitado.");
+            console.warn('Auth no inicializado. Modo offline/limitado.');
             setLoadingAuth(false);
             setLoading(false);
             return;
         }
+
         const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
             setUser(currentUser);
             setLoadingAuth(false);
-            if (currentUser) {
-                const hasSeenIntro = localStorage.getItem(`shield_intro_seen_${currentUser.uid}`);
-                if (!hasSeenIntro) { setShowStory(true); setStartStoryAtChoice(false); navigate('/story'); }
-                else { navigate('/map'); }
 
-                // Load User Data
-                // Note: The original App.tsx didn't seem to load user data inside onAuthStateChanged directly, 
-                // but relying on handleEditorLogin or handleGuestLogin or manual triggers?
-                // Wait, looking at App.tsx lines 140+, handleEditorLogin sets data.
-                // But for regular users? The original code seems to missing a getUserProfile call in onAuthStateChanged?
-                // Ah, lines 113 in App.tsx just sets user. It seems data loading is missing for returning users in the original code snippet provided?
-                // Wait, let me check App.tsx again. 
-                // Line 113: onAuthStateChanged just sets user and viewMode.
-                // It seems the original code MIGHT have been incomplete or I missed where data is loaded.
-                // line 190 loads custom missions.
-                // I see `saveData` but where is `loadData`?
-                // In `App.tsx` snippet, I don't see `getUserProfile` being called to populate state!
-                // Maybe it was omitted or I missed it. I should verify this.
-                // IF it's missing, I should add it.
+            if (!currentUser) {
+                setStaffAccount(null);
+                setStaffPermissions(EMPTY_PERMISSIONS);
+                setIsEditorMode(false);
+                setIsFullAdmin(false);
+                if (!isGuest) {
+                    navigate('/');
+                }
+                setLoading(false);
+                return;
+            }
 
-                try {
-                    // Attempt to load profile if it exists
-                    // logic to decide ALIVE or ZOMBIE?
-                    // Just loading ALIVE for now as default if not specified
-                    const profile = await getUserProfile(currentUser.uid, 'ALIVE');
-                    if (profile) {
-                        setHeroes(profile.heroes);
-                        setCompletedMissionIds(new Set(profile.completedMissionIds));
-                        setOmegaCylinders(profile.resources.omegaCylinders);
-                        setPlayerAlignment('ALIVE'); // Defaulting to ALIVE if data found
-                        isDataLoadedRef.current = true;
-                    }
-                } catch (e) { console.error(e); }
+            const coreExpansion = GAME_EXPANSIONS.find((item) => item.id === 'core_box');
+            const coreHeroes = coreExpansion ? coreExpansion.heroes : [];
 
-            } else if (!isGuest) { navigate('/'); }
+            const currentEmail = (currentUser.email || '').toLowerCase();
+            const isAdminUser = currentUser.uid === ADMIN_UID || currentEmail === ADMIN_EMAIL;
+
+            if (isAdminUser) {
+                const adminAccount = await ensureAdminStaffAccount(
+                    currentUser.uid,
+                    currentUser.email || '',
+                    currentUser.displayName || undefined
+                );
+
+                setStaffAccount(adminAccount);
+                setStaffPermissions(adminAccount.permissions);
+                setIsEditorMode(true);
+                setIsFullAdmin(true);
+                setIsGuest(false);
+                setPlayerAlignment('ALIVE');
+                setShowStory(false);
+                setShowTutorial(false);
+                setHeroes(coreHeroes);
+                setCompletedMissionIds(new Set());
+                setOmegaCylinders(99);
+                setWorldStage('NORMAL');
+                isDataLoadedRef.current = true;
+                navigate('/map');
+                setLoading(false);
+                return;
+            }
+
+            const linkedStaffAccount = await getStaffAccount(currentUser.uid);
+            if (linkedStaffAccount) {
+                if (!linkedStaffAccount.isActive) {
+                    await logout();
+                    setLoading(false);
+                    return;
+                }
+
+                setStaffAccount(linkedStaffAccount);
+                setStaffPermissions(linkedStaffAccount.permissions);
+                setIsEditorMode(true);
+                setIsFullAdmin(linkedStaffAccount.role === 'admin');
+                setIsGuest(false);
+                setPlayerAlignment('ALIVE');
+                setShowStory(false);
+                setShowTutorial(false);
+                setHeroes(coreHeroes);
+                setCompletedMissionIds(new Set());
+                setOmegaCylinders(99);
+                setWorldStage('NORMAL');
+                isDataLoadedRef.current = true;
+                navigate('/map');
+                setLoading(false);
+                return;
+            }
+
+            setStaffAccount(null);
+            setStaffPermissions(EMPTY_PERMISSIONS);
+            setIsEditorMode(false);
+            setIsFullAdmin(false);
+
+            const hasSeenIntro = localStorage.getItem(`shield_intro_seen_${currentUser.uid}`);
+            if (!hasSeenIntro) {
+                setShowStory(true);
+                setStartStoryAtChoice(false);
+                navigate('/story');
+            } else {
+                navigate('/map');
+            }
+
+            try {
+                const profile = await getUserProfile(currentUser.uid, 'ALIVE');
+                if (profile) {
+                    setHeroes(profile.heroes);
+                    setCompletedMissionIds(new Set(profile.completedMissionIds));
+                    setOmegaCylinders(profile.resources.omegaCylinders);
+                    setPlayerAlignment('ALIVE');
+                    isDataLoadedRef.current = true;
+                }
+            } catch (error) {
+                console.error(error);
+            }
+
             setLoading(false);
         });
+
         return () => unsubscribe();
     }, [isGuest, navigate]);
 
@@ -136,65 +210,60 @@ export const useGameLogic = () => {
             const loaded = await getCustomMissions();
             setCustomMissions(loaded);
         };
+
         loadMissions();
     }, [isEditorMode]);
 
-    // Save Data Effect
     const saveData = useCallback(async (currentHeroes: Hero[], currentMissions: Set<string>, currentCylinders: number) => {
         if (isEditorMode || !user || !playerAlignment || !isDataLoadedRef.current) return;
+
         setIsSaving(true);
         try {
             await saveUserProfile(user.uid, playerAlignment, currentHeroes, Array.from(currentMissions), { omegaCylinders: currentCylinders });
-        } catch (e) { console.error("Auto-save failed", e); } finally { setTimeout(() => setIsSaving(false), 1000); }
+        } catch (error) {
+            console.error('Auto-save failed', error);
+        } finally {
+            setTimeout(() => setIsSaving(false), 1000);
+        }
     }, [user, playerAlignment, isEditorMode]);
 
     useEffect(() => {
         if (heroes.length === 0) return;
-        const timeout = setTimeout(() => { saveData(heroes, completedMissionIds, omegaCylinders); }, 2000);
+        const timeout = setTimeout(() => {
+            saveData(heroes, completedMissionIds, omegaCylinders);
+        }, 2000);
+
         return () => clearTimeout(timeout);
     }, [heroes, completedMissionIds, omegaCylinders, saveData]);
 
-    // Tutorial Check
     useEffect(() => {
-        if (!playerAlignment) return;
-        if (showStory) return;
-        if (isEditorMode) return;
+        if (!playerAlignment || showStory || isEditorMode) return;
         const tutorialKey = user ? `shield_tutorial_seen_${user.uid}` : 'shield_tutorial_seen_guest';
-        const hasSeenTutorial = localStorage.getItem(tutorialKey);
-        // Note: Tutorial check might need a different condition now with routes
-        // For now, if we are on /map and haven't seen it, we show the overal
+        localStorage.getItem(tutorialKey);
     }, [playerAlignment, showStory, user, isEditorMode]);
-
-    // --- ACTIONS ---
 
     const updateOwnedExpansions = (newSet: Set<string>) => {
         setOwnedExpansions(newSet);
         localStorage.setItem('shield_owned_expansions', JSON.stringify(Array.from(newSet)));
     };
+
     const toggleExpansion = (id: string) => {
-        const newSet = new Set(ownedExpansions);
-        if (newSet.has(id)) newSet.delete(id); else newSet.add(id);
-        updateOwnedExpansions(newSet);
-    };
-    const toggleAllExpansions = (select: boolean) => {
-        if (select) { const allIds = GAME_EXPANSIONS.map(e => e.id); updateOwnedExpansions(new Set(allIds)); }
-        else { updateOwnedExpansions(new Set(['core_box'])); }
+        const nextSet = new Set(ownedExpansions);
+        if (nextSet.has(id)) nextSet.delete(id);
+        else nextSet.add(id);
+        updateOwnedExpansions(nextSet);
     };
 
-    const handleEditorLogin = (fullAdmin: boolean = false) => {
-        setIsGuest(true);
-        setIsEditorMode(true);
-        setIsFullAdmin(fullAdmin);
-        setPlayerAlignment('ALIVE');
-        setShowStory(false);
-        setShowTutorial(false);
-        navigate('/map');
-        const core = GAME_EXPANSIONS.find(e => e.id === 'core_box');
-        setHeroes(core ? core.heroes : []);
-        setCompletedMissionIds(new Set());
-        setOmegaCylinders(99);
-        setWorldStage('NORMAL');
-        isDataLoadedRef.current = true;
+    const toggleAllExpansions = (select: boolean) => {
+        if (select) {
+            updateOwnedExpansions(new Set(GAME_EXPANSIONS.map((item) => item.id)));
+        } else {
+            updateOwnedExpansions(new Set(['core_box']));
+        }
+    };
+
+    const handleEditorLogin = async (email: string, password: string) => {
+        await signInEditor(email, password);
     };
 
     const handleGuestLogin = () => {
@@ -208,16 +277,23 @@ export const useGameLogic = () => {
     const handleExpansionConfirm = (selectedHeroes: Hero[]) => {
         if (!playerAlignment) return;
         setHeroes(selectedHeroes);
-        if (user) localStorage.setItem(`shield_intro_seen_${user.uid}`, 'true');
+        if (user) {
+            localStorage.setItem(`shield_intro_seen_${user.uid}`, 'true');
+        }
         navigate('/intro');
-        isDataLoadedRef.current = true; // Mark as loaded so auto-save works
+        isDataLoadedRef.current = true;
     };
 
     const handleLogout = async () => {
-        if (auth) await logout();
+        if (auth) {
+            await logout();
+        }
         setIsGuest(false);
         setIsEditorMode(false);
         setIsFullAdmin(false);
+        setStaffAccount(null);
+        setStaffPermissions(EMPTY_PERMISSIONS);
+        setShowAdminPanel(false);
         isDataLoadedRef.current = false;
         setPlayerAlignment(null);
         navigate('/');
@@ -226,97 +302,94 @@ export const useGameLogic = () => {
     const toggleDimension = () => {
         const newAlignment = playerAlignment === 'ALIVE' ? 'ZOMBIE' : 'ALIVE';
         setPlayerAlignment(newAlignment);
-        // Logic to switch heroes based on dimension? 
-        // Original code just reset heroes to Core Box default for that alignment
-        const core = GAME_EXPANSIONS.find(e => e.id === 'core_box');
-        if (core) setHeroes(newAlignment === 'ZOMBIE' ? core.zombieHeroes : core.heroes);
+
+        const core = GAME_EXPANSIONS.find((item) => item.id === 'core_box');
+        if (core) {
+            setHeroes(newAlignment === 'ZOMBIE' ? core.zombieHeroes : core.heroes);
+        }
         navigate('/map');
 
-        // Reload data for this alignment if User?
         if (user) {
-            getUserProfile(user.uid, newAlignment).then(profile => {
-                if (profile) {
-                    setHeroes(profile.heroes);
-                    setCompletedMissionIds(new Set(profile.completedMissionIds));
-                    setOmegaCylinders(profile.resources.omegaCylinders);
-                }
+            getUserProfile(user.uid, newAlignment).then((profile) => {
+                if (!profile) return;
+                setHeroes(profile.heroes);
+                setCompletedMissionIds(new Set(profile.completedMissionIds));
+                setOmegaCylinders(profile.resources.omegaCylinders);
             });
         }
     };
 
     const handleTickerUpdate = (message: string) => setTickerMessage(message);
 
-    // Mission Logic
     const allMissions: Mission[] = useMemo(() => {
         const sourceMissions = customMissions.length > 0 ? customMissions : getInitialMissions(t);
-        return sourceMissions.map(m => {
-            let [x, y] = m.location.coordinates;
-            // Fix coordinates if needed (legacy data)
-            if (x === 0 && y === 0) return { ...m, location: { ...m.location, coordinates: [-82.5, 40.2] } };
-            if (x > 0 && y < 0) return { ...m, location: { ...m.location, coordinates: [y, x] } };
-            return m;
+        return sourceMissions.map((mission) => {
+            const [x, y] = mission.location.coordinates;
+            if (x === 0 && y === 0) {
+                return { ...mission, location: { ...mission.location, coordinates: [-82.5, 40.2] } };
+            }
+            if (x > 0 && y < 0) {
+                return { ...mission, location: { ...mission.location, coordinates: [y, x] } };
+            }
+            return mission;
         });
     }, [customMissions, t]);
 
     const introMission = useMemo(() => {
         if (!playerAlignment) return null;
-        const flaggedIntro = allMissions.find(m =>
-            m.isIntroMission === true &&
-            (m.alignment === playerAlignment || m.alignment === 'BOTH')
+
+        const flaggedIntro = allMissions.find((mission) =>
+            mission.isIntroMission === true &&
+            (mission.alignment === playerAlignment || mission.alignment === 'BOTH')
         );
+
         if (flaggedIntro) return flaggedIntro;
-        return allMissions.find(m => m.id === 'm_intro_0');
+        return allMissions.find((mission) => mission.id === 'm_intro_0') || null;
     }, [allMissions, playerAlignment]);
 
     const visibleMissions = useMemo(() => {
-        const alignmentFiltered = allMissions.filter(m => {
-            if (!m.alignment || m.alignment === 'BOTH') return true;
-            return m.alignment === playerAlignment;
+        const alignmentFiltered = allMissions.filter((mission) => {
+            if (!mission.alignment || mission.alignment === 'BOTH') return true;
+            return mission.alignment === playerAlignment;
         });
 
-        const expansionFiltered = alignmentFiltered.filter(m => {
-            if (!m.requirements || m.requirements.length === 0) return true;
-            return m.requirements.every(reqId => {
-                if (ownedExpansions.has(reqId)) return true;
-                const expansionObj = GAME_EXPANSIONS.find(ge => ge.name === reqId);
-                if (expansionObj && ownedExpansions.has(expansionObj.id)) return true;
-                return false;
+        const expansionFiltered = alignmentFiltered.filter((mission) => {
+            if (!mission.requirements || mission.requirements.length === 0) return true;
+            return mission.requirements.every((requirementId) => {
+                if (ownedExpansions.has(requirementId)) return true;
+                const expansionObj = GAME_EXPANSIONS.find((item) => item.name === requirementId);
+                return !!(expansionObj && ownedExpansions.has(expansionObj.id));
             });
         });
 
         if (isEditorMode) return expansionFiltered;
 
-        // If it's Galactus, we show all expansion-filtered missions (they are all bosses/defense)
-        // or we handle specific logic inside the filter below.
-        // Let's keep it consistent.
-
-        return expansionFiltered.filter(m => {
-            if (!m) return false;
-            const isCompleted = completedMissionIds.has(m.id);
+        return expansionFiltered.filter((mission) => {
+            const isCompleted = completedMissionIds.has(mission.id);
             if (isCompleted) return true;
+
             let prereqMet = true;
-            if (m.prereqs && m.prereqs.length > 0) {
-                prereqMet = m.prereqs.every(pid => completedMissionIds.has(pid));
-            } else if (m.prereq) {
-                prereqMet = completedMissionIds.has(m.prereq);
+            if (mission.prereqs && mission.prereqs.length > 0) {
+                prereqMet = mission.prereqs.every((item) => completedMissionIds.has(item));
+            } else if (mission.prereq) {
+                prereqMet = completedMissionIds.has(mission.prereq);
             }
-            if (introMission && m.id === introMission.id && !isCompleted) return true;
 
-            const isGalactusType = m.type === 'GALACTUS';
-            const isBossType = m.type === 'BOSS' || (m.type && m.type.startsWith('BOSS_'));
+            if (introMission && mission.id === introMission.id && !isCompleted) return true;
 
-            // Special handling for Galactus/WorldStage missions
+            const isGalactusType = mission.type === 'GALACTUS';
+            const isBossType = mission.type === 'BOSS' || (mission.type && mission.type.startsWith('BOSS_'));
+
             if (isGalactusType) {
-                if (m.triggerStage === 'SURFER') {
-                    return (worldStage as string) === 'SURFER' || (worldStage as string) === 'GALACTUS';
+                if (mission.triggerStage === 'SURFER') {
+                    return worldStage === 'SURFER' || worldStage === 'GALACTUS';
                 }
-                if (m.triggerStage === 'GALACTUS') {
-                    return (worldStage as string) === 'GALACTUS';
+                if (mission.triggerStage === 'GALACTUS') {
+                    return worldStage === 'GALACTUS';
                 }
                 return false;
             }
 
-            // During Galactus stage, ONLY show completed missions, bosses, or Galactus missions (handled above)
             if (worldStage === 'GALACTUS') {
                 return isCompleted || !!isBossType;
             }
@@ -325,63 +398,117 @@ export const useGameLogic = () => {
         });
     }, [allMissions, completedMissionIds, isEditorMode, worldStage, playerAlignment, ownedExpansions, introMission]);
 
-    const checkGlobalEvents = (completedMissions: Set<string>) => {
-        const count = completedMissions.size;
-        if (completedMissions.has('boss-galactus')) return;
+    const checkGlobalEvents = (missionSet: Set<string>) => {
+        const count = missionSet.size;
+        if (missionSet.has('boss-galactus')) return;
+
         if (count >= 15 && worldStage !== 'GALACTUS') {
             setActiveGlobalEvent({ stage: 'GALACTUS', title: '', description: '' });
             setWorldStage('GALACTUS');
-            handleTickerUpdate("¡ALERTA OMEGA! GALACTUS HA LLEGADO. TODAS LAS MISIONES SECUNDARIAS CANCELADAS.");
+            handleTickerUpdate('ALERTA OMEGA. GALACTUS HA LLEGADO.');
         } else if (count >= 10 && count < 15 && worldStage !== 'SURFER' && worldStage !== 'GALACTUS') {
             setActiveGlobalEvent({ stage: 'SURFER', title: '', description: '' });
             setWorldStage('SURFER');
             setSurferTurnCount(0);
-            handleTickerUpdate("OBJETO PLATEADO ENTRANDO EN LA ATMÓSFERA. PREPARAR INTERCEPCIÓN.");
+            handleTickerUpdate('OBJETO PLATEADO ENTRANDO EN LA ATMOSFERA.');
         } else if (count >= 4 && count < 10 && worldStage === 'NORMAL') {
             setActiveGlobalEvent({ stage: 'ANOMALY', title: '', description: '' });
             setWorldStage('ANOMALY');
-            handleTickerUpdate("LECTURAS DE ENERGÍA ANÓMALAS EN EL ESPACIO PROFUNDO.");
+            handleTickerUpdate('LECTURAS DE ENERGIA ANOMALAS EN EL ESPACIO PROFUNDO.');
         }
     };
 
     const handleMissionComplete = async (id: string) => {
-        console.log("Completando misión:", id);
-        const newSet = new Set(completedMissionIds);
-        newSet.add(id);
-        setCompletedMissionIds(newSet);
+        const nextSet = new Set(completedMissionIds);
+        nextSet.add(id);
+        setCompletedMissionIds(nextSet);
         setSelectedMission(null);
+
         if (worldStage === 'SURFER') {
-            setSurferTurnCount(prev => prev + 1);
+            setSurferTurnCount((prev) => prev + 1);
         }
+
         if (user && playerAlignment) {
-            await saveData(heroes, newSet, omegaCylinders);
+            await saveData(heroes, nextSet, omegaCylinders);
         }
+
         if (id === 'boss-galactus') {
             setWorldStage('NORMAL');
             setActiveGlobalEvent(null);
-            handleTickerUpdate("AMENAZA OMEGA NEUTRALIZADA. BUEN TRABAJO, AGENTES.");
+            handleTickerUpdate('AMENAZA OMEGA NEUTRALIZADA.');
         } else {
-            checkGlobalEvents(newSet);
+            checkGlobalEvents(nextSet);
         }
-        // Reload in case custom missions changed (unlikely on completion but good practice)
-        // const loaded = await getCustomMissions();
-        // setCustomMissions(loaded);
     };
 
-    const handleMissionSelect = (m: Mission) => {
-        if (worldStage === 'GALACTUS' && m.type !== 'BOSS' && m.type !== 'GALACTUS') return;
-        setSelectedMission(m);
+    const handleMissionSelect = (mission: Mission) => {
+        if (worldStage === 'GALACTUS' && mission.type !== 'BOSS' && mission.type !== 'GALACTUS') return;
+        setSelectedMission(mission);
     };
 
-    const handleMissionReactivate = (id: string) => { const newSet = new Set(completedMissionIds); newSet.delete(id); setCompletedMissionIds(newSet); };
-    const handleDeleteMission = async (id: string) => { if (!window.confirm("¿ELIMINAR MISIÓN?")) return; try { await deleteMissionInDB(id); const loaded = await getCustomMissions(); setCustomMissions(loaded); setSelectedMission(null); } catch (e) { alert("Error al eliminar"); } };
-    const handleSimulateProgress = (amount: number) => { const newSet = new Set(completedMissionIds); for (let i = 0; i < amount; i++) newSet.add(`sim_${Date.now()}_${Math.random()}`); setCompletedMissionIds(newSet); checkGlobalEvents(newSet); };
-    const handleResetProgress = () => { setCompletedMissionIds(new Set()); setWorldStage('NORMAL'); setActiveGlobalEvent(null); setOmegaCylinders(0); setSurferTurnCount(0); };
+    const handleMissionReactivate = (id: string) => {
+        const nextSet = new Set(completedMissionIds);
+        nextSet.delete(id);
+        setCompletedMissionIds(nextSet);
+    };
+
+    const handleDeleteMission = async (id: string) => {
+        if (!staffPermissions.missions.delete) {
+            alert('Tu cuenta no puede borrar misiones.');
+            return;
+        }
+
+        if (!window.confirm('Eliminar mision?')) return;
+
+        try {
+            await deleteMissionInDB(id);
+            const loaded = await getCustomMissions();
+            setCustomMissions(loaded);
+            setSelectedMission(null);
+        } catch (error) {
+            alert('Error al eliminar.');
+        }
+    };
+
+    const handleSimulateProgress = (amount: number) => {
+        const nextSet = new Set(completedMissionIds);
+        for (let index = 0; index < amount; index += 1) {
+            nextSet.add(`sim_${Date.now()}_${Math.random()}`);
+        }
+        setCompletedMissionIds(nextSet);
+        checkGlobalEvents(nextSet);
+    };
+
+    const handleResetProgress = () => {
+        setCompletedMissionIds(new Set());
+        setWorldStage('NORMAL');
+        setActiveGlobalEvent(null);
+        setOmegaCylinders(0);
+        setSurferTurnCount(0);
+    };
+
     const handleEventAcknowledge = () => setActiveGlobalEvent(null);
-    const handleToggleHeroObjective = (heroId: string, idx: number) => { const hIndex = heroes.findIndex(h => h.id === heroId); if (hIndex >= 0) { const newHeroes = [...heroes]; const h = newHeroes[hIndex]; const indices = h.completedObjectiveIndices ? [...h.completedObjectiveIndices] : []; if (indices.includes(idx)) { newHeroes[hIndex] = { ...h, completedObjectiveIndices: indices.filter(i => i !== idx) }; } else { newHeroes[hIndex] = { ...h, completedObjectiveIndices: [...indices, idx] }; } setHeroes(newHeroes); } };
+
+    const handleToggleHeroObjective = (heroId: string, index: number) => {
+        const heroIndex = heroes.findIndex((hero) => hero.id === heroId);
+        if (heroIndex < 0) return;
+
+        const nextHeroes = [...heroes];
+        const hero = nextHeroes[heroIndex];
+        const indices = hero.completedObjectiveIndices ? [...hero.completedObjectiveIndices] : [];
+
+        nextHeroes[heroIndex] = {
+            ...hero,
+            completedObjectiveIndices: indices.includes(index)
+                ? indices.filter((item) => item !== index)
+                : [...indices, index]
+        };
+
+        setHeroes(nextHeroes);
+    };
 
     const handleTransformHero = async (heroId: string, targetAlignment: 'ALIVE' | 'ZOMBIE') => {
-        const heroIndex = heroes.findIndex(h => h.id === heroId);
+        const heroIndex = heroes.findIndex((hero) => hero.id === heroId);
         if (heroIndex === -1) return;
 
         const currentHero = heroes[heroIndex];
@@ -389,135 +516,220 @@ export const useGameLogic = () => {
         let targetTemplate: HeroTemplate | undefined;
 
         if (currentHero.relatedHeroId && currentHero.relatedHeroId !== 'NO_VARIANT') {
-            targetTemplate = allTemplates.find(t => t.id === currentHero.relatedHeroId);
+            targetTemplate = allTemplates.find((item) => item.id === currentHero.relatedHeroId);
         }
 
         if (!targetTemplate) {
-            const cleanString = (str: string) => {
-                return str.toLowerCase()
-                    .replace(/\(z\)/g, '')
-                    .replace(/\(artist\)/g, '')
-                    .replace(/\(old man\)/g, '')
-                    .replace(/zombie/g, '')
-                    .replace(/hero/g, '')
-                    .replace(/[^a-z0-9]/g, '')
-                    .trim();
-            };
+            const cleanString = (value: string) => value.toLowerCase()
+                .replace(/\(z\)/g, '')
+                .replace(/\(artist\)/g, '')
+                .replace(/\(old man\)/g, '')
+                .replace(/zombie/g, '')
+                .replace(/hero/g, '')
+                .replace(/[^a-z0-9]/g, '')
+                .trim();
+
             const currentAliasClean = cleanString(currentHero.alias);
-            targetTemplate = allTemplates.find(t => {
-                if (t.defaultAlignment !== targetAlignment) return false;
-                const tAliasClean = cleanString(t.alias);
-                return tAliasClean === currentAliasClean;
+
+            targetTemplate = allTemplates.find((item) => {
+                if (item.defaultAlignment !== targetAlignment) return false;
+                return cleanString(item.alias) === currentAliasClean;
             });
 
             if (!targetTemplate) {
-                for (const exp of GAME_EXPANSIONS) {
-                    const list = targetAlignment === 'ALIVE' ? exp.heroes : exp.zombieHeroes;
-                    const found = list.find(h => cleanString(h.alias) === currentAliasClean);
-                    if (found) {
-                        targetTemplate = {
-                            id: found.id,
-                            defaultName: found.name,
-                            alias: found.alias,
-                            defaultClass: found.class,
-                            defaultStats: found.stats,
-                            imageUrl: found.imageUrl || '',
-                            bio: found.bio,
-                            defaultAlignment: targetAlignment,
-                            objectives: found.objectives,
-                            currentStory: found.currentStory,
-                            imageParams: found.imageParams
-                        };
-                        break;
-                    }
+                for (const expansion of GAME_EXPANSIONS) {
+                    const list = targetAlignment === 'ALIVE' ? expansion.heroes : expansion.zombieHeroes;
+                    const found = list.find((item) => cleanString(item.alias) === currentAliasClean);
+                    if (!found) continue;
+
+                    targetTemplate = {
+                        id: found.id,
+                        defaultName: found.name,
+                        alias: found.alias,
+                        defaultClass: found.class,
+                        defaultStats: found.stats,
+                        imageUrl: found.imageUrl || '',
+                        bio: found.bio,
+                        defaultAlignment: targetAlignment,
+                        objectives: found.objectives,
+                        currentStory: found.currentStory,
+                        imageParams: found.imageParams
+                    };
+                    break;
                 }
             }
         }
 
-        if (targetTemplate) {
-            const finalImage = targetTemplate.imageUrl || currentHero.imageUrl || '';
-            const newHero: Hero = {
-                id: `trans_${Date.now()}`,
-                templateId: targetTemplate.id,
-                name: targetTemplate.defaultName,
-                alias: targetTemplate.alias || currentHero.alias,
-                class: targetTemplate.defaultClass,
-                stats: targetTemplate.defaultStats,
-                imageUrl: finalImage,
-                bio: targetTemplate.bio || currentHero.bio,
-                status: 'AVAILABLE',
-                assignedMissionId: null,
-                objectives: targetTemplate.objectives || [],
-                completedObjectiveIndices: [],
-                currentStory: targetTemplate.currentStory || '',
-                relatedHeroId: currentHero.templateId || currentHero.id,
-                imageParams: targetTemplate.imageParams
-            };
+        if (!targetTemplate) {
+            alert(`No se encontro una version compatible de ${currentHero.alias}.`);
+            return;
+        }
 
-            const newHeroes = [...heroes];
-            newHeroes[heroIndex] = newHero;
-            setHeroes(newHeroes);
+        const transformedHero: Hero = {
+            id: `trans_${Date.now()}`,
+            templateId: targetTemplate.id,
+            name: targetTemplate.defaultName,
+            alias: targetTemplate.alias || currentHero.alias,
+            class: targetTemplate.defaultClass,
+            stats: targetTemplate.defaultStats,
+            imageUrl: targetTemplate.imageUrl || currentHero.imageUrl || '',
+            bio: targetTemplate.bio || currentHero.bio,
+            status: 'AVAILABLE',
+            assignedMissionId: null,
+            objectives: targetTemplate.objectives || [],
+            completedObjectiveIndices: [],
+            currentStory: targetTemplate.currentStory || '',
+            relatedHeroId: currentHero.templateId || currentHero.id,
+            imageParams: targetTemplate.imageParams
+        };
 
-            if (targetAlignment === 'ALIVE') {
-                handleTickerUpdate(`SUJETO ${newHero.alias} CURADO. ADN REESTRUCTURADO.`);
-                setOmegaCylinders(prev => Math.max(0, prev - 1));
-            } else {
-                handleTickerUpdate(`SUJETO ${newHero.alias} INFECTADO. BIENVENIDO AL HAMBRE.`);
-            }
+        const nextHeroes = [...heroes];
+        nextHeroes[heroIndex] = transformedHero;
+        setHeroes(nextHeroes);
+
+        if (targetAlignment === 'ALIVE') {
+            handleTickerUpdate(`SUJETO ${transformedHero.alias} CURADO.`);
+            setOmegaCylinders((prev) => Math.max(0, prev - 1));
         } else {
-            alert(`ERROR: No se encontró una versión compatible de ${currentHero.alias} (${currentHero.name}) para el bando contrario.`);
+            handleTickerUpdate(`SUJETO ${transformedHero.alias} INFECTADO.`);
         }
     };
 
     const toggleZone = (zone: string) => {
-        setExpandedZones(prev => {
-            const newSet = new Set(prev);
-            if (newSet.has(zone)) newSet.delete(zone); else newSet.add(zone);
-            return newSet;
+        setExpandedZones((prev) => {
+            const next = new Set(prev);
+            if (next.has(zone)) next.delete(zone);
+            else next.add(zone);
+            return next;
         });
     };
 
     const groupedMissions = useMemo(() => {
-        const activeMissions = visibleMissions.filter(m => m && !completedMissionIds.has(m.id));
-        const groups: Record<string, Mission[]> = { galactus: [], kingpin: [], shield_kingpin: [], magneto: [], shield_magneto: [], hulk: [], shield_hulk: [], doom: [], shield_doom: [], neutral: [], shield_neutral: [] };
-        activeMissions.forEach(m => {
-            if (m.type === 'GALACTUS') { groups.galactus.push(m); }
-            else {
-                const faction = getFactionForState(m.location.state);
-                if (m.type === 'SHIELD_BASE') { const key = `shield_${faction}`; if (groups[key]) groups[key].push(m); else groups.shield_neutral.push(m); }
-                else { if (groups[faction]) groups[faction].push(m); else groups.neutral.push(m); }
+        const activeMissions = visibleMissions.filter((mission) => !completedMissionIds.has(mission.id));
+        const groups: Record<string, Mission[]> = {
+            galactus: [],
+            kingpin: [],
+            shield_kingpin: [],
+            magneto: [],
+            shield_magneto: [],
+            hulk: [],
+            shield_hulk: [],
+            doom: [],
+            shield_doom: [],
+            neutral: [],
+            shield_neutral: []
+        };
+
+        activeMissions.forEach((mission) => {
+            if (mission.type === 'GALACTUS') {
+                groups.galactus.push(mission);
+                return;
             }
+
+            const faction = getFactionForState(mission.location.state);
+            if (mission.type === 'SHIELD_BASE') {
+                const key = `shield_${faction}`;
+                if (groups[key]) groups[key].push(mission);
+                else groups.shield_neutral.push(mission);
+                return;
+            }
+
+            if (groups[faction]) groups[faction].push(mission);
+            else groups.neutral.push(mission);
         });
+
         return groups;
-    }, [visibleMissions, completedMissionIds, worldStage]);
+    }, [visibleMissions, completedMissionIds]);
 
     return {
         state: {
-            user, loading, loadingAuth, lang,
-            playerAlignment, heroes, completedMissionIds, omegaCylinders,
-            worldStage, activeGlobalEvent, surferTurnCount, isGuest, isSaving,
-            tickerMessage, isEditorMode, isFullAdmin, showMissionEditor, missionToEdit,
-            showCharacterEditor, showDbManager, customMissions, selectedMission,
-            showStory, showTutorial, expandedZones, isSidebarCollapsed,
-            ownedExpansions, showExpansionConfig, startStoryAtChoice,
-            introMission, allMissions, visibleMissions, groupedMissions,
+            user,
+            loading,
+            loadingAuth,
+            lang,
+            playerAlignment,
+            heroes,
+            completedMissionIds,
+            omegaCylinders,
+            worldStage,
+            activeGlobalEvent,
+            surferTurnCount,
+            isGuest,
+            isSaving,
+            tickerMessage,
+            isEditorMode,
+            isFullAdmin,
+            staffAccount,
+            staffPermissions,
+            showMissionEditor,
+            missionToEdit,
+            showCharacterEditor,
+            showDbManager,
+            showAdminPanel,
+            customMissions,
+            selectedMission,
+            showStory,
+            showTutorial,
+            expandedZones,
+            isSidebarCollapsed,
+            ownedExpansions,
+            showExpansionConfig,
+            startStoryAtChoice,
+            introMission,
+            allMissions,
+            visibleMissions,
+            groupedMissions,
             FACTION_STATES
         },
         actions: {
-            setLang, setPlayerAlignment, setHeroes, setCompletedMissionIds,
-            setOmegaCylinders, setWorldStage, setActiveGlobalEvent, setIsGuest,
-            setIsEditorMode, setIsFullAdmin, setIsSaving, setTickerMessage, setStartStoryAtChoice,
-            setShowMissionEditor, setMissionToEdit, setShowCharacterEditor,
-            setShowDbManager, setCustomMissions, setSelectedMission,
-            setShowStory, setShowTutorial, setExpandedZones, setIsSidebarCollapsed,
-            setOwnedExpansions, setShowExpansionConfig,
-
-            updateOwnedExpansions, toggleExpansion, toggleAllExpansions,
-            handleEditorLogin, handleGuestLogin, handleExpansionConfirm, handleLogout,
-            toggleDimension, handleTickerUpdate, handleMissionComplete, handleMissionSelect,
-            handleMissionReactivate, handleDeleteMission, handleSimulateProgress,
-            handleResetProgress, handleEventAcknowledge, handleToggleHeroObjective,
-            handleTransformHero, toggleZone, setSurferTurnCount
+            setLang,
+            setPlayerAlignment,
+            setHeroes,
+            setCompletedMissionIds,
+            setOmegaCylinders,
+            setWorldStage,
+            setActiveGlobalEvent,
+            setIsGuest,
+            setIsEditorMode,
+            setIsFullAdmin,
+            setIsSaving,
+            setTickerMessage,
+            setStartStoryAtChoice,
+            setStaffAccount,
+            setStaffPermissions,
+            setShowMissionEditor,
+            setMissionToEdit,
+            setShowCharacterEditor,
+            setShowDbManager,
+            setShowAdminPanel,
+            setCustomMissions,
+            setSelectedMission,
+            setShowStory,
+            setShowTutorial,
+            setExpandedZones,
+            setIsSidebarCollapsed,
+            setOwnedExpansions,
+            setShowExpansionConfig,
+            updateOwnedExpansions,
+            toggleExpansion,
+            toggleAllExpansions,
+            handleEditorLogin,
+            handleGuestLogin,
+            handleExpansionConfirm,
+            handleLogout,
+            toggleDimension,
+            handleTickerUpdate,
+            handleMissionComplete,
+            handleMissionSelect,
+            handleMissionReactivate,
+            handleDeleteMission,
+            handleSimulateProgress,
+            handleResetProgress,
+            handleEventAcknowledge,
+            handleToggleHeroObjective,
+            handleTransformHero,
+            toggleZone,
+            setSurferTurnCount
         }
     };
 };

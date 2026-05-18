@@ -1,6 +1,7 @@
 export type HeroClass = 'SCOUT' | 'BRAWLER' | 'TACTICIAN' | 'BLASTER';
 export type HeroStatus = 'AVAILABLE' | 'DEPLOYED' | 'INJURED' | 'CAPTURED';
 export type WorldStage = 'NORMAL' | 'ANOMALY' | 'SURFER' | 'GALACTUS';
+export type StaffRole = 'admin' | 'editor';
 
 export interface HeroStats {
   strength: number;
@@ -103,6 +104,29 @@ export interface GlobalEvent {
   title: string;
   description: string;
   image?: string;
+}
+
+export interface PermissionBlock {
+  view: boolean;
+  create: boolean;
+  edit: boolean;
+  delete: boolean;
+}
+
+export interface StaffPermissions {
+  missions: PermissionBlock;
+  characters: PermissionBlock;
+}
+
+export interface StaffAccount {
+  uid: string;
+  email: string;
+  displayName: string;
+  role: StaffRole;
+  isActive: boolean;
+  permissions: StaffPermissions;
+  createdAt?: unknown;
+  updatedAt?: unknown;
 }
 
 export interface USATopoJSON {
