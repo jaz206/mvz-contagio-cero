@@ -297,7 +297,7 @@ const GameContent: React.FC = () => {
 
     return (
         <Routes>
-            <Route path="/" element={<LoginScreen onLogin={actions.handleGuestLogin} onEditorLogin={actions.handleEditorLogin} language={lang} setLanguage={actions.setLang} />} />
+            <Route path="/" element={<LoginScreen onLocalAccess={actions.handleGuestLogin} language={lang} setLanguage={actions.setLang} />} />
 
             <Route path="/story" element={<StoryMode language={lang} onComplete={(choice) => { actions.setPlayerAlignment(choice); navigate('/setup'); }} onSkip={() => { actions.setPlayerAlignment('ALIVE'); const core = GAME_EXPANSIONS.find((item) => item.id === 'core_box'); if (core) actions.setHeroes(core.heroes); navigate('/map'); }} startAtChoice={state.startStoryAtChoice} />} />
 

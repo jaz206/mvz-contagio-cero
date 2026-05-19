@@ -1,39 +1,31 @@
 import React, { useState } from 'react';
 import { translations, Language } from '../translations';
 import { signInWithGoogle } from '../services/authService';
+import { firebaseReady } from '../firebaseConfig';
 
 interface LoginScreenProps {
-    onLogin: () => void;
-    onEditorLogin: (email: string, password: string) => Promise<void>;
+    onLocalAccess: () => void;
     language: Language;
     setLanguage: (lang: Language) => void;
 }
 
-export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin, onEditorLogin, language, setLanguage }) => {
+export const LoginScreen: React.FC<LoginScreenProps> = ({ onLocalAccess, language, setLanguage }) => {
     const [scanning, setScanning] = useState(false);
     const [success, setSuccess] = useState(false);
     const [error, setError] = useState<string | null>(null);
-    const [showEditorInput, setShowEditorInput] = useState(false);
-    const [editorEmail, setEditorEmail] = useState('');
-    const [editorPassword, setEditorPassword] = useState('');
 
     const t = translations[language];
 
-    const handleScan = () => {
+    const handleScan = async () => {
+        if (!firebaseReady) {
+            setError(t.login.accessUnavailable);
+            return;
+        }
+
         setScanning(true);
         setError(null);
-        setTimeout(() => {
-            setSuccess(true);
-            setTimeout(() => {
-                onLogin();
-            }, 1500);
-        }, 2000);
-    };
 
-    const handleGoogleClick = async () => {
         try {
-            setScanning(true);
-            setError(null);
             await signInWithGoogle();
             setSuccess(true);
         } catch (err) {
@@ -43,19 +35,16 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin, onEditorLogin
         }
     };
 
-    const handleEditorSubmit = async (event: React.FormEvent) => {
-        event.preventDefault();
+    const handleLocalAccess = () => {
         setScanning(true);
         setError(null);
 
-        try {
-            await onEditorLogin(editorEmail, editorPassword);
+        setTimeout(() => {
             setSuccess(true);
-        } catch (err: any) {
-            console.error(err);
-            setScanning(false);
-            setError(err?.message || t.login.passError);
-        }
+            setTimeout(() => {
+                onLocalAccess();
+            }, 400);
+        }, 800);
     };
 
     return (
@@ -161,51 +150,21 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin, onEditorLogin
                     </button>
 
                     <button
-                        onClick={handleGoogleClick}
+                        onClick={handleLocalAccess}
                         disabled={scanning || success}
                         className="w-full py-3 border border-slate-700 bg-slate-900/50 text-slate-400 text-[10px] font-bold tracking-widest hover:border-white hover:text-white transition-all uppercase"
                     >
-                        {t.login.googleBtn}
+                        {t.login.localBtn}
                     </button>
                 </div>
 
-                <div className="mt-8 w-full border-t border-cyan-900/30 pt-4">
-                    {!showEditorInput ? (
-                        <button
-                            onClick={() => setShowEditorInput(true)}
-                            className="w-full text-[9px] text-cyan-600 hover:text-cyan-300 transition-colors uppercase tracking-[0.3em]"
-                        >
-                            {t.login.editorBtn}
-                        </button>
-                    ) : (
-                        <form onSubmit={handleEditorSubmit} className="space-y-3 animate-fade-in">
-                            <input
-                                type="email"
-                                value={editorEmail}
-                                onChange={(event) => setEditorEmail(event.target.value)}
-                                placeholder="editor@dominio.com"
-                                className="w-full bg-black border border-cyan-800 px-3 py-2 text-[11px] text-cyan-200 outline-none focus:border-cyan-500"
-                                autoFocus
-                                required
-                            />
-                            <input
-                                type="password"
-                                value={editorPassword}
-                                onChange={(event) => setEditorPassword(event.target.value)}
-                                placeholder={t.login.editorPass}
-                                className="w-full bg-black border border-cyan-800 px-3 py-2 text-[11px] text-cyan-200 outline-none focus:border-cyan-500"
-                                required
-                            />
-                            <div className="flex gap-2">
-                                <button type="submit" className="flex-1 bg-cyan-900 text-cyan-200 px-3 py-2 text-[10px] border border-cyan-700 hover:bg-cyan-700 hover:text-white uppercase font-black">
-                                    Entrar Editor
-                                </button>
-                                <button type="button" onClick={() => setShowEditorInput(false)} className="px-3 py-2 text-[10px] border border-slate-700 text-slate-400 hover:text-white hover:border-white uppercase">
-                                    Cancelar
-                                </button>
-                            </div>
-                        </form>
-                    )}
+                <div className="mt-8 w-full border-t border-cyan-900/30 pt-4 space-y-2">
+                    <div className="text-[10px] text-cyan-500 text-center uppercase tracking-[0.2em]">
+                        {t.login.scanHelp}
+                    </div>
+                    <div className="text-[9px] text-slate-500 text-center uppercase tracking-[0.2em]">
+                        {t.login.localHelp}
+                    </div>
                 </div>
 
                 <div className="absolute bottom-2 right-4 text-[8px] text-cyan-900 font-mono">SECURE_LINK::AES-256</div>
