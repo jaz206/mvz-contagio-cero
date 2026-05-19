@@ -24,7 +24,7 @@ const LOGO_ZOMBIE = 'https://i.pinimg.com/736x/7f/31/38/7f31382d4a5c35daa4ba1768
 const GameLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const { state, actions } = useGame();
     const navigate = useNavigate();
-    const { lang, playerAlignment, completedMissionIds, isSaving, tickerMessage, worldStage, staffPermissions } = state;
+    const { lang, playerAlignment, completedMissionIds, isSaving, tickerMessage, worldStage, staffPermissions, isFullAdmin } = state;
 
     const t = translations[lang];
     const totalMissions = state.customMissions.length + 7;
@@ -148,6 +148,11 @@ const GameLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
                         <button onClick={() => actions.setLang(lang === 'es' ? 'en' : 'es')} className="text-xs border border-cyan-700 px-2 py-1 hover:bg-cyan-900/50 transition-colors">
                             {lang.toUpperCase()}
                         </button>
+                        {isFullAdmin && (
+                            <button onClick={() => actions.setShowAdminPanel(true)} className="text-xs bg-cyan-900/30 text-cyan-300 border border-cyan-700 px-3 py-1 hover:bg-cyan-900/50 transition-colors">
+                                ADMIN
+                            </button>
+                        )}
                         <button onClick={actions.handleLogout} className="text-xs bg-red-900/20 text-red-400 border border-red-900 px-3 py-1 hover:bg-red-900/40 transition-colors">
                             {t.header.logout}
                         </button>
