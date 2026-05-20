@@ -82,6 +82,7 @@ export const useGameLogic = () => {
 
     const [showStory, setShowStory] = useState(false);
     const [showTutorial, setShowTutorial] = useState(false);
+    const [isStartingCampaign, setIsStartingCampaign] = useState(false);
     const [expandedZones, setExpandedZones] = useState<Set<string>>(new Set(['kingpin', 'magneto', 'hulk', 'doom', 'neutral']));
     const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
     const [ownedExpansions, setOwnedExpansions] = useState<Set<string>>(new Set(['core_box']));
@@ -142,6 +143,7 @@ export const useGameLogic = () => {
                 setIsEditorMode(true);
                 setIsFullAdmin(true);
                 setIsGuest(false);
+                setIsStartingCampaign(false);
                 setPlayerAlignment('ALIVE');
                 setShowStory(false);
                 setShowTutorial(false);
@@ -168,6 +170,7 @@ export const useGameLogic = () => {
                 setIsEditorMode(true);
                 setIsFullAdmin(linkedStaffAccount.role === 'admin');
                 setIsGuest(false);
+                setIsStartingCampaign(false);
                 setPlayerAlignment('ALIVE');
                 setShowStory(false);
                 setShowTutorial(false);
@@ -185,6 +188,7 @@ export const useGameLogic = () => {
             setStaffPermissions(EMPTY_PERMISSIONS);
             setIsEditorMode(false);
             setIsFullAdmin(false);
+            setIsStartingCampaign(false);
 
             try {
                 const hasSeenIntro = !!localStorage.getItem(`shield_intro_seen_${currentUser.uid}`);
@@ -209,27 +213,32 @@ export const useGameLogic = () => {
                     setOmegaCylinders(resolvedProfile.resources.omegaCylinders);
                     setShowStory(false);
                     setShowTutorial(false);
+                    setIsStartingCampaign(false);
                     saveStoredAlignment(currentUser.uid, resolvedAlignment);
                     isDataLoadedRef.current = true;
                     navigate('/map');
                 } else if (!hasSeenIntro) {
                     setShowStory(true);
+                    setIsStartingCampaign(false);
                     setStartStoryAtChoice(false);
                     navigate('/story');
                 } else if (resolvedAlignment) {
                     setPlayerAlignment(resolvedAlignment);
                     setHeroes(resolvedAlignment === 'ZOMBIE' ? coreExpansion?.zombieHeroes || [] : coreHeroes);
                     setShowStory(false);
+                    setIsStartingCampaign(false);
                     setStartStoryAtChoice(false);
                     navigate('/setup');
                 } else {
                     setShowStory(true);
+                    setIsStartingCampaign(false);
                     setStartStoryAtChoice(true);
                     navigate('/story');
                 }
             } catch (error) {
                 console.error(error);
                 setShowStory(true);
+                setIsStartingCampaign(false);
                 setStartStoryAtChoice(false);
                 navigate('/story');
             }
@@ -303,6 +312,7 @@ export const useGameLogic = () => {
 
     const handleGuestLogin = () => {
         setIsGuest(true);
+        setIsStartingCampaign(false);
         setPlayerAlignment('ALIVE');
         setShowStory(true);
         setStartStoryAtChoice(false);
@@ -314,6 +324,7 @@ export const useGameLogic = () => {
         setHeroes([...selectedHeroes]);
         setShowStory(false);
         setStartStoryAtChoice(false);
+        setIsStartingCampaign(true);
         if (user) {
             localStorage.setItem(`shield_intro_seen_${user.uid}`, 'true');
             saveStoredAlignment(user.uid, playerAlignment);
@@ -332,6 +343,7 @@ export const useGameLogic = () => {
         setStaffAccount(null);
         setStaffPermissions(EMPTY_PERMISSIONS);
         setShowAdminPanel(false);
+        setIsStartingCampaign(false);
         isDataLoadedRef.current = false;
         setPlayerAlignment(null);
         navigate('/');
@@ -549,6 +561,7 @@ export const useGameLogic = () => {
         setPlayerAlignment(null);
         setShowStory(true);
         setShowTutorial(false);
+        setIsStartingCampaign(false);
         setStartStoryAtChoice(false);
         isDataLoadedRef.current = false;
         navigate('/story', { replace: true });
@@ -741,6 +754,7 @@ export const useGameLogic = () => {
             selectedMission,
             showStory,
             showTutorial,
+            isStartingCampaign,
             expandedZones,
             isSidebarCollapsed,
             ownedExpansions,
@@ -777,6 +791,7 @@ export const useGameLogic = () => {
             setSelectedMission,
             setShowStory,
             setShowTutorial,
+            setIsStartingCampaign,
             setExpandedZones,
             setIsSidebarCollapsed,
             setOwnedExpansions,
