@@ -9,7 +9,7 @@ interface StoryModeProps {
     startAtChoice?: boolean;
 }
 
-export const StoryMode: React.FC<StoryModeProps> = ({ language, onComplete, startAtChoice = false }) => {
+export const StoryMode: React.FC<StoryModeProps> = ({ language, onComplete, onSkip, startAtChoice = false }) => {
     const t = translations[language].story;
     const slides = t.slides;
 
@@ -30,14 +30,6 @@ export const StoryMode: React.FC<StoryModeProps> = ({ language, onComplete, star
         const timer = setTimeout(() => setIsFolderOpen(true), 800);
         return () => clearTimeout(timer);
     }, []);
-
-    const handleSkipToChoice = () => {
-        setIsClosing(true);
-        setTimeout(() => {
-            setCurrentIndex(slides.length);
-            setIsClosing(false);
-        }, 800);
-    };
 
     const handleNext = () => {
         if (isAnimating || isChoiceScreen) return;
@@ -258,7 +250,7 @@ export const StoryMode: React.FC<StoryModeProps> = ({ language, onComplete, star
 
             {!isChoiceScreen && (
                 <button
-                    onClick={handleSkipToChoice}
+                    onClick={onSkip}
                     className="absolute top-8 right-8 z-50 text-cyan-500 text-xs font-bold tracking-[0.2em] hover:text-white transition-colors border border-cyan-900 px-4 py-2 bg-slate-900/80 backdrop-blur"
                 >
                     SKIP INTRO &gt;&gt;

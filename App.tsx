@@ -299,7 +299,7 @@ const GameContent: React.FC = () => {
         <Routes>
             <Route path="/" element={<LoginScreen onLocalAccess={actions.handleGuestLogin} language={lang} setLanguage={actions.setLang} />} />
 
-            <Route path="/story" element={<StoryMode language={lang} onComplete={(choice) => { actions.setPlayerAlignment(choice); navigate('/setup'); }} onSkip={() => { actions.setPlayerAlignment('ALIVE'); const core = GAME_EXPANSIONS.find((item) => item.id === 'core_box'); if (core) actions.setHeroes(core.heroes); navigate('/map'); }} startAtChoice={state.startStoryAtChoice} />} />
+            <Route path="/story" element={<StoryMode language={lang} onComplete={(choice) => { actions.setPlayerAlignment(choice); navigate('/setup'); }} onSkip={() => { actions.setPlayerAlignment('ALIVE'); if (state.user) { localStorage.setItem(`shield_intro_seen_${state.user.uid}`, 'true'); localStorage.setItem(`shield_alignment_${state.user.uid}`, 'ALIVE'); localStorage.setItem(`shield_tutorial_seen_${state.user.uid}`, 'true'); } else { localStorage.setItem('shield_tutorial_seen_guest', 'true'); } const core = GAME_EXPANSIONS.find((item) => item.id === 'core_box'); if (core) actions.setHeroes(core.heroes); navigate('/map'); }} startAtChoice={state.startStoryAtChoice} />} />
 
             <Route path="/setup" element={playerAlignment ? <ExpansionSelector language={lang} playerAlignment={playerAlignment} onConfirm={actions.handleExpansionConfirm} onBack={() => { actions.setPlayerAlignment(null); navigate('/story'); }} ownedExpansions={state.ownedExpansions} onToggleExpansion={actions.toggleExpansion} onToggleAllExpansions={actions.toggleAllExpansions} /> : <Navigate to="/" />} />
 
