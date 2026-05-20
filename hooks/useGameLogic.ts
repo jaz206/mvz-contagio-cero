@@ -35,6 +35,15 @@ const getFactionForState = (state: string) => {
     return 'neutral';
 };
 
+const getStoredAlignment = (uid: string): 'ALIVE' | 'ZOMBIE' | null => {
+    const saved = localStorage.getItem(`shield_alignment_${uid}`);
+    return saved === 'ALIVE' || saved === 'ZOMBIE' ? saved : null;
+};
+
+const saveStoredAlignment = (uid: string, alignment: 'ALIVE' | 'ZOMBIE') => {
+    localStorage.setItem(`shield_alignment_${uid}`, alignment);
+};
+
 export const useGameLogic = () => {
     const navigate = useNavigate();
     const [user, setUser] = useState<User | null>(null);
@@ -177,26 +186,52 @@ export const useGameLogic = () => {
             setIsEditorMode(false);
             setIsFullAdmin(false);
 
-            const hasSeenIntro = localStorage.getItem(`shield_intro_seen_${currentUser.uid}`);
-            if (!hasSeenIntro) {
-                setShowStory(true);
-                setStartStoryAtChoice(false);
-                navigate('/story');
-            } else {
-                navigate('/map');
-            }
-
             try {
-                const profile = await getUserProfile(currentUser.uid, 'ALIVE');
-                if (profile) {
-                    setHeroes(profile.heroes);
-                    setCompletedMissionIds(new Set(profile.completedMissionIds));
-                    setOmegaCylinders(profile.resources.omegaCylinders);
-                    setPlayerAlignment('ALIVE');
+                const hasSeenIntro = !!localStorage.getItem(`shield_intro_seen_${currentUser.uid}`);
+                const storedAlignment = getStoredAlignment(currentUser.uid);
+                const [aliveProfile, zombieProfile] = await Promise.all([
+                    getUserProfile(currentUser.uid, 'ALIVE'),
+                    getUserProfile(currentUser.uid, 'ZOMBIE')
+                ]);
+
+                const resolvedAlignment = storedAlignment
+                    || (aliveProfile && !zombieProfile ? 'ALIVE' : null)
+                    || (!aliveProfile && zombieProfile ? 'ZOMBIE' : null)
+                    || (aliveProfile ? 'ALIVE' : null)
+                    || (zombieProfile ? 'ZOMBIE' : null);
+
+                const resolvedProfile = resolvedAlignment === 'ZOMBIE' ? zombieProfile : aliveProfile;
+
+                if (resolvedAlignment && resolvedProfile) {
+                    setPlayerAlignment(resolvedAlignment);
+                    setHeroes(resolvedProfile.heroes);
+                    setCompletedMissionIds(new Set(resolvedProfile.completedMissionIds));
+                    setOmegaCylinders(resolvedProfile.resources.omegaCylinders);
+                    setShowStory(false);
+                    setShowTutorial(false);
+                    saveStoredAlignment(currentUser.uid, resolvedAlignment);
                     isDataLoadedRef.current = true;
+                    navigate('/map');
+                } else if (!hasSeenIntro) {
+                    setShowStory(true);
+                    setStartStoryAtChoice(false);
+                    navigate('/story');
+                } else if (resolvedAlignment) {
+                    setPlayerAlignment(resolvedAlignment);
+                    setHeroes(resolvedAlignment === 'ZOMBIE' ? coreExpansion?.zombieHeroes || [] : coreHeroes);
+                    setShowStory(false);
+                    setStartStoryAtChoice(false);
+                    navigate('/setup');
+                } else {
+                    setShowStory(true);
+                    setStartStoryAtChoice(true);
+                    navigate('/story');
                 }
             } catch (error) {
                 console.error(error);
+                setShowStory(true);
+                setStartStoryAtChoice(false);
+                navigate('/story');
             }
 
             setLoading(false);
@@ -279,6 +314,7 @@ export const useGameLogic = () => {
         setHeroes(selectedHeroes);
         if (user) {
             localStorage.setItem(`shield_intro_seen_${user.uid}`, 'true');
+            saveStoredAlignment(user.uid, playerAlignment);
         }
         navigate('/intro');
         isDataLoadedRef.current = true;
@@ -302,6 +338,9 @@ export const useGameLogic = () => {
     const toggleDimension = () => {
         const newAlignment = playerAlignment === 'ALIVE' ? 'ZOMBIE' : 'ALIVE';
         setPlayerAlignment(newAlignment);
+        if (user) {
+            saveStoredAlignment(user.uid, newAlignment);
+        }
 
         const core = GAME_EXPANSIONS.find((item) => item.id === 'core_box');
         if (core) {
