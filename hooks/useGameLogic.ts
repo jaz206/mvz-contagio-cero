@@ -47,6 +47,7 @@ const saveStoredAlignment = (uid: string, alignment: 'ALIVE' | 'ZOMBIE') => {
 
 const getSetupDoneKey = (uid?: string | null) => uid ? `shield_setup_done_${uid}` : 'shield_setup_done_guest';
 const getFlowStepKey = (uid?: string | null) => uid ? `shield_flow_step_${uid}` : 'shield_flow_step_guest';
+const getCampaignCacheKey = (uid?: string | null) => uid ? `shield_campaign_cache_${uid}` : 'shield_campaign_cache_guest';
 type FlowStep = 'story' | 'setup' | 'intro' | 'mission0' | 'tutorial' | 'map';
 
 const getSavedFlowStep = (uid?: string | null): FlowStep | null => {
@@ -67,6 +68,39 @@ const saveFlowStep = (step: FlowStep, uid?: string | null) => {
 
 const clearFlowStep = (uid?: string | null) => {
     localStorage.removeItem(getFlowStepKey(uid));
+};
+
+const readCampaignCache = (uid?: string | null): { heroes: Hero[]; completedMissionIds: string[]; omegaCylinders: number } | null => {
+    const raw = localStorage.getItem(getCampaignCacheKey(uid));
+    if (!raw) return null;
+
+    try {
+        const parsed = JSON.parse(raw);
+        return {
+            heroes: Array.isArray(parsed?.heroes) ? parsed.heroes : [],
+            completedMissionIds: Array.isArray(parsed?.completedMissionIds) ? parsed.completedMissionIds : [],
+            omegaCylinders: typeof parsed?.omegaCylinders === 'number' ? parsed.omegaCylinders : 0
+        };
+    } catch {
+        return null;
+    }
+};
+
+const writeCampaignCache = (
+    heroes: Hero[],
+    completedMissionIds: Iterable<string>,
+    omegaCylinders: number,
+    uid?: string | null
+) => {
+    localStorage.setItem(getCampaignCacheKey(uid), JSON.stringify({
+        heroes,
+        completedMissionIds: Array.from(completedMissionIds),
+        omegaCylinders
+    }));
+};
+
+const clearCampaignCache = (uid?: string | null) => {
+    localStorage.removeItem(getCampaignCacheKey(uid));
 };
 
 export const useGameLogic = () => {
@@ -230,6 +264,7 @@ export const useGameLogic = () => {
                 const hasCompletedSetup = !!localStorage.getItem(getSetupDoneKey(currentUser.uid));
                 const storedAlignment = getStoredAlignment(currentUser.uid);
                 const savedFlowStep = getSavedFlowStep(currentUser.uid);
+                const cachedCampaign = readCampaignCache(currentUser.uid);
                 const [aliveProfile, zombieProfile] = await Promise.all([
                     getUserProfile(currentUser.uid, 'ALIVE'),
                     getUserProfile(currentUser.uid, 'ZOMBIE')
@@ -242,6 +277,7 @@ export const useGameLogic = () => {
                     || (zombieProfile ? 'ZOMBIE' : null);
 
                 const resolvedProfile = resolvedAlignment === 'ZOMBIE' ? zombieProfile : aliveProfile;
+                const fallbackProfile = resolvedProfile || cachedCampaign;
 
                 if (resolvedAlignment && savedFlowStep === 'setup') {
                     setPlayerAlignment(resolvedAlignment);
@@ -252,10 +288,10 @@ export const useGameLogic = () => {
                     navigate('/setup');
                 } else if (resolvedAlignment && savedFlowStep === 'intro') {
                     setPlayerAlignment(resolvedAlignment);
-                    if (resolvedProfile) {
-                        setHeroes(resolvedProfile.heroes);
-                        setCompletedMissionIds(new Set(resolvedProfile.completedMissionIds));
-                        setOmegaCylinders(resolvedProfile.resources.omegaCylinders);
+                    if (fallbackProfile) {
+                        setHeroes(fallbackProfile.heroes);
+                        setCompletedMissionIds(new Set(fallbackProfile.completedMissionIds));
+                        setOmegaCylinders(fallbackProfile.resources.omegaCylinders);
                     }
                     setShowStory(false);
                     setShowTutorial(false);
@@ -265,10 +301,10 @@ export const useGameLogic = () => {
                     navigate('/intro');
                 } else if (resolvedAlignment && savedFlowStep === 'mission0') {
                     setPlayerAlignment(resolvedAlignment);
-                    if (resolvedProfile) {
-                        setHeroes(resolvedProfile.heroes);
-                        setCompletedMissionIds(new Set(resolvedProfile.completedMissionIds));
-                        setOmegaCylinders(resolvedProfile.resources.omegaCylinders);
+                    if (fallbackProfile) {
+                        setHeroes(fallbackProfile.heroes);
+                        setCompletedMissionIds(new Set(fallbackProfile.completedMissionIds));
+                        setOmegaCylinders(fallbackProfile.resources.omegaCylinders);
                     }
                     setShowStory(false);
                     setShowTutorial(false);
@@ -278,10 +314,10 @@ export const useGameLogic = () => {
                     navigate('/mission0');
                 } else if (resolvedAlignment && savedFlowStep === 'tutorial') {
                     setPlayerAlignment(resolvedAlignment);
-                    if (resolvedProfile) {
-                        setHeroes(resolvedProfile.heroes);
-                        setCompletedMissionIds(new Set(resolvedProfile.completedMissionIds));
-                        setOmegaCylinders(resolvedProfile.resources.omegaCylinders);
+                    if (fallbackProfile) {
+                        setHeroes(fallbackProfile.heroes);
+                        setCompletedMissionIds(new Set(fallbackProfile.completedMissionIds));
+                        setOmegaCylinders(fallbackProfile.resources.omegaCylinders);
                     }
                     setShowStory(false);
                     setShowTutorial(true);
@@ -289,6 +325,23 @@ export const useGameLogic = () => {
                     setStartStoryAtChoice(false);
                     isDataLoadedRef.current = true;
                     navigate('/tutorial');
+                } else if (resolvedAlignment && savedFlowStep === 'map') {
+                    setPlayerAlignment(resolvedAlignment);
+                    if (fallbackProfile) {
+                        setHeroes(fallbackProfile.heroes);
+                        setCompletedMissionIds(new Set(fallbackProfile.completedMissionIds));
+                        setOmegaCylinders(fallbackProfile.resources.omegaCylinders);
+                    } else {
+                        setHeroes(resolvedAlignment === 'ZOMBIE' ? coreExpansion?.zombieHeroes || [] : coreHeroes);
+                        setCompletedMissionIds(new Set());
+                        setOmegaCylinders(0);
+                    }
+                    setShowStory(false);
+                    setShowTutorial(false);
+                    setIsStartingCampaign(false);
+                    setStartStoryAtChoice(false);
+                    isDataLoadedRef.current = true;
+                    navigate('/map');
                 } else if (resolvedAlignment && resolvedProfile) {
                     saveFlowStep('map', currentUser.uid);
                     setPlayerAlignment(resolvedAlignment);
@@ -363,6 +416,7 @@ export const useGameLogic = () => {
         if (isEditorMode || !user || !playerAlignment || !isDataLoadedRef.current) return;
 
         setIsSaving(true);
+        writeCampaignCache(currentHeroes, currentMissions, currentCylinders, user.uid);
         try {
             await saveUserProfile(user.uid, playerAlignment, currentHeroes, Array.from(currentMissions), { omegaCylinders: currentCylinders });
         } catch (error) {
@@ -452,10 +506,12 @@ export const useGameLogic = () => {
             saveStoredAlignment(user.uid, playerAlignment);
             localStorage.setItem(getSetupDoneKey(user.uid), 'true');
             saveFlowStep('intro', user.uid);
+            writeCampaignCache(selectedHeroes, [], omegaCylinders, user.uid);
             await saveUserProfile(user.uid, playerAlignment, selectedHeroes, [], { omegaCylinders });
         } else {
             localStorage.setItem(getSetupDoneKey(), 'true');
             saveFlowStep('intro');
+            writeCampaignCache(selectedHeroes, [], omegaCylinders);
         }
         isDataLoadedRef.current = true;
         navigate('/intro', { replace: true });
@@ -475,6 +531,7 @@ export const useGameLogic = () => {
         isDataLoadedRef.current = false;
         setPlayerAlignment(null);
         clearFlowStep(user?.uid);
+        clearCampaignCache(user?.uid);
         navigate('/');
     };
 
@@ -694,10 +751,12 @@ export const useGameLogic = () => {
             localStorage.removeItem(`shield_alignment_${currentUid}`);
             localStorage.removeItem(getSetupDoneKey(currentUid));
             clearFlowStep(currentUid);
+            clearCampaignCache(currentUid);
         } else {
             localStorage.removeItem('shield_tutorial_seen_guest');
             localStorage.removeItem(getSetupDoneKey());
             clearFlowStep();
+            clearCampaignCache();
         }
 
         setCompletedMissionIds(new Set());
