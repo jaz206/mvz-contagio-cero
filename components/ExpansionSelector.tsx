@@ -19,7 +19,6 @@ export const ExpansionSelector: React.FC<ExpansionSelectorProps> = ({
     ownedExpansions, onToggleExpansion, onToggleAllExpansions
 }) => {
     const [selectedHeroes, setSelectedHeroes] = useState<Hero[]>([]);
-    const [hasTouchedSelection, setHasTouchedSelection] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
     const [viewingSheet, setViewingSheet] = useState<string | null>(null);
     const [dbHeroes, setDbHeroes] = useState<HeroTemplate[]>([]);
@@ -29,6 +28,7 @@ export const ExpansionSelector: React.FC<ExpansionSelectorProps> = ({
     const borderColor = isZombie ? 'border-lime-500' : 'border-cyan-500';
     const textColor = isZombie ? 'text-lime-400' : 'text-cyan-400';
     const bgColor = isZombie ? 'bg-lime-600' : 'bg-cyan-600';
+    const blockedAliases = ['MAGNETO', 'KINGPIN', 'DOCTOR DOOM'];
 
     useEffect(() => {
         const fetchFromDb = async () => {
@@ -120,13 +120,10 @@ export const ExpansionSelector: React.FC<ExpansionSelectorProps> = ({
         return allHeroes;
     }, [dbHeroes, isZombie, loadingDb, ownedExpansions, playerAlignment, searchTerm]);
 
-    useEffect(() => {
-        if (loadingDb || hasTouchedSelection || selectedHeroes.length > 0 || availableHeroes.length === 0) return;
-        setSelectedHeroes(availableHeroes.slice(0, 6));
-    }, [availableHeroes, hasTouchedSelection, loadingDb, selectedHeroes.length]);
+    const isBlockedHero = (hero: Hero) => blockedAliases.some((alias) => hero.alias.toUpperCase().startsWith(alias));
 
     const toggleHero = (hero: Hero) => {
-        setHasTouchedSelection(true);
+        if (isBlockedHero(hero)) return;
 
         const isSelected = selectedHeroes.some(h => h.id === hero.id);
         if (isSelected) {
@@ -138,23 +135,13 @@ export const ExpansionSelector: React.FC<ExpansionSelectorProps> = ({
         setSelectedHeroes(prev => [...prev, hero]);
     };
 
-    const handleAutoFill = () => {
-        setHasTouchedSelection(true);
-        setSelectedHeroes(availableHeroes.slice(0, 6));
-    };
-
-    const handleClearSelection = () => {
-        setHasTouchedSelection(true);
-        setSelectedHeroes([]);
-    };
-
     const handleConfirm = () => {
         if (selectedHeroes.length === 0) {
             alert(language === 'es' ? 'Debes elegir al menos un agente.' : 'You must choose at least one agent.');
             return;
         }
 
-        onConfirm(selectedHeroes);
+        onConfirm([...selectedHeroes]);
     };
 
     return (
@@ -209,7 +196,7 @@ export const ExpansionSelector: React.FC<ExpansionSelectorProps> = ({
                         disabled={selectedHeroes.length === 0}
                         className={`px-6 py-2 text-xs font-bold uppercase tracking-widest transition-all ${selectedHeroes.length > 0 ? `${bgColor} text-white shadow-lg hover:brightness-110` : 'cursor-not-allowed bg-slate-800 text-gray-500'}`}
                     >
-                        {language === 'es' ? `SEGUIR (${selectedHeroes.length})` : `CONTINUE (${selectedHeroes.length})`}
+                        {language === 'es' ? `CONFIRMAR (${selectedHeroes.length})` : `CONFIRM (${selectedHeroes.length})`}
                     </button>
                 </div>
             </div>
@@ -253,16 +240,8 @@ export const ExpansionSelector: React.FC<ExpansionSelectorProps> = ({
                 <div className="relative flex flex-1 flex-col overflow-hidden bg-slate-950">
                     <div className="flex items-center justify-between border-b border-slate-800 bg-slate-900/50 p-3">
                         <h3 className={`text-xs font-bold uppercase tracking-widest ${textColor}`}>AGENTES DISPONIBLES ({availableHeroes.length})</h3>
-                        <div className="flex items-center gap-2">
-                            <button onClick={handleAutoFill} className="border border-slate-700 px-2 py-1 text-[10px] font-bold uppercase text-cyan-400 hover:border-cyan-500 hover:text-white">
-                                {language === 'es' ? 'AUTOEQUIPO' : 'AUTO SQUAD'}
-                            </button>
-                            <button onClick={handleClearSelection} className="border border-slate-700 px-2 py-1 text-[10px] font-bold uppercase text-gray-400 hover:border-white hover:text-white">
-                                {language === 'es' ? 'LIMPIAR' : 'CLEAR'}
-                            </button>
-                            <div className="text-[10px] text-gray-500">
-                                {language === 'es' ? 'PUEDES ENTRAR CON 1 A 6 AGENTES' : 'YOU CAN START WITH 1 TO 6 AGENTS'}
-                            </div>
+                        <div className="text-[10px] text-gray-500">
+                            {language === 'es' ? 'ELIGE TU EQUIPO. MAGNETO, DOOM Y KINGPIN NO ESTAN DISPONIBLES.' : 'CHOOSE YOUR TEAM. MAGNETO, DOOM AND KINGPIN ARE UNAVAILABLE.'}
                         </div>
                     </div>
 
@@ -276,7 +255,8 @@ export const ExpansionSelector: React.FC<ExpansionSelectorProps> = ({
                             <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
                                 {availableHeroes.map(hero => {
                                     const isSelected = selectedHeroes.some(h => h.id === hero.id);
-                                    const isDisabled = !isSelected && selectedHeroes.length >= 6;
+                                    const isBlocked = isBlockedHero(hero);
+                                    const isDisabled = isBlocked || (!isSelected && selectedHeroes.length >= 6);
                                     const imgStyle = hero.imageParams ? {
                                         transform: `scale(${hero.imageParams.scale}) translate(${hero.imageParams.x}%, ${hero.imageParams.y}%)`
                                     } : {};
@@ -287,7 +267,9 @@ export const ExpansionSelector: React.FC<ExpansionSelectorProps> = ({
                                             onClick={() => !isDisabled && toggleHero(hero)}
                                             className={`
                                                 relative aspect-[3/4] cursor-pointer overflow-hidden border transition-all duration-200
-                                                ${isSelected
+                                                ${isBlocked
+                                                    ? 'cursor-not-allowed border-slate-800 opacity-35 grayscale'
+                                                    : isSelected
                                                     ? `${borderColor} ring-2 ring-offset-2 ring-offset-slate-950 ${isZombie ? 'ring-lime-500/50' : 'ring-cyan-500/50'}`
                                                     : isDisabled
                                                         ? 'cursor-not-allowed border-slate-800 opacity-30 grayscale'
@@ -306,6 +288,13 @@ export const ExpansionSelector: React.FC<ExpansionSelectorProps> = ({
                                             </div>
 
                                             <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent opacity-80 pointer-events-none" />
+                                            {isBlocked && (
+                                                <div className="absolute inset-0 flex items-center justify-center bg-black/55 pointer-events-none">
+                                                    <span className="border border-slate-500 bg-slate-950/90 px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-slate-300">
+                                                        {language === 'es' ? 'BLOQUEADO' : 'LOCKED'}
+                                                    </span>
+                                                </div>
+                                            )}
 
                                             {hero.characterSheetUrl && (
                                                 <button
@@ -348,8 +337,8 @@ export const ExpansionSelector: React.FC<ExpansionSelectorProps> = ({
                         </div>
                         <div className="mt-1 text-[10px] text-gray-500">
                             {language === 'es'
-                                ? 'La app te propone un equipo inicial. Puedes cambiarlo si quieres.'
-                                : 'The app suggests a starting squad. You can change it if you want.'}
+                                ? 'Elige manualmente entre 1 y 6 personajes.'
+                                : 'Choose manually between 1 and 6 characters.'}
                         </div>
                     </div>
 
@@ -405,7 +394,7 @@ export const ExpansionSelector: React.FC<ExpansionSelectorProps> = ({
                             disabled={selectedHeroes.length === 0}
                             className={`w-full py-3 text-xs font-bold uppercase tracking-widest transition-all ${selectedHeroes.length > 0 ? `${bgColor} text-white hover:brightness-110` : 'cursor-not-allowed bg-slate-800 text-gray-600'}`}
                         >
-                            {language === 'es' ? `ENTRAR CON ${selectedHeroes.length}` : `START WITH ${selectedHeroes.length}`}
+                            {language === 'es' ? `SEGUIR CON ${selectedHeroes.length}` : `CONTINUE WITH ${selectedHeroes.length}`}
                         </button>
                     </div>
                 </div>

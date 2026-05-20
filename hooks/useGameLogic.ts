@@ -311,13 +311,15 @@ export const useGameLogic = () => {
 
     const handleExpansionConfirm = (selectedHeroes: Hero[]) => {
         if (!playerAlignment) return;
-        setHeroes(selectedHeroes);
+        setHeroes([...selectedHeroes]);
+        setShowStory(false);
+        setStartStoryAtChoice(false);
         if (user) {
             localStorage.setItem(`shield_intro_seen_${user.uid}`, 'true');
             saveStoredAlignment(user.uid, playerAlignment);
         }
-        navigate('/intro');
         isDataLoadedRef.current = true;
+        navigate('/intro', { replace: true });
     };
 
     const handleLogout = async () => {
