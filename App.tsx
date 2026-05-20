@@ -103,7 +103,7 @@ const GameLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
                 language={lang}
             />
 
-            <header className="flex-none h-16 border-b border-cyan-900/50 bg-slate-900/40 backdrop-blur-md flex items-center justify-between px-6 z-30 relative overflow-hidden">
+            <header className="flex-none h-16 border-b border-cyan-900/50 bg-slate-900/40 backdrop-blur-md flex items-center justify-between px-6 z-30 relative overflow-visible">
                 <div className="absolute top-0 left-0 w-full h-[1px] bg-cyan-500/20 animate-scanline" />
 
                 <div className="flex items-center gap-4">
@@ -135,9 +135,6 @@ const GameLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
                             <span className="text-[10px] font-bold">{playerAlignment === 'ZOMBIE' ? 'EARTH-Z' : 'EARTH-616'}</span>
                         </div>
                     </button>
-                    <button onClick={() => actions.setShowExpansionConfig(true)} className="hidden md:flex items-center gap-2 px-3 py-1 border border-cyan-700 bg-slate-900/50 text-cyan-400 hover:bg-cyan-900/80 rounded transition-colors" title="Configurar expansiones">
-                        <span className="text-[10px] font-black tracking-widest">CFG</span>
-                    </button>
                     <div className="text-right hidden lg:block">
                         <div className="text-[10px] text-cyan-600 font-bold">{t.header.biohazard}</div>
                         <div className="text-xs text-cyan-300 tracking-widest">{t.header.clearance}</div>
@@ -166,7 +163,16 @@ const GameLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
                                 {lang === 'es' ? 'USUARIO' : 'USER'}
                             </button>
                             {showUserMenu && (
-                                <div className="absolute right-0 top-10 w-56 border border-cyan-900 bg-slate-950/95 shadow-2xl p-2 flex flex-col gap-2">
+                                <div className="absolute right-0 top-10 z-50 w-64 border border-cyan-900 bg-slate-950/95 shadow-2xl p-2 flex flex-col gap-2">
+                                    <button
+                                        onClick={() => {
+                                            setShowUserMenu(false);
+                                            actions.setShowExpansionConfig(true);
+                                        }}
+                                        className="w-full text-left text-[11px] bg-cyan-900/20 text-cyan-300 border border-cyan-800 px-3 py-2 hover:bg-cyan-900/40 transition-colors"
+                                    >
+                                        {lang === 'es' ? 'Seleccionar expansiones' : 'Select expansions'}
+                                    </button>
                                     <button
                                         onClick={() => {
                                             setShowUserMenu(false);
