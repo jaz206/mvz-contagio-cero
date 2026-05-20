@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { User, onAuthStateChanged } from 'firebase/auth';
 import { auth } from '../firebaseConfig';
 import { translations, Language } from '../translations';
@@ -105,6 +105,7 @@ const clearCampaignCache = (uid?: string | null) => {
 
 export const useGameLogic = () => {
     const navigate = useNavigate();
+    const location = useLocation();
     const [user, setUser] = useState<User | null>(null);
     const [loading, setLoading] = useState(true);
     const [loadingAuth, setLoadingAuth] = useState(true);
@@ -149,6 +150,13 @@ export const useGameLogic = () => {
     const [showExpansionConfig, setShowExpansionConfig] = useState(false);
 
     const t = translations[lang];
+    const preserveBunkerRoute = () => {
+        if (location.pathname === '/bunker') {
+            navigate('/bunker');
+            return true;
+        }
+        return false;
+    };
 
     useEffect(() => {
         const savedExpansions = localStorage.getItem('shield_owned_expansions');
@@ -221,7 +229,7 @@ export const useGameLogic = () => {
                 setOmegaCylinders(99);
                 setWorldStage('NORMAL');
                 isDataLoadedRef.current = true;
-                navigate('/map');
+                if (!preserveBunkerRoute()) navigate('/map');
                 setLoading(false);
                 return;
             }
@@ -248,7 +256,7 @@ export const useGameLogic = () => {
                 setOmegaCylinders(99);
                 setWorldStage('NORMAL');
                 isDataLoadedRef.current = true;
-                navigate('/map');
+                if (!preserveBunkerRoute()) navigate('/map');
                 setLoading(false);
                 return;
             }
@@ -341,7 +349,7 @@ export const useGameLogic = () => {
                     setIsStartingCampaign(false);
                     setStartStoryAtChoice(false);
                     isDataLoadedRef.current = true;
-                    navigate('/map');
+                    if (!preserveBunkerRoute()) navigate('/map');
                 } else if (resolvedAlignment && resolvedProfile) {
                     saveFlowStep('map', currentUser.uid);
                     setPlayerAlignment(resolvedAlignment);
@@ -353,7 +361,7 @@ export const useGameLogic = () => {
                     setIsStartingCampaign(false);
                     saveStoredAlignment(currentUser.uid, resolvedAlignment);
                     isDataLoadedRef.current = true;
-                    navigate('/map');
+                    if (!preserveBunkerRoute()) navigate('/map');
                 } else if (resolvedAlignment) {
                     setPlayerAlignment(resolvedAlignment);
                     setHeroes(resolvedAlignment === 'ZOMBIE' ? coreExpansion?.zombieHeroes || [] : coreHeroes);
@@ -401,7 +409,7 @@ export const useGameLogic = () => {
         });
 
         return () => unsubscribe();
-    }, [isGuest, navigate]);
+    }, [isGuest, location.pathname, navigate]);
 
     useEffect(() => {
         const loadMissions = async () => {
