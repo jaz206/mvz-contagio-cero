@@ -63,6 +63,8 @@ const GameLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
                 isOpen={state.showAdminPanel}
                 onClose={() => actions.setShowAdminPanel(false)}
                 currentAdminUid={state.staffAccount?.uid}
+                introConfig={state.introConfig}
+                onSaveIntroConfig={actions.handleSaveIntroConfig}
             />
 
             {state.activeGlobalEvent && (
@@ -349,7 +351,7 @@ const GameContent: React.FC = () => {
 
             <Route path="/setup" element={playerAlignment ? (state.isStartingCampaign && heroes.length > 0 ? <Navigate to="/intro" replace /> : <ExpansionSelector language={lang} playerAlignment={playerAlignment} onConfirm={actions.handleExpansionConfirm} onBack={() => { actions.setPlayerAlignment(null); navigate('/story'); }} ownedExpansions={state.ownedExpansions} onToggleExpansion={actions.toggleExpansion} onToggleAllExpansions={actions.toggleAllExpansions} />) : <Navigate to="/" />} />
 
-            <Route path="/intro" element={playerAlignment ? <IntroSequence language={lang} playerAlignment={playerAlignment} onComplete={() => { actions.setIsStartingCampaign(false); if (state.user) { localStorage.removeItem(`shield_setup_done_${state.user.uid}`); } else { localStorage.removeItem('shield_setup_done_guest'); } if (state.introMission && !hasCompletedIntroMission) { navigate('/mission0'); } else if (!hasSeenTutorial) { navigate('/tutorial'); } else { navigate('/map'); } }} /> : <Navigate to="/" />} />
+            <Route path="/intro" element={playerAlignment ? <IntroSequence language={lang} playerAlignment={playerAlignment} slides={playerAlignment === 'ZOMBIE' ? state.introConfig.zombie : state.introConfig.alive} onComplete={() => { actions.setIsStartingCampaign(false); if (state.user) { localStorage.removeItem(`shield_setup_done_${state.user.uid}`); } else { localStorage.removeItem('shield_setup_done_guest'); } if (state.introMission && !hasCompletedIntroMission) { navigate('/mission0'); } else if (!hasSeenTutorial) { navigate('/tutorial'); } else { navigate('/map'); } }} /> : <Navigate to="/" />} />
 
             <Route path="/mission0" element={(playerAlignment && state.introMission) ? <MissionModal mission={state.introMission} isOpen={true} onClose={() => navigate(hasSeenTutorial ? '/map' : '/tutorial')} onComplete={() => { actions.handleMissionComplete(state.introMission!.id); navigate(hasSeenTutorial ? '/map' : '/tutorial'); }} language={lang} isCompleted={hasCompletedIntroMission} /> : <Navigate to="/map" />} />
 

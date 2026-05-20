@@ -129,6 +129,18 @@ export interface StaffAccount {
   updatedAt?: unknown;
 }
 
+export interface IntroSlide {
+  id: string;
+  textEs: string;
+  textEn: string;
+  image: string;
+}
+
+export interface IntroConfig {
+  alive: IntroSlide[];
+  zombie: IntroSlide[];
+}
+
 export interface USATopoJSON {
   type: "Topology";
   objects: {
