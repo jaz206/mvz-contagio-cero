@@ -399,7 +399,14 @@ export const useGameLogic = () => {
     const handleTickerUpdate = (message: string) => setTickerMessage(message);
 
     const allMissions: Mission[] = useMemo(() => {
-        const sourceMissions = customMissions.length > 0 ? customMissions : getInitialMissions(t);
+        const baseMissions = getInitialMissions(t);
+        const baseMissionIds = new Set(baseMissions.map((mission) => mission.id));
+        const mergedMissions = [
+            ...baseMissions,
+            ...customMissions.filter((mission) => !baseMissionIds.has(mission.id))
+        ];
+
+        const sourceMissions = mergedMissions;
         return sourceMissions.map((mission) => {
             const [x, y] = mission.location.coordinates;
             if (x === 0 && y === 0) {
