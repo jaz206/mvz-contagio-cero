@@ -5,7 +5,7 @@ import { auth } from '../firebaseConfig';
 import { translations, Language } from '../translations';
 import { getHeroTemplates } from '../services/heroService';
 import { getCustomMissions, deleteMissionInDB } from '../services/missionService';
-import { getUserProfile, saveUserProfile } from '../services/userService';
+import { getUserProfile, resetUserProfiles, saveUserProfile } from '../services/userService';
 import { logout, signInEditor } from '../services/authService';
 import { ensureAdminStaffAccount, getStaffAccount } from '../services/staffService';
 import { Mission, Hero, WorldStage, GlobalEvent, HeroTemplate, StaffAccount, StaffPermissions } from '../types';
@@ -528,6 +528,30 @@ export const useGameLogic = () => {
         setSurferTurnCount(0);
     };
 
+    const handleRestartCampaign = async () => {
+        if (user) {
+            await resetUserProfiles(user.uid);
+            localStorage.removeItem(`shield_intro_seen_${user.uid}`);
+            localStorage.removeItem(`shield_tutorial_seen_${user.uid}`);
+            localStorage.removeItem(`shield_alignment_${user.uid}`);
+        } else {
+            localStorage.removeItem('shield_tutorial_seen_guest');
+        }
+
+        setCompletedMissionIds(new Set());
+        setWorldStage('NORMAL');
+        setActiveGlobalEvent(null);
+        setOmegaCylinders(0);
+        setSurferTurnCount(0);
+        setHeroes([]);
+        setSelectedMission(null);
+        setPlayerAlignment(null);
+        setShowStory(true);
+        setStartStoryAtChoice(false);
+        isDataLoadedRef.current = false;
+        navigate('/story', { replace: true });
+    };
+
     const handleEventAcknowledge = () => setActiveGlobalEvent(null);
 
     const handleToggleHeroObjective = (heroId: string, index: number) => {
@@ -766,6 +790,7 @@ export const useGameLogic = () => {
             handleDeleteMission,
             handleSimulateProgress,
             handleResetProgress,
+            handleRestartCampaign,
             handleEventAcknowledge,
             handleToggleHeroObjective,
             handleTransformHero,

@@ -24,6 +24,7 @@ const LOGO_ZOMBIE = 'https://i.pinimg.com/736x/7f/31/38/7f31382d4a5c35daa4ba1768
 const GameLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const { state, actions } = useGame();
     const navigate = useNavigate();
+    const [showUserMenu, setShowUserMenu] = React.useState(false);
     const { lang, playerAlignment, completedMissionIds, isSaving, tickerMessage, worldStage, staffPermissions, isFullAdmin } = state;
 
     const t = translations[lang];
@@ -37,6 +38,10 @@ const GameLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     React.useEffect(() => {
         document.body.setAttribute('data-alignment', playerAlignment || 'ALIVE');
     }, [playerAlignment]);
+
+    React.useEffect(() => {
+        setShowUserMenu(false);
+    }, [state.selectedMission]);
 
     return (
         <div className="flex flex-col h-screen w-full font-sans overflow-hidden relative transition-colors duration-500">
@@ -153,9 +158,41 @@ const GameLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
                                 ADMIN
                             </button>
                         )}
-                        <button onClick={actions.handleLogout} className="text-xs bg-red-900/20 text-red-400 border border-red-900 px-3 py-1 hover:bg-red-900/40 transition-colors">
-                            {t.header.logout}
-                        </button>
+                        <div className="relative">
+                            <button
+                                onClick={() => setShowUserMenu((prev) => !prev)}
+                                className="text-xs bg-slate-900/60 text-cyan-200 border border-cyan-900 px-3 py-1 hover:bg-slate-800 transition-colors"
+                            >
+                                {lang === 'es' ? 'USUARIO' : 'USER'}
+                            </button>
+                            {showUserMenu && (
+                                <div className="absolute right-0 top-10 w-56 border border-cyan-900 bg-slate-950/95 shadow-2xl p-2 flex flex-col gap-2">
+                                    <button
+                                        onClick={() => {
+                                            setShowUserMenu(false);
+                                            const confirmed = window.confirm(lang === 'es'
+                                                ? 'Esto borrara tu avance guardado y volveras a empezar desde la intro. Quieres seguir?'
+                                                : 'This will erase your saved progress and restart from the intro. Continue?');
+                                            if (confirmed) {
+                                                actions.handleRestartCampaign();
+                                            }
+                                        }}
+                                        className="w-full text-left text-[11px] bg-amber-900/20 text-amber-300 border border-amber-800 px-3 py-2 hover:bg-amber-900/40 transition-colors"
+                                    >
+                                        {lang === 'es' ? 'Reiniciar partida' : 'Restart campaign'}
+                                    </button>
+                                    <button
+                                        onClick={() => {
+                                            setShowUserMenu(false);
+                                            actions.handleLogout();
+                                        }}
+                                        className="w-full text-left text-[11px] bg-red-900/20 text-red-400 border border-red-900 px-3 py-2 hover:bg-red-900/40 transition-colors"
+                                    >
+                                        {t.header.logout}
+                                    </button>
+                                </div>
+                            )}
+                        </div>
                     </div>
                 </div>
             </header>

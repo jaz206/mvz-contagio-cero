@@ -68,3 +68,25 @@ export const saveUserProfile = async (
         console.error("Error saving user profile:", error);
     }
 };
+
+export const resetUserProfiles = async (uid: string): Promise<void> => {
+    if (!isDbReady() || !db) return;
+    try {
+        const docRef = doc(db, USERS_COLLECTION, uid);
+        await setDoc(docRef, {
+            ALIVE: {
+                heroes: [],
+                missions: [],
+                resources: { omegaCylinders: 0 }
+            },
+            ZOMBIE: {
+                heroes: [],
+                missions: [],
+                resources: { omegaCylinders: 0 }
+            },
+            lastUpdated: Timestamp.now()
+        }, { merge: true });
+    } catch (error) {
+        console.error("Error resetting user profile:", error);
+    }
+};
