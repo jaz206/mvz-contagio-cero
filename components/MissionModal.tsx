@@ -40,6 +40,10 @@ export const MissionModal: React.FC<MissionModalProps> = ({
     const timeoutsRef = useRef<NodeJS.Timeout[]>([]);
 
     useEffect(() => {
+        if (reportSuccess) {
+            return;
+        }
+
         setReporting(false);
         setReportSuccess(false);
         setShowMap(false);

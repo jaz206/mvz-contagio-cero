@@ -508,7 +508,11 @@ export const useGameLogic = () => {
         const baseMissionIds = new Set(baseMissions.map((mission) => mission.id));
         const mergedMissions = [
             ...baseMissions,
-            ...customMissions.filter((mission) => !baseMissionIds.has(mission.id))
+            ...customMissions.filter((mission) =>
+                !baseMissionIds.has(mission.id)
+                && mission.type !== 'INTRODUCTORY'
+                && mission.isIntroMission !== true
+            )
         ];
 
         const sourceMissions = mergedMissions;
