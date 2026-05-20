@@ -46,6 +46,28 @@ const saveStoredAlignment = (uid: string, alignment: 'ALIVE' | 'ZOMBIE') => {
 };
 
 const getSetupDoneKey = (uid?: string | null) => uid ? `shield_setup_done_${uid}` : 'shield_setup_done_guest';
+const getFlowStepKey = (uid?: string | null) => uid ? `shield_flow_step_${uid}` : 'shield_flow_step_guest';
+type FlowStep = 'story' | 'setup' | 'intro' | 'mission0' | 'tutorial' | 'map';
+
+const getSavedFlowStep = (uid?: string | null): FlowStep | null => {
+    const saved = localStorage.getItem(getFlowStepKey(uid));
+    return saved === 'story'
+        || saved === 'setup'
+        || saved === 'intro'
+        || saved === 'mission0'
+        || saved === 'tutorial'
+        || saved === 'map'
+        ? saved
+        : null;
+};
+
+const saveFlowStep = (step: FlowStep, uid?: string | null) => {
+    localStorage.setItem(getFlowStepKey(uid), step);
+};
+
+const clearFlowStep = (uid?: string | null) => {
+    localStorage.removeItem(getFlowStepKey(uid));
+};
 
 export const useGameLogic = () => {
     const navigate = useNavigate();
@@ -207,6 +229,7 @@ export const useGameLogic = () => {
                 const hasSeenIntro = !!localStorage.getItem(`shield_intro_seen_${currentUser.uid}`);
                 const hasCompletedSetup = !!localStorage.getItem(getSetupDoneKey(currentUser.uid));
                 const storedAlignment = getStoredAlignment(currentUser.uid);
+                const savedFlowStep = getSavedFlowStep(currentUser.uid);
                 const [aliveProfile, zombieProfile] = await Promise.all([
                     getUserProfile(currentUser.uid, 'ALIVE'),
                     getUserProfile(currentUser.uid, 'ZOMBIE')
@@ -220,7 +243,54 @@ export const useGameLogic = () => {
 
                 const resolvedProfile = resolvedAlignment === 'ZOMBIE' ? zombieProfile : aliveProfile;
 
-                if (resolvedAlignment && resolvedProfile) {
+                if (resolvedAlignment && savedFlowStep === 'setup') {
+                    setPlayerAlignment(resolvedAlignment);
+                    setShowStory(false);
+                    setShowTutorial(false);
+                    setIsStartingCampaign(false);
+                    setStartStoryAtChoice(false);
+                    navigate('/setup');
+                } else if (resolvedAlignment && savedFlowStep === 'intro') {
+                    setPlayerAlignment(resolvedAlignment);
+                    if (resolvedProfile) {
+                        setHeroes(resolvedProfile.heroes);
+                        setCompletedMissionIds(new Set(resolvedProfile.completedMissionIds));
+                        setOmegaCylinders(resolvedProfile.resources.omegaCylinders);
+                    }
+                    setShowStory(false);
+                    setShowTutorial(false);
+                    setIsStartingCampaign(true);
+                    setStartStoryAtChoice(false);
+                    isDataLoadedRef.current = true;
+                    navigate('/intro');
+                } else if (resolvedAlignment && savedFlowStep === 'mission0') {
+                    setPlayerAlignment(resolvedAlignment);
+                    if (resolvedProfile) {
+                        setHeroes(resolvedProfile.heroes);
+                        setCompletedMissionIds(new Set(resolvedProfile.completedMissionIds));
+                        setOmegaCylinders(resolvedProfile.resources.omegaCylinders);
+                    }
+                    setShowStory(false);
+                    setShowTutorial(false);
+                    setIsStartingCampaign(false);
+                    setStartStoryAtChoice(false);
+                    isDataLoadedRef.current = true;
+                    navigate('/mission0');
+                } else if (resolvedAlignment && savedFlowStep === 'tutorial') {
+                    setPlayerAlignment(resolvedAlignment);
+                    if (resolvedProfile) {
+                        setHeroes(resolvedProfile.heroes);
+                        setCompletedMissionIds(new Set(resolvedProfile.completedMissionIds));
+                        setOmegaCylinders(resolvedProfile.resources.omegaCylinders);
+                    }
+                    setShowStory(false);
+                    setShowTutorial(true);
+                    setIsStartingCampaign(false);
+                    setStartStoryAtChoice(false);
+                    isDataLoadedRef.current = true;
+                    navigate('/tutorial');
+                } else if (resolvedAlignment && resolvedProfile) {
+                    saveFlowStep('map', currentUser.uid);
                     setPlayerAlignment(resolvedAlignment);
                     setHeroes(resolvedProfile.heroes);
                     setCompletedMissionIds(new Set(resolvedProfile.completedMissionIds));
@@ -231,7 +301,16 @@ export const useGameLogic = () => {
                     saveStoredAlignment(currentUser.uid, resolvedAlignment);
                     isDataLoadedRef.current = true;
                     navigate('/map');
+                } else if (resolvedAlignment) {
+                    setPlayerAlignment(resolvedAlignment);
+                    setHeroes(resolvedAlignment === 'ZOMBIE' ? coreExpansion?.zombieHeroes || [] : coreHeroes);
+                    setShowStory(false);
+                    setIsStartingCampaign(false);
+                    setStartStoryAtChoice(false);
+                    saveFlowStep('setup', currentUser.uid);
+                    navigate('/setup');
                 } else if (!hasSeenIntro) {
+                    saveFlowStep('story', currentUser.uid);
                     setShowStory(true);
                     setIsStartingCampaign(false);
                     setStartStoryAtChoice(false);
@@ -250,6 +329,7 @@ export const useGameLogic = () => {
                     setStartStoryAtChoice(false);
                     navigate('/setup');
                 } else {
+                    saveFlowStep('story', currentUser.uid);
                     setShowStory(true);
                     setIsStartingCampaign(false);
                     setStartStoryAtChoice(true);
@@ -257,6 +337,7 @@ export const useGameLogic = () => {
                 }
             } catch (error) {
                 console.error(error);
+                saveFlowStep('story', currentUser.uid);
                 setShowStory(true);
                 setIsStartingCampaign(false);
                 setStartStoryAtChoice(false);
@@ -333,14 +414,34 @@ export const useGameLogic = () => {
     const handleGuestLogin = () => {
         setIsGuest(true);
         setIsStartingCampaign(false);
+        clearFlowStep();
         localStorage.removeItem(getSetupDoneKey());
         setPlayerAlignment('ALIVE');
         setShowStory(true);
         setStartStoryAtChoice(false);
+        saveFlowStep('story');
         navigate('/story');
     };
 
-    const handleExpansionConfirm = (selectedHeroes: Hero[]) => {
+    const handleStoryChoice = (choice: 'ALIVE' | 'ZOMBIE') => {
+        setIsStartingCampaign(false);
+        setShowStory(false);
+        setStartStoryAtChoice(false);
+        setPlayerAlignment(choice);
+
+        if (user) {
+            saveStoredAlignment(user.uid, choice);
+            saveFlowStep('setup', user.uid);
+            localStorage.removeItem(getSetupDoneKey(user.uid));
+        } else {
+            saveFlowStep('setup');
+            localStorage.removeItem(getSetupDoneKey());
+        }
+
+        navigate('/setup', { replace: true });
+    };
+
+    const handleExpansionConfirm = async (selectedHeroes: Hero[]) => {
         if (!playerAlignment) return;
         setHeroes([...selectedHeroes]);
         setShowStory(false);
@@ -350,8 +451,11 @@ export const useGameLogic = () => {
             localStorage.setItem(`shield_intro_seen_${user.uid}`, 'true');
             saveStoredAlignment(user.uid, playerAlignment);
             localStorage.setItem(getSetupDoneKey(user.uid), 'true');
+            saveFlowStep('intro', user.uid);
+            await saveUserProfile(user.uid, playerAlignment, selectedHeroes, [], { omegaCylinders });
         } else {
             localStorage.setItem(getSetupDoneKey(), 'true');
+            saveFlowStep('intro');
         }
         isDataLoadedRef.current = true;
         navigate('/intro', { replace: true });
@@ -370,6 +474,7 @@ export const useGameLogic = () => {
         setIsStartingCampaign(false);
         isDataLoadedRef.current = false;
         setPlayerAlignment(null);
+        clearFlowStep(user?.uid);
         navigate('/');
     };
 
@@ -584,9 +689,11 @@ export const useGameLogic = () => {
             localStorage.removeItem(`shield_tutorial_seen_${currentUid}`);
             localStorage.removeItem(`shield_alignment_${currentUid}`);
             localStorage.removeItem(getSetupDoneKey(currentUid));
+            clearFlowStep(currentUid);
         } else {
             localStorage.removeItem('shield_tutorial_seen_guest');
             localStorage.removeItem(getSetupDoneKey());
+            clearFlowStep();
         }
 
         setCompletedMissionIds(new Set());
@@ -841,6 +948,7 @@ export const useGameLogic = () => {
             toggleAllExpansions,
             handleEditorLogin,
             handleGuestLogin,
+            handleStoryChoice,
             handleExpansionConfirm,
             handleLogout,
             toggleDimension,

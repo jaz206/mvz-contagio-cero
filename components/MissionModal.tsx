@@ -14,6 +14,7 @@ interface MissionModalProps {
     language: Language;
     isCompleted?: boolean;
     isEditorMode?: boolean;
+    disableClose?: boolean;
 }
 
 export const MissionModal: React.FC<MissionModalProps> = ({
@@ -26,7 +27,8 @@ export const MissionModal: React.FC<MissionModalProps> = ({
     onDelete,
     language,
     isCompleted,
-    isEditorMode
+    isEditorMode,
+    disableClose = false
 }) => {
     const [reporting, setReporting] = useState(false);
     const [reportSuccess, setReportSuccess] = useState(false);
@@ -118,7 +120,7 @@ export const MissionModal: React.FC<MissionModalProps> = ({
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <div className="absolute inset-0 bg-slate-950/60 backdrop-blur-md" onClick={onClose} />
+            <div className="absolute inset-0 bg-slate-950/60 backdrop-blur-md" onClick={disableClose ? undefined : onClose} />
 
             {showPdf && mission.pdfUrl && (
                 <DraggablePdfWindow
@@ -233,9 +235,11 @@ export const MissionModal: React.FC<MissionModalProps> = ({
                         </div>
                     ) : (
                         <>
-                            <button onClick={onClose} disabled={reporting} className="px-6 py-3 border border-cyan-700/50 text-cyan-500 text-[10px] font-black tracking-widest hover:bg-cyan-900/20 hover:text-cyan-300 transition-all disabled:opacity-50 uppercase font-mono">
-                                {t.cancel}
-                            </button>
+                            {!disableClose && (
+                                <button onClick={onClose} disabled={reporting} className="px-6 py-3 border border-cyan-700/50 text-cyan-500 text-[10px] font-black tracking-widest hover:bg-cyan-900/20 hover:text-cyan-300 transition-all disabled:opacity-50 uppercase font-mono">
+                                    {t.cancel}
+                                </button>
+                            )}
 
                             <div className="flex gap-4 flex-wrap justify-end">
                                 {isEditorMode && onEdit && (
@@ -270,7 +274,7 @@ export const MissionModal: React.FC<MissionModalProps> = ({
                                     {reporting ? t.sending : (reportSuccess || isCompleted ? `OK ${t.sent}` : t.complete)}
                                 </button>
 
-                                {!isCompleted && !reporting && !reportSuccess && (
+                                {!disableClose && !isCompleted && !reporting && !reportSuccess && (
                                     <button className="px-8 py-3 bg-red-600 hover:bg-red-500 text-white text-[10px] font-black tracking-widest transition-all uppercase font-mono" onClick={onClose}>
                                         {t.accept}
                                     </button>
