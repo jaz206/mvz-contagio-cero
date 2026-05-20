@@ -44,6 +44,8 @@ const saveStoredAlignment = (uid: string, alignment: 'ALIVE' | 'ZOMBIE') => {
     localStorage.setItem(`shield_alignment_${uid}`, alignment);
 };
 
+const getSetupDoneKey = (uid?: string | null) => uid ? `shield_setup_done_${uid}` : 'shield_setup_done_guest';
+
 export const useGameLogic = () => {
     const navigate = useNavigate();
     const [user, setUser] = useState<User | null>(null);
@@ -192,6 +194,7 @@ export const useGameLogic = () => {
 
             try {
                 const hasSeenIntro = !!localStorage.getItem(`shield_intro_seen_${currentUser.uid}`);
+                const hasCompletedSetup = !!localStorage.getItem(getSetupDoneKey(currentUser.uid));
                 const storedAlignment = getStoredAlignment(currentUser.uid);
                 const [aliveProfile, zombieProfile] = await Promise.all([
                     getUserProfile(currentUser.uid, 'ALIVE'),
@@ -222,6 +225,12 @@ export const useGameLogic = () => {
                     setIsStartingCampaign(false);
                     setStartStoryAtChoice(false);
                     navigate('/story');
+                } else if (resolvedAlignment && hasCompletedSetup) {
+                    setPlayerAlignment(resolvedAlignment);
+                    setShowStory(false);
+                    setIsStartingCampaign(true);
+                    setStartStoryAtChoice(false);
+                    navigate('/intro');
                 } else if (resolvedAlignment) {
                     setPlayerAlignment(resolvedAlignment);
                     setHeroes(resolvedAlignment === 'ZOMBIE' ? coreExpansion?.zombieHeroes || [] : coreHeroes);
@@ -313,6 +322,7 @@ export const useGameLogic = () => {
     const handleGuestLogin = () => {
         setIsGuest(true);
         setIsStartingCampaign(false);
+        localStorage.removeItem(getSetupDoneKey());
         setPlayerAlignment('ALIVE');
         setShowStory(true);
         setStartStoryAtChoice(false);
@@ -328,6 +338,9 @@ export const useGameLogic = () => {
         if (user) {
             localStorage.setItem(`shield_intro_seen_${user.uid}`, 'true');
             saveStoredAlignment(user.uid, playerAlignment);
+            localStorage.setItem(getSetupDoneKey(user.uid), 'true');
+        } else {
+            localStorage.setItem(getSetupDoneKey(), 'true');
         }
         isDataLoadedRef.current = true;
         navigate('/intro', { replace: true });
@@ -547,8 +560,10 @@ export const useGameLogic = () => {
             localStorage.removeItem(`shield_intro_seen_${currentUid}`);
             localStorage.removeItem(`shield_tutorial_seen_${currentUid}`);
             localStorage.removeItem(`shield_alignment_${currentUid}`);
+            localStorage.removeItem(getSetupDoneKey(currentUid));
         } else {
             localStorage.removeItem('shield_tutorial_seen_guest');
+            localStorage.removeItem(getSetupDoneKey());
         }
 
         setCompletedMissionIds(new Set());
