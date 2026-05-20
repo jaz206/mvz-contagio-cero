@@ -19,14 +19,13 @@ export const ExpansionSelector: React.FC<ExpansionSelectorProps> = ({
     ownedExpansions, onToggleExpansion, onToggleAllExpansions
 }) => {
     const [selectedHeroes, setSelectedHeroes] = useState<Hero[]>([]);
+    const [hasTouchedSelection, setHasTouchedSelection] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
     const [viewingSheet, setViewingSheet] = useState<string | null>(null);
-
     const [dbHeroes, setDbHeroes] = useState<HeroTemplate[]>([]);
     const [loadingDb, setLoadingDb] = useState(true);
 
     const isZombie = playerAlignment === 'ZOMBIE';
-
     const borderColor = isZombie ? 'border-lime-500' : 'border-cyan-500';
     const textColor = isZombie ? 'text-lime-400' : 'text-cyan-400';
     const bgColor = isZombie ? 'bg-lime-600' : 'bg-cyan-600';
@@ -37,11 +36,12 @@ export const ExpansionSelector: React.FC<ExpansionSelectorProps> = ({
                 const templates = await getHeroTemplates();
                 setDbHeroes(templates);
             } catch (e) {
-                console.error("Error cargando héroes de DB", e);
+                console.error('Error cargando heroes de la base de datos', e);
             } finally {
                 setLoadingDb(false);
             }
         };
+
         fetchFromDb();
     }, []);
 
@@ -73,8 +73,10 @@ export const ExpansionSelector: React.FC<ExpansionSelectorProps> = ({
                         characterSheetUrl: dbVersion.characterSheetUrl
                     };
                 }
+
                 return localHero;
             });
+
             allHeroes = [...allHeroes, ...heroesInBox];
         }
 
@@ -103,147 +105,178 @@ export const ExpansionSelector: React.FC<ExpansionSelectorProps> = ({
                 imageParams: h.imageParams,
                 characterSheetUrl: h.characterSheetUrl
             }));
+
             allHeroes = [...allHeroes, ...formattedCustomHeroes];
         }
 
         if (searchTerm) {
+            const loweredSearchTerm = searchTerm.toLowerCase();
             allHeroes = allHeroes.filter(h =>
-                h.alias.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                h.name.toLowerCase().includes(searchTerm.toLowerCase())
+                h.alias.toLowerCase().includes(loweredSearchTerm) ||
+                h.name.toLowerCase().includes(loweredSearchTerm)
             );
         }
 
         return allHeroes;
+    }, [dbHeroes, isZombie, loadingDb, ownedExpansions, playerAlignment, searchTerm]);
 
-    }, [isZombie, searchTerm, dbHeroes, loadingDb, playerAlignment, ownedExpansions]);
+    useEffect(() => {
+        if (loadingDb || hasTouchedSelection || selectedHeroes.length > 0 || availableHeroes.length === 0) return;
+        setSelectedHeroes(availableHeroes.slice(0, 6));
+    }, [availableHeroes, hasTouchedSelection, loadingDb, selectedHeroes.length]);
 
     const toggleHero = (hero: Hero) => {
+        setHasTouchedSelection(true);
+
         const isSelected = selectedHeroes.some(h => h.id === hero.id);
         if (isSelected) {
             setSelectedHeroes(prev => prev.filter(h => h.id !== hero.id));
-        } else {
-            if (selectedHeroes.length >= 6) return;
-            setSelectedHeroes(prev => [...prev, hero]);
+            return;
         }
+
+        if (selectedHeroes.length >= 6) return;
+        setSelectedHeroes(prev => [...prev, hero]);
+    };
+
+    const handleAutoFill = () => {
+        setHasTouchedSelection(true);
+        setSelectedHeroes(availableHeroes.slice(0, 6));
+    };
+
+    const handleClearSelection = () => {
+        setHasTouchedSelection(true);
+        setSelectedHeroes([]);
     };
 
     const handleConfirm = () => {
         if (selectedHeroes.length === 0) {
-            alert(language === 'es' ? "DEBES SELECCIONAR AL MENOS UN HÉROE." : "YOU MUST SELECT AT LEAST ONE HERO.");
+            alert(language === 'es' ? 'Debes elegir al menos un agente.' : 'You must choose at least one agent.');
             return;
         }
+
         onConfirm(selectedHeroes);
     };
 
     return (
-        <div className="fixed inset-0 z-[80] bg-slate-950 flex flex-col font-mono h-screen w-screen overflow-hidden">
-
-            {/* --- VISOR DE FICHA (OVERLAY) --- */}
+        <div className="fixed inset-0 z-[80] flex h-screen w-screen flex-col overflow-hidden bg-slate-950 font-mono">
             {viewingSheet && (
-                <div className="fixed inset-0 z-[200] bg-black/95 flex items-center justify-center p-4 backdrop-blur-sm animate-fade-in" onClick={() => setViewingSheet(null)}>
-                    <div className="relative flex flex-col items-center justify-center w-full h-full">
-                        {/* IMAGEN AJUSTADA PARA TAMAÑO UNIFORME */}
+                <div
+                    className="fixed inset-0 z-[200] flex items-center justify-center bg-black/95 p-4 backdrop-blur-sm animate-fade-in"
+                    onClick={() => setViewingSheet(null)}
+                >
+                    <div className="relative flex h-full w-full flex-col items-center justify-center">
                         <img
                             src={viewingSheet}
                             alt="Tactical Sheet"
-                            className="h-[85vh] w-auto max-w-[95vw] object-contain border-4 border-yellow-500 shadow-[0_0_50px_rgba(234,179,8,0.5)] rounded-xl bg-black"
+                            className="h-[85vh] w-auto max-w-[95vw] rounded-xl border-4 border-yellow-500 bg-black object-contain shadow-[0_0_50px_rgba(234,179,8,0.5)]"
                             onClick={(e) => e.stopPropagation()}
                             referrerPolicy="no-referrer"
                         />
                         <button
                             onClick={() => setViewingSheet(null)}
-                            className="mt-4 px-8 py-2 bg-red-900/80 text-white font-bold tracking-widest border border-red-600 hover:bg-red-800 uppercase text-xs shadow-lg rounded"
+                            className="mt-4 rounded border border-red-600 bg-red-900/80 px-8 py-2 text-xs font-bold uppercase tracking-widest text-white shadow-lg hover:bg-red-800"
                         >
-                            CERRAR
+                            {language === 'es' ? 'CERRAR' : 'CLOSE'}
                         </button>
                     </div>
                 </div>
             )}
 
-            {/* HEADER */}
-            <div className={`flex-none h-16 border-b border-slate-800 bg-slate-900 flex items-center justify-between px-6 z-20 shadow-lg`}>
+            <div className="z-20 flex h-16 flex-none items-center justify-between border-b border-slate-800 bg-slate-900 px-6 shadow-lg">
                 <div className="flex items-center gap-4">
-                    <button onClick={onBack} className="text-gray-400 hover:text-white text-xl font-bold">←</button>
-                    <h2 className={`text-xl font-black tracking-[0.2em] uppercase ${textColor}`}>
-                        {language === 'es' ? 'RECLUTAMIENTO TÁCTICO' : 'TACTICAL RECRUITMENT'}
+                    <button onClick={onBack} className="text-xl font-bold text-gray-400 hover:text-white">
+                        {'<'}
+                    </button>
+                    <h2 className={`text-xl font-black uppercase tracking-[0.2em] ${textColor}`}>
+                        {language === 'es' ? 'RECLUTAMIENTO TACTICO' : 'TACTICAL RECRUITMENT'}
                     </h2>
                 </div>
+
                 <div className="flex items-center gap-4">
                     <div className="relative w-64">
                         <input
                             type="text"
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
-                            placeholder={language === 'es' ? "BUSCAR AGENTE..." : "SEARCH AGENT..."}
-                            className="w-full bg-slate-950 border border-slate-700 p-2 pl-8 text-xs text-white focus:border-cyan-500 outline-none rounded-sm"
+                            placeholder={language === 'es' ? 'BUSCAR AGENTE...' : 'SEARCH AGENT...'}
+                            className="w-full rounded-sm border border-slate-700 bg-slate-950 p-2 pl-8 text-xs text-white outline-none focus:border-cyan-500"
                         />
-                        <span className="absolute left-2 top-2 text-gray-500 text-xs">🔍</span>
+                        <span className="absolute left-2 top-2 text-xs text-gray-500">Q</span>
                     </div>
+
                     <button
                         onClick={handleConfirm}
                         disabled={selectedHeroes.length === 0}
-                        className={`px-6 py-2 font-bold text-xs tracking-widest uppercase transition-all ${selectedHeroes.length > 0 ? `${bgColor} text-white hover:brightness-110 shadow-lg` : 'bg-slate-800 text-gray-500 cursor-not-allowed'}`}
+                        className={`px-6 py-2 text-xs font-bold uppercase tracking-widest transition-all ${selectedHeroes.length > 0 ? `${bgColor} text-white shadow-lg hover:brightness-110` : 'cursor-not-allowed bg-slate-800 text-gray-500'}`}
                     >
-                        {language === 'es' ? 'DESPLEGAR EQUIPO' : 'DEPLOY SQUAD'}
+                        {language === 'es' ? `SEGUIR (${selectedHeroes.length})` : `CONTINUE (${selectedHeroes.length})`}
                     </button>
                 </div>
             </div>
 
-            {/* MAIN CONTENT */}
-            <div className="flex-1 flex overflow-hidden relative">
-
-                {/* COLUMNA 1: EXPANSIONES */}
-                <div className="w-1/5 bg-slate-900 border-r border-slate-800 flex flex-col min-w-[250px]">
-                    <div className="p-3 bg-slate-950 border-b border-slate-800 flex justify-between items-center">
-                        <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest">ARSENAL (EXPANSIONES)</h3>
+            <div className="relative flex flex-1 overflow-hidden">
+                <div className="flex min-w-[250px] w-1/5 flex-col border-r border-slate-800 bg-slate-900">
+                    <div className="flex items-center justify-between border-b border-slate-800 bg-slate-950 p-3">
+                        <h3 className="text-xs font-bold uppercase tracking-widest text-gray-400">ARSENAL (EXPANSIONES)</h3>
                         <div className="flex gap-1">
-                            <button onClick={() => onToggleAllExpansions(true)} className="text-[9px] text-cyan-500 hover:text-white px-1">ALL</button>
+                            <button onClick={() => onToggleAllExpansions(true)} className="px-1 text-[9px] text-cyan-500 hover:text-white">ALL</button>
                             <span className="text-gray-600">|</span>
-                            <button onClick={() => onToggleAllExpansions(false)} className="text-[9px] text-gray-500 hover:text-white px-1">NONE</button>
+                            <button onClick={() => onToggleAllExpansions(false)} className="px-1 text-[9px] text-gray-500 hover:text-white">NONE</button>
                         </div>
                     </div>
-                    <div className="flex-1 overflow-y-auto p-2 space-y-1 scrollbar-thin scrollbar-thumb-slate-700">
+
+                    <div className="flex-1 space-y-1 overflow-y-auto p-2 scrollbar-thin scrollbar-thumb-slate-700">
                         {GAME_EXPANSIONS.map(exp => {
                             const isOwned = ownedExpansions.has(exp.id);
+
                             return (
                                 <div
                                     key={exp.id}
                                     onClick={() => onToggleExpansion(exp.id)}
-                                    className={`flex items-center gap-3 p-3 cursor-pointer transition-all border-l-2 ${isOwned ? `bg-slate-800 ${isZombie ? 'border-lime-500' : 'border-cyan-500'}` : 'bg-transparent border-transparent hover:bg-slate-800/50'}`}
+                                    className={`flex cursor-pointer items-center gap-3 border-l-2 p-3 transition-all ${isOwned ? `bg-slate-800 ${isZombie ? 'border-lime-500' : 'border-cyan-500'}` : 'border-transparent bg-transparent hover:bg-slate-800/50'}`}
                                 >
-                                    <div className={`w-4 h-4 border flex items-center justify-center ${isOwned ? `${isZombie ? 'bg-lime-600 border-lime-500' : 'bg-cyan-600 border-cyan-500'} text-black` : 'border-slate-600'}`}>
-                                        {isOwned && <span className="text-[10px] font-bold">✓</span>}
+                                    <div className={`flex h-4 w-4 items-center justify-center border ${isOwned ? `${isZombie ? 'border-lime-500 bg-lime-600' : 'border-cyan-500 bg-cyan-600'} text-black` : 'border-slate-600'}`}>
+                                        {isOwned && <span className="text-[10px] font-bold">OK</span>}
                                     </div>
                                     <span className={`text-[10px] font-bold uppercase ${isOwned ? 'text-white' : 'text-gray-500'}`}>{exp.name}</span>
                                 </div>
                             );
                         })}
-                        <div className="flex items-center gap-3 p-3 bg-slate-800/30 border-l-2 border-purple-500 cursor-default opacity-80">
-                            <div className="w-4 h-4 bg-purple-600 flex items-center justify-center text-black text-[10px] font-bold">✓</div>
+
+                        <div className="flex cursor-default items-center gap-3 border-l-2 border-purple-500 bg-slate-800/30 p-3 opacity-80">
+                            <div className="flex h-4 w-4 items-center justify-center bg-purple-600 text-[10px] font-bold text-black">OK</div>
                             <span className="text-[10px] font-bold uppercase text-purple-300">CUSTOM DATABASE</span>
                         </div>
                     </div>
                 </div>
 
-                {/* COLUMNA 2: POOL DE HÉROES */}
-                <div className="flex-1 bg-slate-950 relative overflow-hidden flex flex-col">
-                    <div className="p-3 border-b border-slate-800 flex justify-between items-center bg-slate-900/50">
+                <div className="relative flex flex-1 flex-col overflow-hidden bg-slate-950">
+                    <div className="flex items-center justify-between border-b border-slate-800 bg-slate-900/50 p-3">
                         <h3 className={`text-xs font-bold uppercase tracking-widest ${textColor}`}>AGENTES DISPONIBLES ({availableHeroes.length})</h3>
-                        <div className="text-[10px] text-gray-500">SELECCIONA PARA AÑADIR AL ESCUADRÓN</div>
+                        <div className="flex items-center gap-2">
+                            <button onClick={handleAutoFill} className="border border-slate-700 px-2 py-1 text-[10px] font-bold uppercase text-cyan-400 hover:border-cyan-500 hover:text-white">
+                                {language === 'es' ? 'AUTOEQUIPO' : 'AUTO SQUAD'}
+                            </button>
+                            <button onClick={handleClearSelection} className="border border-slate-700 px-2 py-1 text-[10px] font-bold uppercase text-gray-400 hover:border-white hover:text-white">
+                                {language === 'es' ? 'LIMPIAR' : 'CLEAR'}
+                            </button>
+                            <div className="text-[10px] text-gray-500">
+                                {language === 'es' ? 'PUEDES ENTRAR CON 1 A 6 AGENTES' : 'YOU CAN START WITH 1 TO 6 AGENTS'}
+                            </div>
+                        </div>
                     </div>
 
                     <div className="flex-1 overflow-y-auto p-4 scrollbar-thin scrollbar-thumb-slate-700">
                         {loadingDb ? (
-                            <div className="flex flex-col items-center justify-center h-full text-gray-500 animate-pulse">
-                                <div className="text-2xl mb-2">✇</div>
-                                <div className="text-xs tracking-widest">ACCEDIENDO A LA BASE DE DATOS...</div>
+                            <div className="flex h-full flex-col items-center justify-center animate-pulse text-gray-500">
+                                <div className="mb-2 text-2xl">...</div>
+                                <div className="text-xs tracking-widest">{language === 'es' ? 'CARGANDO AGENTES...' : 'LOADING AGENTS...'}</div>
                             </div>
                         ) : (
-                            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+                            <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
                                 {availableHeroes.map(hero => {
                                     const isSelected = selectedHeroes.some(h => h.id === hero.id);
                                     const isDisabled = !isSelected && selectedHeroes.length >= 6;
-
                                     const imgStyle = hero.imageParams ? {
                                         transform: `scale(${hero.imageParams.scale}) translate(${hero.imageParams.x}%, ${hero.imageParams.y}%)`
                                     } : {};
@@ -253,12 +286,12 @@ export const ExpansionSelector: React.FC<ExpansionSelectorProps> = ({
                                             key={hero.id}
                                             onClick={() => !isDisabled && toggleHero(hero)}
                                             className={`
-                                                relative group cursor-pointer border transition-all duration-200 overflow-hidden aspect-[3/4]
+                                                relative aspect-[3/4] cursor-pointer overflow-hidden border transition-all duration-200
                                                 ${isSelected
                                                     ? `${borderColor} ring-2 ring-offset-2 ring-offset-slate-950 ${isZombie ? 'ring-lime-500/50' : 'ring-cyan-500/50'}`
                                                     : isDisabled
-                                                        ? 'border-slate-800 opacity-30 grayscale cursor-not-allowed'
-                                                        : 'border-slate-700 hover:border-white hover:scale-[1.02] hover:shadow-xl hover:z-10'
+                                                        ? 'cursor-not-allowed border-slate-800 opacity-30 grayscale'
+                                                        : 'border-slate-700 hover:z-10 hover:scale-[1.02] hover:border-white hover:shadow-xl'
                                                 }
                                             `}
                                         >
@@ -266,33 +299,35 @@ export const ExpansionSelector: React.FC<ExpansionSelectorProps> = ({
                                                 <img
                                                     src={hero.imageUrl}
                                                     alt={hero.alias}
-                                                    className="w-full h-full object-cover"
+                                                    className="h-full w-full object-cover"
                                                     style={imgStyle}
                                                     referrerPolicy="no-referrer"
                                                 />
                                             </div>
 
-                                            <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent opacity-80 pointer-events-none"></div>
+                                            <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent opacity-80 pointer-events-none" />
 
-                                            {/* BOTÓN VER FICHA (SOLO SI EXISTE URL) */}
                                             {hero.characterSheetUrl && (
                                                 <button
-                                                    onClick={(e) => { e.stopPropagation(); setViewingSheet(hero.characterSheetUrl!); }}
-                                                    className="absolute top-2 left-2 w-6 h-6 bg-yellow-600 hover:bg-yellow-400 text-black flex items-center justify-center rounded-sm shadow-lg z-20 transition-transform hover:scale-110 border border-yellow-300"
-                                                    title="Ver Ficha de Juego"
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        setViewingSheet(hero.characterSheetUrl!);
+                                                    }}
+                                                    className="absolute left-2 top-2 z-20 flex h-6 w-6 items-center justify-center rounded-sm border border-yellow-300 bg-yellow-600 text-black shadow-lg transition-transform hover:scale-110 hover:bg-yellow-400"
+                                                    title={language === 'es' ? 'Ver ficha' : 'View sheet'}
                                                 >
-                                                    🗃
+                                                    i
                                                 </button>
                                             )}
 
                                             <div className="absolute bottom-0 left-0 right-0 p-2 pointer-events-none">
-                                                <div className={`text-[10px] font-black uppercase truncate ${isSelected ? textColor : 'text-white'}`}>{hero.alias}</div>
-                                                <div className="text-[8px] text-gray-400 font-mono">{hero.class}</div>
+                                                <div className={`truncate text-[10px] font-black uppercase ${isSelected ? textColor : 'text-white'}`}>{hero.alias}</div>
+                                                <div className="font-mono text-[8px] text-gray-400">{hero.class}</div>
                                             </div>
 
                                             {isSelected && (
-                                                <div className={`absolute top-2 right-2 w-6 h-6 ${bgColor} flex items-center justify-center text-black font-bold shadow-lg`}>
-                                                    ✓
+                                                <div className={`absolute right-2 top-2 flex h-6 w-6 items-center justify-center ${bgColor} text-[10px] font-bold text-black shadow-lg`}>
+                                                    OK
                                                 </div>
                                             )}
                                         </div>
@@ -303,16 +338,22 @@ export const ExpansionSelector: React.FC<ExpansionSelectorProps> = ({
                     </div>
                 </div>
 
-                {/* COLUMNA 3: ESCUADRÓN */}
-                <div className="w-1/5 bg-slate-900 border-l border-slate-800 flex flex-col min-w-[200px]">
-                    <div className={`p-4 border-b border-slate-800 ${selectedHeroes.length === 6 ? 'bg-red-900/20' : 'bg-slate-950'}`}>
-                        <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1">ESCUADRÓN ACTIVO</h3>
-                        <div className={`text-2xl font-black ${selectedHeroes.length === 6 ? 'text-red-500 animate-pulse' : textColor}`}>
+                <div className="flex min-w-[200px] w-1/5 flex-col border-l border-slate-800 bg-slate-900">
+                    <div className={`border-b border-slate-800 p-4 ${selectedHeroes.length === 6 ? 'bg-red-900/20' : 'bg-slate-950'}`}>
+                        <h3 className="mb-1 text-xs font-bold uppercase tracking-widest text-gray-400">
+                            {language === 'es' ? 'EQUIPO ACTIVO' : 'ACTIVE SQUAD'}
+                        </h3>
+                        <div className={`text-2xl font-black ${selectedHeroes.length === 6 ? 'animate-pulse text-red-500' : textColor}`}>
                             {selectedHeroes.length} / 6
+                        </div>
+                        <div className="mt-1 text-[10px] text-gray-500">
+                            {language === 'es'
+                                ? 'La app te propone un equipo inicial. Puedes cambiarlo si quieres.'
+                                : 'The app suggests a starting squad. You can change it if you want.'}
                         </div>
                     </div>
 
-                    <div className="flex-1 overflow-y-auto p-3 space-y-2 scrollbar-thin scrollbar-thumb-slate-700">
+                    <div className="flex-1 space-y-2 overflow-y-auto p-3 scrollbar-thin scrollbar-thumb-slate-700">
                         {[...Array(6)].map((_, i) => {
                             const hero = selectedHeroes[i];
                             const imgStyle = hero?.imageParams ? {
@@ -323,55 +364,51 @@ export const ExpansionSelector: React.FC<ExpansionSelectorProps> = ({
                                 <div
                                     key={i}
                                     className={`
-                                        relative h-20 border flex items-center justify-center transition-all
-                                        ${hero
-                                            ? `${borderColor} bg-slate-800 cursor-pointer group`
-                                            : 'border-slate-800 border-dashed bg-slate-950/50'
-                                        }
+                                        relative flex h-20 items-center justify-center border transition-all
+                                        ${hero ? `${borderColor} group cursor-pointer bg-slate-800` : 'border-dashed border-slate-800 bg-slate-950/50'}
                                     `}
                                     onClick={() => hero && toggleHero(hero)}
                                 >
                                     {hero ? (
                                         <>
                                             <div className="absolute inset-0 flex">
-                                                <div className="w-20 h-full shrink-0 relative overflow-hidden">
+                                                <div className="relative h-full w-20 shrink-0 overflow-hidden">
                                                     <img
                                                         src={hero.imageUrl}
-                                                        className="w-full h-full object-cover"
+                                                        className="h-full w-full object-cover"
                                                         alt=""
                                                         style={imgStyle}
                                                         referrerPolicy="no-referrer"
                                                     />
-                                                    <div className="absolute inset-0 bg-gradient-to-r from-transparent to-slate-800 pointer-events-none"></div>
+                                                    <div className="absolute inset-0 bg-gradient-to-r from-transparent to-slate-800 pointer-events-none" />
                                                 </div>
-                                                <div className="flex-1 p-2 flex flex-col justify-center min-w-0">
-                                                    <div className={`text-[10px] font-bold truncate ${textColor}`}>{hero.alias}</div>
+                                                <div className="flex min-w-0 flex-1 flex-col justify-center p-2">
+                                                    <div className={`truncate text-[10px] font-bold ${textColor}`}>{hero.alias}</div>
                                                     <div className="text-[8px] text-gray-500">{hero.class}</div>
                                                 </div>
                                             </div>
-                                            <div className="absolute right-2 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                <div className="w-6 h-6 bg-red-600 text-white flex items-center justify-center rounded-full text-[10px] font-bold shadow-md">✕</div>
+                                            <div className="absolute right-2 top-1/2 -translate-y-1/2 opacity-0 transition-opacity group-hover:opacity-100">
+                                                <div className="flex h-6 w-6 items-center justify-center rounded-full bg-red-600 text-[10px] font-bold text-white shadow-md">X</div>
                                             </div>
                                         </>
                                     ) : (
-                                        <span className="text-slate-700 font-black text-2xl select-none">{i + 1}</span>
+                                        <span className="select-none text-2xl font-black text-slate-700">{i + 1}</span>
                                     )}
                                 </div>
                             );
                         })}
                     </div>
 
-                    <div className="p-4 border-t border-slate-800 bg-slate-950">
+                    <div className="border-t border-slate-800 bg-slate-950 p-4">
                         <button
                             onClick={handleConfirm}
                             disabled={selectedHeroes.length === 0}
-                            className={`w-full py-3 font-bold text-xs tracking-widest uppercase transition-all ${selectedHeroes.length > 0 ? `${bgColor} text-white hover:brightness-110` : 'bg-slate-800 text-gray-600 cursor-not-allowed'}`}
+                            className={`w-full py-3 text-xs font-bold uppercase tracking-widest transition-all ${selectedHeroes.length > 0 ? `${bgColor} text-white hover:brightness-110` : 'cursor-not-allowed bg-slate-800 text-gray-600'}`}
                         >
-                            CONFIRMAR
+                            {language === 'es' ? `ENTRAR CON ${selectedHeroes.length}` : `START WITH ${selectedHeroes.length}`}
                         </button>
                     </div>
                 </div>
-
             </div>
         </div>
     );
