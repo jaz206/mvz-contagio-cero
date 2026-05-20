@@ -290,6 +290,9 @@ const GameContent: React.FC = () => {
 
     const canCreateMissions = staffPermissions.missions.create;
     const canManageMissions = staffPermissions.missions.view || staffPermissions.missions.create || staffPermissions.missions.edit || staffPermissions.missions.delete;
+    const tutorialKey = state.user ? `shield_tutorial_seen_${state.user.uid}` : 'shield_tutorial_seen_guest';
+    const hasSeenTutorial = !!localStorage.getItem(tutorialKey);
+    const hasCompletedIntroMission = !!(state.introMission && completedMissionIds.has(state.introMission.id));
 
     if (loading || loadingAuth) {
         return <div className="bg-slate-950 text-cyan-500 h-screen flex items-center justify-center font-mono">LOADING SHIELD OS...</div>;
@@ -303,9 +306,9 @@ const GameContent: React.FC = () => {
 
             <Route path="/setup" element={playerAlignment ? <ExpansionSelector language={lang} playerAlignment={playerAlignment} onConfirm={actions.handleExpansionConfirm} onBack={() => { actions.setPlayerAlignment(null); navigate('/story'); }} ownedExpansions={state.ownedExpansions} onToggleExpansion={actions.toggleExpansion} onToggleAllExpansions={actions.toggleAllExpansions} /> : <Navigate to="/" />} />
 
-            <Route path="/intro" element={playerAlignment ? <IntroSequence language={lang} playerAlignment={playerAlignment} onComplete={() => { if (state.introMission) { navigate('/mission0'); } else { navigate('/tutorial'); } }} /> : <Navigate to="/" />} />
+            <Route path="/intro" element={playerAlignment ? <IntroSequence language={lang} playerAlignment={playerAlignment} onComplete={() => { if (state.introMission && !hasCompletedIntroMission) { navigate('/mission0'); } else if (!hasSeenTutorial) { navigate('/tutorial'); } else { navigate('/map'); } }} /> : <Navigate to="/" />} />
 
-            <Route path="/mission0" element={(playerAlignment && state.introMission) ? <MissionModal mission={state.introMission} isOpen={true} onClose={() => navigate('/tutorial')} onComplete={() => { actions.handleMissionComplete(state.introMission!.id); navigate('/tutorial'); }} language={lang} isCompleted={false} /> : <Navigate to="/map" />} />
+            <Route path="/mission0" element={(playerAlignment && state.introMission) ? <MissionModal mission={state.introMission} isOpen={true} onClose={() => navigate(hasSeenTutorial ? '/map' : '/tutorial')} onComplete={() => { actions.handleMissionComplete(state.introMission!.id); navigate(hasSeenTutorial ? '/map' : '/tutorial'); }} language={lang} isCompleted={hasCompletedIntroMission} /> : <Navigate to="/map" />} />
 
             <Route
                 path="/map"
@@ -352,7 +355,7 @@ const GameContent: React.FC = () => {
 
             <Route path="/bunker" element={<GameLayout><BunkerInterior heroes={heroes} missions={state.visibleMissions.filter((mission) => mission && !completedMissionIds.has(mission.id))} onAssign={(heroId, missionId) => { const heroIndex = heroes.findIndex((hero) => hero.id === heroId); if (heroIndex >= 0) { const nextHeroes = [...heroes]; nextHeroes[heroIndex] = { ...nextHeroes[heroIndex], status: 'DEPLOYED', assignedMissionId: missionId }; actions.setHeroes(nextHeroes); return true; } return false; }} onUnassign={(heroId) => { const heroIndex = heroes.findIndex((hero) => hero.id === heroId); if (heroIndex >= 0) { const nextHeroes = [...heroes]; nextHeroes[heroIndex] = { ...nextHeroes[heroIndex], status: 'AVAILABLE', assignedMissionId: null }; actions.setHeroes(nextHeroes); } }} onAddHero={(hero) => actions.setHeroes([...heroes, hero])} onToggleObjective={actions.handleToggleHeroObjective} onBack={() => navigate('/map')} language={lang} playerAlignment={playerAlignment} isEditorMode={isEditorMode} onTransformHero={actions.handleTransformHero} onTickerUpdate={actions.handleTickerUpdate} omegaCylinders={omegaCylinders} onFindCylinder={() => actions.setOmegaCylinders((prev) => prev + 1)} /></GameLayout>} />
 
-            <Route path="/tutorial" element={<div className="absolute inset-0 z-40"><USAMap language={lang} missions={state.visibleMissions} completedMissionIds={completedMissionIds} onMissionComplete={() => { }} onMissionSelect={() => { }} onBunkerClick={() => { }} factionStates={state.FACTION_STATES} playerAlignment={playerAlignment} worldStage={worldStage} /><TutorialOverlay language={lang} onComplete={() => { localStorage.setItem(state.user ? `shield_tutorial_seen_${state.user.uid}` : 'shield_tutorial_seen_guest', 'true'); navigate('/map'); }} onStepChange={(stepKey) => { if (['roster', 'file', 'recruit'].includes(stepKey)) { navigate('/bunker'); } }} /></div>} />
+            <Route path="/tutorial" element={<div className="absolute inset-0 z-40"><USAMap language={lang} missions={state.visibleMissions} completedMissionIds={completedMissionIds} onMissionComplete={() => { }} onMissionSelect={() => { }} onBunkerClick={() => { }} factionStates={state.FACTION_STATES} playerAlignment={playerAlignment} worldStage={worldStage} /><TutorialOverlay language={lang} onComplete={() => { localStorage.setItem(tutorialKey, 'true'); navigate('/map'); }} onStepChange={(stepKey) => { if (['roster', 'file', 'recruit'].includes(stepKey)) { navigate('/bunker'); } }} /></div>} />
 
             <Route path="/404" element={<NotFound />} />
             <Route path="*" element={<Navigate to="/404" />} />
