@@ -1,5 +1,5 @@
 import React from 'react';
-import { BrowserRouter, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { GameProvider, useGame } from './context/GameContext';
 import { translations } from './translations';
 import { LoginScreen } from './components/LoginScreen';
@@ -331,13 +331,22 @@ const GameLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 const GameContent: React.FC = () => {
     const { state, actions } = useGame();
     const navigate = useNavigate();
+    const location = useLocation();
     const { loading, loadingAuth, lang, playerAlignment, heroes, completedMissionIds, omegaCylinders, worldStage, isEditorMode, surferTurnCount, isFullAdmin, staffPermissions } = state;
+    const routeAlignment = (location.state as { alignment?: 'ALIVE' | 'ZOMBIE' } | null)?.alignment || null;
+    const effectiveAlignment = playerAlignment || routeAlignment;
 
     const canCreateMissions = staffPermissions.missions.create;
     const canManageMissions = staffPermissions.missions.view || staffPermissions.missions.create || staffPermissions.missions.edit || staffPermissions.missions.delete;
     const tutorialKey = state.user ? `shield_tutorial_seen_${state.user.uid}` : 'shield_tutorial_seen_guest';
     const hasSeenTutorial = !!localStorage.getItem(tutorialKey);
     const hasCompletedIntroMission = !!(state.introMission && completedMissionIds.has(state.introMission.id));
+
+    React.useEffect(() => {
+        if (location.pathname === '/setup' && routeAlignment && playerAlignment !== routeAlignment) {
+            actions.setPlayerAlignment(routeAlignment);
+        }
+    }, [actions, location.pathname, playerAlignment, routeAlignment]);
 
     if (loading || loadingAuth) {
         return <div className="bg-slate-950 text-cyan-500 h-screen flex items-center justify-center font-mono">LOADING SHIELD OS...</div>;
@@ -347,13 +356,13 @@ const GameContent: React.FC = () => {
         <Routes>
             <Route path="/" element={<LoginScreen onLocalAccess={actions.handleGuestLogin} language={lang} setLanguage={actions.setLang} />} />
 
-            <Route path="/story" element={<StoryMode language={lang} onComplete={(choice) => { actions.setIsStartingCampaign(false); actions.setPlayerAlignment(choice); navigate('/setup'); }} onSkip={() => { actions.setPlayerAlignment('ALIVE'); if (state.user) { localStorage.setItem(`shield_intro_seen_${state.user.uid}`, 'true'); localStorage.setItem(`shield_alignment_${state.user.uid}`, 'ALIVE'); localStorage.setItem(`shield_tutorial_seen_${state.user.uid}`, 'true'); } else { localStorage.setItem('shield_tutorial_seen_guest', 'true'); } const core = GAME_EXPANSIONS.find((item) => item.id === 'core_box'); if (core) actions.setHeroes(core.heroes); navigate('/map'); }} startAtChoice={state.startStoryAtChoice} />} />
+            <Route path="/story" element={<StoryMode language={lang} onComplete={(choice) => { actions.setIsStartingCampaign(false); actions.setPlayerAlignment(choice); navigate('/setup', { state: { alignment: choice } }); }} onSkip={() => { actions.setPlayerAlignment('ALIVE'); if (state.user) { localStorage.setItem(`shield_intro_seen_${state.user.uid}`, 'true'); localStorage.setItem(`shield_alignment_${state.user.uid}`, 'ALIVE'); localStorage.setItem(`shield_tutorial_seen_${state.user.uid}`, 'true'); } else { localStorage.setItem('shield_tutorial_seen_guest', 'true'); } const core = GAME_EXPANSIONS.find((item) => item.id === 'core_box'); if (core) actions.setHeroes(core.heroes); navigate('/map'); }} startAtChoice={state.startStoryAtChoice} />} />
 
-            <Route path="/setup" element={playerAlignment ? (state.isStartingCampaign && heroes.length > 0 ? <Navigate to="/intro" replace /> : <ExpansionSelector language={lang} playerAlignment={playerAlignment} onConfirm={actions.handleExpansionConfirm} onBack={() => { actions.setPlayerAlignment(null); navigate('/story'); }} ownedExpansions={state.ownedExpansions} onToggleExpansion={actions.toggleExpansion} onToggleAllExpansions={actions.toggleAllExpansions} />) : <Navigate to="/" />} />
+            <Route path="/setup" element={effectiveAlignment ? (state.isStartingCampaign && heroes.length > 0 ? <Navigate to="/intro" replace /> : <ExpansionSelector language={lang} playerAlignment={effectiveAlignment} onConfirm={actions.handleExpansionConfirm} onBack={() => { actions.setPlayerAlignment(null); navigate('/story'); }} ownedExpansions={state.ownedExpansions} onToggleExpansion={actions.toggleExpansion} onToggleAllExpansions={actions.toggleAllExpansions} />) : <Navigate to="/" />} />
 
-            <Route path="/intro" element={playerAlignment ? <IntroSequence language={lang} playerAlignment={playerAlignment} slides={playerAlignment === 'ZOMBIE' ? state.introConfig.zombie : state.introConfig.alive} onComplete={() => { actions.setIsStartingCampaign(false); if (state.user) { localStorage.removeItem(`shield_setup_done_${state.user.uid}`); } else { localStorage.removeItem('shield_setup_done_guest'); } if (state.introMission && !hasCompletedIntroMission) { navigate('/mission0'); } else if (!hasSeenTutorial) { navigate('/tutorial'); } else { navigate('/map'); } }} /> : <Navigate to="/" />} />
+            <Route path="/intro" element={effectiveAlignment ? <IntroSequence language={lang} playerAlignment={effectiveAlignment} slides={effectiveAlignment === 'ZOMBIE' ? state.introConfig.zombie : state.introConfig.alive} onComplete={() => { actions.setIsStartingCampaign(false); if (state.user) { localStorage.removeItem(`shield_setup_done_${state.user.uid}`); } else { localStorage.removeItem('shield_setup_done_guest'); } if (state.introMission && !hasCompletedIntroMission) { navigate('/mission0'); } else if (!hasSeenTutorial) { navigate('/tutorial'); } else { navigate('/map'); } }} /> : <Navigate to="/" />} />
 
-            <Route path="/mission0" element={(playerAlignment && state.introMission) ? <MissionModal mission={state.introMission} isOpen={true} onClose={() => navigate(hasSeenTutorial ? '/map' : '/tutorial')} onComplete={() => { actions.handleMissionComplete(state.introMission!.id); navigate(hasSeenTutorial ? '/map' : '/tutorial'); }} language={lang} isCompleted={hasCompletedIntroMission} /> : <Navigate to="/map" />} />
+            <Route path="/mission0" element={(effectiveAlignment && state.introMission) ? <MissionModal mission={state.introMission} isOpen={true} onClose={() => navigate(hasSeenTutorial ? '/map' : '/tutorial')} onComplete={() => { actions.handleMissionComplete(state.introMission!.id); navigate(hasSeenTutorial ? '/map' : '/tutorial'); }} language={lang} isCompleted={hasCompletedIntroMission} /> : <Navigate to="/map" />} />
 
             <Route
                 path="/map"
