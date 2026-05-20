@@ -13,15 +13,18 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLocalAccess, languag
     const [scanning, setScanning] = useState(false);
     const [success, setSuccess] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [activeMode, setActiveMode] = useState<'account' | 'local' | null>(null);
 
     const t = translations[language];
+    const accountReady = firebaseReady;
 
     const handleScan = async () => {
-        if (!firebaseReady) {
+        if (!accountReady) {
             setError(t.login.accessUnavailable);
             return;
         }
 
+        setActiveMode('account');
         setScanning(true);
         setError(null);
 
@@ -36,6 +39,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLocalAccess, languag
     };
 
     const handleLocalAccess = () => {
+        setActiveMode('local');
         setScanning(true);
         setError(null);
 
@@ -100,8 +104,10 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLocalAccess, languag
 
                     {!scanning && !success && !error && (
                         <div className="flex flex-col items-center animate-flicker">
-                            <p className="text-red-500 font-bold tracking-widest text-[10px] mb-1 border border-red-900 px-2 bg-red-900/10">LOCKED</p>
-                            <p className="text-cyan-600 text-[9px]">{t.login.idPrompt}</p>
+                            <p className={`font-bold tracking-widest text-[10px] mb-1 border px-2 ${accountReady ? 'text-red-500 border-red-900 bg-red-900/10' : 'text-yellow-400 border-yellow-700 bg-yellow-900/10'}`}>
+                                {accountReady ? 'LOCKED' : 'LOCAL ONLY'}
+                            </p>
+                            <p className="text-cyan-600 text-[9px]">{accountReady ? t.login.idPrompt : t.login.accessUnavailable}</p>
                         </div>
                     )}
 
@@ -113,7 +119,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLocalAccess, languag
                                 <span>Port: 443</span>
                             </div>
                             <div className="flex justify-between text-[9px] text-cyan-400 mb-1 font-bold">
-                                <span>{Math.random() > 0.5 ? 'SCANNING_RETINA...' : 'SYNCING_DNA...'}</span>
+                                <span>{activeMode === 'local' ? 'LOCAL_SESSION...' : (Math.random() > 0.5 ? 'SCANNING_RETINA...' : 'SYNCING_DNA...')}</span>
                                 <span className="animate-pulse">PROCESSING</span>
                             </div>
                             <div className="w-full h-1 bg-cyan-900/50 relative overflow-hidden">
@@ -140,12 +146,12 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLocalAccess, languag
                 <div className="w-full space-y-3">
                     <button
                         onClick={handleScan}
-                        disabled={scanning || success}
-                        className={`w-full py-4 border relative overflow-hidden group transition-all duration-200 ${success ? 'bg-emerald-500 border-emerald-400 text-black' : 'bg-cyan-950/30 border-cyan-500 text-cyan-300 hover:bg-cyan-500 hover:text-black'}`}
+                        disabled={scanning || success || !accountReady}
+                        className={`w-full py-4 border relative overflow-hidden group transition-all duration-200 ${!accountReady ? 'bg-slate-900/40 border-slate-700 text-slate-500 cursor-not-allowed' : success ? 'bg-emerald-500 border-emerald-400 text-black' : 'bg-cyan-950/30 border-cyan-500 text-cyan-300 hover:bg-cyan-500 hover:text-black'}`}
                     >
                         <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-10" />
                         <span className="relative z-10 font-black tracking-widest text-xs uppercase flex items-center justify-center gap-2">
-                            {scanning ? '...' : (success ? 'SYSTEM UNLOCKED' : t.login.scanBtn)}
+                            {scanning && activeMode === 'account' ? '...' : (success ? 'SYSTEM UNLOCKED' : t.login.scanBtn)}
                         </span>
                     </button>
 
@@ -154,7 +160,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLocalAccess, languag
                         disabled={scanning || success}
                         className="w-full py-3 border border-slate-700 bg-slate-900/50 text-slate-400 text-[10px] font-bold tracking-widest hover:border-white hover:text-white transition-all uppercase"
                     >
-                        {t.login.localBtn}
+                        {scanning && activeMode === 'local' ? '...' : t.login.localBtn}
                     </button>
                 </div>
 
