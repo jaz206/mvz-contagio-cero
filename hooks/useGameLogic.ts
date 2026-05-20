@@ -529,11 +529,12 @@ export const useGameLogic = () => {
     };
 
     const handleRestartCampaign = async () => {
-        if (user) {
-            await resetUserProfiles(user.uid);
-            localStorage.removeItem(`shield_intro_seen_${user.uid}`);
-            localStorage.removeItem(`shield_tutorial_seen_${user.uid}`);
-            localStorage.removeItem(`shield_alignment_${user.uid}`);
+        const currentUid = user?.uid;
+
+        if (currentUid) {
+            localStorage.removeItem(`shield_intro_seen_${currentUid}`);
+            localStorage.removeItem(`shield_tutorial_seen_${currentUid}`);
+            localStorage.removeItem(`shield_alignment_${currentUid}`);
         } else {
             localStorage.removeItem('shield_tutorial_seen_guest');
         }
@@ -547,9 +548,14 @@ export const useGameLogic = () => {
         setSelectedMission(null);
         setPlayerAlignment(null);
         setShowStory(true);
+        setShowTutorial(false);
         setStartStoryAtChoice(false);
         isDataLoadedRef.current = false;
         navigate('/story', { replace: true });
+
+        if (currentUid) {
+            await resetUserProfiles(currentUid);
+        }
     };
 
     const handleEventAcknowledge = () => setActiveGlobalEvent(null);

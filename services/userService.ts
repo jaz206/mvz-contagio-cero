@@ -1,4 +1,4 @@
-import { doc, getDoc, setDoc, Timestamp } from 'firebase/firestore';
+import { deleteField, doc, getDoc, setDoc, Timestamp } from 'firebase/firestore';
 import { db } from '../firebaseConfig';
 import { Hero } from '../types';
 
@@ -30,10 +30,19 @@ export const getUserProfile = async (uid: string, campaignMode: 'ALIVE' | 'ZOMBI
             const data = docSnap.data();
             const campaignData = data[campaignMode];
             if (campaignData) {
+                const heroes = campaignData.heroes || [];
+                const missions = campaignData.missions || [];
+                const resources = campaignData.resources || { omegaCylinders: 0 };
+                const hasProgress = heroes.length > 0 || missions.length > 0 || (resources.omegaCylinders || 0) > 0;
+
+                if (!hasProgress) {
+                    return null;
+                }
+
                 return {
-                    heroes: campaignData.heroes || [],
-                    completedMissionIds: campaignData.missions || [],
-                    resources: campaignData.resources || { omegaCylinders: 0 },
+                    heroes,
+                    completedMissionIds: missions,
+                    resources,
                     lastUpdated: data.lastUpdated
                 };
             }
@@ -74,16 +83,8 @@ export const resetUserProfiles = async (uid: string): Promise<void> => {
     try {
         const docRef = doc(db, USERS_COLLECTION, uid);
         await setDoc(docRef, {
-            ALIVE: {
-                heroes: [],
-                missions: [],
-                resources: { omegaCylinders: 0 }
-            },
-            ZOMBIE: {
-                heroes: [],
-                missions: [],
-                resources: { omegaCylinders: 0 }
-            },
+            ALIVE: deleteField(),
+            ZOMBIE: deleteField(),
             lastUpdated: Timestamp.now()
         }, { merge: true });
     } catch (error) {
