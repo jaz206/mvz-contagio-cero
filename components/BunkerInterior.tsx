@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { translations, Language } from "../translations";
 import { Hero, Mission, HeroClass, HeroTemplate, I18nString } from "../types";
 
@@ -173,6 +173,7 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
     const [showRecruitModal, setShowRecruitModal] = useState(false);
     const [dbTemplates, setDbTemplates] = useState<HeroTemplate[]>([]);
     const [viewingSheet, setViewingSheet] = useState<string | null>(null);
+    const [canLeaveBunker, setCanLeaveBunker] = useState(false);
 
     // ESTADO PARA EL MODAL DE CONFIRMACIÓN
     const [confirmModal, setConfirmModal] = useState<{
@@ -212,6 +213,12 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
         setShowRecruitModal(true);
     };
 
+    useEffect(() => {
+        setCanLeaveBunker(false);
+        const timer = setTimeout(() => setCanLeaveBunker(true), 500);
+        return () => clearTimeout(timer);
+    }, []);
+
     const openConfirm = (config: typeof confirmModal) => {
         setConfirmModal(config);
     };
@@ -222,7 +229,7 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
             {/* TOP BAR */}
             <div className="h-16 border-b border-cyan-900 bg-slate-900/95 flex items-center justify-between px-6 shrink-0 z-20 shadow-[0_0_20px_rgba(0,0,0,0.5)]">
                 <div className="flex items-center gap-4">
-                    <button onClick={onBack} className="flex items-center gap-2 text-xs font-bold border border-cyan-700 px-4 py-2 hover:bg-cyan-500 hover:text-black transition-all clip-tactical">
+                    <button onClick={() => { if (canLeaveBunker) onBack(); }} disabled={!canLeaveBunker} className={`flex items-center gap-2 text-xs font-bold border px-4 py-2 transition-all clip-tactical ${canLeaveBunker ? 'border-cyan-700 hover:bg-cyan-500 hover:text-black' : 'border-slate-700 text-slate-500 cursor-wait'}`}>
                         <span>←</span> MAPA
                     </button>
                     <div className="h-8 w-px bg-cyan-800/50"></div>
