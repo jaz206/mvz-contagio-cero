@@ -124,14 +124,14 @@ const GameLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 
                 <div className="flex items-center gap-6">
                     <button onClick={actions.toggleDimension} className={`hidden md:flex items-center gap-2 px-3 py-1 border rounded transition-all duration-500 ${playerAlignment === 'ZOMBIE' ? 'border-lime-600 bg-lime-900/20 text-lime-400 hover:bg-lime-900/40' : 'border-cyan-500 bg-cyan-900/20 text-cyan-300 hover:bg-cyan-900/40'}`}>
-                        <span className="text-lg">{playerAlignment === 'ZOMBIE' ? 'Z' : 'S'}</span>
+                        <span className="text-lg">{playerAlignment === 'ZOMBIE' ? 'ZB' : 'AL'}</span>
                         <div className="flex flex-col items-start leading-none">
                             <span className="text-[8px] font-bold tracking-widest opacity-70">DIMENSION</span>
                             <span className="text-[10px] font-bold">{playerAlignment === 'ZOMBIE' ? 'EARTH-Z' : 'EARTH-616'}</span>
                         </div>
                     </button>
-                    <button onClick={() => actions.setShowExpansionConfig(true)} className="hidden md:flex items-center gap-2 px-3 py-1 border border-cyan-700 bg-slate-900/50 text-cyan-400 hover:bg-cyan-900/80 rounded transition-colors" title="Configurar Expansiones">
-                        <span className="text-lg">[]</span>
+                    <button onClick={() => actions.setShowExpansionConfig(true)} className="hidden md:flex items-center gap-2 px-3 py-1 border border-cyan-700 bg-slate-900/50 text-cyan-400 hover:bg-cyan-900/80 rounded transition-colors" title="Configurar expansiones">
+                        <span className="text-[10px] font-black tracking-widest">CFG</span>
                     </button>
                     <div className="text-right hidden lg:block">
                         <div className="text-[10px] text-cyan-600 font-bold">{t.header.biohazard}</div>
@@ -170,7 +170,7 @@ const GameLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
                             <div className="p-4 border-b border-cyan-900/50 bg-red-950/20 flex justify-between items-center font-sans">
                                 <div className="flex flex-col">
                                     <span className="text-[9px] font-bold text-red-500 tracking-widest">AMENAZA</span>
-                                    <span className="text-sm font-black text-red-600 tracking-tighter">CRITICO</span>
+                                    <span className="text-sm font-black text-red-600 tracking-tighter">CRÍTICO</span>
                                 </div>
                                 <div className="relative w-14 h-14 flex items-center justify-center">
                                     <svg className="w-full h-full transform -rotate-90" viewBox="0 0 44 44">
@@ -183,7 +183,7 @@ const GameLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
                             <div className="p-3 border-b border-cyan-900">
                                 <button id="tutorial-bunker-btn" onClick={() => navigate('/bunker')} className={`w-full py-3 border-2 flex items-center justify-center gap-2 transition-all duration-300 group relative overflow-hidden ${playerAlignment === 'ZOMBIE' ? 'border-lime-600 bg-lime-900/10 hover:bg-lime-900/30 text-lime-400' : 'border-cyan-500 bg-cyan-900/10 hover:bg-cyan-900/30 text-cyan-300'}`}>
                                     <div className={`absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 ${playerAlignment === 'ZOMBIE' ? 'bg-[linear-gradient(45deg,transparent_25%,rgba(132,204,22,0.1)_50%,transparent_75%)]' : 'bg-[linear-gradient(45deg,transparent_25%,rgba(6,182,212,0.1)_50%,transparent_75%)]'} bg-[length:250%_250%] animate-[shimmer_2s_linear_infinite]`} />
-                                    <span className="text-xl group-hover:scale-110 transition-transform">{playerAlignment === 'ZOMBIE' ? 'H' : 'B'}</span>
+                                    <span className="text-xl group-hover:scale-110 transition-transform">{playerAlignment === 'ZOMBIE' ? 'HZ' : 'HQ'}</span>
                                     <span className="font-bold tracking-widest text-[10px]">{playerAlignment === 'ZOMBIE' ? t.sidebar.hiveBtn : t.sidebar.bunkerBtn}</span>
                                 </button>
                             </div>
@@ -265,7 +265,7 @@ const GameLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
                         </>
                     ) : (
                         <div className="flex flex-col items-center py-4 gap-4 h-full">
-                            <div className="w-8 h-8 rounded-full border-2 border-red-600 flex items-center justify-center bg-red-900/20 animate-pulse" title="Nivel de Amenaza: CRITICO">
+                            <div className="w-8 h-8 rounded-full border-2 border-red-600 flex items-center justify-center bg-red-900/20 animate-pulse" title="Nivel de amenaza: CRÍTICO">
                                 <span className="text-xs">!</span>
                             </div>
                             <button onClick={() => navigate('/bunker')} className="w-8 h-8 rounded border border-cyan-500 flex items-center justify-center hover:bg-cyan-900/50 text-cyan-300" title="Bunker">
