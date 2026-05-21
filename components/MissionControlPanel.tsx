@@ -17,6 +17,7 @@ interface MissionControlPanelProps {
 
 type AlignmentFilter = 'ALL' | 'ALIVE' | 'ZOMBIE' | 'BOTH';
 type ViewMode = 'LIST' | 'MAP';
+type FactionFilter = 'ALL' | 'magneto' | 'kingpin' | 'hulk' | 'doom' | 'neutral';
 type BulkAlignmentValue = 'UNCHANGED' | 'ALIVE' | 'ZOMBIE' | 'BOTH';
 type BulkStatusValue = 'UNCHANGED' | MissionStatus;
 type BulkTypeValue = 'UNCHANGED' | MissionType;
@@ -118,6 +119,7 @@ export const MissionControlPanel: React.FC<MissionControlPanelProps> = ({
     const [searchTerm, setSearchTerm] = useState('');
     const [alignmentFilter, setAlignmentFilter] = useState<AlignmentFilter>('ALL');
     const [statusFilter, setStatusFilter] = useState<'ALL' | MissionStatus>('ALL');
+    const [factionFilter, setFactionFilter] = useState<FactionFilter>('ALL');
     const [viewMode, setViewMode] = useState<ViewMode>('LIST');
     const [editingMission, setEditingMission] = useState<Mission | null>(null);
     const [creatingMission, setCreatingMission] = useState(false);
@@ -233,10 +235,11 @@ export const MissionControlPanel: React.FC<MissionControlPanelProps> = ({
                 || (alignmentFilter !== 'BOTH' && missionAlignment === 'BOTH');
 
             const matchesStatus = statusFilter === 'ALL' || normalizeStatus(mission) === statusFilter;
+            const matchesFaction = factionFilter === 'ALL' || getFactionForState(mission.location.state) === factionFilter;
 
-            return matchesSearch && matchesAlignment && matchesStatus;
+            return matchesSearch && matchesAlignment && matchesStatus && matchesFaction;
         });
-    }, [missions, searchTerm, alignmentFilter, statusFilter]);
+    }, [missions, searchTerm, alignmentFilter, statusFilter, factionFilter]);
 
     const positionedMissions = useMemo(() => {
         return visibleMissions.map((mission, index) => ({
@@ -325,6 +328,19 @@ export const MissionControlPanel: React.FC<MissionControlPanelProps> = ({
 
     const handleClearSelection = () => {
         setSelectedMissionIds([]);
+    };
+
+    const handleQuickStatusFilter = (nextStatus: 'ALL' | MissionStatus) => {
+        setStatusFilter(nextStatus);
+    };
+
+    const handleQuickFactionFilter = (nextFaction: FactionFilter) => {
+        setFactionFilter(nextFaction);
+    };
+
+    const handleQuickResetFilters = () => {
+        setFactionFilter('ALL');
+        setStatusFilter('ALL');
     };
 
     const handleApplyBulkChanges = async () => {
@@ -738,12 +754,33 @@ export const MissionControlPanel: React.FC<MissionControlPanelProps> = ({
                             </div>
                         ) : (
                             <div ref={canvasRef} className="relative h-full overflow-auto border border-slate-800 bg-[radial-gradient(circle_at_top,_rgba(8,47,73,0.35),_rgba(2,6,23,1)_65%)] select-none">
-                                <div className="pointer-events-none absolute left-4 top-4 z-20 flex flex-wrap gap-2 text-[10px] uppercase tracking-[0.25em]">
-                                    <span className="border border-emerald-700 bg-black/60 px-2 py-1 text-emerald-300">{language === 'es' ? 'Publicada' : 'Published'}</span>
-                                    <span className="border border-yellow-700 bg-black/60 px-2 py-1 text-yellow-300">{language === 'es' ? 'Borrador' : 'Draft'}</span>
-                                    <span className="border border-cyan-700 bg-black/60 px-2 py-1 text-cyan-300">{language === 'es' ? 'Arrastra para ordenar' : 'Drag to arrange'}</span>
+                                <div className="absolute left-4 top-4 z-20 flex flex-wrap gap-2 text-[10px] uppercase tracking-[0.25em]">
+                                    <button
+                                        onClick={() => handleQuickStatusFilter('PUBLISHED')}
+                                        className={`border px-2 py-1 ${statusFilter === 'PUBLISHED' ? 'border-emerald-500 bg-emerald-950/50 text-emerald-200' : 'border-emerald-700 bg-black/60 text-emerald-300'}`}
+                                    >
+                                        {language === 'es' ? 'Publicada' : 'Published'}
+                                    </button>
+                                    <button
+                                        onClick={() => handleQuickStatusFilter('DRAFT')}
+                                        className={`border px-2 py-1 ${statusFilter === 'DRAFT' ? 'border-yellow-500 bg-yellow-950/50 text-yellow-200' : 'border-yellow-700 bg-black/60 text-yellow-300'}`}
+                                    >
+                                        {language === 'es' ? 'Borrador' : 'Draft'}
+                                    </button>
+                                    <button
+                                        onClick={handleQuickResetFilters}
+                                        className={`border px-2 py-1 ${statusFilter === 'ALL' && factionFilter === 'ALL' ? 'border-cyan-400 bg-cyan-950/50 text-cyan-200' : 'border-cyan-700 bg-black/60 text-cyan-300'}`}
+                                    >
+                                        {language === 'es' ? 'Todas' : 'All'}
+                                    </button>
                                     {Object.entries(FACTION_STYLES).map(([key, value]) => (
-                                        <span key={key} className={`border bg-black/60 px-2 py-1 ${value.badge}`}>{value.label}</span>
+                                        <button
+                                            key={key}
+                                            onClick={() => handleQuickFactionFilter(key as FactionFilter)}
+                                            className={`border bg-black/60 px-2 py-1 ${factionFilter === key ? 'bg-white/10 text-white' : value.badge}`}
+                                        >
+                                            {value.label}
+                                        </button>
                                     ))}
                                 </div>
 
