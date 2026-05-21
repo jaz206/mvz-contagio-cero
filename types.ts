@@ -67,6 +67,8 @@ export interface Objective {
   desc: string;
 }
 
+export type MissionStatus = 'DRAFT' | 'PUBLISHED';
+
 export type MissionType =
   | 'STANDARD'
   | 'INTRODUCTORY'
@@ -97,6 +99,12 @@ export interface Mission {
   layoutUrl?: string;
   outcomeText?: string;
   isIntroMission?: boolean;
+  status?: MissionStatus;
+  mapPosition?: {
+    x: number;
+    y: number;
+  };
+  isProtected?: boolean;
 }
 
 export interface GlobalEvent {

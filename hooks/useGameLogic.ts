@@ -6,7 +6,7 @@ import { translations, Language } from '../translations';
 import { getHeroTemplates } from '../services/heroService';
 import { getDefaultIntroConfig, getIntroConfig, saveIntroConfig } from '../services/introService';
 import { getDefaultStoryConfig, getStoryConfig, saveStoryConfig } from '../services/storyService';
-import { getCustomMissions, deleteMissionInDB } from '../services/missionService';
+import { getCustomMissions, deleteMissionInDB, syncInitialMissionRepository } from '../services/missionService';
 import { getUserProfile, resetUserProfiles, saveUserProfile } from '../services/userService';
 import { logout, signInEditor } from '../services/authService';
 import { ensureAdminStaffAccount, getStaffAccount } from '../services/staffService';
@@ -151,6 +151,7 @@ export const useGameLogic = () => {
     const [showCharacterEditor, setShowCharacterEditor] = useState(false);
     const [showDbManager, setShowDbManager] = useState(false);
     const [showAdminPanel, setShowAdminPanel] = useState(false);
+    const [showMissionControlPanel, setShowMissionControlPanel] = useState(false);
 
     const [customMissions, setCustomMissions] = useState<Mission[]>([]);
     const [selectedMission, setSelectedMission] = useState<Mission | null>(null);
@@ -438,12 +439,12 @@ export const useGameLogic = () => {
 
     useEffect(() => {
         const loadMissions = async () => {
-            const loaded = await getCustomMissions();
+            const loaded = await syncInitialMissionRepository();
             setCustomMissions(loaded);
         };
 
         loadMissions();
-    }, [isEditorMode]);
+    }, []);
 
     const saveData = useCallback(async (currentHeroes: Hero[], currentMissions: Set<string>, currentCylinders: number) => {
         if (isEditorMode || !user || !playerAlignment || !isDataLoadedRef.current) return;
@@ -594,18 +595,8 @@ export const useGameLogic = () => {
     const handleTickerUpdate = (message: string) => setTickerMessage(message);
 
     const allMissions: Mission[] = useMemo(() => {
-        const baseMissions = getInitialMissions(t);
-        const baseMissionIds = new Set(baseMissions.map((mission) => mission.id));
-        const mergedMissions = [
-            ...baseMissions,
-            ...customMissions.filter((mission) =>
-                !baseMissionIds.has(mission.id)
-                && mission.type !== 'INTRODUCTORY'
-                && mission.isIntroMission !== true
-            )
-        ];
-
-        const sourceMissions = mergedMissions;
+        const fallbackMissions = getInitialMissions(t);
+        const sourceMissions = customMissions.length > 0 ? customMissions : fallbackMissions;
         return sourceMissions.map((mission) => {
             const [x, y] = mission.location.coordinates;
             if (x === 0 && y === 0) {
@@ -632,6 +623,7 @@ export const useGameLogic = () => {
 
     const visibleMissions = useMemo(() => {
         const alignmentFiltered = allMissions.filter((mission) => {
+            if (!isEditorMode && (mission.status || 'PUBLISHED') === 'DRAFT') return false;
             if (!mission.alignment || mission.alignment === 'BOTH') return true;
             return mission.alignment === playerAlignment;
         });
@@ -738,6 +730,11 @@ export const useGameLogic = () => {
     const handleDeleteMission = async (id: string) => {
         if (!staffPermissions.missions.delete) {
             alert('Tu cuenta no puede borrar misiones.');
+            return;
+        }
+
+        if (id === 'm_intro_0' && !isFullAdmin) {
+            alert('La MH0 solo la puede borrar el admin.');
             return;
         }
 
@@ -996,6 +993,7 @@ export const useGameLogic = () => {
             showCharacterEditor,
             showDbManager,
             showAdminPanel,
+            showMissionControlPanel,
             customMissions,
             selectedMission,
             showStory,
@@ -1035,6 +1033,7 @@ export const useGameLogic = () => {
             setShowCharacterEditor,
             setShowDbManager,
             setShowAdminPanel,
+            setShowMissionControlPanel,
             setCustomMissions,
             setSelectedMission,
             setShowStory,

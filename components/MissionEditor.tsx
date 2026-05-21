@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { translations, Language } from '../translations';
-import { Mission, Objective, WorldStage, MissionType } from '../types';
+import { Mission, Objective, WorldStage, MissionType, MissionStatus } from '../types';
 import { createMissionInDB, updateMissionInDB } from '../services/missionService';
 import { GAME_EXPANSIONS } from '../data/gameContent';
 
@@ -49,6 +49,7 @@ export const MissionEditor: React.FC<MissionEditorProps> = ({ isOpen, onClose, o
     const [type, setType] = useState<MissionType>('STANDARD');
     const [alignment, setAlignment] = useState<'ALIVE' | 'ZOMBIE' | 'BOTH'>('BOTH');
     const [isIntroMission, setIsIntroMission] = useState(false);
+    const [status, setStatus] = useState<MissionStatus>('DRAFT');
 
     const [triggerStage, setTriggerStage] = useState<WorldStage>('NORMAL');
 
@@ -75,6 +76,7 @@ export const MissionEditor: React.FC<MissionEditorProps> = ({ isOpen, onClose, o
             setAlignment(initialData.alignment || 'BOTH');
             setTriggerStage(initialData.triggerStage || 'NORMAL');
             setIsIntroMission(initialData.isIntroMission || false);
+            setStatus(initialData.status || 'DRAFT');
 
             if (initialData.prereqs && initialData.prereqs.length > 0) {
                 setPrereqs(initialData.prereqs);
@@ -97,6 +99,7 @@ export const MissionEditor: React.FC<MissionEditorProps> = ({ isOpen, onClose, o
             setType('STANDARD');
             setAlignment('BOTH');
             setIsIntroMission(false);
+            setStatus('DRAFT');
             setTriggerStage('NORMAL');
             setPrereqs([]);
             setObjectives([{ title: '', desc: '' }]);
@@ -162,6 +165,7 @@ export const MissionEditor: React.FC<MissionEditorProps> = ({ isOpen, onClose, o
             type,
             alignment,
             isIntroMission,
+            status,
             triggerStage: type === 'GALACTUS' ? triggerStage : null,
             objectives: objectives.filter(o => o.title && o.desc),
             prereq: prereqs.length > 0 ? prereqs[0] : null,
@@ -169,6 +173,8 @@ export const MissionEditor: React.FC<MissionEditorProps> = ({ isOpen, onClose, o
             requirements,
             layoutUrl: layoutUrl.trim() || null,
             pdfUrl: pdfUrl.trim() || null, // GUARDAR PDF
+            isProtected: initialData?.isProtected || false,
+            mapPosition: initialData?.mapPosition || null
         };
 
         try {
@@ -269,6 +275,14 @@ export const MissionEditor: React.FC<MissionEditorProps> = ({ isOpen, onClose, o
                                     <label className={`text-[10px] ${accentClass} font-black block mb-1 uppercase tracking-widest`}>NIVEL DE AMENAZA BIOLÓGICA</label>
                                     <select value={threatLevel} onChange={e => setThreatLevel(e.target.value)} className={`w-full bg-slate-950 border ${borderClass} p-2 text-yellow-500 font-bold outline-none cursor-pointer text-xs`}>
                                         {THREAT_LEVELS.map(lvl => <option key={lvl} value={lvl}>{lvl}</option>)}
+                                    </select>
+                                </div>
+
+                                <div>
+                                    <label className={`text-[10px] ${accentClass} font-black block mb-1 uppercase tracking-widest`}>ESTADO DE PUBLICACION</label>
+                                    <select value={status} onChange={e => setStatus(e.target.value as MissionStatus)} className={`w-full bg-slate-950 border ${borderClass} p-2 text-white font-bold outline-none cursor-pointer text-xs`}>
+                                        <option value="DRAFT">BORRADOR</option>
+                                        <option value="PUBLISHED">PUBLICADA</option>
                                     </select>
                                 </div>
 

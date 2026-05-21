@@ -15,6 +15,7 @@ import { NewsTicker } from './components/NewsTicker';
 import { ExpansionSelector } from './components/ExpansionSelector';
 import { ExpansionConfigModal } from './components/ExpansionConfigModal';
 import { AdminStaffPanel } from './components/AdminStaffPanel';
+import { MissionControlPanel } from './components/MissionControlPanel';
 import { NotFound } from './components/NotFound';
 import { GAME_EXPANSIONS } from './data/gameContent';
 
@@ -33,7 +34,7 @@ const GameLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
         || (state.isGuest ? 'MODO LOCAL' : 'SIN SESION');
 
     const t = translations[lang];
-    const totalMissions = state.customMissions.length + 7;
+    const totalMissions = state.allMissions.length;
     const progressPercentage = Math.min(100, Math.round((completedMissionIds.size / Math.max(1, totalMissions)) * 100));
     const circumference = 2 * Math.PI * 18;
     const strokeDashoffset = circumference - (progressPercentage / 100) * circumference;
@@ -72,6 +73,17 @@ const GameLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
                 onSaveIntroConfig={actions.handleSaveIntroConfig}
                 storyConfig={state.storyConfig}
                 onSaveStoryConfig={actions.handleSaveStoryConfig}
+            />
+
+            <MissionControlPanel
+                isOpen={state.showMissionControlPanel}
+                onClose={() => actions.setShowMissionControlPanel(false)}
+                language={lang}
+                canCreate={staffPermissions.missions.create}
+                canEdit={staffPermissions.missions.edit}
+                canDelete={staffPermissions.missions.delete}
+                isFullAdmin={isFullAdmin}
+                onRepositoryUpdated={actions.setCustomMissions}
             />
 
             {state.activeGlobalEvent && (
@@ -411,6 +423,9 @@ const GameContent: React.FC = () => {
                                         + Crear Mision
                                     </button>
                                 )}
+                                <button onClick={() => actions.setShowMissionControlPanel(true)} className="bg-slate-900/60 hover:bg-slate-800 text-slate-100 text-[10px] font-bold py-2 px-3 border border-slate-700 uppercase tracking-wider transition-colors">
+                                    Panel Misiones
+                                </button>
                                 {isFullAdmin && (
                                     <button onClick={() => actions.setShowAdminPanel(true)} className="bg-purple-900/50 hover:bg-purple-800 text-purple-200 text-[10px] font-bold py-2 px-3 border border-purple-700 uppercase tracking-wider transition-colors">
                                         Gestionar Editores
