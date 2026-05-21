@@ -287,151 +287,16 @@ export const useGameLogic = () => {
                 return;
             }
 
+            await logout();
             setStaffAccount(null);
             setStaffPermissions(EMPTY_PERMISSIONS);
             setIsEditorMode(false);
             setIsFullAdmin(false);
             setIsStartingCampaign(false);
-
-            try {
-                const hasSeenIntro = !!localStorage.getItem(`shield_intro_seen_${currentUser.uid}`);
-                const hasCompletedSetup = !!localStorage.getItem(getSetupDoneKey(currentUser.uid));
-                const storedAlignment = getStoredAlignment(currentUser.uid);
-                const savedFlowStep = getSavedFlowStep(currentUser.uid);
-                const cachedCampaign = readCampaignCache(currentUser.uid);
-                const [aliveProfile, zombieProfile] = await Promise.all([
-                    getUserProfile(currentUser.uid, 'ALIVE'),
-                    getUserProfile(currentUser.uid, 'ZOMBIE')
-                ]);
-
-                const resolvedAlignment = storedAlignment
-                    || (aliveProfile && !zombieProfile ? 'ALIVE' : null)
-                    || (!aliveProfile && zombieProfile ? 'ZOMBIE' : null)
-                    || (aliveProfile ? 'ALIVE' : null)
-                    || (zombieProfile ? 'ZOMBIE' : null);
-
-                const resolvedProfile = resolvedAlignment === 'ZOMBIE' ? zombieProfile : aliveProfile;
-                const fallbackProfile = resolvedProfile || cachedCampaign;
-
-                if (resolvedAlignment && savedFlowStep === 'setup') {
-                    setPlayerAlignment(resolvedAlignment);
-                    setShowStory(false);
-                    setShowTutorial(false);
-                    setIsStartingCampaign(false);
-                    setStartStoryAtChoice(false);
-                    navigate('/setup');
-                } else if (resolvedAlignment && savedFlowStep === 'intro') {
-                    setPlayerAlignment(resolvedAlignment);
-                    if (fallbackProfile) {
-                        setHeroes(fallbackProfile.heroes);
-                        setCompletedMissionIds(new Set(fallbackProfile.completedMissionIds));
-                        setOmegaCylinders(getStoredOmegaCylinders(fallbackProfile));
-                    }
-                    setShowStory(false);
-                    setShowTutorial(false);
-                    setIsStartingCampaign(true);
-                    setStartStoryAtChoice(false);
-                    isDataLoadedRef.current = true;
-                    navigate('/intro');
-                } else if (resolvedAlignment && savedFlowStep === 'mission0') {
-                    setPlayerAlignment(resolvedAlignment);
-                    if (fallbackProfile) {
-                        setHeroes(fallbackProfile.heroes);
-                        setCompletedMissionIds(new Set(fallbackProfile.completedMissionIds));
-                        setOmegaCylinders(getStoredOmegaCylinders(fallbackProfile));
-                    }
-                    setShowStory(false);
-                    setShowTutorial(false);
-                    setIsStartingCampaign(false);
-                    setStartStoryAtChoice(false);
-                    isDataLoadedRef.current = true;
-                    navigate('/mission0');
-                } else if (resolvedAlignment && savedFlowStep === 'tutorial') {
-                    setPlayerAlignment(resolvedAlignment);
-                    if (fallbackProfile) {
-                        setHeroes(fallbackProfile.heroes);
-                        setCompletedMissionIds(new Set(fallbackProfile.completedMissionIds));
-                        setOmegaCylinders(getStoredOmegaCylinders(fallbackProfile));
-                    }
-                    setShowStory(false);
-                    setShowTutorial(true);
-                    setIsStartingCampaign(false);
-                    setStartStoryAtChoice(false);
-                    isDataLoadedRef.current = true;
-                    navigate('/tutorial');
-                } else if (resolvedAlignment && savedFlowStep === 'map') {
-                    setPlayerAlignment(resolvedAlignment);
-                    if (fallbackProfile) {
-                        setHeroes(fallbackProfile.heroes);
-                        setCompletedMissionIds(new Set(fallbackProfile.completedMissionIds));
-                        setOmegaCylinders(getStoredOmegaCylinders(fallbackProfile));
-                    } else {
-                        setHeroes(resolvedAlignment === 'ZOMBIE' ? coreExpansion?.zombieHeroes || [] : coreHeroes);
-                        setCompletedMissionIds(new Set());
-                        setOmegaCylinders(0);
-                    }
-                    setShowStory(false);
-                    setShowTutorial(false);
-                    setIsStartingCampaign(false);
-                    setStartStoryAtChoice(false);
-                    isDataLoadedRef.current = true;
-                    if (!preserveBunkerRoute()) navigate('/map');
-                } else if (resolvedAlignment && resolvedProfile) {
-                    saveFlowStep('map', currentUser.uid);
-                    setPlayerAlignment(resolvedAlignment);
-                    setHeroes(resolvedProfile.heroes);
-                    setCompletedMissionIds(new Set(resolvedProfile.completedMissionIds));
-                    setOmegaCylinders(resolvedProfile.resources.omegaCylinders);
-                    setShowStory(false);
-                    setShowTutorial(false);
-                    setIsStartingCampaign(false);
-                    saveStoredAlignment(currentUser.uid, resolvedAlignment);
-                    isDataLoadedRef.current = true;
-                    if (!preserveBunkerRoute()) navigate('/map');
-                } else if (resolvedAlignment) {
-                    setPlayerAlignment(resolvedAlignment);
-                    setHeroes(resolvedAlignment === 'ZOMBIE' ? coreExpansion?.zombieHeroes || [] : coreHeroes);
-                    setShowStory(false);
-                    setIsStartingCampaign(false);
-                    setStartStoryAtChoice(false);
-                    saveFlowStep('setup', currentUser.uid);
-                    navigate('/setup');
-                } else if (!hasSeenIntro) {
-                    saveFlowStep('story', currentUser.uid);
-                    setShowStory(true);
-                    setIsStartingCampaign(false);
-                    setStartStoryAtChoice(false);
-                    navigate('/story');
-                } else if (resolvedAlignment && hasCompletedSetup) {
-                    setPlayerAlignment(resolvedAlignment);
-                    setShowStory(false);
-                    setIsStartingCampaign(true);
-                    setStartStoryAtChoice(false);
-                    navigate('/intro');
-                } else if (resolvedAlignment) {
-                    setPlayerAlignment(resolvedAlignment);
-                    setHeroes(resolvedAlignment === 'ZOMBIE' ? coreExpansion?.zombieHeroes || [] : coreHeroes);
-                    setShowStory(false);
-                    setIsStartingCampaign(false);
-                    setStartStoryAtChoice(false);
-                    navigate('/setup');
-                } else {
-                    saveFlowStep('story', currentUser.uid);
-                    setShowStory(true);
-                    setIsStartingCampaign(false);
-                    setStartStoryAtChoice(true);
-                    navigate('/story');
-                }
-            } catch (error) {
-                console.error(error);
-                saveFlowStep('story', currentUser.uid);
-                setShowStory(true);
-                setIsStartingCampaign(false);
-                setStartStoryAtChoice(false);
-                navigate('/story');
-            }
-
+            setPlayerAlignment(null);
             setLoading(false);
+            navigate('/');
+            return;
         });
 
         return () => unsubscribe();

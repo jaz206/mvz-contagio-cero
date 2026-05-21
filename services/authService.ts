@@ -7,7 +7,6 @@ import {
 } from "firebase/auth";
 import { auth } from "../firebaseConfig";
 import { getStaffAccount } from "./staffService";
-import { getLoginAccessConfig } from "./accessControlService";
 
 const googleProvider = new GoogleAuthProvider();
 const ADMIN_UID = (import.meta as any).env.VITE_ADMIN_UID || '60mH4M1SClV793Nq1WjQ3CExkLp1';
@@ -24,18 +23,14 @@ export const signInWithGoogle = async (): Promise<User> => {
 
   try {
     const result = await signInWithPopup(auth!, googleProvider);
-    const accessConfig = await getLoginAccessConfig();
     const currentEmail = (result.user.email || '').toLowerCase();
     const isAdminUser = result.user.uid === ADMIN_UID || currentEmail === ADMIN_EMAIL;
+    const staffAccount = await getStaffAccount(result.user.uid);
+    const isApprovedStaff = !!staffAccount && staffAccount.isActive && (staffAccount.role === 'editor' || staffAccount.role === 'admin');
 
-    if (accessConfig.mode === 'DEVELOPMENT' && !isAdminUser) {
-      const staffAccount = await getStaffAccount(result.user.uid);
-      const canEnter = !!staffAccount && staffAccount.isActive;
-
-      if (!canEnter) {
-        await firebaseSignOut(auth!);
-        throw new Error("El acceso con cuenta esta en modo desarrollo. Solo pueden entrar las cuentas activadas por admin.");
-      }
+    if (!isAdminUser && !isApprovedStaff) {
+      await firebaseSignOut(auth!);
+      throw new Error("Solo pueden entrar con cuenta el admin y los editores activos. El resto debe usar el modo local.");
     }
 
     return result.user;
