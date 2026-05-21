@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { translations, Language } from '../translations';
 import { Mission, Objective, WorldStage, MissionType, MissionStatus } from '../types';
 import { createMissionInDB, updateMissionInDB } from '../services/missionService';
+import { fetchMissionPdfOptions, MissionPdfOption } from '../services/missionPdfRepositoryService';
 import { GAME_EXPANSIONS } from '../data/gameContent';
 
 interface MissionEditorProps {
@@ -64,6 +65,11 @@ export const MissionEditor: React.FC<MissionEditorProps> = ({ isOpen, onClose, o
     const [layoutUrl, setLayoutUrl] = useState('');
     const [pdfUrl, setPdfUrl] = useState(''); // NUEVO ESTADO
     const [saving, setSaving] = useState(false);
+    const [isPdfPickerOpen, setIsPdfPickerOpen] = useState(false);
+    const [pdfPickerLoading, setPdfPickerLoading] = useState(false);
+    const [pdfPickerError, setPdfPickerError] = useState('');
+    const [pdfPickerQuery, setPdfPickerQuery] = useState('');
+    const [repoPdfOptions, setRepoPdfOptions] = useState<MissionPdfOption[]>([]);
 
     useEffect(() => {
         if (initialData) {
@@ -107,6 +113,10 @@ export const MissionEditor: React.FC<MissionEditorProps> = ({ isOpen, onClose, o
             setLayoutUrl('');
             setPdfUrl('');
         }
+
+        setIsPdfPickerOpen(false);
+        setPdfPickerError('');
+        setPdfPickerQuery('');
     }, [initialData, isOpen]);
 
     if (!isOpen) return null;
@@ -140,6 +150,33 @@ export const MissionEditor: React.FC<MissionEditorProps> = ({ isOpen, onClose, o
 
     const handleRemovePrereq = (idToRemove: string) => {
         setPrereqs(prereqs.filter(id => id !== idToRemove));
+    };
+
+    const handleOpenPdfPicker = async () => {
+        setIsPdfPickerOpen(true);
+        setPdfPickerError('');
+
+        if (repoPdfOptions.length > 0) {
+            return;
+        }
+
+        setPdfPickerLoading(true);
+
+        try {
+            const options = await fetchMissionPdfOptions();
+            setRepoPdfOptions(options);
+        } catch (error) {
+            setPdfPickerError((error as Error).message || 'No se pudo cargar la lista de PDFs.');
+        } finally {
+            setPdfPickerLoading(false);
+        }
+    };
+
+    const handleSelectRepoPdf = (option: MissionPdfOption) => {
+        setPdfUrl(option.url);
+        setIsPdfPickerOpen(false);
+        setPdfPickerQuery('');
+        setPdfPickerError('');
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -217,6 +254,11 @@ export const MissionEditor: React.FC<MissionEditorProps> = ({ isOpen, onClose, o
     const focusClass = isZombie ? 'focus:border-lime-400' : (isBoth ? 'focus:border-yellow-400' : 'focus:border-cyan-400');
     const bgHeaderClass = isZombie ? 'bg-lime-900/40' : (isBoth ? 'bg-yellow-900/40' : 'bg-cyan-900/40');
     const buttonClass = isZombie ? 'bg-lime-600 hover:bg-lime-500' : (isBoth ? 'bg-yellow-600 hover:bg-yellow-500' : 'bg-cyan-600 hover:bg-cyan-500');
+    const filteredPdfOptions = repoPdfOptions.filter(option => {
+        if (!pdfPickerQuery.trim()) return true;
+        const normalizedQuery = pdfPickerQuery.trim().toLowerCase();
+        return option.name.toLowerCase().includes(normalizedQuery) || option.path.toLowerCase().includes(normalizedQuery);
+    });
 
     return (
         <div className="fixed inset-0 z-[120] flex items-center justify-center bg-slate-950/80 backdrop-blur-md p-4 animate-fade-in overflow-hidden">
@@ -359,6 +401,70 @@ export const MissionEditor: React.FC<MissionEditorProps> = ({ isOpen, onClose, o
                                     <div>
                                         <label className={`text-[10px] text-yellow-600 font-black block mb-1 uppercase tracking-widest`}>ENLACE EXPEDIENTE FÍSICO (PDF)</label>
                                         <input value={pdfUrl} onChange={e => setPdfUrl(e.target.value)} placeholder="https://..." className={`w-full bg-slate-950 border border-yellow-900 p-2 text-yellow-200 text-[10px] focus:border-yellow-500 outline-none transition-all`} />
+                                        <div className="mt-2 flex flex-wrap gap-2">
+                                            <button type="button" onClick={handleOpenPdfPicker} className="bg-yellow-900/30 border border-yellow-700 text-yellow-300 px-3 py-1 text-[10px] font-black uppercase hover:bg-yellow-800 transition-all">
+                                                Buscar PDF en GitHub
+                                            </button>
+                                            {pdfUrl && (
+                                                <button type="button" onClick={() => setPdfUrl('')} className="bg-slate-900 border border-slate-700 text-gray-300 px-3 py-1 text-[10px] font-black uppercase hover:border-white transition-all">
+                                                    Limpiar enlace
+                                                </button>
+                                            )}
+                                        </div>
+                                        <div className="mt-2 text-[9px] text-yellow-300/70 uppercase tracking-wide">
+                                            Repositorio conectado: jaz206 / MisionesMZC
+                                        </div>
+                                        {isPdfPickerOpen && (
+                                            <div className="mt-3 border border-yellow-900 bg-black/70">
+                                                <div className="p-3 border-b border-yellow-900/50 flex flex-col gap-3">
+                                                    <div className="flex items-center justify-between gap-3">
+                                                        <div className="text-[10px] text-yellow-300 font-black uppercase tracking-widest">
+                                                            Selector de anexo PDF
+                                                        </div>
+                                                        <button type="button" onClick={() => setIsPdfPickerOpen(false)} className="text-[10px] text-gray-500 hover:text-white uppercase">
+                                                            Cerrar
+                                                        </button>
+                                                    </div>
+                                                    <input
+                                                        value={pdfPickerQuery}
+                                                        onChange={e => setPdfPickerQuery(e.target.value)}
+                                                        placeholder="Buscar por nombre o carpeta..."
+                                                        className="w-full bg-slate-950 border border-yellow-900 p-2 text-yellow-100 text-[10px] focus:border-yellow-500 outline-none transition-all"
+                                                    />
+                                                </div>
+                                                <div className="max-h-64 overflow-y-auto">
+                                                    {pdfPickerLoading ? (
+                                                        <div className="p-4 text-[10px] text-yellow-300 uppercase tracking-widest">
+                                                            Cargando PDFs...
+                                                        </div>
+                                                    ) : pdfPickerError ? (
+                                                        <div className="p-4 text-[10px] text-red-400 uppercase tracking-wide">
+                                                            {pdfPickerError}
+                                                        </div>
+                                                    ) : filteredPdfOptions.length === 0 ? (
+                                                        <div className="p-4 text-[10px] text-gray-400 uppercase tracking-wide">
+                                                            No hay PDFs que coincidan con esa busqueda.
+                                                        </div>
+                                                    ) : (
+                                                        filteredPdfOptions.map(option => (
+                                                            <button
+                                                                key={option.path}
+                                                                type="button"
+                                                                onClick={() => handleSelectRepoPdf(option)}
+                                                                className={`w-full text-left px-3 py-3 border-b border-slate-900 hover:bg-yellow-950/30 transition-all ${pdfUrl === option.url ? 'bg-yellow-900/20' : 'bg-transparent'}`}
+                                                            >
+                                                                <div className="text-[10px] text-yellow-200 font-black uppercase truncate">
+                                                                    {option.name}
+                                                                </div>
+                                                                <div className="text-[9px] text-gray-500 break-all">
+                                                                    {option.path}
+                                                                </div>
+                                                            </button>
+                                                        ))
+                                                    )}
+                                                </div>
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
                             </div>
