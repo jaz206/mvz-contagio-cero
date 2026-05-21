@@ -35,6 +35,26 @@ const MISSION_TYPE_OPTIONS: MissionType[] = [
     'GALACTUS'
 ];
 
+const getMissionTypeLabel = (type?: MissionType) => {
+    switch (type) {
+        case 'INTRODUCTORY': return 'INTRO';
+        case 'SHIELD_BASE': return 'BASE SHIELD';
+        case 'BOSS_KINGPIN': return 'JEFE KINGPIN';
+        case 'BOSS_MAGNETO': return 'JEFE MAGNETO';
+        case 'BOSS_DOOM': return 'JEFE DOOM';
+        case 'BOSS_HULK': return 'JEFE HULK';
+        case 'GALACTUS': return 'GALACTUS';
+        case 'STANDARD':
+        default:
+            return 'ESTANDAR';
+    }
+};
+
+const getMissionTypeZoneLabel = (mission: Mission) => {
+    const zoneLabel = FACTION_STYLES[getFactionForState(mission.location.state)].label;
+    return `${getMissionTypeLabel(mission.type)} (${zoneLabel})`;
+};
+
 const FACTION_STATES = {
     magneto: new Set(['Washington', 'Oregon', 'California', 'Nevada', 'Idaho', 'Montana', 'Wyoming', 'Utah', 'Arizona', 'Colorado', 'Alaska', 'Hawaii']),
     kingpin: new Set(['Maine', 'New Hampshire', 'Vermont', 'New York', 'Massachusetts', 'Rhode Island', 'Connecticut', 'New Jersey', 'Pennsylvania', 'Delaware', 'Maryland', 'West Virginia', 'Virginia', 'District of Columbia']),
@@ -705,9 +725,8 @@ export const MissionControlPanel: React.FC<MissionControlPanelProps> = ({
                                             </div>
 
                                             <div className="flex flex-wrap gap-2 text-[10px] font-black uppercase">
-                                                <span className={`border px-2 py-1 ${factionStyle.badge}`}>{factionStyle.label}</span>
+                                                <span className={`border px-2 py-1 ${factionStyle.badge}`}>{getMissionTypeZoneLabel(mission)}</span>
                                                 <span className="border border-cyan-800 px-2 py-1 text-cyan-300">{normalizeAlignment(mission)}</span>
-                                                <span className="border border-slate-700 px-2 py-1 text-slate-300">{mission.type || 'STANDARD'}</span>
                                                 {mission.isProtected && (
                                                     <span className="border border-red-900 px-2 py-1 text-red-300">
                                                         {language === 'es' ? 'Protegida' : 'Protected'}
@@ -870,7 +889,7 @@ export const MissionControlPanel: React.FC<MissionControlPanelProps> = ({
                                             </div>
 
                                             <div className="flex flex-wrap gap-2 text-[8px] font-black uppercase text-slate-300">
-                                                <span className={factionStyle.badge}>{factionStyle.label}</span>
+                                                <span className={factionStyle.badge}>{getMissionTypeZoneLabel(mission)}</span>
                                                 <span>{normalizeAlignment(mission)}</span>
                                                 <span>•</span>
                                                 <span>{(mission.prereqs || []).length} {language === 'es' ? 'enlaces' : 'links'}</span>
@@ -914,7 +933,7 @@ export const MissionControlPanel: React.FC<MissionControlPanelProps> = ({
 
                             <div className="flex flex-wrap gap-2 text-[10px] font-black uppercase">
                                 <span className={`border px-2 py-1 ${FACTION_STYLES[getFactionForState(selectedMission.location.state)].badge}`}>
-                                    {FACTION_STYLES[getFactionForState(selectedMission.location.state)].label}
+                                    {getMissionTypeZoneLabel(selectedMission)}
                                 </span>
                                 <span className="border border-cyan-800 px-2 py-1 text-cyan-300">{normalizeAlignment(selectedMission)}</span>
                                 <span className={`border px-2 py-1 ${normalizeStatus(selectedMission) === 'DRAFT' ? 'border-yellow-700 text-yellow-300' : 'border-emerald-700 text-emerald-300'}`}>
