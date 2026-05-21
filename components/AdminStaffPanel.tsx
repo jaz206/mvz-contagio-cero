@@ -1,11 +1,12 @@
 import React, { useEffect, useState } from 'react';
-import { IntroConfig, IntroSlide, StaffAccount, StaffPermissions, StoryConfig, StorySlide } from '../types';
+import { IntroConfig, IntroSlide, LoginAccessMode, StaffAccount, StaffPermissions, StoryConfig, StorySlide } from '../types';
 import {
     createEditorAccount,
     listStaffAccounts,
     updateStaffPermissions,
     updateStaffStatus
 } from '../services/staffService';
+import { getLoginAccessConfig, saveLoginAccessMode } from '../services/accessControlService';
 
 interface AdminStaffPanelProps {
     isOpen: boolean;
@@ -65,6 +66,8 @@ export const AdminStaffPanel: React.FC<AdminStaffPanelProps> = ({
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [creating, setCreating] = useState(false);
+    const [loginAccessMode, setLoginAccessMode] = useState<LoginAccessMode>('DEVELOPMENT');
+    const [savingAccessMode, setSavingAccessMode] = useState(false);
 
     const [introDraft, setIntroDraft] = useState<IntroConfig>(cloneIntroConfig(introConfig));
     const [savingIntro, setSavingIntro] = useState(false);
@@ -78,6 +81,8 @@ export const AdminStaffPanel: React.FC<AdminStaffPanelProps> = ({
         try {
             const loaded = await listStaffAccounts();
             setAccounts(loaded);
+            const accessConfig = await getLoginAccessConfig();
+            setLoginAccessMode(accessConfig.mode);
         } catch (err) {
             console.error(err);
             setError('No se pudieron cargar las cuentas.');
@@ -283,6 +288,21 @@ export const AdminStaffPanel: React.FC<AdminStaffPanelProps> = ({
         }
     };
 
+    const handleAccessModeChange = async (mode: LoginAccessMode) => {
+        setSavingAccessMode(true);
+        setError(null);
+
+        try {
+            await saveLoginAccessMode(mode);
+            setLoginAccessMode(mode);
+        } catch (err) {
+            console.error(err);
+            setError('No se pudo guardar el modo de acceso.');
+        } finally {
+            setSavingAccessMode(false);
+        }
+    };
+
     const activeSlides = introDraft[introMode];
 
     return (
@@ -322,6 +342,31 @@ export const AdminStaffPanel: React.FC<AdminStaffPanelProps> = ({
                 {activeTab === 'staff' ? (
                     <div className="grid min-h-0 flex-1 grid-cols-1 gap-0 xl:grid-cols-[320px_1fr]">
                         <div className="overflow-y-auto border-r border-slate-800 p-4">
+                            <div className="mb-6 border border-slate-800 bg-slate-900/40 p-4">
+                                <div className="mb-2 text-[10px] font-black uppercase tracking-[0.3em] text-cyan-500">Acceso con Cuenta</div>
+                                <div className="grid grid-cols-1 gap-2">
+                                    <button
+                                        disabled={savingAccessMode}
+                                        onClick={() => handleAccessModeChange('PUBLIC')}
+                                        className={`border px-4 py-3 text-xs font-black uppercase ${loginAccessMode === 'PUBLIC' ? 'border-emerald-600 bg-emerald-950/30 text-emerald-300' : 'border-slate-700 text-slate-200 hover:bg-slate-800'} disabled:opacity-50`}
+                                    >
+                                        Publico
+                                    </button>
+                                    <button
+                                        disabled={savingAccessMode}
+                                        onClick={() => handleAccessModeChange('DEVELOPMENT')}
+                                        className={`border px-4 py-3 text-xs font-black uppercase ${loginAccessMode === 'DEVELOPMENT' ? 'border-yellow-600 bg-yellow-950/30 text-yellow-300' : 'border-slate-700 text-slate-200 hover:bg-slate-800'} disabled:opacity-50`}
+                                    >
+                                        Desarrollo
+                                    </button>
+                                </div>
+                                <div className="mt-3 text-[11px] leading-relaxed text-gray-400">
+                                    {loginAccessMode === 'PUBLIC'
+                                        ? 'Ahora puede entrar cualquiera con cuenta.'
+                                        : 'Ahora solo pueden entrar las cuentas activas que tu hayas marcado. La via local sigue funcionando.'}
+                                </div>
+                            </div>
+
                             <div className="mb-3 text-[10px] font-black uppercase tracking-[0.3em] text-cyan-500">Nuevo Editor</div>
                             <form onSubmit={handleCreateEditor} className="space-y-3">
                                 <input

@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { translations, Language } from '../translations';
 import { signInWithGoogle } from '../services/authService';
 import { firebaseReady } from '../firebaseConfig';
+import { getLoginAccessConfig } from '../services/accessControlService';
+import { LoginAccessMode } from '../types';
 
 interface LoginScreenProps {
     onLocalAccess: () => void;
@@ -14,9 +16,30 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLocalAccess, languag
     const [success, setSuccess] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [activeMode, setActiveMode] = useState<'account' | 'local' | null>(null);
+    const [accessMode, setAccessMode] = useState<LoginAccessMode>('DEVELOPMENT');
 
     const t = translations[language];
     const accountReady = firebaseReady;
+
+    React.useEffect(() => {
+        let mounted = true;
+
+        getLoginAccessConfig()
+            .then((config) => {
+                if (mounted) {
+                    setAccessMode(config.mode);
+                }
+            })
+            .catch(() => {
+                if (mounted) {
+                    setAccessMode('DEVELOPMENT');
+                }
+            });
+
+        return () => {
+            mounted = false;
+        };
+    }, []);
 
     const handleScan = async () => {
         if (!accountReady) {
@@ -31,10 +54,10 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLocalAccess, languag
         try {
             await signInWithGoogle();
             setSuccess(true);
-        } catch (err) {
+        } catch (err: any) {
             console.error(err);
             setScanning(false);
-            setError(t.login.error);
+            setError(err?.message || t.login.error);
         }
     };
 
@@ -108,6 +131,11 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLocalAccess, languag
                                 {accountReady ? 'LOCKED' : 'LOCAL ONLY'}
                             </p>
                             <p className="text-cyan-600 text-[9px]">{accountReady ? t.login.idPrompt : t.login.accessUnavailable}</p>
+                            {accountReady && (
+                                <p className="text-[9px] text-slate-500 uppercase tracking-[0.2em] mt-1">
+                                    {accessMode === 'PUBLIC' ? 'Modo publico' : 'Modo desarrollo'}
+                                </p>
+                            )}
                         </div>
                     )}
 

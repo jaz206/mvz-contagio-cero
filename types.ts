@@ -2,6 +2,7 @@ export type HeroClass = 'SCOUT' | 'BRAWLER' | 'TACTICIAN' | 'BLASTER';
 export type HeroStatus = 'AVAILABLE' | 'DEPLOYED' | 'INJURED' | 'CAPTURED';
 export type WorldStage = 'NORMAL' | 'ANOMALY' | 'SURFER' | 'GALACTUS';
 export type StaffRole = 'admin' | 'editor';
+export type LoginAccessMode = 'PUBLIC' | 'DEVELOPMENT';
 
 export interface HeroStats {
   strength: number;
@@ -135,6 +136,10 @@ export interface StaffAccount {
   permissions: StaffPermissions;
   createdAt?: unknown;
   updatedAt?: unknown;
+}
+
+export interface LoginAccessConfig {
+  mode: LoginAccessMode;
 }
 
 export interface IntroSlide {
