@@ -36,6 +36,15 @@ export const StoryMode: React.FC<StoryModeProps> = ({ language, onComplete, onSk
         return () => clearTimeout(timer);
     }, []);
 
+    useEffect(() => {
+        if (startAtChoice) {
+            setCurrentIndex(slides.length);
+            return;
+        }
+
+        setCurrentIndex(0);
+    }, [startAtChoice, slides.length]);
+
     const handleNext = () => {
         if (isAnimating || isChoiceScreen) return;
 

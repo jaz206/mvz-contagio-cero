@@ -37,7 +37,8 @@ export const MissionModal: React.FC<MissionModalProps> = ({
     const [typedDescription, setTypedDescription] = useState<string[]>([]);
     const [isTyping, setIsTyping] = useState(false);
     const t = translations[language].missionModal;
-    const timeoutsRef = useRef<NodeJS.Timeout[]>([]);
+    const typingTimeoutsRef = useRef<NodeJS.Timeout[]>([]);
+    const flowTimeoutsRef = useRef<NodeJS.Timeout[]>([]);
     const isPdfAttachment = mission.pdfUrl?.toLowerCase().includes('.pdf') ?? false;
 
     useEffect(() => {
@@ -75,21 +76,28 @@ export const MissionModal: React.FC<MissionModalProps> = ({
                 }
 
                 const timeout = setTimeout(typeChar, Math.random() * 10 + 5);
-                timeoutsRef.current.push(timeout);
+                typingTimeoutsRef.current.push(timeout);
             };
 
             const initialTimeout = setTimeout(typeChar, 300);
-            timeoutsRef.current.push(initialTimeout);
+            typingTimeoutsRef.current.push(initialTimeout);
         } else {
             setTypedDescription(mission.description || []);
             setIsTyping(false);
         }
 
         return () => {
-            timeoutsRef.current.forEach(clearTimeout);
-            timeoutsRef.current = [];
+            typingTimeoutsRef.current.forEach(clearTimeout);
+            typingTimeoutsRef.current = [];
         };
     }, [mission, isOpen, isCompleted, reportSuccess]);
+
+    useEffect(() => {
+        return () => {
+            flowTimeoutsRef.current.forEach(clearTimeout);
+            flowTimeoutsRef.current = [];
+        };
+    }, []);
 
     if (!isOpen) return null;
 
@@ -104,10 +112,10 @@ export const MissionModal: React.FC<MissionModalProps> = ({
                     onComplete(mission.id);
                     onClose();
                 }, 1500);
-                timeoutsRef.current.push(closeTimeout);
+                flowTimeoutsRef.current.push(closeTimeout);
             }
         }, 3000);
-        timeoutsRef.current.push(timeout);
+        flowTimeoutsRef.current.push(timeout);
     };
 
     const handleManualCloseReport = () => {
