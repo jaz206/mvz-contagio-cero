@@ -612,6 +612,20 @@ export const useGameLogic = () => {
     const introMission = useMemo(() => {
         if (!playerAlignment) return null;
 
+        const findZombieIntro = () => allMissions.find((mission) => {
+            const title = (mission.title || '').toLowerCase();
+            return (mission.alignment === 'ZOMBIE' || mission.alignment === 'BOTH')
+                && (
+                    title.includes('mz0')
+                    || (mission.type === 'INTRODUCTORY' && mission.isIntroMission === true && mission.alignment === 'ZOMBIE')
+                );
+        });
+
+        if (playerAlignment === 'ZOMBIE') {
+            const zombieIntro = findZombieIntro();
+            if (zombieIntro) return zombieIntro;
+        }
+
         const canonicalIntro = allMissions.find((mission) =>
             mission.id === 'm_intro_0'
             && (mission.alignment === playerAlignment || mission.alignment === 'BOTH' || !mission.alignment)

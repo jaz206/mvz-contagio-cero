@@ -38,30 +38,47 @@ const normalizeComparableText = (value?: string) => (
         .toLowerCase()
 );
 
-const isMh0Mission = (mission: Mission) => {
+const isHeroMissionZero = (mission: Mission) => {
     const normalizedTitle = normalizeComparableText(mission.title);
     return mission.id === 'm_intro_0'
         || normalizedTitle.includes('mh0')
-        || normalizedTitle.includes('cadenas rotas')
-        || normalizedTitle.includes('mision 0')
-        || normalizedTitle.includes('mission 0');
+        || normalizedTitle.includes('cadenas rotas');
 };
 
-const collapseMh0Duplicates = (missions: Mission[]): Mission[] => {
-    const mh0Candidates = missions.filter(isMh0Mission);
-    if (mh0Candidates.length <= 1) return missions;
+const isZombieMissionZero = (mission: Mission) => {
+    const normalizedTitle = normalizeComparableText(mission.title);
+    return normalizedTitle.includes('mz0')
+        || (
+            mission.alignment === 'ZOMBIE'
+            && mission.type === 'INTRODUCTORY'
+            && mission.isIntroMission === true
+        );
+};
 
-    const canonicalMission = mh0Candidates.find((mission) => mission.id === 'm_intro_0')
-        || mh0Candidates.find((mission) => (mission.status || 'PUBLISHED') === 'PUBLISHED')
-        || mh0Candidates[0];
+const collapseMissionZeroFamily = (
+    missions: Mission[],
+    predicate: (mission: Mission) => boolean,
+    preferredId?: string
+) => {
+    const candidates = missions.filter(predicate);
+    if (candidates.length <= 1) return missions;
+
+    const canonicalMission = (preferredId ? candidates.find((mission) => mission.id === preferredId) : null)
+        || candidates.find((mission) => (mission.status || 'PUBLISHED') === 'PUBLISHED')
+        || candidates[0];
 
     const duplicateIds = new Set(
-        mh0Candidates
+        candidates
             .filter((mission) => mission.id !== canonicalMission.id)
             .map((mission) => mission.id)
     );
 
     return missions.filter((mission) => !duplicateIds.has(mission.id));
+};
+
+const collapseMissionZeroDuplicates = (missions: Mission[]) => {
+    const withoutHeroDuplicates = collapseMissionZeroFamily(missions, isHeroMissionZero, 'm_intro_0');
+    return collapseMissionZeroFamily(withoutHeroDuplicates, isZombieMissionZero);
 };
 
 const normalizeMission = (id: string, data: Partial<Mission>): Mission => {
@@ -157,7 +174,7 @@ export const getMissionRepository = async (): Promise<Mission[]> => {
 
     try {
         const missions = await loadRawMissionRepository();
-        return collapseMh0Duplicates(missions);
+        return collapseMissionZeroDuplicates(missions);
     } catch (error) {
         console.error('Error fetching missions:', error);
         return [];
@@ -206,17 +223,17 @@ export const syncInitialMissionRepository = async (): Promise<Mission[]> => {
 
         const repository = await loadRawMissionRepository();
         const mh0Base = initialMissions.find((mission) => mission.id === 'm_intro_0');
-        const mh0Candidates = repository.filter(isMh0Mission);
+        const mh0Candidates = repository.filter(isHeroMissionZero);
 
         if (!mh0Base || mh0Candidates.length <= 1) {
-            return collapseMh0Duplicates(repository);
+            return collapseMissionZeroDuplicates(repository);
         }
 
         const canonicalMission = mh0Candidates.find((mission) => mission.id === 'm_intro_0') || mh0Base;
         const duplicateMissions = mh0Candidates.filter((mission) => mission.id !== canonicalMission.id);
 
         if (duplicateMissions.length === 0) {
-            return collapseMh0Duplicates(repository);
+            return collapseMissionZeroDuplicates(repository);
         }
 
         const duplicateIds = new Set(duplicateMissions.map((mission) => mission.id));
@@ -270,7 +287,7 @@ export const syncInitialMissionRepository = async (): Promise<Mission[]> => {
 
         await repairBatch.commit();
 
-        return await getMissionRepository();
+        return collapseMissionZeroDuplicates(await getMissionRepository());
     } catch (error) {
         console.error('Error syncing initial mission repository:', error);
         return initialMissions;
