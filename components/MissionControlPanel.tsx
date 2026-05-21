@@ -21,6 +21,59 @@ type ViewMode = 'LIST' | 'MAP';
 const DEFAULT_NODE_WIDTH = 190;
 const DEFAULT_NODE_HEIGHT = 104;
 
+const FACTION_STATES = {
+    magneto: new Set(['Washington', 'Oregon', 'California', 'Nevada', 'Idaho', 'Montana', 'Wyoming', 'Utah', 'Arizona', 'Colorado', 'Alaska', 'Hawaii']),
+    kingpin: new Set(['Maine', 'New Hampshire', 'Vermont', 'New York', 'Massachusetts', 'Rhode Island', 'Connecticut', 'New Jersey', 'Pennsylvania', 'Delaware', 'Maryland', 'West Virginia', 'Virginia', 'District of Columbia']),
+    hulk: new Set(['North Dakota', 'South Dakota', 'Nebraska', 'Kansas', 'Oklahoma', 'Texas', 'New Mexico', 'Minnesota', 'Iowa', 'Missouri', 'Wisconsin', 'Illinois', 'Michigan', 'Indiana', 'Ohio']),
+    doom: new Set(['Arkansas', 'Louisiana', 'Mississippi', 'Alabama', 'Tennessee', 'Kentucky', 'Georgia', 'Florida', 'South Carolina', 'North Carolina'])
+};
+
+const getFactionForState = (state: string) => {
+    if (FACTION_STATES.magneto.has(state)) return 'magneto';
+    if (FACTION_STATES.kingpin.has(state)) return 'kingpin';
+    if (FACTION_STATES.hulk.has(state)) return 'hulk';
+    if (FACTION_STATES.doom.has(state)) return 'doom';
+    return 'neutral';
+};
+
+const FACTION_STYLES = {
+    magneto: {
+        label: 'MAGNETO',
+        edge: 'border-red-700',
+        badge: 'border-red-700 text-red-300',
+        glow: 'shadow-[0_0_20px_rgba(185,28,28,0.25)]',
+        line: 'rgba(248,113,113,0.65)'
+    },
+    kingpin: {
+        label: 'KINGPIN',
+        edge: 'border-purple-700',
+        badge: 'border-purple-700 text-purple-300',
+        glow: 'shadow-[0_0_20px_rgba(126,34,206,0.25)]',
+        line: 'rgba(192,132,252,0.65)'
+    },
+    hulk: {
+        label: 'HULK',
+        edge: 'border-lime-700',
+        badge: 'border-lime-700 text-lime-300',
+        glow: 'shadow-[0_0_20px_rgba(101,163,13,0.25)]',
+        line: 'rgba(163,230,53,0.65)'
+    },
+    doom: {
+        label: 'DOOM',
+        edge: 'border-cyan-700',
+        badge: 'border-cyan-700 text-cyan-300',
+        glow: 'shadow-[0_0_20px_rgba(8,145,178,0.25)]',
+        line: 'rgba(103,232,249,0.65)'
+    },
+    neutral: {
+        label: 'NEUTRAL',
+        edge: 'border-slate-600',
+        badge: 'border-slate-600 text-slate-300',
+        glow: 'shadow-[0_0_20px_rgba(100,116,139,0.18)]',
+        line: 'rgba(148,163,184,0.45)'
+    }
+} as const;
+
 const getDefaultPosition = (index: number) => ({
     x: 80 + ((index % 4) * 240),
     y: 90 + (Math.floor(index / 4) * 150)
@@ -57,6 +110,7 @@ export const MissionControlPanel: React.FC<MissionControlPanelProps> = ({
     const [creatingMission, setCreatingMission] = useState(false);
     const [selectedMissionId, setSelectedMissionId] = useState<string | null>(null);
     const [selectedPrereqToAdd, setSelectedPrereqToAdd] = useState('');
+    const [connectMode, setConnectMode] = useState(false);
     const [savingInspector, setSavingInspector] = useState(false);
     const [dragState, setDragState] = useState<{
         id: string;
@@ -188,6 +242,11 @@ export const MissionControlPanel: React.FC<MissionControlPanelProps> = ({
         });
     }, [missions, selectedMission]);
 
+    useEffect(() => {
+        setSelectedPrereqToAdd('');
+        setConnectMode(false);
+    }, [selectedMissionId]);
+
     if (!isOpen) return null;
 
     const replaceMission = (updatedMission: Mission) => {
@@ -261,11 +320,42 @@ export const MissionControlPanel: React.FC<MissionControlPanelProps> = ({
         });
     };
 
+    const handleMapMissionClick = async (mission: Mission) => {
+        if (!connectMode || !selectedMission || !canEdit) {
+            setSelectedMissionId(mission.id);
+            return;
+        }
+
+        if (mission.id === selectedMission.id) {
+            setSelectedMissionId(mission.id);
+            return;
+        }
+
+        if (!canLinkMissions(selectedMission, mission)) {
+            alert(language === 'es'
+                ? 'Esas misiones no se pueden conectar por el bando que tienen.'
+                : 'Those missions cannot be linked because of their alignment.');
+            return;
+        }
+
+        const alreadyLinked = (selectedMission.prereqs || []).includes(mission.id);
+        const nextPrereqs = alreadyLinked
+            ? (selectedMission.prereqs || []).filter((item) => item !== mission.id)
+            : [...(selectedMission.prereqs || []), mission.id];
+
+        await applyMissionPatch(selectedMission.id, {
+            prereq: nextPrereqs[0] || undefined,
+            prereqs: nextPrereqs
+        });
+    };
+
     const startDragging = (event: React.MouseEvent<HTMLDivElement>, mission: Mission) => {
         if (viewMode !== 'MAP') return;
 
         const currentPosition = draftPositions[mission.id] || mission.mapPosition || getDefaultPosition(0);
-        setSelectedMissionId(mission.id);
+        if (!connectMode) {
+            setSelectedMissionId(mission.id);
+        }
         setDragState({
             id: mission.id,
             originX: currentPosition.x,
@@ -384,12 +474,14 @@ export const MissionControlPanel: React.FC<MissionControlPanelProps> = ({
                                     const status = normalizeStatus(mission);
                                     const prereqCount = mission.prereqs?.length || 0;
                                     const isSelected = mission.id === selectedMissionId;
+                                    const faction = getFactionForState(mission.location.state);
+                                    const factionStyle = FACTION_STYLES[faction];
 
                                     return (
                                         <div
                                             key={mission.id}
                                             onClick={() => setSelectedMissionId(mission.id)}
-                                            className={`flex cursor-pointer flex-col gap-3 border p-4 transition-colors ${isSelected ? 'border-cyan-500 bg-cyan-950/20' : 'border-slate-800 bg-slate-900/40 hover:bg-slate-900/70'}`}
+                                            className={`flex cursor-pointer flex-col gap-3 border-l-4 p-4 transition-colors ${factionStyle.edge} ${factionStyle.glow} ${isSelected ? 'border-cyan-500 bg-cyan-950/20' : 'border-y border-r border-slate-800 bg-slate-900/40 hover:bg-slate-900/70'}`}
                                         >
                                             <div className="flex items-start justify-between gap-4">
                                                 <div className="min-w-0">
@@ -406,6 +498,7 @@ export const MissionControlPanel: React.FC<MissionControlPanelProps> = ({
                                             </div>
 
                                             <div className="flex flex-wrap gap-2 text-[10px] font-black uppercase">
+                                                <span className={`border px-2 py-1 ${factionStyle.badge}`}>{factionStyle.label}</span>
                                                 <span className="border border-cyan-800 px-2 py-1 text-cyan-300">{normalizeAlignment(mission)}</span>
                                                 <span className="border border-slate-700 px-2 py-1 text-slate-300">{mission.type || 'STANDARD'}</span>
                                                 {mission.isProtected && (
@@ -454,10 +547,13 @@ export const MissionControlPanel: React.FC<MissionControlPanelProps> = ({
                             </div>
                         ) : (
                             <div ref={canvasRef} className="relative h-full overflow-auto border border-slate-800 bg-[radial-gradient(circle_at_top,_rgba(8,47,73,0.35),_rgba(2,6,23,1)_65%)]">
-                                <div className="pointer-events-none absolute left-4 top-4 z-20 flex gap-2 text-[10px] uppercase tracking-[0.25em]">
+                                <div className="pointer-events-none absolute left-4 top-4 z-20 flex flex-wrap gap-2 text-[10px] uppercase tracking-[0.25em]">
                                     <span className="border border-emerald-700 bg-black/60 px-2 py-1 text-emerald-300">{language === 'es' ? 'Publicada' : 'Published'}</span>
                                     <span className="border border-yellow-700 bg-black/60 px-2 py-1 text-yellow-300">{language === 'es' ? 'Borrador' : 'Draft'}</span>
                                     <span className="border border-cyan-700 bg-black/60 px-2 py-1 text-cyan-300">{language === 'es' ? 'Arrastra para ordenar' : 'Drag to arrange'}</span>
+                                    {Object.entries(FACTION_STYLES).map(([key, value]) => (
+                                        <span key={key} className={`border bg-black/60 px-2 py-1 ${value.badge}`}>{value.label}</span>
+                                    ))}
                                 </div>
 
                                 <svg className="pointer-events-none absolute inset-0 h-full w-full">
@@ -472,6 +568,7 @@ export const MissionControlPanel: React.FC<MissionControlPanelProps> = ({
                                             const targetX = prereqMission.mapPosition.x + (DEFAULT_NODE_WIDTH / 2);
                                             const targetY = prereqMission.mapPosition.y + (DEFAULT_NODE_HEIGHT / 2);
                                             const isHighlighted = mission.id === selectedMissionId || prereqId === selectedMissionId;
+                                            const factionLine = FACTION_STYLES[getFactionForState(mission.location.state)].line;
 
                                             return (
                                                 <line
@@ -480,7 +577,7 @@ export const MissionControlPanel: React.FC<MissionControlPanelProps> = ({
                                                     y1={targetY}
                                                     x2={sourceX}
                                                     y2={sourceY}
-                                                    stroke={isHighlighted ? 'rgba(34,211,238,0.92)' : 'rgba(34,211,238,0.32)'}
+                                                    stroke={isHighlighted ? factionLine : 'rgba(148,163,184,0.28)'}
                                                     strokeWidth={isHighlighted ? '3' : '2'}
                                                     strokeDasharray={isHighlighted ? '0' : '8 6'}
                                                 />
@@ -492,16 +589,23 @@ export const MissionControlPanel: React.FC<MissionControlPanelProps> = ({
                                 {positionedMissions.map((mission) => {
                                     const status = normalizeStatus(mission);
                                     const isSelected = mission.id === selectedMissionId;
-                                    const borderTone = status === 'DRAFT' ? 'border-yellow-700' : 'border-emerald-700';
+                                    const faction = getFactionForState(mission.location.state);
+                                    const factionStyle = FACTION_STYLES[faction];
+                                    const borderTone = status === 'DRAFT' ? 'border-yellow-700' : factionStyle.edge;
                                     const textTone = status === 'DRAFT' ? 'text-yellow-300' : 'text-emerald-300';
+                                    const isLinkTarget = connectMode
+                                        && !!selectedMission
+                                        && mission.id !== selectedMission.id
+                                        && canLinkMissions(selectedMission, mission);
+                                    const isAlreadyLinked = !!selectedMission && (selectedMission.prereqs || []).includes(mission.id);
 
                                     return (
                                         <div
                                             key={mission.id}
                                             onMouseDown={(event) => startDragging(event, mission)}
-                                            onClick={() => setSelectedMissionId(mission.id)}
+                                            onClick={() => handleMapMissionClick(mission)}
                                             onDoubleClick={() => canEdit && setEditingMission(mission)}
-                                            className={`absolute flex cursor-move flex-col gap-2 border bg-slate-950/95 p-3 shadow-xl transition-colors ${isSelected ? 'border-cyan-400 ring-2 ring-cyan-500/40' : borderTone}`}
+                                            className={`absolute flex cursor-move flex-col gap-2 border bg-slate-950/95 p-3 shadow-xl transition-colors ${factionStyle.glow} ${isSelected ? 'border-cyan-400 ring-2 ring-cyan-500/40' : borderTone} ${isLinkTarget ? 'ring-2 ring-violet-500/30' : ''}`}
                                             style={{
                                                 left: mission.mapPosition?.x || 0,
                                                 top: mission.mapPosition?.y || 0,
@@ -520,9 +624,11 @@ export const MissionControlPanel: React.FC<MissionControlPanelProps> = ({
                                             </div>
 
                                             <div className="flex flex-wrap gap-2 text-[8px] font-black uppercase text-slate-300">
+                                                <span className={factionStyle.badge}>{factionStyle.label}</span>
                                                 <span>{normalizeAlignment(mission)}</span>
                                                 <span>•</span>
                                                 <span>{(mission.prereqs || []).length} {language === 'es' ? 'enlaces' : 'links'}</span>
+                                                {isAlreadyLinked && <span className="text-violet-300">{language === 'es' ? 'conectada' : 'linked'}</span>}
                                             </div>
 
                                             <div className="mt-auto flex gap-2">
@@ -560,6 +666,9 @@ export const MissionControlPanel: React.FC<MissionControlPanelProps> = ({
                             </div>
 
                             <div className="flex flex-wrap gap-2 text-[10px] font-black uppercase">
+                                <span className={`border px-2 py-1 ${FACTION_STYLES[getFactionForState(selectedMission.location.state)].badge}`}>
+                                    {FACTION_STYLES[getFactionForState(selectedMission.location.state)].label}
+                                </span>
                                 <span className="border border-cyan-800 px-2 py-1 text-cyan-300">{normalizeAlignment(selectedMission)}</span>
                                 <span className={`border px-2 py-1 ${normalizeStatus(selectedMission) === 'DRAFT' ? 'border-yellow-700 text-yellow-300' : 'border-emerald-700 text-emerald-300'}`}>
                                     {normalizeStatus(selectedMission) === 'DRAFT' ? (language === 'es' ? 'Borrador' : 'Draft') : (language === 'es' ? 'Publicada' : 'Published')}
@@ -622,6 +731,24 @@ export const MissionControlPanel: React.FC<MissionControlPanelProps> = ({
                                 <div className="text-[10px] font-black uppercase tracking-[0.3em] text-cyan-500">
                                     {language === 'es' ? 'Aparece despues de...' : 'Appears after...'}
                                 </div>
+                                {viewMode === 'MAP' && canEdit && (
+                                    <button
+                                        disabled={savingInspector}
+                                        onClick={() => setConnectMode((prev) => !prev)}
+                                        className={`w-full border px-3 py-2 text-[10px] font-black uppercase ${connectMode ? 'border-violet-500 bg-violet-950/30 text-violet-300' : 'border-slate-700 text-slate-200 hover:bg-slate-800'} disabled:opacity-40`}
+                                    >
+                                        {connectMode
+                                            ? (language === 'es' ? 'Salir de modo conectar' : 'Exit link mode')
+                                            : (language === 'es' ? 'Modo conectar desde el mapa' : 'Map link mode')}
+                                    </button>
+                                )}
+                                {connectMode && (
+                                    <div className="text-xs text-violet-300">
+                                        {language === 'es'
+                                            ? 'Ahora pulsa otra mision en el mapa para conectarla o quitar la conexion.'
+                                            : 'Now click another mission on the map to link or unlink it.'}
+                                    </div>
+                                )}
                                 <div className="flex gap-2">
                                     <select
                                         value={selectedPrereqToAdd}
