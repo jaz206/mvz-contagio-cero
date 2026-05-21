@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { IntroConfig, IntroSlide, StaffAccount, StaffPermissions } from '../types';
+import { IntroConfig, IntroSlide, StaffAccount, StaffPermissions, StoryConfig, StorySlide } from '../types';
 import {
     createEditorAccount,
     listStaffAccounts,
@@ -13,6 +13,8 @@ interface AdminStaffPanelProps {
     currentAdminUid?: string;
     introConfig: IntroConfig;
     onSaveIntroConfig: (config: IntroConfig) => Promise<void>;
+    storyConfig: StoryConfig;
+    onSaveStoryConfig: (config: StoryConfig) => Promise<void>;
 }
 
 const clonePermissions = (permissions: StaffPermissions): StaffPermissions => ({
@@ -25,8 +27,19 @@ const cloneIntroConfig = (config: IntroConfig): IntroConfig => ({
     zombie: config.zombie.map((slide) => ({ ...slide }))
 });
 
+const cloneStoryConfig = (config: StoryConfig): StoryConfig => ({
+    slides: config.slides.map((slide) => ({ ...slide }))
+});
+
 const createEmptySlide = (alignment: 'alive' | 'zombie', index: number): IntroSlide => ({
     id: `${alignment}_${Date.now()}_${index}`,
+    textEs: '',
+    textEn: '',
+    image: ''
+});
+
+const createEmptyStorySlide = (index: number): StorySlide => ({
+    id: `story_${Date.now()}_${index}`,
     textEs: '',
     textEn: '',
     image: ''
@@ -37,9 +50,11 @@ export const AdminStaffPanel: React.FC<AdminStaffPanelProps> = ({
     onClose,
     currentAdminUid,
     introConfig,
-    onSaveIntroConfig
+    onSaveIntroConfig,
+    storyConfig,
+    onSaveStoryConfig
 }) => {
-    const [activeTab, setActiveTab] = useState<'staff' | 'intro'>('staff');
+    const [activeTab, setActiveTab] = useState<'staff' | 'story' | 'intro'>('staff');
     const [introMode, setIntroMode] = useState<'alive' | 'zombie'>('alive');
 
     const [accounts, setAccounts] = useState<StaffAccount[]>([]);
@@ -53,6 +68,8 @@ export const AdminStaffPanel: React.FC<AdminStaffPanelProps> = ({
 
     const [introDraft, setIntroDraft] = useState<IntroConfig>(cloneIntroConfig(introConfig));
     const [savingIntro, setSavingIntro] = useState(false);
+    const [storyDraft, setStoryDraft] = useState<StoryConfig>(cloneStoryConfig(storyConfig));
+    const [savingStory, setSavingStory] = useState(false);
 
     const loadAccounts = async () => {
         setLoading(true);
@@ -72,8 +89,9 @@ export const AdminStaffPanel: React.FC<AdminStaffPanelProps> = ({
     useEffect(() => {
         if (!isOpen) return;
         setIntroDraft(cloneIntroConfig(introConfig));
+        setStoryDraft(cloneStoryConfig(storyConfig));
         loadAccounts();
-    }, [isOpen, introConfig]);
+    }, [isOpen, introConfig, storyConfig]);
 
     if (!isOpen) return null;
 
@@ -210,6 +228,61 @@ export const AdminStaffPanel: React.FC<AdminStaffPanelProps> = ({
         }
     };
 
+    const updateStorySlide = (slideIndex: number, field: keyof StorySlide, value: string) => {
+        setStoryDraft((prev) => {
+            const next = cloneStoryConfig(prev);
+            next.slides[slideIndex] = {
+                ...next.slides[slideIndex],
+                [field]: value
+            };
+            return next;
+        });
+    };
+
+    const moveStorySlide = (slideIndex: number, direction: -1 | 1) => {
+        setStoryDraft((prev) => {
+            const next = cloneStoryConfig(prev);
+            const nextIndex = slideIndex + direction;
+            if (nextIndex < 0 || nextIndex >= next.slides.length) return prev;
+
+            const slides = [...next.slides];
+            const [slide] = slides.splice(slideIndex, 1);
+            slides.splice(nextIndex, 0, slide);
+            next.slides = slides;
+            return next;
+        });
+    };
+
+    const removeStorySlide = (slideIndex: number) => {
+        setStoryDraft((prev) => {
+            const next = cloneStoryConfig(prev);
+            next.slides = next.slides.filter((_, index) => index !== slideIndex);
+            return next;
+        });
+    };
+
+    const addStorySlide = () => {
+        setStoryDraft((prev) => {
+            const next = cloneStoryConfig(prev);
+            next.slides = [...next.slides, createEmptyStorySlide(next.slides.length + 1)];
+            return next;
+        });
+    };
+
+    const handleSaveStory = async () => {
+        setSavingStory(true);
+        setError(null);
+
+        try {
+            await onSaveStoryConfig(storyDraft);
+        } catch (err) {
+            console.error(err);
+            setError('No se pudo guardar la historia inicial.');
+        } finally {
+            setSavingStory(false);
+        }
+    };
+
     const activeSlides = introDraft[introMode];
 
     return (
@@ -218,7 +291,7 @@ export const AdminStaffPanel: React.FC<AdminStaffPanelProps> = ({
                 <div className="flex items-center justify-between border-b border-cyan-900 p-4">
                     <div>
                         <div className="text-xs font-black uppercase tracking-[0.3em] text-cyan-600">Panel Admin</div>
-                        <h2 className="text-lg font-black uppercase tracking-widest text-white">Control de Editores e Intro</h2>
+                        <h2 className="text-lg font-black uppercase tracking-widest text-white">Control de Editores, Historia e Intro</h2>
                     </div>
                     <button onClick={onClose} className="border border-red-900 px-4 py-2 text-xs font-black uppercase text-red-400 hover:bg-red-900/20">
                         Cerrar
@@ -231,6 +304,12 @@ export const AdminStaffPanel: React.FC<AdminStaffPanelProps> = ({
                         className={`px-4 py-2 text-xs font-black uppercase ${activeTab === 'staff' ? 'border border-cyan-700 bg-cyan-900/20 text-cyan-300' : 'border border-slate-800 text-gray-400 hover:text-white'}`}
                     >
                         Editores
+                    </button>
+                    <button
+                        onClick={() => setActiveTab('story')}
+                        className={`px-4 py-2 text-xs font-black uppercase ${activeTab === 'story' ? 'border border-cyan-700 bg-cyan-900/20 text-cyan-300' : 'border border-slate-800 text-gray-400 hover:text-white'}`}
+                    >
+                        Historia Inicial
                     </button>
                     <button
                         onClick={() => setActiveTab('intro')}
@@ -337,6 +416,112 @@ export const AdminStaffPanel: React.FC<AdminStaffPanelProps> = ({
                                             )}
                                         </div>
                                     ))}
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                ) : activeTab === 'story' ? (
+                    <div className="flex min-h-0 flex-1 flex-col">
+                        <div className="flex items-center justify-between border-b border-slate-800 p-4">
+                            <div className="text-[11px] text-gray-400">
+                                Esta es la historia principal que sale antes de elegir bando.
+                            </div>
+
+                            <div className="flex items-center gap-2">
+                                <button
+                                    onClick={addStorySlide}
+                                    className="border border-cyan-800 bg-cyan-900/20 px-3 py-2 text-xs font-black uppercase text-cyan-300 hover:bg-cyan-900/40"
+                                >
+                                    Anadir Slide
+                                </button>
+                                <button
+                                    onClick={handleSaveStory}
+                                    disabled={savingStory}
+                                    className="border border-emerald-800 bg-emerald-900/20 px-3 py-2 text-xs font-black uppercase text-emerald-300 hover:bg-emerald-900/40 disabled:opacity-50"
+                                >
+                                    {savingStory ? 'Guardando...' : 'Guardar Historia'}
+                                </button>
+                            </div>
+                        </div>
+
+                        <div className="overflow-y-auto p-4">
+                            <div className="space-y-4">
+                                {storyDraft.slides.map((slide, index) => (
+                                    <div key={slide.id} className="space-y-4 border border-slate-800 bg-slate-900/40 p-4">
+                                        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                                            <div>
+                                                <div className="text-sm font-black uppercase tracking-widest text-white">
+                                                    Slide {index + 1}
+                                                </div>
+                                                <div className="text-[10px] uppercase tracking-[0.3em] text-cyan-600">
+                                                    Historia de apertura
+                                                </div>
+                                            </div>
+                                            <div className="flex items-center gap-2">
+                                                <button onClick={() => moveStorySlide(index, -1)} className="border border-slate-700 px-3 py-2 text-xs font-black uppercase text-slate-200 hover:bg-slate-800">
+                                                    Subir
+                                                </button>
+                                                <button onClick={() => moveStorySlide(index, 1)} className="border border-slate-700 px-3 py-2 text-xs font-black uppercase text-slate-200 hover:bg-slate-800">
+                                                    Bajar
+                                                </button>
+                                                <button onClick={() => removeStorySlide(index)} className="border border-red-900 px-3 py-2 text-xs font-black uppercase text-red-300 hover:bg-red-900/20">
+                                                    Borrar
+                                                </button>
+                                            </div>
+                                        </div>
+
+                                        <div className="grid gap-4 lg:grid-cols-[1fr_1fr_260px]">
+                                            <div className="space-y-2">
+                                                <div className="text-[10px] font-black uppercase tracking-[0.3em] text-cyan-500">Texto ES</div>
+                                                <textarea
+                                                    value={slide.textEs}
+                                                    onChange={(event) => updateStorySlide(index, 'textEs', event.target.value)}
+                                                    rows={8}
+                                                    className="w-full border border-slate-800 bg-black p-3 text-sm text-white outline-none focus:border-cyan-500"
+                                                />
+                                            </div>
+
+                                            <div className="space-y-2">
+                                                <div className="text-[10px] font-black uppercase tracking-[0.3em] text-cyan-500">Texto EN</div>
+                                                <textarea
+                                                    value={slide.textEn}
+                                                    onChange={(event) => updateStorySlide(index, 'textEn', event.target.value)}
+                                                    rows={8}
+                                                    className="w-full border border-slate-800 bg-black p-3 text-sm text-white outline-none focus:border-cyan-500"
+                                                />
+                                            </div>
+
+                                            <div className="space-y-2">
+                                                <div className="text-[10px] font-black uppercase tracking-[0.3em] text-cyan-500">Imagen</div>
+                                                <input
+                                                    value={slide.image}
+                                                    onChange={(event) => updateStorySlide(index, 'image', event.target.value)}
+                                                    placeholder="https://..."
+                                                    className="w-full border border-slate-800 bg-black p-3 text-sm text-white outline-none focus:border-cyan-500"
+                                                />
+                                                <div className="h-48 overflow-hidden border border-slate-800 bg-black">
+                                                    {slide.image ? (
+                                                        <img
+                                                            src={slide.image}
+                                                            alt={`Preview historia ${index + 1}`}
+                                                            className="h-full w-full object-cover"
+                                                            referrerPolicy="no-referrer"
+                                                        />
+                                                    ) : (
+                                                        <div className="flex h-full items-center justify-center text-xs uppercase tracking-[0.3em] text-gray-500">
+                                                            Sin imagen
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+
+                            {error && (
+                                <div className="mt-4 border border-red-900 bg-red-950/30 p-3 text-xs text-red-300">
+                                    {error}
                                 </div>
                             )}
                         </div>

@@ -70,6 +70,8 @@ const GameLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
                 currentAdminUid={state.staffAccount?.uid}
                 introConfig={state.introConfig}
                 onSaveIntroConfig={actions.handleSaveIntroConfig}
+                storyConfig={state.storyConfig}
+                onSaveStoryConfig={actions.handleSaveStoryConfig}
             />
 
             {state.activeGlobalEvent && (
@@ -386,7 +388,7 @@ const GameContent: React.FC = () => {
         <Routes>
             <Route path="/" element={<LoginScreen onLocalAccess={actions.handleGuestLogin} language={lang} setLanguage={actions.setLang} />} />
 
-            <Route path="/story" element={<StoryMode language={lang} onComplete={actions.handleStoryChoice} onSkip={() => { actions.setPlayerAlignment('ALIVE'); if (state.user) { localStorage.setItem(`shield_intro_seen_${state.user.uid}`, 'true'); localStorage.setItem(`shield_alignment_${state.user.uid}`, 'ALIVE'); localStorage.setItem(`shield_tutorial_seen_${state.user.uid}`, 'true'); localStorage.setItem(`shield_flow_step_${state.user.uid}`, 'map'); } else { localStorage.setItem('shield_tutorial_seen_guest', 'true'); localStorage.setItem('shield_flow_step_guest', 'map'); } const core = GAME_EXPANSIONS.find((item) => item.id === 'core_box'); if (core) actions.setHeroes(core.heroes); navigate('/map'); }} startAtChoice={state.startStoryAtChoice} />} />
+            <Route path="/story" element={<StoryMode language={lang} slides={state.storyConfig.slides} onComplete={actions.handleStoryChoice} onSkip={() => { actions.setPlayerAlignment('ALIVE'); if (state.user) { localStorage.setItem(`shield_intro_seen_${state.user.uid}`, 'true'); localStorage.setItem(`shield_alignment_${state.user.uid}`, 'ALIVE'); localStorage.setItem(`shield_tutorial_seen_${state.user.uid}`, 'true'); localStorage.setItem(`shield_flow_step_${state.user.uid}`, 'map'); } else { localStorage.setItem('shield_tutorial_seen_guest', 'true'); localStorage.setItem('shield_flow_step_guest', 'map'); } const core = GAME_EXPANSIONS.find((item) => item.id === 'core_box'); if (core) actions.setHeroes(core.heroes); navigate('/map'); }} startAtChoice={state.startStoryAtChoice} />} />
 
             <Route path="/setup" element={effectiveAlignment ? (shouldSkipSetup ? <Navigate to={setupExitRoute} replace /> : <ExpansionSelector language={lang} playerAlignment={effectiveAlignment} onConfirm={actions.handleExpansionConfirm} onBack={() => { actions.setPlayerAlignment(null); actions.setStartStoryAtChoice(true); if (state.user) { localStorage.removeItem(`shield_alignment_${state.user.uid}`); localStorage.setItem(`shield_flow_step_${state.user.uid}`, 'story'); } else { localStorage.setItem('shield_flow_step_guest', 'story'); } navigate('/story'); }} ownedExpansions={state.ownedExpansions} onToggleExpansion={actions.toggleExpansion} onToggleAllExpansions={actions.toggleAllExpansions} />) : <Navigate to="/" />} />
 

@@ -136,9 +136,20 @@ export interface IntroSlide {
   image: string;
 }
 
+export interface StorySlide {
+  id: string;
+  textEs: string;
+  textEn: string;
+  image: string;
+}
+
 export interface IntroConfig {
   alive: IntroSlide[];
   zombie: IntroSlide[];
+}
+
+export interface StoryConfig {
+  slides: StorySlide[];
 }
 
 export interface USATopoJSON {

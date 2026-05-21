@@ -1,17 +1,22 @@
 import React, { useState, useEffect } from 'react';
 import { translations, Language } from '../translations';
 import { useTypewriter } from '../hooks/useTypewriter';
+import { StorySlide } from '../types';
 
 interface StoryModeProps {
     language: Language;
     onComplete: (choice: 'ALIVE' | 'ZOMBIE') => void;
     onSkip: () => void;
     startAtChoice?: boolean;
+    slides?: StorySlide[];
 }
 
-export const StoryMode: React.FC<StoryModeProps> = ({ language, onComplete, onSkip, startAtChoice = false }) => {
+export const StoryMode: React.FC<StoryModeProps> = ({ language, onComplete, onSkip, startAtChoice = false, slides: customSlides }) => {
     const t = translations[language].story;
-    const slides = t.slides;
+    const slides = customSlides?.map((slide) => ({
+        text: language === 'es' ? slide.textEs : slide.textEn || slide.textEs,
+        image: slide.image
+    })) || t.slides;
 
     const [currentIndex, setCurrentIndex] = useState(startAtChoice ? slides.length : 0);
     const [isFolderOpen, setIsFolderOpen] = useState(false);

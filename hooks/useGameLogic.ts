@@ -5,11 +5,12 @@ import { auth } from '../firebaseConfig';
 import { translations, Language } from '../translations';
 import { getHeroTemplates } from '../services/heroService';
 import { getDefaultIntroConfig, getIntroConfig, saveIntroConfig } from '../services/introService';
+import { getDefaultStoryConfig, getStoryConfig, saveStoryConfig } from '../services/storyService';
 import { getCustomMissions, deleteMissionInDB } from '../services/missionService';
 import { getUserProfile, resetUserProfiles, saveUserProfile } from '../services/userService';
 import { logout, signInEditor } from '../services/authService';
 import { ensureAdminStaffAccount, getStaffAccount } from '../services/staffService';
-import { Mission, Hero, WorldStage, GlobalEvent, HeroTemplate, StaffAccount, StaffPermissions, IntroConfig } from '../types';
+import { Mission, Hero, WorldStage, GlobalEvent, HeroTemplate, StaffAccount, StaffPermissions, IntroConfig, StoryConfig } from '../types';
 import { GAME_EXPANSIONS } from '../data/gameContent';
 import { getInitialMissions } from '../data/initialMissions';
 
@@ -158,6 +159,7 @@ export const useGameLogic = () => {
     const [showTutorial, setShowTutorial] = useState(false);
     const [isStartingCampaign, setIsStartingCampaign] = useState(false);
     const [introConfig, setIntroConfig] = useState<IntroConfig>(getDefaultIntroConfig());
+    const [storyConfig, setStoryConfig] = useState<StoryConfig>(getDefaultStoryConfig());
     const [expandedZones, setExpandedZones] = useState<Set<string>>(new Set(['kingpin', 'magneto', 'hulk', 'doom', 'neutral']));
     const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
     const [ownedExpansions, setOwnedExpansions] = useState<Set<string>>(new Set(['core_box']));
@@ -190,6 +192,15 @@ export const useGameLogic = () => {
         };
 
         loadIntroConfig();
+    }, []);
+
+    useEffect(() => {
+        const loadStoryConfig = async () => {
+            const loadedStoryConfig = await getStoryConfig();
+            setStoryConfig(loadedStoryConfig);
+        };
+
+        loadStoryConfig();
     }, []);
 
     useEffect(() => {
@@ -764,6 +775,11 @@ export const useGameLogic = () => {
         setIntroConfig(nextIntroConfig);
     };
 
+    const handleSaveStoryConfig = async (nextStoryConfig: StoryConfig) => {
+        await saveStoryConfig(nextStoryConfig);
+        setStoryConfig(nextStoryConfig);
+    };
+
     const handleRestartCampaign = async () => {
         const currentUid = user?.uid;
 
@@ -986,6 +1002,7 @@ export const useGameLogic = () => {
             showTutorial,
             isStartingCampaign,
             introConfig,
+            storyConfig,
             expandedZones,
             isSidebarCollapsed,
             ownedExpansions,
@@ -1046,6 +1063,7 @@ export const useGameLogic = () => {
             handleResetProgress,
             handleRestartCampaign,
             handleSaveIntroConfig,
+            handleSaveStoryConfig,
             handleEventAcknowledge,
             handleToggleHeroObjective,
             handleTransformHero,
