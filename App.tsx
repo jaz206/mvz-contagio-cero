@@ -26,6 +26,11 @@ const GameLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const navigate = useNavigate();
     const [showUserMenu, setShowUserMenu] = React.useState(false);
     const { lang, playerAlignment, completedMissionIds, isSaving, tickerMessage, worldStage, staffPermissions, isFullAdmin } = state;
+    const currentUserLabel = state.staffAccount?.displayName
+        || state.staffAccount?.email
+        || state.user?.displayName
+        || state.user?.email
+        || (state.isGuest ? 'MODO LOCAL' : 'SIN SESION');
 
     const t = translations[lang];
     const totalMissions = state.customMissions.length + 7;
@@ -152,6 +157,14 @@ const GameLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
                         <button onClick={() => actions.setLang(lang === 'es' ? 'en' : 'es')} className="text-xs border border-cyan-700 px-2 py-1 hover:bg-cyan-900/50 transition-colors">
                             {lang.toUpperCase()}
                         </button>
+                        <div className="hidden xl:flex flex-col items-end mr-1">
+                            <span className="text-[8px] font-bold tracking-[0.3em] text-cyan-700 uppercase">
+                                {lang === 'es' ? 'Sesión' : 'Session'}
+                            </span>
+                            <span className="max-w-[220px] truncate text-[10px] font-mono text-cyan-200">
+                                {currentUserLabel}
+                            </span>
+                        </div>
                         {isFullAdmin && (
                             <button onClick={() => actions.setShowAdminPanel(true)} className="text-xs bg-cyan-900/30 text-cyan-300 border border-cyan-700 px-3 py-1 hover:bg-cyan-900/50 transition-colors">
                                 ADMIN
@@ -344,6 +357,20 @@ const GameContent: React.FC = () => {
     const currentFlowStep = state.user
         ? localStorage.getItem(`shield_flow_step_${state.user.uid}`)
         : localStorage.getItem('shield_flow_step_guest');
+    const setupExitRoute = currentFlowStep === 'mission0'
+        ? '/mission0'
+        : currentFlowStep === 'tutorial'
+            ? '/tutorial'
+            : currentFlowStep === 'map'
+                ? '/map'
+                : '/intro';
+    const shouldSkipSetup = !!effectiveAlignment
+        && heroes.length > 0
+        && (state.isStartingCampaign
+            || currentFlowStep === 'intro'
+            || currentFlowStep === 'mission0'
+            || currentFlowStep === 'tutorial'
+            || currentFlowStep === 'map');
 
     React.useEffect(() => {
         if (location.pathname === '/setup' && routeAlignment && playerAlignment !== routeAlignment) {
@@ -361,11 +388,11 @@ const GameContent: React.FC = () => {
 
             <Route path="/story" element={<StoryMode language={lang} onComplete={actions.handleStoryChoice} onSkip={() => { actions.setPlayerAlignment('ALIVE'); if (state.user) { localStorage.setItem(`shield_intro_seen_${state.user.uid}`, 'true'); localStorage.setItem(`shield_alignment_${state.user.uid}`, 'ALIVE'); localStorage.setItem(`shield_tutorial_seen_${state.user.uid}`, 'true'); localStorage.setItem(`shield_flow_step_${state.user.uid}`, 'map'); } else { localStorage.setItem('shield_tutorial_seen_guest', 'true'); localStorage.setItem('shield_flow_step_guest', 'map'); } const core = GAME_EXPANSIONS.find((item) => item.id === 'core_box'); if (core) actions.setHeroes(core.heroes); navigate('/map'); }} startAtChoice={state.startStoryAtChoice} />} />
 
-            <Route path="/setup" element={effectiveAlignment ? (state.isStartingCampaign && heroes.length > 0 ? <Navigate to="/intro" replace /> : <ExpansionSelector language={lang} playerAlignment={effectiveAlignment} onConfirm={actions.handleExpansionConfirm} onBack={() => { actions.setPlayerAlignment(null); actions.setStartStoryAtChoice(true); if (state.user) { localStorage.removeItem(`shield_alignment_${state.user.uid}`); localStorage.setItem(`shield_flow_step_${state.user.uid}`, 'story'); } else { localStorage.setItem('shield_flow_step_guest', 'story'); } navigate('/story'); }} ownedExpansions={state.ownedExpansions} onToggleExpansion={actions.toggleExpansion} onToggleAllExpansions={actions.toggleAllExpansions} />) : <Navigate to="/" />} />
+            <Route path="/setup" element={effectiveAlignment ? (shouldSkipSetup ? <Navigate to={setupExitRoute} replace /> : <ExpansionSelector language={lang} playerAlignment={effectiveAlignment} onConfirm={actions.handleExpansionConfirm} onBack={() => { actions.setPlayerAlignment(null); actions.setStartStoryAtChoice(true); if (state.user) { localStorage.removeItem(`shield_alignment_${state.user.uid}`); localStorage.setItem(`shield_flow_step_${state.user.uid}`, 'story'); } else { localStorage.setItem('shield_flow_step_guest', 'story'); } navigate('/story'); }} ownedExpansions={state.ownedExpansions} onToggleExpansion={actions.toggleExpansion} onToggleAllExpansions={actions.toggleAllExpansions} />) : <Navigate to="/" />} />
 
             <Route path="/intro" element={effectiveAlignment ? <IntroSequence language={lang} playerAlignment={effectiveAlignment} slides={effectiveAlignment === 'ZOMBIE' ? state.introConfig.zombie : state.introConfig.alive} onComplete={() => { actions.setIsStartingCampaign(false); if (state.introMission && !hasCompletedIntroMission) { if (state.user) { localStorage.setItem(`shield_flow_step_${state.user.uid}`, 'mission0'); } else { localStorage.setItem('shield_flow_step_guest', 'mission0'); } navigate('/mission0'); } else if (!hasSeenTutorial) { if (state.user) { localStorage.removeItem(`shield_setup_done_${state.user.uid}`); localStorage.setItem(`shield_flow_step_${state.user.uid}`, 'tutorial'); } else { localStorage.removeItem('shield_setup_done_guest'); localStorage.setItem('shield_flow_step_guest', 'tutorial'); } navigate('/tutorial'); } else { if (state.user) { localStorage.removeItem(`shield_setup_done_${state.user.uid}`); localStorage.setItem(`shield_flow_step_${state.user.uid}`, 'map'); } else { localStorage.removeItem('shield_setup_done_guest'); localStorage.setItem('shield_flow_step_guest', 'map'); } navigate('/map'); } }} /> : <Navigate to="/" />} />
 
-            <Route path="/mission0" element={(effectiveAlignment && state.introMission) ? <MissionModal mission={state.introMission} isOpen={true} disableClose={!hasCompletedIntroMission} onClose={() => { if (hasCompletedIntroMission) { navigate(hasSeenTutorial ? '/map' : '/tutorial'); } }} onComplete={async () => { await actions.handleMissionComplete(state.introMission!.id); if (state.user) { localStorage.removeItem(`shield_setup_done_${state.user.uid}`); localStorage.setItem(`shield_flow_step_${state.user.uid}`, hasSeenTutorial ? 'map' : 'tutorial'); } else { localStorage.removeItem('shield_setup_done_guest'); localStorage.setItem('shield_flow_step_guest', hasSeenTutorial ? 'map' : 'tutorial'); } navigate(hasSeenTutorial ? '/map' : '/tutorial'); }} language={lang} isCompleted={hasCompletedIntroMission} /> : <Navigate to="/map" />} />
+            <Route path="/mission0" element={(effectiveAlignment && state.introMission) ? <MissionModal mission={state.introMission} isOpen={true} onClose={() => { if (state.user) { localStorage.setItem(`shield_flow_step_${state.user.uid}`, 'map'); } else { localStorage.setItem('shield_flow_step_guest', 'map'); } navigate('/map'); }} onComplete={async () => { await actions.handleMissionComplete(state.introMission!.id); if (state.user) { localStorage.removeItem(`shield_setup_done_${state.user.uid}`); localStorage.setItem(`shield_flow_step_${state.user.uid}`, hasSeenTutorial ? 'map' : 'tutorial'); } else { localStorage.removeItem('shield_setup_done_guest'); localStorage.setItem('shield_flow_step_guest', hasSeenTutorial ? 'map' : 'tutorial'); } navigate(hasSeenTutorial ? '/map' : '/tutorial'); }} language={lang} isCompleted={hasCompletedIntroMission} /> : <Navigate to="/map" />} />
 
             <Route
                 path="/map"

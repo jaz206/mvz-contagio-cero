@@ -49,6 +49,12 @@ const getSetupDoneKey = (uid?: string | null) => uid ? `shield_setup_done_${uid}
 const getFlowStepKey = (uid?: string | null) => uid ? `shield_flow_step_${uid}` : 'shield_flow_step_guest';
 const getCampaignCacheKey = (uid?: string | null) => uid ? `shield_campaign_cache_${uid}` : 'shield_campaign_cache_guest';
 type FlowStep = 'story' | 'setup' | 'intro' | 'mission0' | 'tutorial' | 'map';
+type CampaignCache = { heroes: Hero[]; completedMissionIds: string[]; omegaCylinders: number };
+type StoredCampaignProgress = CampaignCache | {
+    heroes: Hero[];
+    completedMissionIds: string[];
+    resources?: { omegaCylinders?: number };
+};
 
 const getSavedFlowStep = (uid?: string | null): FlowStep | null => {
     const saved = localStorage.getItem(getFlowStepKey(uid));
@@ -70,7 +76,7 @@ const clearFlowStep = (uid?: string | null) => {
     localStorage.removeItem(getFlowStepKey(uid));
 };
 
-const readCampaignCache = (uid?: string | null): { heroes: Hero[]; completedMissionIds: string[]; omegaCylinders: number } | null => {
+const readCampaignCache = (uid?: string | null): CampaignCache | null => {
     const raw = localStorage.getItem(getCampaignCacheKey(uid));
     if (!raw) return null;
 
@@ -101,6 +107,14 @@ const writeCampaignCache = (
 
 const clearCampaignCache = (uid?: string | null) => {
     localStorage.removeItem(getCampaignCacheKey(uid));
+};
+
+const getStoredOmegaCylinders = (progress: StoredCampaignProgress) => {
+    if ('omegaCylinders' in progress) {
+        return progress.omegaCylinders;
+    }
+
+    return progress.resources?.omegaCylinders || 0;
 };
 
 export const useGameLogic = () => {
@@ -299,7 +313,7 @@ export const useGameLogic = () => {
                     if (fallbackProfile) {
                         setHeroes(fallbackProfile.heroes);
                         setCompletedMissionIds(new Set(fallbackProfile.completedMissionIds));
-                        setOmegaCylinders(fallbackProfile.resources.omegaCylinders);
+                        setOmegaCylinders(getStoredOmegaCylinders(fallbackProfile));
                     }
                     setShowStory(false);
                     setShowTutorial(false);
@@ -312,7 +326,7 @@ export const useGameLogic = () => {
                     if (fallbackProfile) {
                         setHeroes(fallbackProfile.heroes);
                         setCompletedMissionIds(new Set(fallbackProfile.completedMissionIds));
-                        setOmegaCylinders(fallbackProfile.resources.omegaCylinders);
+                        setOmegaCylinders(getStoredOmegaCylinders(fallbackProfile));
                     }
                     setShowStory(false);
                     setShowTutorial(false);
@@ -325,7 +339,7 @@ export const useGameLogic = () => {
                     if (fallbackProfile) {
                         setHeroes(fallbackProfile.heroes);
                         setCompletedMissionIds(new Set(fallbackProfile.completedMissionIds));
-                        setOmegaCylinders(fallbackProfile.resources.omegaCylinders);
+                        setOmegaCylinders(getStoredOmegaCylinders(fallbackProfile));
                     }
                     setShowStory(false);
                     setShowTutorial(true);
@@ -338,7 +352,7 @@ export const useGameLogic = () => {
                     if (fallbackProfile) {
                         setHeroes(fallbackProfile.heroes);
                         setCompletedMissionIds(new Set(fallbackProfile.completedMissionIds));
-                        setOmegaCylinders(fallbackProfile.resources.omegaCylinders);
+                        setOmegaCylinders(getStoredOmegaCylinders(fallbackProfile));
                     } else {
                         setHeroes(resolvedAlignment === 'ZOMBIE' ? coreExpansion?.zombieHeroes || [] : coreHeroes);
                         setCompletedMissionIds(new Set());

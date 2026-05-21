@@ -38,6 +38,7 @@ export const MissionModal: React.FC<MissionModalProps> = ({
     const [isTyping, setIsTyping] = useState(false);
     const t = translations[language].missionModal;
     const timeoutsRef = useRef<NodeJS.Timeout[]>([]);
+    const isPdfAttachment = mission.pdfUrl?.toLowerCase().includes('.pdf') ?? false;
 
     useEffect(() => {
         if (reportSuccess) {
@@ -126,7 +127,7 @@ export const MissionModal: React.FC<MissionModalProps> = ({
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
             <div className="absolute inset-0 bg-slate-950/60 backdrop-blur-md" onClick={disableClose ? undefined : onClose} />
 
-            {showPdf && mission.pdfUrl && (
+            {showPdf && mission.pdfUrl && isPdfAttachment && (
                 <DraggablePdfWindow
                     url={mission.pdfUrl}
                     title={`DOC CLASIFICADO: ${mission.title}`}
@@ -184,11 +185,18 @@ export const MissionModal: React.FC<MissionModalProps> = ({
                             {mission.pdfUrl && (
                                 <div className="mb-6 animate-fade-in">
                                     <button
-                                        onClick={() => setShowPdf(true)}
+                                        onClick={() => {
+                                            if (isPdfAttachment) {
+                                                setShowPdf(true);
+                                                return;
+                                            }
+
+                                            window.open(mission.pdfUrl, '_blank', 'noopener,noreferrer');
+                                        }}
                                         className="w-full py-3 bg-red-900/20 border border-red-500/50 hover:bg-red-900/40 hover:border-red-500 text-red-300 font-bold tracking-widest flex items-center justify-center gap-3 transition-all group shadow-[0_0_15px_rgba(220,38,38,0.2)]"
                                     >
                                         <span className="text-xl group-hover:scale-110 transition-transform">PDF</span>
-                                        <span>ABRIR DOCUMENTO CLASIFICADO</span>
+                                        <span>{language === 'es' ? 'ABRIR ANEXO CLASIFICADO' : 'OPEN CLASSIFIED ATTACHMENT'}</span>
                                     </button>
                                 </div>
                             )}
