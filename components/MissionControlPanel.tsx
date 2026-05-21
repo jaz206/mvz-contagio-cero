@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Language } from '../translations';
-import { Mission, MissionStatus } from '../types';
+import { Mission, MissionStatus, MissionType } from '../types';
 import { MissionEditor } from './MissionEditor';
 import { deleteMissionInDB, getCustomMissions, syncInitialMissionRepository, updateMissionInDB } from '../services/missionService';
 
@@ -17,9 +17,22 @@ interface MissionControlPanelProps {
 
 type AlignmentFilter = 'ALL' | 'ALIVE' | 'ZOMBIE' | 'BOTH';
 type ViewMode = 'LIST' | 'MAP';
+type BulkAlignmentValue = 'UNCHANGED' | 'ALIVE' | 'ZOMBIE' | 'BOTH';
+type BulkStatusValue = 'UNCHANGED' | MissionStatus;
+type BulkTypeValue = 'UNCHANGED' | MissionType;
 
 const DEFAULT_NODE_WIDTH = 190;
 const DEFAULT_NODE_HEIGHT = 104;
+const MISSION_TYPE_OPTIONS: MissionType[] = [
+    'STANDARD',
+    'INTRODUCTORY',
+    'SHIELD_BASE',
+    'BOSS_KINGPIN',
+    'BOSS_MAGNETO',
+    'BOSS_DOOM',
+    'BOSS_HULK',
+    'GALACTUS'
+];
 
 const FACTION_STATES = {
     magneto: new Set(['Washington', 'Oregon', 'California', 'Nevada', 'Idaho', 'Montana', 'Wyoming', 'Utah', 'Arizona', 'Colorado', 'Alaska', 'Hawaii']),
@@ -112,6 +125,11 @@ export const MissionControlPanel: React.FC<MissionControlPanelProps> = ({
     const [selectedPrereqToAdd, setSelectedPrereqToAdd] = useState('');
     const [connectMode, setConnectMode] = useState(false);
     const [savingInspector, setSavingInspector] = useState(false);
+    const [selectedMissionIds, setSelectedMissionIds] = useState<string[]>([]);
+    const [bulkAlignment, setBulkAlignment] = useState<BulkAlignmentValue>('UNCHANGED');
+    const [bulkStatus, setBulkStatus] = useState<BulkStatusValue>('UNCHANGED');
+    const [bulkType, setBulkType] = useState<BulkTypeValue>('UNCHANGED');
+    const [bulkSaving, setBulkSaving] = useState(false);
     const [dragState, setDragState] = useState<{
         id: string;
         originX: number;
@@ -128,6 +146,7 @@ export const MissionControlPanel: React.FC<MissionControlPanelProps> = ({
         try {
             const loaded = withSync ? await syncInitialMissionRepository() : await getCustomMissions();
             setMissions(loaded);
+            setSelectedMissionIds((prev) => prev.filter((missionId) => loaded.some((mission) => mission.id === missionId)));
             setSelectedMissionId((prev) => {
                 if (!prev) return loaded[0]?.id || null;
                 return loaded.some((mission) => mission.id === prev) ? prev : loaded[0]?.id || null;
@@ -226,6 +245,10 @@ export const MissionControlPanel: React.FC<MissionControlPanelProps> = ({
         }));
     }, [draftPositions, visibleMissions]);
 
+    const selectedMissions = useMemo(() => {
+        return missions.filter((mission) => selectedMissionIds.includes(mission.id));
+    }, [missions, selectedMissionIds]);
+
     const missionById = useMemo(() => {
         return new Map(missions.map((mission) => [mission.id, mission]));
     }, [missions]);
@@ -259,6 +282,10 @@ export const MissionControlPanel: React.FC<MissionControlPanelProps> = ({
         setConnectMode(false);
     }, [selectedMissionId]);
 
+    useEffect(() => {
+        setSelectedMissionIds((prev) => prev.filter((missionId) => missions.some((mission) => mission.id === missionId)));
+    }, [missions]);
+
     if (!isOpen) return null;
 
     const replaceMission = (updatedMission: Mission) => {
@@ -281,6 +308,65 @@ export const MissionControlPanel: React.FC<MissionControlPanelProps> = ({
             alert(language === 'es' ? 'No se pudo guardar el cambio.' : 'Could not save the change.');
         } finally {
             setSavingInspector(false);
+        }
+    };
+
+    const toggleMissionSelection = (missionId: string) => {
+        setSelectedMissionIds((prev) => (
+            prev.includes(missionId)
+                ? prev.filter((item) => item !== missionId)
+                : [...prev, missionId]
+        ));
+    };
+
+    const handleSelectAllVisible = () => {
+        setSelectedMissionIds(visibleMissions.map((mission) => mission.id));
+    };
+
+    const handleClearSelection = () => {
+        setSelectedMissionIds([]);
+    };
+
+    const handleApplyBulkChanges = async () => {
+        if (!canEdit) return;
+
+        if (selectedMissions.length === 0) {
+            alert(language === 'es' ? 'Primero marca al menos una mision.' : 'Select at least one mission first.');
+            return;
+        }
+
+        const patch: Partial<Mission> = {};
+
+        if (bulkAlignment !== 'UNCHANGED') patch.alignment = bulkAlignment;
+        if (bulkStatus !== 'UNCHANGED') patch.status = bulkStatus;
+        if (bulkType !== 'UNCHANGED') patch.type = bulkType;
+
+        if (Object.keys(patch).length === 0) {
+            alert(language === 'es' ? 'Elige al menos un cambio antes de aplicar.' : 'Choose at least one change before applying.');
+            return;
+        }
+
+        setBulkSaving(true);
+
+        try {
+            await Promise.all(selectedMissions.map((mission) => updateMissionInDB(mission.id, patch)));
+
+            const selectedIds = new Set(selectedMissionIds);
+            const refreshed = missions.map((mission) => (
+                selectedIds.has(mission.id) ? { ...mission, ...patch } : mission
+            ));
+
+            setMissions(refreshed);
+            onRepositoryUpdated?.(refreshed);
+            setBulkAlignment('UNCHANGED');
+            setBulkStatus('UNCHANGED');
+            setBulkType('UNCHANGED');
+            alert(language === 'es' ? 'Cambios aplicados a las misiones marcadas.' : 'Changes applied to selected missions.');
+        } catch (error) {
+            console.error(error);
+            alert(language === 'es' ? 'No se pudieron aplicar los cambios en bloque.' : 'Could not apply bulk changes.');
+        } finally {
+            setBulkSaving(false);
         }
     };
 
@@ -478,6 +564,75 @@ export const MissionControlPanel: React.FC<MissionControlPanelProps> = ({
                         </div>
                     </div>
 
+                    {canEdit && (
+                        <div className="flex flex-wrap items-end gap-3 border-b border-slate-800 bg-slate-900/30 p-4">
+                            <div className="min-w-[160px]">
+                                <div className="mb-2 text-[10px] font-black uppercase tracking-[0.3em] text-cyan-500">
+                                    {language === 'es' ? 'Seleccion multiple' : 'Multi select'}
+                                </div>
+                                <div className="text-sm font-bold text-white">
+                                    {selectedMissionIds.length} {language === 'es' ? 'marcadas' : 'selected'}
+                                </div>
+                            </div>
+
+                            <select
+                                value={bulkAlignment}
+                                onChange={(event) => setBulkAlignment(event.target.value as BulkAlignmentValue)}
+                                className="border border-slate-800 bg-black p-3 text-xs font-black uppercase text-cyan-300 outline-none"
+                            >
+                                <option value="UNCHANGED">{language === 'es' ? 'Bando: sin cambio' : 'Alignment: no change'}</option>
+                                <option value="ALIVE">{language === 'es' ? 'Heroes' : 'Alive'}</option>
+                                <option value="ZOMBIE">{language === 'es' ? 'Zombis' : 'Zombie'}</option>
+                                <option value="BOTH">{language === 'es' ? 'Ambos' : 'Both'}</option>
+                            </select>
+
+                            <select
+                                value={bulkStatus}
+                                onChange={(event) => setBulkStatus(event.target.value as BulkStatusValue)}
+                                className="border border-slate-800 bg-black p-3 text-xs font-black uppercase text-cyan-300 outline-none"
+                            >
+                                <option value="UNCHANGED">{language === 'es' ? 'Publicacion: sin cambio' : 'Publication: no change'}</option>
+                                <option value="DRAFT">{language === 'es' ? 'Borrador' : 'Draft'}</option>
+                                <option value="PUBLISHED">{language === 'es' ? 'Publicada' : 'Published'}</option>
+                            </select>
+
+                            <select
+                                value={bulkType}
+                                onChange={(event) => setBulkType(event.target.value as BulkTypeValue)}
+                                className="border border-slate-800 bg-black p-3 text-xs font-black uppercase text-cyan-300 outline-none"
+                            >
+                                <option value="UNCHANGED">{language === 'es' ? 'Clasificacion: sin cambio' : 'Classification: no change'}</option>
+                                {MISSION_TYPE_OPTIONS.map((type) => (
+                                    <option key={type} value={type}>{type}</option>
+                                ))}
+                            </select>
+
+                            <button
+                                onClick={handleSelectAllVisible}
+                                className="border border-slate-700 px-4 py-3 text-[10px] font-black uppercase text-slate-200 hover:bg-slate-800"
+                            >
+                                {language === 'es' ? 'Marcar visibles' : 'Select visible'}
+                            </button>
+
+                            <button
+                                onClick={handleClearSelection}
+                                className="border border-slate-700 px-4 py-3 text-[10px] font-black uppercase text-slate-200 hover:bg-slate-800"
+                            >
+                                {language === 'es' ? 'Limpiar marca' : 'Clear selection'}
+                            </button>
+
+                            <button
+                                disabled={bulkSaving || selectedMissionIds.length === 0}
+                                onClick={handleApplyBulkChanges}
+                                className="border border-cyan-700 bg-cyan-900/20 px-4 py-3 text-[10px] font-black uppercase text-cyan-300 hover:bg-cyan-900/40 disabled:opacity-40"
+                            >
+                                {bulkSaving
+                                    ? (language === 'es' ? 'Aplicando...' : 'Applying...')
+                                    : (language === 'es' ? 'Aplicar cambios' : 'Apply changes')}
+                            </button>
+                        </div>
+                    )}
+
                     <div className="flex-1 overflow-hidden p-4">
                         {loading ? (
                             <div className="flex h-full items-center justify-center text-cyan-400">
@@ -489,6 +644,7 @@ export const MissionControlPanel: React.FC<MissionControlPanelProps> = ({
                                     const status = normalizeStatus(mission);
                                     const prereqCount = mission.prereqs?.length || 0;
                                     const isSelected = mission.id === selectedMissionId;
+                                    const isMarked = selectedMissionIds.includes(mission.id);
                                     const faction = getFactionForState(mission.location.state);
                                     const factionStyle = FACTION_STYLES[faction];
 
@@ -499,16 +655,36 @@ export const MissionControlPanel: React.FC<MissionControlPanelProps> = ({
                                             className={`flex cursor-pointer flex-col gap-3 border-l-4 p-4 transition-colors ${factionStyle.edge} ${factionStyle.glow} ${isSelected ? 'border-cyan-500 bg-cyan-950/20' : 'border-y border-r border-slate-800 bg-slate-900/40 hover:bg-slate-900/70'}`}
                                         >
                                             <div className="flex items-start justify-between gap-4">
-                                                <div className="min-w-0">
-                                                    <div className="truncate text-sm font-black uppercase tracking-wide text-white">
-                                                        {mission.title}
-                                                    </div>
-                                                    <div className="mt-1 text-[10px] uppercase tracking-[0.25em] text-cyan-600">
-                                                        {mission.id}
+                                                <div className="flex min-w-0 items-start gap-3">
+                                                    {canEdit && (
+                                                        <button
+                                                            onClick={(event) => {
+                                                                event.stopPropagation();
+                                                                toggleMissionSelection(mission.id);
+                                                            }}
+                                                            className={`mt-0.5 h-5 w-5 border text-[10px] font-black uppercase ${isMarked ? 'border-cyan-400 bg-cyan-500/20 text-cyan-300' : 'border-slate-700 text-slate-500 hover:border-cyan-700 hover:text-cyan-300'}`}
+                                                        >
+                                                            {isMarked ? 'X' : ''}
+                                                        </button>
+                                                    )}
+                                                    <div className="min-w-0">
+                                                        <div className="truncate text-sm font-black uppercase tracking-wide text-white">
+                                                            {mission.title}
+                                                        </div>
+                                                        <div className="mt-1 text-[10px] uppercase tracking-[0.25em] text-cyan-600">
+                                                            {mission.id}
+                                                        </div>
                                                     </div>
                                                 </div>
-                                                <div className={`border px-2 py-1 text-[10px] font-black uppercase ${status === 'DRAFT' ? 'border-yellow-700 text-yellow-300' : 'border-emerald-700 text-emerald-300'}`}>
-                                                    {status === 'DRAFT' ? (language === 'es' ? 'Borrador' : 'Draft') : (language === 'es' ? 'Publicada' : 'Published')}
+                                                <div className="flex items-center gap-2">
+                                                    {isMarked && (
+                                                        <div className="border border-cyan-700 px-2 py-1 text-[10px] font-black uppercase text-cyan-300">
+                                                            {language === 'es' ? 'Marcada' : 'Selected'}
+                                                        </div>
+                                                    )}
+                                                    <div className={`border px-2 py-1 text-[10px] font-black uppercase ${status === 'DRAFT' ? 'border-yellow-700 text-yellow-300' : 'border-emerald-700 text-emerald-300'}`}>
+                                                        {status === 'DRAFT' ? (language === 'es' ? 'Borrador' : 'Draft') : (language === 'es' ? 'Publicada' : 'Published')}
+                                                    </div>
                                                 </div>
                                             </div>
 
@@ -604,6 +780,7 @@ export const MissionControlPanel: React.FC<MissionControlPanelProps> = ({
                                 {positionedMissions.map((mission) => {
                                     const status = normalizeStatus(mission);
                                     const isSelected = mission.id === selectedMissionId;
+                                    const isMarked = selectedMissionIds.includes(mission.id);
                                     const faction = getFactionForState(mission.location.state);
                                     const factionStyle = FACTION_STYLES[faction];
                                     const borderTone = status === 'DRAFT' ? 'border-yellow-700' : factionStyle.edge;
@@ -633,8 +810,25 @@ export const MissionControlPanel: React.FC<MissionControlPanelProps> = ({
                                                     <div className="truncate text-[11px] font-black uppercase text-white">{mission.title}</div>
                                                     <div className="truncate text-[9px] uppercase tracking-[0.25em] text-cyan-600">{mission.id}</div>
                                                 </div>
-                                                <div className={`border px-2 py-1 text-[8px] font-black uppercase ${textTone} ${borderTone}`}>
-                                                    {status === 'DRAFT' ? 'D' : 'P'}
+                                                <div className="flex items-center gap-1">
+                                                    {canEdit && (
+                                                        <button
+                                                            onMouseDown={(event) => {
+                                                                event.stopPropagation();
+                                                                event.preventDefault();
+                                                            }}
+                                                            onClick={(event) => {
+                                                                event.stopPropagation();
+                                                                toggleMissionSelection(mission.id);
+                                                            }}
+                                                            className={`h-5 w-5 border text-[9px] font-black uppercase ${isMarked ? 'border-cyan-400 bg-cyan-500/20 text-cyan-300' : 'border-slate-700 text-slate-500 hover:border-cyan-700 hover:text-cyan-300'}`}
+                                                        >
+                                                            {isMarked ? 'X' : ''}
+                                                        </button>
+                                                    )}
+                                                    <div className={`border px-2 py-1 text-[8px] font-black uppercase ${textTone} ${borderTone}`}>
+                                                        {status === 'DRAFT' ? 'D' : 'P'}
+                                                    </div>
                                                 </div>
                                             </div>
 
@@ -644,6 +838,7 @@ export const MissionControlPanel: React.FC<MissionControlPanelProps> = ({
                                                 <span>•</span>
                                                 <span>{(mission.prereqs || []).length} {language === 'es' ? 'enlaces' : 'links'}</span>
                                                 {isAlreadyLinked && <span className="text-violet-300">{language === 'es' ? 'conectada' : 'linked'}</span>}
+                                                {isMarked && <span className="text-cyan-300">{language === 'es' ? 'marcada' : 'selected'}</span>}
                                             </div>
 
                                             <div className="mt-auto flex gap-2">
