@@ -58,11 +58,52 @@ export const DraggablePdfWindow: React.FC<DraggablePdfWindowProps> = ({ url, tit
     const [isDragging, setIsDragging] = useState(false);
     const [isResizing, setIsResizing] = useState(false);
     const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
+    const [viewerUrl, setViewerUrl] = useState(() => getEmbedUrl(url));
+    const [isLoadingViewer, setIsLoadingViewer] = useState(false);
 
     const prevBounds = useRef({ x: 50, y: 50, w: 600, h: 500 });
 
     const embedUrl = getEmbedUrl(url);
     const isGoogleDrive = embedUrl.includes('drive.google.com');
+    const isGitHubPdf = embedUrl.includes('raw.githubusercontent.com');
+
+    useEffect(() => {
+        let objectUrl: string | null = null;
+
+        const prepareViewer = async () => {
+            setViewerUrl(embedUrl);
+
+            if (!isGitHubPdf) {
+                setIsLoadingViewer(false);
+                return;
+            }
+
+            setIsLoadingViewer(true);
+
+            try {
+                const response = await fetch(embedUrl);
+                if (!response.ok) {
+                    throw new Error('No se pudo cargar el PDF.');
+                }
+
+                const pdfBlob = await response.blob();
+                objectUrl = URL.createObjectURL(pdfBlob);
+                setViewerUrl(objectUrl);
+            } catch {
+                setViewerUrl(embedUrl);
+            } finally {
+                setIsLoadingViewer(false);
+            }
+        };
+
+        prepareViewer();
+
+        return () => {
+            if (objectUrl) {
+                URL.revokeObjectURL(objectUrl);
+            }
+        };
+    }, [embedUrl, isGitHubPdf]);
 
     const handleMouseDown = (e: React.MouseEvent) => {
         if (isMaximized) return;
@@ -191,19 +232,16 @@ export const DraggablePdfWindow: React.FC<DraggablePdfWindowProps> = ({ url, tit
                             title="PDF Viewer"
                             allow="autoplay"
                         />
+                    ) : isLoadingViewer ? (
+                        <div className="flex items-center justify-center h-full text-cyan-300 text-sm tracking-wide">
+                            Cargando anexo...
+                        </div>
                     ) : (
-                        <object
-                            data={embedUrl}
-                            type="application/pdf"
+                        <iframe
+                            src={viewerUrl}
                             className="w-full h-full border-0 bg-white"
-                        >
-                            <div className="flex flex-col items-center justify-center h-full text-gray-400 gap-4">
-                                <p>El navegador no puede mostrar este archivo directamente.</p>
-                                <a href={embedUrl} target="_blank" rel="noreferrer" className="px-4 py-2 bg-cyan-600 text-white rounded">
-                                    Abrir PDF
-                                </a>
-                            </div>
-                        </object>
+                            title="PDF Viewer"
+                        />
                     )}
 
                     {!isMaximized && (
