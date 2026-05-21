@@ -335,7 +335,7 @@ export const AdminStaffPanel: React.FC<AdminStaffPanelProps> = ({
                         onClick={() => setActiveTab('intro')}
                         className={`px-4 py-2 text-xs font-black uppercase ${activeTab === 'intro' ? 'border border-cyan-700 bg-cyan-900/20 text-cyan-300' : 'border border-slate-800 text-gray-400 hover:text-white'}`}
                     >
-                        Intro MH0
+                        Intro MH0 / MZ0
                     </button>
                 </div>
 
@@ -585,7 +585,7 @@ export const AdminStaffPanel: React.FC<AdminStaffPanelProps> = ({
                                     onClick={() => setIntroMode('zombie')}
                                     className={`px-4 py-2 text-xs font-black uppercase ${introMode === 'zombie' ? 'border border-lime-700 bg-lime-900/20 text-lime-300' : 'border border-slate-800 text-gray-400 hover:text-white'}`}
                                 >
-                                    Hunger Zombie
+                                    MZ0 Zombie
                                 </button>
                             </div>
 
@@ -620,7 +620,7 @@ export const AdminStaffPanel: React.FC<AdminStaffPanelProps> = ({
                                                     Slide {index + 1}
                                                 </div>
                                                 <div className="text-[10px] uppercase tracking-[0.3em] text-cyan-600">
-                                                    {introMode === 'alive' ? 'MH0 Protocol' : 'Hunger Log'}
+                                                    {introMode === 'alive' ? 'MH0 Protocol' : 'MZ0 Protocol'}
                                                 </div>
                                             </div>
                                             <div className="flex items-center gap-2">
