@@ -14,6 +14,23 @@ const isDbReady = (): boolean => {
     return true;
 };
 
+const stripUndefinedFields = <T,>(value: T): T => {
+    if (Array.isArray(value)) {
+        return value.map((item) => stripUndefinedFields(item)) as T;
+    }
+
+    if (value && typeof value === 'object') {
+        return Object.entries(value as Record<string, unknown>).reduce((acc, [key, item]) => {
+            if (item !== undefined) {
+                acc[key] = stripUndefinedFields(item);
+            }
+            return acc;
+        }, {} as Record<string, unknown>) as T;
+    }
+
+    return value;
+};
+
 const normalizeMission = (id: string, data: Partial<Mission>): Mission => {
     let normalizedPrereqs: string[] = [];
 
@@ -46,6 +63,47 @@ const normalizeMission = (id: string, data: Partial<Mission>): Mission => {
         mapPosition: data.mapPosition || undefined,
         isProtected: data.isProtected === true
     };
+};
+
+const buildMissionWritePayload = (data: Partial<Mission>, useDefaults = false): Record<string, unknown> => {
+    let normalizedPrereqs: string[] = [];
+
+    if (Array.isArray(data.prereqs)) {
+        normalizedPrereqs = data.prereqs.filter(Boolean);
+    } else if (data.prereq) {
+        normalizedPrereqs = [data.prereq];
+    }
+
+    const payload: Record<string, unknown> = {};
+    const assign = (key: string, value: unknown) => {
+        payload[key] = value;
+    };
+
+    if (useDefaults || 'title' in data) assign('title', data.title || 'MISION SIN NOMBRE');
+    if (useDefaults || 'description' in data) assign('description', Array.isArray(data.description) ? data.description : []);
+    if (useDefaults || 'objectives' in data) assign('objectives', Array.isArray(data.objectives) ? data.objectives : []);
+    if (useDefaults || 'location' in data) assign('location', data.location || { state: 'Ohio', coordinates: [-82.5, 40.2] });
+    if (useDefaults || 'threatLevel' in data) assign('threatLevel', data.threatLevel || 'INMINENTE');
+    if (useDefaults || 'type' in data) assign('type', data.type || 'STANDARD');
+    if (useDefaults || 'triggerStage' in data) assign('triggerStage', data.triggerStage || null);
+    if (useDefaults || 'alignment' in data) assign('alignment', data.alignment || 'BOTH');
+    if (useDefaults || 'requirements' in data) assign('requirements', Array.isArray(data.requirements) ? data.requirements : []);
+    if (useDefaults || 'specialRules' in data) assign('specialRules', Array.isArray(data.specialRules) ? data.specialRules : []);
+    if (useDefaults || 'setupInstructions' in data) assign('setupInstructions', Array.isArray(data.setupInstructions) ? data.setupInstructions : []);
+    if (useDefaults || 'pdfUrl' in data) assign('pdfUrl', data.pdfUrl || null);
+    if (useDefaults || 'layoutUrl' in data) assign('layoutUrl', data.layoutUrl || null);
+    if (useDefaults || 'outcomeText' in data) assign('outcomeText', data.outcomeText || null);
+    if (useDefaults || 'isIntroMission' in data) assign('isIntroMission', data.isIntroMission === true);
+    if (useDefaults || 'status' in data) assign('status', (data.status as MissionStatus) || (useDefaults ? 'PUBLISHED' : undefined));
+    if (useDefaults || 'mapPosition' in data) assign('mapPosition', data.mapPosition || null);
+    if (useDefaults || 'isProtected' in data) assign('isProtected', data.isProtected === true);
+
+    if (useDefaults || 'prereqs' in data || 'prereq' in data) {
+        assign('prereqs', normalizedPrereqs);
+        assign('prereq', normalizedPrereqs[0] || null);
+    }
+
+    return stripUndefinedFields(payload);
 };
 
 const buildInitialRepositorySeed = (): Mission[] => {
@@ -98,7 +156,7 @@ export const syncInitialMissionRepository = async (): Promise<Mission[]> => {
 
             if (docSnap.exists()) continue;
 
-            batch.set(docRef, mission);
+            batch.set(docRef, buildMissionWritePayload(mission, true));
             hasPendingSeed = true;
         }
 
@@ -117,13 +175,12 @@ export const createMissionInDB = async (missionData: Omit<Mission, 'id'>): Promi
     if (!db) throw new Error('DB no disponible');
 
     try {
-        const normalizedMission = normalizeMission(`mission_${Date.now()}`, {
+        const normalizedMission = buildMissionWritePayload({
             ...missionData,
             status: missionData.status || 'DRAFT',
             isProtected: false
-        });
-        const { id: _, ...payload } = normalizedMission;
-        const docRef = await addDoc(collection(db, MISSIONS_COLLECTION), payload);
+        }, true);
+        const docRef = await addDoc(collection(db, MISSIONS_COLLECTION), normalizedMission);
         return docRef.id;
     } catch (error) {
         console.error('Error creating mission:', error);
@@ -136,8 +193,7 @@ export const updateMissionInDB = async (id: string, missionData: Partial<Mission
 
     try {
         const docRef = doc(db, MISSIONS_COLLECTION, id);
-        const normalizedMission = normalizeMission(id, missionData);
-        const { id: _, prereq, ...dataToUpdate } = normalizedMission;
+        const dataToUpdate = buildMissionWritePayload(missionData, false);
         await setDoc(docRef, dataToUpdate, { merge: true });
     } catch (error) {
         console.error('Error updating mission:', error);
@@ -168,8 +224,7 @@ export const uploadLocalMissionsToDB = async (missions: Mission[]): Promise<void
             if (!mission.id) return;
 
             const docRef = doc(db, MISSIONS_COLLECTION, mission.id);
-            const normalizedMission = normalizeMission(mission.id, mission);
-            const { id: _, prereq, ...payload } = normalizedMission;
+            const payload = buildMissionWritePayload(mission, true);
             batch.set(docRef, payload, { merge: true });
             count += 1;
         });
