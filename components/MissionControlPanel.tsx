@@ -163,20 +163,32 @@ export const MissionControlPanel: React.FC<MissionControlPanelProps> = ({
         };
 
         const handleMouseUp = async () => {
+            const draggedMissionId = dragState.id;
             const droppedPosition = draftPositions[dragState.id];
             setDragState(null);
 
             if (!droppedPosition) return;
 
             try {
-                await updateMissionInDB(dragState.id, { mapPosition: droppedPosition });
+                await updateMissionInDB(draggedMissionId, { mapPosition: droppedPosition });
                 const refreshed = missions.map((mission) => (
-                    mission.id === dragState.id ? { ...mission, mapPosition: droppedPosition } : mission
+                    mission.id === draggedMissionId ? { ...mission, mapPosition: droppedPosition } : mission
                 ));
                 setMissions(refreshed);
+                setDraftPositions((prev) => {
+                    const next = { ...prev };
+                    delete next[draggedMissionId];
+                    return next;
+                });
                 onRepositoryUpdated?.(refreshed);
             } catch (error) {
                 console.error(error);
+                setDraftPositions((prev) => {
+                    const next = { ...prev };
+                    delete next[draggedMissionId];
+                    return next;
+                });
+                alert(language === 'es' ? 'No se pudo guardar la nueva posicion.' : 'Could not save the new position.');
             }
         };
 
@@ -351,6 +363,9 @@ export const MissionControlPanel: React.FC<MissionControlPanelProps> = ({
 
     const startDragging = (event: React.MouseEvent<HTMLDivElement>, mission: Mission) => {
         if (viewMode !== 'MAP') return;
+        if (event.button !== 0) return;
+
+        event.preventDefault();
 
         const currentPosition = draftPositions[mission.id] || mission.mapPosition || getDefaultPosition(0);
         if (!connectMode) {
@@ -546,7 +561,7 @@ export const MissionControlPanel: React.FC<MissionControlPanelProps> = ({
                                 })}
                             </div>
                         ) : (
-                            <div ref={canvasRef} className="relative h-full overflow-auto border border-slate-800 bg-[radial-gradient(circle_at_top,_rgba(8,47,73,0.35),_rgba(2,6,23,1)_65%)]">
+                            <div ref={canvasRef} className="relative h-full overflow-auto border border-slate-800 bg-[radial-gradient(circle_at_top,_rgba(8,47,73,0.35),_rgba(2,6,23,1)_65%)] select-none">
                                 <div className="pointer-events-none absolute left-4 top-4 z-20 flex flex-wrap gap-2 text-[10px] uppercase tracking-[0.25em]">
                                     <span className="border border-emerald-700 bg-black/60 px-2 py-1 text-emerald-300">{language === 'es' ? 'Publicada' : 'Published'}</span>
                                     <span className="border border-yellow-700 bg-black/60 px-2 py-1 text-yellow-300">{language === 'es' ? 'Borrador' : 'Draft'}</span>
@@ -605,7 +620,7 @@ export const MissionControlPanel: React.FC<MissionControlPanelProps> = ({
                                             onMouseDown={(event) => startDragging(event, mission)}
                                             onClick={() => handleMapMissionClick(mission)}
                                             onDoubleClick={() => canEdit && setEditingMission(mission)}
-                                            className={`absolute flex cursor-move flex-col gap-2 border bg-slate-950/95 p-3 shadow-xl transition-colors ${factionStyle.glow} ${isSelected ? 'border-cyan-400 ring-2 ring-cyan-500/40' : borderTone} ${isLinkTarget ? 'ring-2 ring-violet-500/30' : ''}`}
+                                            className={`absolute flex cursor-move flex-col gap-2 border bg-slate-950/95 p-3 shadow-xl transition-colors select-none ${factionStyle.glow} ${isSelected ? 'border-cyan-400 ring-2 ring-cyan-500/40' : borderTone} ${isLinkTarget ? 'ring-2 ring-violet-500/30' : ''}`}
                                             style={{
                                                 left: mission.mapPosition?.x || 0,
                                                 top: mission.mapPosition?.y || 0,

@@ -612,6 +612,13 @@ export const useGameLogic = () => {
     const introMission = useMemo(() => {
         if (!playerAlignment) return null;
 
+        const canonicalIntro = allMissions.find((mission) =>
+            mission.id === 'm_intro_0'
+            && (mission.alignment === playerAlignment || mission.alignment === 'BOTH' || !mission.alignment)
+        );
+
+        if (canonicalIntro) return canonicalIntro;
+
         const flaggedIntro = allMissions.find((mission) =>
             mission.isIntroMission === true &&
             (mission.alignment === playerAlignment || mission.alignment === 'BOTH')
