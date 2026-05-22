@@ -115,6 +115,12 @@ const getDefaultPosition = (index: number) => ({
 
 const normalizeAlignment = (mission: Mission) => mission.alignment || 'BOTH';
 const normalizeStatus = (mission: Mission) => mission.status || 'PUBLISHED';
+const normalizeMissionRole = (mission: Mission) => mission.missionRole || 'PRIMARY';
+const getMissionRoleLabel = (mission: Mission, language: Language) => (
+    normalizeMissionRole(mission) === 'OPTIONAL'
+        ? (language === 'es' ? 'Secundaria' : 'Optional')
+        : (language === 'es' ? 'Principal' : 'Primary')
+);
 
 const canLinkMissions = (source: Mission, target: Mission) => {
     const sourceAlignment = normalizeAlignment(source);
@@ -678,6 +684,7 @@ export const MissionControlPanel: React.FC<MissionControlPanelProps> = ({
                             <div className="grid h-full grid-cols-1 gap-4 overflow-y-auto md:grid-cols-2 xl:grid-cols-3">
                                 {visibleMissions.map((mission) => {
                                     const status = normalizeStatus(mission);
+                                    const missionRole = normalizeMissionRole(mission);
                                     const prereqCount = mission.prereqs?.length || 0;
                                     const isSelected = mission.id === selectedMissionId;
                                     const isMarked = selectedMissionIds.includes(mission.id);
@@ -727,6 +734,9 @@ export const MissionControlPanel: React.FC<MissionControlPanelProps> = ({
                                             <div className="flex flex-wrap gap-2 text-[10px] font-black uppercase">
                                                 <span className={`border px-2 py-1 ${factionStyle.badge}`}>{getMissionTypeZoneLabel(mission)}</span>
                                                 <span className="border border-cyan-800 px-2 py-1 text-cyan-300">{normalizeAlignment(mission)}</span>
+                                                <span className={`border px-2 py-1 ${missionRole === 'OPTIONAL' ? 'border-amber-700 text-amber-300' : 'border-sky-700 text-sky-300'}`}>
+                                                    {getMissionRoleLabel(mission, language)}
+                                                </span>
                                                 {mission.isProtected && (
                                                     <span className="border border-red-900 px-2 py-1 text-red-300">
                                                         {language === 'es' ? 'Protegida' : 'Protected'}
@@ -835,6 +845,7 @@ export const MissionControlPanel: React.FC<MissionControlPanelProps> = ({
 
                                 {positionedMissions.map((mission) => {
                                     const status = normalizeStatus(mission);
+                                    const missionRole = normalizeMissionRole(mission);
                                     const isSelected = mission.id === selectedMissionId;
                                     const isMarked = selectedMissionIds.includes(mission.id);
                                     const faction = getFactionForState(mission.location.state);
@@ -853,7 +864,7 @@ export const MissionControlPanel: React.FC<MissionControlPanelProps> = ({
                                             onMouseDown={(event) => startDragging(event, mission)}
                                             onClick={() => handleMapMissionClick(mission)}
                                             onDoubleClick={() => canEdit && setEditingMission(mission)}
-                                            className={`absolute flex cursor-move flex-col gap-2 border bg-slate-950/95 p-3 shadow-xl transition-colors select-none ${factionStyle.glow} ${isSelected ? 'border-cyan-400 ring-2 ring-cyan-500/40' : borderTone} ${isLinkTarget ? 'ring-2 ring-violet-500/30' : ''}`}
+                                            className={`absolute flex cursor-move flex-col gap-2 border bg-slate-950/95 p-3 shadow-xl transition-colors select-none ${factionStyle.glow} ${isSelected ? 'border-cyan-400 ring-2 ring-cyan-500/40' : borderTone} ${missionRole === 'OPTIONAL' ? 'border-dashed' : ''} ${isLinkTarget ? 'ring-2 ring-violet-500/30' : ''}`}
                                             style={{
                                                 left: mission.mapPosition?.x || 0,
                                                 top: mission.mapPosition?.y || 0,
@@ -891,6 +902,10 @@ export const MissionControlPanel: React.FC<MissionControlPanelProps> = ({
                                             <div className="flex flex-wrap gap-2 text-[8px] font-black uppercase text-slate-300">
                                                 <span className={factionStyle.badge}>{getMissionTypeZoneLabel(mission)}</span>
                                                 <span>{normalizeAlignment(mission)}</span>
+                                                <span>•</span>
+                                                <span className={missionRole === 'OPTIONAL' ? 'text-amber-300' : 'text-sky-300'}>
+                                                    {getMissionRoleLabel(mission, language)}
+                                                </span>
                                                 <span>•</span>
                                                 <span>{(mission.prereqs || []).length} {language === 'es' ? 'enlaces' : 'links'}</span>
                                                 {isAlreadyLinked && <span className="text-violet-300">{language === 'es' ? 'conectada' : 'linked'}</span>}
@@ -936,6 +951,9 @@ export const MissionControlPanel: React.FC<MissionControlPanelProps> = ({
                                     {getMissionTypeZoneLabel(selectedMission)}
                                 </span>
                                 <span className="border border-cyan-800 px-2 py-1 text-cyan-300">{normalizeAlignment(selectedMission)}</span>
+                                <span className={`border px-2 py-1 ${normalizeMissionRole(selectedMission) === 'OPTIONAL' ? 'border-amber-700 text-amber-300' : 'border-sky-700 text-sky-300'}`}>
+                                    {getMissionRoleLabel(selectedMission, language)}
+                                </span>
                                 <span className={`border px-2 py-1 ${normalizeStatus(selectedMission) === 'DRAFT' ? 'border-yellow-700 text-yellow-300' : 'border-emerald-700 text-emerald-300'}`}>
                                     {normalizeStatus(selectedMission) === 'DRAFT' ? (language === 'es' ? 'Borrador' : 'Draft') : (language === 'es' ? 'Publicada' : 'Published')}
                                 </span>

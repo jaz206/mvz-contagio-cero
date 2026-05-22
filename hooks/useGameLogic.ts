@@ -509,6 +509,15 @@ export const useGameLogic = () => {
     }, [allMissions, playerAlignment]);
 
     const visibleMissions = useMemo(() => {
+        const sortByCampaignRole = (missions: Mission[]) => (
+            [...missions].sort((a, b) => {
+                const roleA = a.missionRole || 'PRIMARY';
+                const roleB = b.missionRole || 'PRIMARY';
+                if (roleA !== roleB) return roleA === 'PRIMARY' ? -1 : 1;
+                return a.title.localeCompare(b.title, 'es');
+            })
+        );
+
         const alignmentFiltered = allMissions.filter((mission) => {
             if (!isEditorMode && (mission.status || 'PUBLISHED') === 'DRAFT') return false;
             if (!mission.alignment || mission.alignment === 'BOTH') return true;
@@ -524,9 +533,9 @@ export const useGameLogic = () => {
             });
         });
 
-        if (isEditorMode) return expansionFiltered;
+        if (isEditorMode) return sortByCampaignRole(expansionFiltered);
 
-        return expansionFiltered.filter((mission) => {
+        return sortByCampaignRole(expansionFiltered.filter((mission) => {
             const isCompleted = completedMissionIds.has(mission.id);
             if (isCompleted) return true;
 
@@ -557,7 +566,7 @@ export const useGameLogic = () => {
             }
 
             return isCompleted || prereqMet;
-        });
+        }));
     }, [allMissions, completedMissionIds, isEditorMode, worldStage, playerAlignment, ownedExpansions, introMission]);
 
     const checkGlobalEvents = (missionSet: Set<string>) => {

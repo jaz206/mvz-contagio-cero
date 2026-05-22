@@ -2,7 +2,7 @@ import { collection, getDocs, doc, writeBatch, addDoc, setDoc, deleteDoc, getDoc
 import { db } from '../firebaseConfig';
 import { translations } from '../translations';
 import { getInitialMissions } from '../data/initialMissions';
-import { Mission, MissionStatus } from '../types';
+import { Mission, MissionRole, MissionStatus } from '../types';
 
 const MISSIONS_COLLECTION = 'missions';
 
@@ -81,6 +81,14 @@ const collapseMissionZeroDuplicates = (missions: Mission[]) => {
     return collapseMissionZeroFamily(withoutHeroDuplicates, isZombieMissionZero);
 };
 
+const normalizeMissionRole = (missionId: string, data: Partial<Mission>): MissionRole => {
+    if (missionId === 'm_intro_0' || isHeroMissionZero({ id: missionId, ...data } as Mission) || isZombieMissionZero({ id: missionId, ...data } as Mission)) {
+        return 'PRIMARY';
+    }
+
+    return (data.missionRole as MissionRole) || 'PRIMARY';
+};
+
 const normalizeMission = (id: string, data: Partial<Mission>): Mission => {
     let normalizedPrereqs: string[] = [];
 
@@ -110,6 +118,7 @@ const normalizeMission = (id: string, data: Partial<Mission>): Mission => {
         outcomeText: data.outcomeText || undefined,
         isIntroMission: data.isIntroMission === true,
         status: (data.status as MissionStatus) || 'PUBLISHED',
+        missionRole: normalizeMissionRole(id, data),
         mapPosition: data.mapPosition || undefined,
         isProtected: data.isProtected === true
     };
@@ -145,6 +154,7 @@ const buildMissionWritePayload = (data: Partial<Mission>, useDefaults = false): 
     if (useDefaults || 'outcomeText' in data) assign('outcomeText', data.outcomeText || null);
     if (useDefaults || 'isIntroMission' in data) assign('isIntroMission', data.isIntroMission === true);
     if (useDefaults || 'status' in data) assign('status', (data.status as MissionStatus) || (useDefaults ? 'PUBLISHED' : undefined));
+    if (useDefaults || 'missionRole' in data) assign('missionRole', normalizeMissionRole(String((data as Mission).id || ''), data));
     if (useDefaults || 'mapPosition' in data) assign('mapPosition', data.mapPosition || null);
     if (useDefaults || 'isProtected' in data) assign('isProtected', data.isProtected === true);
 

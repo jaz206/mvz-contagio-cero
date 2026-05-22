@@ -69,6 +69,15 @@ const buildGroupedMissions = (
         else groups.neutral.push(mission);
     });
 
+    Object.keys(groups).forEach((key) => {
+        groups[key].sort((a, b) => {
+            const roleA = a.missionRole || 'PRIMARY';
+            const roleB = b.missionRole || 'PRIMARY';
+            if (roleA !== roleB) return roleA === 'PRIMARY' ? -1 : 1;
+            return a.title.localeCompare(b.title, 'es');
+        });
+    });
+
     return groups;
 };
 
@@ -355,6 +364,7 @@ const GameLayout: React.FC<{ children: React.ReactNode; publishedPreviewMode?: b
                                                             const isShield = mission.type === 'SHIELD_BASE';
                                                             const isIntro = mission.type === 'INTRODUCTORY';
                                                             const isBoss = mission.type && mission.type.startsWith('BOSS');
+                                                            const isOptional = (mission.missionRole || 'PRIMARY') === 'OPTIONAL';
                                                             let borderClass = 'border-yellow-500/30 bg-yellow-900/5 hover:bg-yellow-900/20';
                                                             let barClass = 'bg-yellow-500';
                                                             let textClass = 'text-yellow-200';
@@ -376,7 +386,12 @@ const GameLayout: React.FC<{ children: React.ReactNode; publishedPreviewMode?: b
                                                             return (
                                                                 <div key={mission.id} onClick={() => actions.handleMissionSelect(mission)} className={`p-2 border cursor-pointer transition-all group relative overflow-hidden ${borderClass}`}>
                                                                     <div className={`absolute left-0 top-0 bottom-0 w-1 ${barClass} group-hover:w-1.5 transition-all`} />
-                                                                    <div className={`text-xs font-bold ${textClass} group-hover:text-white uppercase tracking-wider pl-2 truncate`}>{mission.title || 'UNKNOWN MISSION'}</div>
+                                                                    <div className="flex items-center gap-2 pl-2">
+                                                                        <div className={`flex-1 text-xs font-bold ${textClass} group-hover:text-white uppercase tracking-wider truncate`}>{mission.title || 'UNKNOWN MISSION'}</div>
+                                                                        <span className={`text-[8px] font-black uppercase border px-1.5 py-0.5 ${isOptional ? 'border-amber-700 text-amber-300' : 'border-sky-700 text-sky-300'}`}>
+                                                                            {isOptional ? 'OP' : 'PR'}
+                                                                        </span>
+                                                                    </div>
                                                                 </div>
                                                             );
                                                         })}

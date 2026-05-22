@@ -40,6 +40,9 @@ export const MissionModal: React.FC<MissionModalProps> = ({
     const typingTimeoutsRef = useRef<NodeJS.Timeout[]>([]);
     const flowTimeoutsRef = useRef<NodeJS.Timeout[]>([]);
     const isPdfAttachment = mission.pdfUrl?.toLowerCase().includes('.pdf') ?? false;
+    const missionRoleLabel = (mission.missionRole || 'PRIMARY') === 'OPTIONAL'
+        ? (language === 'es' ? 'SECUNDARIA OPCIONAL' : 'OPTIONAL SIDE MISSION')
+        : (language === 'es' ? 'MISION PRINCIPAL' : 'MAIN MISSION');
 
     useEffect(() => {
         if (reportSuccess) {
@@ -176,6 +179,9 @@ export const MissionModal: React.FC<MissionModalProps> = ({
                         <div className="flex flex-wrap gap-2 text-[10px] font-mono font-bold text-cyan-500/80">
                             <span className="bg-cyan-950/30 px-3 py-1 border border-cyan-800/30 rounded-full tracking-tighter">OS_ZONE: {mission.location.state.toUpperCase()}</span>
                             <span className="bg-cyan-950/30 px-3 py-1 border border-cyan-800/30 rounded-full tracking-tighter">NAV_POS: {mission.location.coordinates[1].toFixed(4)}, {mission.location.coordinates[0].toFixed(4)}</span>
+                            <span className={`px-3 py-1 border rounded-full tracking-tighter ${(mission.missionRole || 'PRIMARY') === 'OPTIONAL' ? 'bg-amber-950/30 border-amber-700/40 text-amber-300' : 'bg-sky-950/30 border-sky-700/40 text-sky-300'}`}>
+                                {missionRoleLabel}
+                            </span>
                         </div>
                     </div>
 

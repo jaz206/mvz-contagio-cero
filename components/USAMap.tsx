@@ -574,6 +574,7 @@ export const USAMap: React.FC<USAMapProps> = ({
             const isShield = d.type === 'SHIELD_BASE';
             const isBoss = d.type && d.type.startsWith('BOSS');
             const isGalactus = d.type === 'GALACTUS';
+            const isOptional = (d.missionRole || 'PRIMARY') === 'OPTIONAL';
 
             let dotColor = '#eab308';
             let dotStroke = '#ca8a04';
@@ -594,19 +595,19 @@ export const USAMap: React.FC<USAMapProps> = ({
             }
 
             grp.select('.mission-dot')
-                .attr('r', isShield ? 4 : 5)
+                .attr('r', isOptional ? 4 : (isShield ? 4 : 5))
                 .attr('fill', isShield && !isCompleted ? '#0f172a' : dotColor)
                 .attr('stroke', dotStroke)
                 .attr('stroke-width', 2);
 
-            if (isShield) {
+            if (isShield || isOptional) {
                 grp.select('.mission-ring')
                     .style('display', 'block')
-                    .attr('r', 8)
+                    .attr('r', isOptional ? 7 : 8)
                     .attr('fill', 'none')
-                    .attr('stroke', '#06b6d4')
+                    .attr('stroke', isOptional ? '#f59e0b' : '#06b6d4')
                     .attr('stroke-width', 1.5)
-                    .attr('stroke-dasharray', isCompleted ? 'none' : '2,1');
+                    .attr('stroke-dasharray', isCompleted ? 'none' : (isOptional ? '3,2' : '2,1'));
             } else {
                 grp.select('.mission-ring').style('display', 'none');
             }
@@ -761,6 +762,11 @@ export const USAMap: React.FC<USAMapProps> = ({
                     </div>
                     <div className="text-base font-black text-white/90 mb-3 tracking-tight uppercase leading-tight">{tooltip.mission.title}</div>
                     <div className="flex flex-col gap-2">
+                        <div className={`text-[10px] font-bold ${((tooltip.mission.missionRole || 'PRIMARY') === 'OPTIONAL') ? 'text-amber-300' : 'text-sky-300'}`}>
+                            {((tooltip.mission.missionRole || 'PRIMARY') === 'OPTIONAL')
+                                ? (language === 'es' ? 'MISION SECUNDARIA OPCIONAL' : 'OPTIONAL SIDE MISSION')
+                                : (language === 'es' ? 'MISION PRINCIPAL' : 'MAIN MISSION')}
+                        </div>
                         {tooltip.mission.type === 'SHIELD_BASE' && (
                             <div className="flex items-center gap-2 text-[10px] text-cyan-400 font-bold">
                                 <span className="text-xs">🛡</span> S.H.I.E.L.D. ASSET DETECTED

@@ -69,6 +69,7 @@ export interface Objective {
 }
 
 export type MissionStatus = 'DRAFT' | 'PUBLISHED';
+export type MissionRole = 'PRIMARY' | 'OPTIONAL';
 
 export type MissionType =
   | 'STANDARD'
@@ -101,6 +102,7 @@ export interface Mission {
   outcomeText?: string;
   isIntroMission?: boolean;
   status?: MissionStatus;
+  missionRole?: MissionRole;
   mapPosition?: {
     x: number;
     y: number;

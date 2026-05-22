@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { translations, Language } from '../translations';
-import { Mission, Objective, WorldStage, MissionType, MissionStatus } from '../types';
+import { Mission, Objective, WorldStage, MissionType, MissionStatus, MissionRole } from '../types';
 import { createMissionInDB, updateMissionInDB } from '../services/missionService';
 import { fetchMissionPdfOptions, MissionPdfOption } from '../services/missionPdfRepositoryService';
 import { GAME_EXPANSIONS } from '../data/gameContent';
@@ -51,6 +51,7 @@ export const MissionEditor: React.FC<MissionEditorProps> = ({ isOpen, onClose, o
     const [alignment, setAlignment] = useState<'ALIVE' | 'ZOMBIE' | 'BOTH'>('BOTH');
     const [isIntroMission, setIsIntroMission] = useState(false);
     const [status, setStatus] = useState<MissionStatus>('DRAFT');
+    const [missionRole, setMissionRole] = useState<MissionRole>('PRIMARY');
 
     const [triggerStage, setTriggerStage] = useState<WorldStage>('NORMAL');
 
@@ -83,6 +84,7 @@ export const MissionEditor: React.FC<MissionEditorProps> = ({ isOpen, onClose, o
             setTriggerStage(initialData.triggerStage || 'NORMAL');
             setIsIntroMission(initialData.isIntroMission || false);
             setStatus(initialData.status || 'DRAFT');
+            setMissionRole(initialData.missionRole || 'PRIMARY');
 
             if (initialData.prereqs && initialData.prereqs.length > 0) {
                 setPrereqs(initialData.prereqs);
@@ -106,6 +108,7 @@ export const MissionEditor: React.FC<MissionEditorProps> = ({ isOpen, onClose, o
             setAlignment('BOTH');
             setIsIntroMission(false);
             setStatus('DRAFT');
+            setMissionRole('PRIMARY');
             setTriggerStage('NORMAL');
             setPrereqs([]);
             setObjectives([{ title: '', desc: '' }]);
@@ -203,6 +206,7 @@ export const MissionEditor: React.FC<MissionEditorProps> = ({ isOpen, onClose, o
             prereq: prereqs.length > 0 ? prereqs[0] : null,
             prereqs: prereqs,
             requirements,
+            missionRole: isLockedPrimaryMission ? 'PRIMARY' : missionRole,
             layoutUrl: layoutUrl.trim() || null,
             pdfUrl: pdfUrl.trim() || null, // GUARDAR PDF
             isProtected: initialData?.isProtected || false,
@@ -243,6 +247,11 @@ export const MissionEditor: React.FC<MissionEditorProps> = ({ isOpen, onClose, o
 
     const isZombie = alignment === 'ZOMBIE';
     const isBoth = alignment === 'BOTH';
+    const isLockedPrimaryMission = !!initialData && (
+        initialData.id === 'm_intro_0'
+        || (initialData.alignment === 'ZOMBIE' && initialData.isIntroMission === true)
+        || initialData.title.toUpperCase().includes('MZ0')
+    );
     const themeColor = isZombie ? 'lime' : (isBoth ? 'yellow' : 'cyan');
     const accentClass = isZombie ? 'text-lime-500' : (isBoth ? 'text-yellow-500' : 'text-cyan-500');
     const borderClass = isZombie ? 'border-lime-800' : (isBoth ? 'border-yellow-800' : 'border-cyan-800');
@@ -321,6 +330,24 @@ export const MissionEditor: React.FC<MissionEditorProps> = ({ isOpen, onClose, o
                                         <option value="DRAFT">BORRADOR</option>
                                         <option value="PUBLISHED">PUBLICADA</option>
                                     </select>
+                                </div>
+
+                                <div>
+                                    <label className={`text-[10px] ${accentClass} font-black block mb-1 uppercase tracking-widest`}>PESO EN LA CAMPAÑA</label>
+                                    <select
+                                        value={isLockedPrimaryMission ? 'PRIMARY' : missionRole}
+                                        onChange={e => setMissionRole(e.target.value as MissionRole)}
+                                        disabled={isLockedPrimaryMission}
+                                        className={`w-full bg-slate-950 border ${borderClass} p-2 text-white font-bold outline-none cursor-pointer text-xs disabled:opacity-60 disabled:cursor-not-allowed`}
+                                    >
+                                        <option value="PRIMARY">PRINCIPAL</option>
+                                        <option value="OPTIONAL">SECUNDARIA OPCIONAL</option>
+                                    </select>
+                                    {isLockedPrimaryMission && (
+                                        <div className="mt-2 text-[10px] text-emerald-400 uppercase tracking-widest">
+                                            MH0 y MZ0 siempre son principales.
+                                        </div>
+                                    )}
                                 </div>
 
                                 <div className={`p-4 border ${isIntroMission ? 'border-emerald-500 bg-emerald-900/10' : 'border-slate-800 bg-slate-900/20'} flex items-center gap-4 transition-all`}>
