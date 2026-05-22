@@ -539,18 +539,18 @@ export const USAMap: React.FC<USAMapProps> = ({
             });
 
         // --- GRUPOS DE MISIONES (SIMPLIFICADO) ---
-        const missionGroups = gMissions.selectAll('g.mission')
+        const missionGroups = gMissions.selectAll('g.mission-marker')
             .data(validMissions, (d: any) => d.id)
             .join(
                 enter => {
-                    const grp = enter.append('g').attr('class', 'mission cursor-pointer hover:opacity-100');
+                    const grp = enter.append('g').attr('class', 'mission-marker cursor-pointer hover:opacity-100');
                     grp.append('circle').attr('class', 'effect-shield-pulse');
                     grp.append('circle').attr('class', 'mission-ring');
                     grp.append('circle').attr('class', 'mission-dot');
                     return grp;
                 }
             )
-            .attr('class', d => `mission-marker cursor-pointer ${(d as any).factionId === 'UNDEAD' ? 'animate-glitch' : ''}`)
+            .attr('class', d => `mission-marker cursor-pointer hover:opacity-100 ${(d as any).factionId === 'UNDEAD' ? 'animate-glitch' : ''}`)
             .attr('transform', (d) => {
                 const coords = projection(d.location.coordinates);
                 return coords ? `translate(${coords[0]}, ${coords[1]}) scale(${1 / currentZoom})` : 'translate(-100,-100)';
