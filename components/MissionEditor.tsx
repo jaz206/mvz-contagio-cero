@@ -155,11 +155,6 @@ export const MissionEditor: React.FC<MissionEditorProps> = ({ isOpen, onClose, o
     const handleOpenPdfPicker = async () => {
         setIsPdfPickerOpen(true);
         setPdfPickerError('');
-
-        if (repoPdfOptions.length > 0) {
-            return;
-        }
-
         setPdfPickerLoading(true);
 
         try {
