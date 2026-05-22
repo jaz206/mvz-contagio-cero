@@ -22,7 +22,7 @@ import { GAME_EXPANSIONS } from './data/gameContent';
 const LOGO_SHIELD = 'https://i.pinimg.com/736x/63/1e/3a/631e3a68228c97963e78381ad11bf3bb.jpg';
 const LOGO_ZOMBIE = 'https://i.pinimg.com/736x/7f/31/38/7f31382d4a5c35daa4ba1768a366a917.jpg';
 
-const GameLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+const GameLayout: React.FC<{ children: React.ReactNode; publishedPreviewMode?: boolean }> = ({ children, publishedPreviewMode = false }) => {
     const { state, actions } = useGame();
     const navigate = useNavigate();
     const [showUserMenu, setShowUserMenu] = React.useState(false);
@@ -105,7 +105,7 @@ const GameLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
                     onReactivate={actions.handleMissionReactivate}
                     language={lang}
                     isCompleted={completedMissionIds.has(state.selectedMission.id)}
-                    isEditorMode={state.isEditorMode}
+                    isEditorMode={state.isEditorMode && !publishedPreviewMode}
                     onEdit={canEditMissions ? (mission) => {
                         actions.setMissionToEdit(mission);
                         actions.setShowMissionEditor(true);
@@ -359,6 +359,7 @@ const GameContent: React.FC = () => {
     const { state, actions } = useGame();
     const navigate = useNavigate();
     const location = useLocation();
+    const [previewPublishedMode, setPreviewPublishedMode] = React.useState(false);
     const { loading, loadingAuth, lang, playerAlignment, heroes, completedMissionIds, omegaCylinders, worldStage, isEditorMode, surferTurnCount, isFullAdmin, staffPermissions } = state;
     const routeAlignment = (location.state as { alignment?: 'ALIVE' | 'ZOMBIE' } | null)?.alignment || null;
     const effectiveAlignment = playerAlignment || routeAlignment;
@@ -385,12 +386,35 @@ const GameContent: React.FC = () => {
             || currentFlowStep === 'mission0'
             || currentFlowStep === 'tutorial'
             || currentFlowStep === 'map');
+    const isPublishedPreviewActive = isEditorMode && previewPublishedMode;
+    const publishedViewMissions = React.useMemo(
+        () => state.visibleMissions.filter((mission) => (mission.status || 'PUBLISHED') === 'PUBLISHED'),
+        [state.visibleMissions]
+    );
+    const mapMissions = isPublishedPreviewActive ? publishedViewMissions : state.visibleMissions;
+    const bunkerMissions = mapMissions.filter((mission) => mission && !completedMissionIds.has(mission.id));
 
     React.useEffect(() => {
         if (location.pathname === '/setup' && routeAlignment && playerAlignment !== routeAlignment) {
             actions.setPlayerAlignment(routeAlignment);
         }
     }, [actions, location.pathname, playerAlignment, routeAlignment]);
+
+    React.useEffect(() => {
+        if (!isEditorMode) {
+            setPreviewPublishedMode(false);
+        }
+    }, [isEditorMode]);
+
+    React.useEffect(() => {
+        if (
+            isPublishedPreviewActive
+            && state.selectedMission
+            && (state.selectedMission.status || 'PUBLISHED') !== 'PUBLISHED'
+        ) {
+            actions.setSelectedMission(null);
+        }
+    }, [actions, isPublishedPreviewActive, state.selectedMission]);
 
     if (loading || loadingAuth) {
         return <div className="bg-slate-950 text-cyan-500 h-screen flex items-center justify-center font-mono">LOADING SHIELD OS...</div>;
@@ -411,13 +435,19 @@ const GameContent: React.FC = () => {
             <Route
                 path="/map"
                 element={
-                    <GameLayout>
-                        <USAMap language={lang} missions={state.visibleMissions} completedMissionIds={completedMissionIds} onMissionComplete={actions.handleMissionComplete} onMissionSelect={actions.handleMissionSelect} onBunkerClick={() => navigate('/bunker')} factionStates={state.FACTION_STATES} playerAlignment={playerAlignment} worldStage={worldStage} surferTurnCount={surferTurnCount} />
+                    <GameLayout publishedPreviewMode={isPublishedPreviewActive}>
+                        <USAMap language={lang} missions={mapMissions} completedMissionIds={completedMissionIds} onMissionComplete={actions.handleMissionComplete} onMissionSelect={actions.handleMissionSelect} onBunkerClick={() => navigate('/bunker')} factionStates={state.FACTION_STATES} playerAlignment={playerAlignment} worldStage={worldStage} surferTurnCount={surferTurnCount} />
                         {isEditorMode && canManageMissions && (
                             <div className="absolute top-20 right-4 z-50 flex flex-col gap-2 bg-slate-900/95 p-4 border border-cyan-500 shadow-[0_0_20px_rgba(6,182,212,0.3)] rounded-sm min-w-[220px] max-h-[80vh] overflow-y-auto scrollbar-thin scrollbar-thumb-cyan-700">
                                 <h3 className="text-xs font-bold text-cyan-400 border-b border-cyan-800 pb-1 mb-2 tracking-widest uppercase">
                                     {isFullAdmin ? 'Admin' : 'Editor'} Misiones
                                 </h3>
+                                <button
+                                    onClick={() => setPreviewPublishedMode((prev) => !prev)}
+                                    className={`${isPublishedPreviewActive ? 'bg-emerald-900/50 hover:bg-emerald-800 text-emerald-200 border-emerald-700' : 'bg-slate-900/60 hover:bg-slate-800 text-slate-100 border-slate-700'} text-[10px] font-bold py-2 px-3 border uppercase tracking-wider transition-colors`}
+                                >
+                                    {isPublishedPreviewActive ? 'Volver a admin' : 'Modo publicado'}
+                                </button>
                                 {canCreateMissions && (
                                     <button onClick={() => actions.setShowMissionEditor(true)} className="bg-cyan-900/50 hover:bg-cyan-800 text-cyan-200 text-[10px] font-bold py-2 px-3 border border-cyan-700 uppercase tracking-wider transition-colors">
                                         + Crear Mision
@@ -432,6 +462,9 @@ const GameContent: React.FC = () => {
                                     </button>
                                 )}
                                 <div className="h-px bg-cyan-900 my-1" />
+                                <div className={`text-[9px] font-mono text-center border px-2 py-2 ${isPublishedPreviewActive ? 'border-emerald-700 text-emerald-300 bg-emerald-950/20' : 'border-cyan-900 text-cyan-400 bg-black/20'}`}>
+                                    {isPublishedPreviewActive ? 'Viendo modo publicado' : 'Viendo modo admin/editor'}
+                                </div>
                                 <div className="text-[9px] text-cyan-400 font-mono text-center">
                                     Borrado: {staffPermissions.missions.delete ? 'ACTIVO' : 'SOLO ADMIN'}
                                 </div>
@@ -454,7 +487,7 @@ const GameContent: React.FC = () => {
                 }
             />
 
-            <Route path="/bunker" element={<GameLayout><BunkerInterior heroes={heroes} missions={state.visibleMissions.filter((mission) => mission && !completedMissionIds.has(mission.id))} onAssign={(heroId, missionId) => { const heroIndex = heroes.findIndex((hero) => hero.id === heroId); if (heroIndex >= 0) { const nextHeroes = [...heroes]; nextHeroes[heroIndex] = { ...nextHeroes[heroIndex], status: 'DEPLOYED', assignedMissionId: missionId }; actions.setHeroes(nextHeroes); return true; } return false; }} onUnassign={(heroId) => { const heroIndex = heroes.findIndex((hero) => hero.id === heroId); if (heroIndex >= 0) { const nextHeroes = [...heroes]; nextHeroes[heroIndex] = { ...nextHeroes[heroIndex], status: 'AVAILABLE', assignedMissionId: null }; actions.setHeroes(nextHeroes); } }} onAddHero={(hero) => actions.setHeroes([...heroes, hero])} onToggleObjective={actions.handleToggleHeroObjective} onBack={() => navigate(currentFlowStep === 'tutorial' ? '/tutorial' : '/map')} language={lang} playerAlignment={playerAlignment} isEditorMode={isEditorMode} onTransformHero={actions.handleTransformHero} onTickerUpdate={actions.handleTickerUpdate} omegaCylinders={omegaCylinders} onFindCylinder={() => actions.setOmegaCylinders((prev) => prev + 1)} /></GameLayout>} />
+            <Route path="/bunker" element={<GameLayout publishedPreviewMode={isPublishedPreviewActive}><BunkerInterior heroes={heroes} missions={bunkerMissions} onAssign={(heroId, missionId) => { const heroIndex = heroes.findIndex((hero) => hero.id === heroId); if (heroIndex >= 0) { const nextHeroes = [...heroes]; nextHeroes[heroIndex] = { ...nextHeroes[heroIndex], status: 'DEPLOYED', assignedMissionId: missionId }; actions.setHeroes(nextHeroes); return true; } return false; }} onUnassign={(heroId) => { const heroIndex = heroes.findIndex((hero) => hero.id === heroId); if (heroIndex >= 0) { const nextHeroes = [...heroes]; nextHeroes[heroIndex] = { ...nextHeroes[heroIndex], status: 'AVAILABLE', assignedMissionId: null }; actions.setHeroes(nextHeroes); } }} onAddHero={(hero) => actions.setHeroes([...heroes, hero])} onToggleObjective={actions.handleToggleHeroObjective} onBack={() => navigate(currentFlowStep === 'tutorial' ? '/tutorial' : '/map')} language={lang} playerAlignment={playerAlignment} isEditorMode={!isPublishedPreviewActive && isEditorMode} onTransformHero={actions.handleTransformHero} onTickerUpdate={actions.handleTickerUpdate} omegaCylinders={omegaCylinders} onFindCylinder={() => actions.setOmegaCylinders((prev) => prev + 1)} /></GameLayout>} />
 
             <Route path="/tutorial" element={<div className="absolute inset-0 z-40"><USAMap language={lang} missions={state.visibleMissions} completedMissionIds={completedMissionIds} onMissionComplete={() => { }} onMissionSelect={() => { }} onBunkerClick={() => navigate('/bunker')} factionStates={state.FACTION_STATES} playerAlignment={playerAlignment} worldStage={worldStage} /><TutorialOverlay language={lang} onComplete={() => { localStorage.setItem(tutorialKey, 'true'); if (state.user) { localStorage.setItem(`shield_flow_step_${state.user.uid}`, 'map'); } else { localStorage.setItem('shield_flow_step_guest', 'map'); } navigate('/map'); }} onStepChange={(stepKey) => { if (['roster', 'file', 'recruit'].includes(stepKey)) { navigate('/bunker'); } }} /></div>} />
 
