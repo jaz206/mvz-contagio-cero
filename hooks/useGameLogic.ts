@@ -23,6 +23,7 @@ const FACTION_STATES = {
 
 const ADMIN_UID = (import.meta as any).env.VITE_ADMIN_UID || '60mH4M1SClV793Nq1WjQ3CExkLp1';
 const ADMIN_EMAIL = ((import.meta as any).env.VITE_ADMIN_EMAIL || 'jorgeaz206@gmail.com').toLowerCase();
+const MAX_OMEGA_CYLINDERS = 10;
 
 const EMPTY_PERMISSIONS: StaffPermissions = {
     missions: { view: false, create: false, edit: false, delete: false },
@@ -112,10 +113,10 @@ const clearCampaignCache = (uid?: string | null) => {
 
 const getStoredOmegaCylinders = (progress: StoredCampaignProgress) => {
     if ('omegaCylinders' in progress) {
-        return progress.omegaCylinders;
+        return Math.max(0, Math.min(MAX_OMEGA_CYLINDERS, progress.omegaCylinders));
     }
 
-    return progress.resources?.omegaCylinders || 0;
+    return Math.max(0, Math.min(MAX_OMEGA_CYLINDERS, progress.resources?.omegaCylinders || 0));
 };
 
 export const useGameLogic = () => {
@@ -252,7 +253,7 @@ export const useGameLogic = () => {
                 setShowTutorial(false);
                 setHeroes(coreHeroes);
                 setCompletedMissionIds(new Set());
-                setOmegaCylinders(99);
+                setOmegaCylinders(0);
                 setWorldStage('NORMAL');
                 isDataLoadedRef.current = true;
                 if (!preserveBunkerRoute()) navigate('/map');
@@ -279,7 +280,7 @@ export const useGameLogic = () => {
                 setShowTutorial(false);
                 setHeroes(coreHeroes);
                 setCompletedMissionIds(new Set());
-                setOmegaCylinders(99);
+                setOmegaCylinders(0);
                 setWorldStage('NORMAL');
                 isDataLoadedRef.current = true;
                 if (!preserveBunkerRoute()) navigate('/map');
@@ -452,7 +453,7 @@ export const useGameLogic = () => {
                 if (!profile) return;
                 setHeroes(profile.heroes);
                 setCompletedMissionIds(new Set(profile.completedMissionIds));
-                setOmegaCylinders(profile.resources.omegaCylinders);
+                setOmegaCylinders(Math.max(0, Math.min(MAX_OMEGA_CYLINDERS, profile.resources.omegaCylinders)));
             });
         }
     };
@@ -802,7 +803,7 @@ export const useGameLogic = () => {
 
         if (targetAlignment === 'ALIVE') {
             handleTickerUpdate(`SUJETO ${transformedHero.alias} CURADO.`);
-            setOmegaCylinders((prev) => Math.max(0, prev - 1));
+            setOmegaCylinders((prev) => Math.max(0, Math.min(MAX_OMEGA_CYLINDERS, prev - 1)));
         } else {
             handleTickerUpdate(`SUJETO ${transformedHero.alias} INFECTADO.`);
         }

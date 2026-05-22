@@ -16,6 +16,8 @@ interface AdminStaffPanelProps {
     onSaveIntroConfig: (config: IntroConfig) => Promise<void>;
     storyConfig: StoryConfig;
     onSaveStoryConfig: (config: StoryConfig) => Promise<void>;
+    omegaCylinders: number;
+    onSetOmegaCylinders: (value: number) => void;
 }
 
 const clonePermissions = (permissions: StaffPermissions): StaffPermissions => ({
@@ -53,7 +55,9 @@ export const AdminStaffPanel: React.FC<AdminStaffPanelProps> = ({
     introConfig,
     onSaveIntroConfig,
     storyConfig,
-    onSaveStoryConfig
+    onSaveStoryConfig,
+    omegaCylinders,
+    onSetOmegaCylinders
 }) => {
     const [activeTab, setActiveTab] = useState<'staff' | 'story' | 'intro'>('staff');
     const [introMode, setIntroMode] = useState<'alive' | 'zombie'>('alive');
@@ -364,6 +368,49 @@ export const AdminStaffPanel: React.FC<AdminStaffPanelProps> = ({
                                     {loginAccessMode === 'PUBLIC'
                                         ? 'Ahora puede entrar cualquiera con cuenta.'
                                         : 'Ahora solo pueden entrar las cuentas activas que tu hayas marcado. La via local sigue funcionando.'}
+                                </div>
+                            </div>
+
+                            <div className="mb-6 border border-slate-800 bg-slate-900/40 p-4">
+                                <div className="mb-3 text-[10px] font-black uppercase tracking-[0.3em] text-cyan-500">Viales Omega</div>
+                                <div className="mb-3 flex items-center justify-between border border-cyan-900/40 bg-black/40 px-3 py-3">
+                                    <div className="text-[11px] uppercase tracking-widest text-gray-400">Cantidad actual</div>
+                                    <div className="text-2xl font-black text-cyan-300">{omegaCylinders}/10</div>
+                                </div>
+                                <input
+                                    type="range"
+                                    min={0}
+                                    max={10}
+                                    step={1}
+                                    value={omegaCylinders}
+                                    onChange={(event) => onSetOmegaCylinders(Number(event.target.value))}
+                                    className="w-full accent-cyan-500"
+                                />
+                                <div className="mt-3 grid grid-cols-3 gap-2">
+                                    <button
+                                        type="button"
+                                        onClick={() => onSetOmegaCylinders(Math.max(0, omegaCylinders - 1))}
+                                        className="border border-slate-700 px-3 py-2 text-xs font-black uppercase text-slate-200 hover:bg-slate-800"
+                                    >
+                                        -1
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => onSetOmegaCylinders(0)}
+                                        className="border border-amber-800 bg-amber-950/20 px-3 py-2 text-xs font-black uppercase text-amber-300 hover:bg-amber-900/30"
+                                    >
+                                        Poner a 0
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => onSetOmegaCylinders(Math.min(10, omegaCylinders + 1))}
+                                        className="border border-cyan-700 bg-cyan-900/20 px-3 py-2 text-xs font-black uppercase text-cyan-300 hover:bg-cyan-900/40"
+                                    >
+                                        +1
+                                    </button>
+                                </div>
+                                <div className="mt-3 text-[11px] leading-relaxed text-gray-400">
+                                    Aqui decides cuantas dosis hay disponibles en la partida actual, de 0 a 10.
                                 </div>
                             </div>
 

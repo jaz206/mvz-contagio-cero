@@ -428,7 +428,7 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
                         <h3 className="text-[10px] font-bold text-blue-400 uppercase tracking-widest mb-4">RECURSOS OMEGA</h3>
                         <div className="flex items-center justify-between mb-6 bg-black/40 p-3 rounded border border-blue-900/30">
                             <div className="flex gap-1.5">
-                                {[...Array(5)].map((_, i) => (
+                                {[...Array(10)].map((_, i) => (
                                     <div key={i} className={`w-3 h-10 skew-x-[-10deg] border border-slate-700 ${i < omegaCylinders ? 'bg-cyan-500 shadow-[0_0_10px_#06b6d4]' : 'bg-slate-800/50'}`}></div>
                                 ))}
                             </div>
