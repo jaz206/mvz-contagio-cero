@@ -4,6 +4,7 @@ import { User, onAuthStateChanged } from 'firebase/auth';
 import { auth } from '../firebaseConfig';
 import { translations, Language } from '../translations';
 import { getHeroTemplates } from '../services/heroService';
+import { getHeroTransformAvailability } from '../services/heroVariantRuleService';
 import { getDefaultIntroConfig, getIntroConfig, saveIntroConfig } from '../services/introService';
 import { getDefaultStoryConfig, getStoryConfig, saveStoryConfig } from '../services/storyService';
 import { getCustomMissions, deleteMissionInDB, syncInitialMissionRepository } from '../services/missionService';
@@ -736,55 +737,17 @@ export const useGameLogic = () => {
 
         const currentHero = heroes[heroIndex];
         const allTemplates = await getHeroTemplates();
-        let targetTemplate: HeroTemplate | undefined;
+        const transformAvailability = getHeroTransformAvailability(currentHero, targetAlignment, allTemplates, ownedExpansions);
+        const targetTemplate = transformAvailability.targetTemplate;
 
-        if (currentHero.relatedHeroId && currentHero.relatedHeroId !== 'NO_VARIANT') {
-            targetTemplate = allTemplates.find((item) => item.id === currentHero.relatedHeroId);
-        }
-
-        if (!targetTemplate) {
-            const cleanString = (value: string) => value.toLowerCase()
-                .replace(/\(z\)/g, '')
-                .replace(/\(artist\)/g, '')
-                .replace(/\(old man\)/g, '')
-                .replace(/zombie/g, '')
-                .replace(/hero/g, '')
-                .replace(/[^a-z0-9]/g, '')
-                .trim();
-
-            const currentAliasClean = cleanString(currentHero.alias);
-
-            targetTemplate = allTemplates.find((item) => {
-                if (item.defaultAlignment !== targetAlignment) return false;
-                return cleanString(item.alias) === currentAliasClean;
-            });
-
-            if (!targetTemplate) {
-                for (const expansion of GAME_EXPANSIONS) {
-                    const list = targetAlignment === 'ALIVE' ? expansion.heroes : expansion.zombieHeroes;
-                    const found = list.find((item) => cleanString(item.alias) === currentAliasClean);
-                    if (!found) continue;
-
-                    targetTemplate = {
-                        id: found.id,
-                        defaultName: found.name,
-                        alias: found.alias,
-                        defaultClass: found.class,
-                        defaultStats: found.stats,
-                        imageUrl: found.imageUrl || '',
-                        bio: found.bio,
-                        defaultAlignment: targetAlignment,
-                        objectives: found.objectives,
-                        currentStory: found.currentStory,
-                        imageParams: found.imageParams
-                    };
-                    break;
-                }
+        if (!transformAvailability.allowed || !targetTemplate) {
+            if (transformAvailability.reason === 'MISSING_EXPANSION') {
+                alert(targetAlignment === 'ALIVE'
+                    ? `No puedes curar a ${currentHero.alias} con las expansiones activas.`
+                    : `No puedes infectar a ${currentHero.alias} con las expansiones activas.`);
+            } else {
+                alert(`No se encontro una version compatible de ${currentHero.alias}.`);
             }
-        }
-
-        if (!targetTemplate) {
-            alert(`No se encontro una version compatible de ${currentHero.alias}.`);
             return;
         }
 

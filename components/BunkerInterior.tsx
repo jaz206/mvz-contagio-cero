@@ -1,6 +1,7 @@
 import React, { useState, useMemo, useEffect } from "react";
 import { translations, Language } from "../translations";
 import { Hero, Mission, HeroClass, HeroTemplate, I18nString } from "../types";
+import { getHeroTransformAvailability, hasAnyHeroWithTransformRule } from "../services/heroVariantRuleService";
 
 // ... utilities ...
 const resolveI18n = (text: I18nString | undefined, lang: Language): string => {
@@ -28,6 +29,7 @@ interface BunkerInteriorProps {
     onTickerUpdate?: (message: string) => void;
     omegaCylinders?: number;
     onFindCylinder?: () => void;
+    ownedExpansions: Set<string>;
 }
 
 // --- UTILIDADES ---
@@ -64,7 +66,7 @@ const TacticalBar = ({ label, shieldVal, enemyVal, enemyColor }: { label: string
 };
 
 // --- COMPONENTE: CARTA DE HÉROE ---
-const HeroCard = ({ hero, onClick, actionIcon, onAction }: { hero: Hero, onClick: () => void, actionIcon?: string, onAction?: () => void }) => {
+const HeroCard = ({ hero, onClick, actionIcon, onAction, actionMuted = false }: { hero: Hero, onClick: () => void, actionIcon?: string, onAction?: () => void, actionMuted?: boolean }) => {
     const statusColors = {
         AVAILABLE: 'border-emerald-500 shadow-emerald-500/20',
         DEPLOYED: 'border-yellow-500 shadow-yellow-500/20',
@@ -97,7 +99,14 @@ const HeroCard = ({ hero, onClick, actionIcon, onAction }: { hero: Hero, onClick
                     {hero.status !== 'AVAILABLE' && (<span className={`text-[8px] font-bold px-2 py-0.5 border uppercase tracking-widest ${hero.status === 'DEPLOYED' ? 'bg-yellow-900/50 text-yellow-500 border-yellow-700' : 'bg-red-900/50 text-red-500 border-red-700'}`}>{hero.status}</span>)}
                 </div>
             </div>
-            {actionIcon && onAction && (<button onClick={(e) => { e.stopPropagation(); onAction(); }} className="absolute right-2 top-2 w-8 h-8 flex items-center justify-center bg-black/50 border border-white/20 hover:bg-red-600 hover:border-red-500 text-white transition-all rounded-sm z-20 backdrop-blur-sm pointer-events-auto">{actionIcon}</button>)}
+            {actionIcon && onAction && (
+                <button
+                    onClick={(e) => { e.stopPropagation(); onAction(); }}
+                    className={`absolute right-2 top-2 w-8 h-8 flex items-center justify-center border text-white transition-all rounded-sm z-20 backdrop-blur-sm pointer-events-auto ${actionMuted ? 'bg-slate-900/80 border-amber-700/60 text-amber-300 hover:bg-amber-900/40' : 'bg-black/50 border-white/20 hover:bg-red-600 hover:border-red-500'}`}
+                >
+                    {actionIcon}
+                </button>
+            )}
             <div className="absolute inset-0 bg-scan opacity-0 group-hover:opacity-10 pointer-events-none transition-opacity"></div>
         </div>
     );
@@ -166,7 +175,7 @@ const BiometricMonitor = ({ alignment }: { alignment: 'ALIVE' | 'ZOMBIE' }) => {
 };
 
 export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
-    heroes, missions, completedMissionIds = new Set(), onAssign, onUnassign, onAddHero, onToggleObjective, onBack, language, playerAlignment, onTransformHero, onTickerUpdate, omegaCylinders = 0, onFindCylinder
+    heroes, missions, completedMissionIds = new Set(), onAssign, onUnassign, onAddHero, onToggleObjective, onBack, language, playerAlignment, onTransformHero, onTickerUpdate, omegaCylinders = 0, onFindCylinder, ownedExpansions
 }) => {
     const [activeTab, setActiveTab] = useState<'ROSTER' | 'MEDBAY'>('ROSTER');
     const [selectedHeroId, setSelectedHeroId] = useState<string | null>(null);
@@ -207,11 +216,48 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
         doom: { shield: 3, enemy: 4, color: 'text-cyan-500' }
     };
 
+    const transformTargetAlignment = playerAlignment === 'ZOMBIE' ? 'ALIVE' : 'ZOMBIE';
+    const hasTransformRuleAvailable = useMemo(
+        () => hasAnyHeroWithTransformRule(heroes, transformTargetAlignment, dbTemplates, ownedExpansions),
+        [dbTemplates, heroes, ownedExpansions, transformTargetAlignment]
+    );
+
+    const getBlockedTransformMessage = (hero: Hero, reason: 'NO_VARIANT' | 'MISSING_EXPANSION' | 'NO_COUNTERPART', isAlivePlayer: boolean) => {
+        if (reason === 'NO_VARIANT') {
+            return isAlivePlayer
+                ? `SUJETO IRRECUPERABLE.\n\nEl tejido de ${hero.alias} ha sufrido una degradacion celular total. No queda ADN humano viable para la reestructuracion.\n\nLA CURA ES INEFICAZ.`
+                : `SUJETO INMUNE.\n\nLa fisiologia de ${hero.alias} rechaza el Evangelio del Hambre. Estructura molecular incompatible o sintetica.\n\nNO SE PUEDE CONSUMIR.`;
+        }
+
+        if (reason === 'MISSING_EXPANSION') {
+            return isAlivePlayer
+                ? `CURA IMPOSIBLE.\n\nNo tienes activada la expansion que contiene la version humana de ${hero.alias}.\n\nCON ESTA CONFIGURACION, LA CURA QUEDA DESACTIVADA.`
+                : `INFECCION IMPOSIBLE.\n\nNo tienes activada la expansion que contiene la version infectada de ${hero.alias}.\n\nCON ESTA CONFIGURACION, LA INFECCION QUEDA DESACTIVADA.`;
+        }
+
+        return isAlivePlayer
+            ? `CURA IMPOSIBLE.\n\nNo existe una version compatible de ${hero.alias} para completar la reestructuracion.\n\nLA REGLA DE CURA NO PUEDE APLICARSE.`
+            : `INFECCION IMPOSIBLE.\n\nNo existe una version compatible de ${hero.alias} para completar la infeccion.\n\nLA REGLA DE INFECCION NO PUEDE APLICARSE.`;
+    };
+
     const handleOpenRecruit = async () => {
         const templates = await getHeroTemplates();
         setDbTemplates(templates);
         setShowRecruitModal(true);
     };
+
+    useEffect(() => {
+        const loadTemplates = async () => {
+            try {
+                const templates = await getHeroTemplates();
+                setDbTemplates(templates);
+            } catch (error) {
+                console.error(error);
+            }
+        };
+
+        loadTemplates();
+    }, []);
 
     useEffect(() => {
         setCanLeaveBunker(false);
@@ -278,31 +324,25 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
                             injuredHeroes.map(h => {
                                 const isAlivePlayer = playerAlignment === 'ALIVE';
                                 const actionIcon = isAlivePlayer ? "💉" : "🧟";
+                                const transformAvailability = getHeroTransformAvailability(
+                                    h,
+                                    isAlivePlayer ? 'ALIVE' : 'ZOMBIE',
+                                    dbTemplates,
+                                    ownedExpansions
+                                );
 
                                 const handleAction = () => {
                                     if (!onTransformHero) return;
 
-                                    // --- LÓGICA DE BLOQUEO POR "SIN VARIANTE" ---
-                                    if (h.relatedHeroId === 'NO_VARIANT') {
-                                        if (isAlivePlayer) {
-                                            openConfirm({
-                                                isOpen: true,
-                                                title: "ERROR GENÉTICO",
-                                                message: `SUJETO IRRECUPERABLE.\n\nEl tejido de ${h.alias} ha sufrido una degradación celular total. No queda ADN humano viable para la reestructuración.\n\nLA CURA ES INEFICAZ.`,
-                                                confirmText: "ENTENDIDO",
-                                                type: "WARNING",
-                                                onConfirm: () => { }
-                                            });
-                                        } else {
-                                            openConfirm({
-                                                isOpen: true,
-                                                title: "ANOMALÍA DETECTADA",
-                                                message: `SUJETO INMUNE.\n\nLa fisiología de ${h.alias} rechaza el Evangelio del Hambre. Estructura molecular incompatible o sintética.\n\nNO SE PUEDE CONSUMIR.`,
-                                                confirmText: "ENTENDIDO",
-                                                type: "WARNING",
-                                                onConfirm: () => { }
-                                            });
-                                        }
+                                    if (!transformAvailability.allowed) {
+                                        openConfirm({
+                                            isOpen: true,
+                                            title: isAlivePlayer ? "OPERACION BLOQUEADA" : "PROTOCOLO BLOQUEADO",
+                                            message: getBlockedTransformMessage(h, transformAvailability.reason, isAlivePlayer),
+                                            confirmText: "ENTENDIDO",
+                                            type: "WARNING",
+                                            onConfirm: () => { }
+                                        });
                                         return;
                                     }
 
@@ -346,6 +386,7 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
                                         hero={h}
                                         onClick={() => setSelectedHeroId(h.id)}
                                         actionIcon={actionIcon}
+                                        actionMuted={!transformAvailability.allowed}
                                         onAction={handleAction}
                                     />
                                 );
@@ -406,6 +447,13 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
                 {/* RIGHT COLUMN: RESOURCES */}
                 <div className="col-span-3 border-l border-cyan-900 bg-slate-900/30 flex flex-col h-full overflow-hidden">
                     <div className="p-6 border-b border-cyan-900 shrink-0">
+                        {!hasTransformRuleAvailable && (
+                            <div className="mb-4 border border-amber-700 bg-amber-950/30 px-4 py-3 text-[10px] font-bold uppercase tracking-wide text-amber-300">
+                                {playerAlignment === 'ZOMBIE'
+                                    ? 'Regla de infeccion desactivada: te faltan expansiones compatibles.'
+                                    : 'Regla de cura desactivada: te faltan expansiones compatibles.'}
+                            </div>
+                        )}
                         <button onClick={handleOpenRecruit} className="w-full aspect-square border-2 border-cyan-800 hover:border-cyan-400 hover:bg-cyan-900/20 transition-all group flex flex-col items-center justify-center gap-4 rounded-xl relative overflow-hidden bg-slate-950/50">
                             <div className="absolute inset-0 bg-cyan-500/5 scale-0 group-hover:scale-150 transition-transform duration-1000 rounded-full"></div>
 

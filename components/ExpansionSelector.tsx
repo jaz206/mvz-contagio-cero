@@ -1,6 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { GAME_EXPANSIONS } from '../data/gameContent';
 import { getHeroTemplates } from '../services/heroService';
+import { hasAnyHeroWithTransformRule } from '../services/heroVariantRuleService';
 import { Language } from '../translations';
 import { Hero, HeroTemplate } from '../types';
 
@@ -29,6 +30,7 @@ export const ExpansionSelector: React.FC<ExpansionSelectorProps> = ({
     const textColor = isZombie ? 'text-lime-400' : 'text-cyan-400';
     const bgColor = isZombie ? 'bg-lime-600' : 'bg-cyan-600';
     const blockedAliases = ['MAGNETO', 'KINGPIN', 'DOCTOR DOOM'];
+    const transformTargetAlignment = isZombie ? 'ALIVE' : 'ZOMBIE';
 
     useEffect(() => {
         const fetchFromDb = async () => {
@@ -70,11 +72,16 @@ export const ExpansionSelector: React.FC<ExpansionSelectorProps> = ({
                         imageUrl: dbVersion.imageUrl,
                         bio: dbVersion.bio || localHero.bio,
                         imageParams: dbVersion.imageParams,
-                        characterSheetUrl: dbVersion.characterSheetUrl
+                        characterSheetUrl: dbVersion.characterSheetUrl,
+                        expansionId: dbVersion.expansionId || exp.id,
+                        relatedHeroId: dbVersion.relatedHeroId
                     };
                 }
 
-                return localHero;
+                return {
+                    ...localHero,
+                    expansionId: exp.id
+                };
             });
 
             allHeroes = [...allHeroes, ...heroesInBox];
@@ -99,6 +106,8 @@ export const ExpansionSelector: React.FC<ExpansionSelectorProps> = ({
                 imageUrl: h.imageUrl,
                 stats: h.defaultStats,
                 assignedMissionId: null,
+                expansionId: h.expansionId,
+                relatedHeroId: h.relatedHeroId,
                 objectives: h.objectives || [],
                 completedObjectiveIndices: [],
                 currentStory: h.currentStory || '',
@@ -120,6 +129,10 @@ export const ExpansionSelector: React.FC<ExpansionSelectorProps> = ({
         return allHeroes;
     }, [dbHeroes, isZombie, loadingDb, ownedExpansions, playerAlignment, searchTerm]);
 
+    const hasTransformRuleAvailable = useMemo(() => (
+        hasAnyHeroWithTransformRule(selectedHeroes, transformTargetAlignment, dbHeroes, ownedExpansions)
+    ), [dbHeroes, ownedExpansions, selectedHeroes, transformTargetAlignment]);
+
     const isBlockedHero = (hero: Hero) => blockedAliases.some((alias) => hero.alias.toUpperCase().startsWith(alias));
 
     const toggleHero = (hero: Hero) => {
@@ -139,6 +152,14 @@ export const ExpansionSelector: React.FC<ExpansionSelectorProps> = ({
         if (selectedHeroes.length === 0) {
             alert(language === 'es' ? 'Debes elegir al menos un agente.' : 'You must choose at least one agent.');
             return;
+        }
+
+        if (!hasTransformRuleAvailable) {
+            alert(
+                language === 'es'
+                    ? 'Con las expansiones elegidas no tienes ninguna pareja valida para la regla de cura / infeccion. Puedes seguir jugando, pero esa regla quedara desactivada.'
+                    : 'With the selected expansions you have no valid cure / infection pair. You can keep playing, but that rule will stay disabled.'
+            );
         }
 
         onConfirm([...selectedHeroes]);
@@ -340,6 +361,13 @@ export const ExpansionSelector: React.FC<ExpansionSelectorProps> = ({
                                 ? 'Elige manualmente entre 1 y 6 personajes.'
                                 : 'Choose manually between 1 and 6 characters.'}
                         </div>
+                        {selectedHeroes.length > 0 && !hasTransformRuleAvailable && (
+                            <div className="mt-3 border border-amber-700 bg-amber-950/30 px-3 py-2 text-[10px] font-bold uppercase tracking-wide text-amber-300">
+                                {language === 'es'
+                                    ? 'Sin pares validos para la regla de cura / infeccion.'
+                                    : 'No valid pairs for the cure / infection rule.'}
+                            </div>
+                        )}
                     </div>
 
                     <div className="flex-1 space-y-2 overflow-y-auto p-3 scrollbar-thin scrollbar-thumb-slate-700">
