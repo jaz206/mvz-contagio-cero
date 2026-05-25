@@ -132,8 +132,6 @@ export const AdminStaffPanel: React.FC<AdminStaffPanelProps> = ({
         loadHeroes();
     }, [activeTab, heroes.length, isOpen]);
 
-    if (!isOpen) return null;
-
     const handleCreateEditor = async (event: React.FormEvent) => {
         event.preventDefault();
         setCreating(true);
@@ -358,6 +356,8 @@ export const AdminStaffPanel: React.FC<AdminStaffPanelProps> = ({
             `${hero.alias} ${hero.defaultName}`.toLowerCase().includes(query)
         ));
     }, [heroSearch, heroes]);
+
+    if (!isOpen) return null;
 
     return (
         <div className="fixed inset-0 z-[140] flex items-center justify-center bg-slate-950/85 p-4 backdrop-blur-md">
