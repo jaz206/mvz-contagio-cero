@@ -23,6 +23,7 @@ export const CharacterEditor: React.FC<CharacterEditorProps> = ({ isOpen, onClos
     const [bioEn, setBioEn] = useState('');
     const [originEs, setOriginEs] = useState('');
     const [originEn, setOriginEn] = useState('');
+    const [currentStoryText, setCurrentStoryText] = useState('');
     const [imageUrl, setImageUrl] = useState('');
     const [characterSheetUrl, setCharacterSheetUrl] = useState('');
     const [alignment, setAlignment] = useState<'ALIVE' | 'ZOMBIE'>('ALIVE');
@@ -37,6 +38,7 @@ export const CharacterEditor: React.FC<CharacterEditorProps> = ({ isOpen, onClos
     const [linkSearch, setLinkSearch] = useState('');
 
     const [isImagePickerOpen, setIsImagePickerOpen] = useState(false);
+    const [imagePickerTarget, setImagePickerTarget] = useState<'portrait' | 'sheet'>('portrait');
     const [imagePickerLoading, setImagePickerLoading] = useState(false);
     const [imagePickerError, setImagePickerError] = useState('');
     const [imagePickerQuery, setImagePickerQuery] = useState('');
@@ -58,15 +60,16 @@ export const CharacterEditor: React.FC<CharacterEditorProps> = ({ isOpen, onClos
             }
 
             if (initialData.origin && typeof initialData.origin === 'object') {
-                setOriginEs(initialData.origin.es || '');
-                setOriginEn(initialData.origin.en || '');
-            } else {
-                setOriginEs((initialData.origin as string) || '');
-                setOriginEn((initialData.origin as string) || '');
-            }
+            setOriginEs(initialData.origin.es || '');
+            setOriginEn(initialData.origin.en || '');
+        } else {
+            setOriginEs((initialData.origin as string) || '');
+            setOriginEn((initialData.origin as string) || '');
+        }
 
-            setImageUrl(initialData.imageUrl || '');
-            setCharacterSheetUrl(initialData.characterSheetUrl || '');
+        setCurrentStoryText(initialData.currentStory || '');
+        setImageUrl(initialData.imageUrl || '');
+        setCharacterSheetUrl(initialData.characterSheetUrl || '');
             setAlignment(initialData.defaultAlignment || 'ALIVE');
             setRelatedHeroId(initialData.relatedHeroId);
 
@@ -88,6 +91,7 @@ export const CharacterEditor: React.FC<CharacterEditorProps> = ({ isOpen, onClos
             setBioEn('');
             setOriginEs('');
             setOriginEn('');
+            setCurrentStoryText('');
             setImageUrl('');
             setCharacterSheetUrl('');
             setAlignment('ALIVE');
@@ -98,6 +102,7 @@ export const CharacterEditor: React.FC<CharacterEditorProps> = ({ isOpen, onClos
         }
 
         setIsImagePickerOpen(false);
+        setImagePickerTarget('portrait');
         setImagePickerError('');
         setImagePickerQuery('');
     }, [initialData, isOpen]);
@@ -127,11 +132,11 @@ export const CharacterEditor: React.FC<CharacterEditorProps> = ({ isOpen, onClos
             defaultStats: stats,
             bio: { es: bioEs, en: bioEn },
             origin: { es: originEs, en: originEn },
+            currentStory: currentStoryText,
             imageUrl,
             characterSheetUrl,
             defaultAlignment: alignment,
             objectives: initialData?.objectives || [],
-            currentStory: initialData?.currentStory || '',
             relatedHeroId: relatedHeroId || undefined,
             imageParams
         };
@@ -155,8 +160,9 @@ export const CharacterEditor: React.FC<CharacterEditorProps> = ({ isOpen, onClos
         }
     };
 
-    const handleOpenImagePicker = async () => {
+    const handleOpenImagePicker = async (target: 'portrait' | 'sheet') => {
         setIsImagePickerOpen(true);
+        setImagePickerTarget(target);
         setImagePickerError('');
         setImagePickerLoading(true);
 
@@ -171,8 +177,13 @@ export const CharacterEditor: React.FC<CharacterEditorProps> = ({ isOpen, onClos
     };
 
     const handleSelectRepoImage = (option: CharacterImageOption) => {
-        setImageUrl(option.url);
+        if (imagePickerTarget === 'sheet') {
+            setCharacterSheetUrl(option.url);
+        } else {
+            setImageUrl(option.url);
+        }
         setIsImagePickerOpen(false);
+        setImagePickerTarget('portrait');
         setImagePickerQuery('');
         setImagePickerError('');
     };
@@ -362,7 +373,7 @@ export const CharacterEditor: React.FC<CharacterEditorProps> = ({ isOpen, onClos
                                     <label className={`mb-1 block text-[10px] font-black uppercase tracking-widest ${accentClass}`}>URL RETRATO</label>
                                     <input value={imageUrl} onChange={(e) => setImageUrl(e.target.value)} placeholder="https://..." className={`w-full border bg-slate-950 p-2 text-[10px] text-white outline-none overflow-hidden ${borderClass} ${focusClass}`} />
                                     <div className="mt-2 flex flex-wrap gap-2">
-                                        <button type="button" onClick={handleOpenImagePicker} className={`border px-3 py-1 text-[10px] font-black uppercase transition-all hover:bg-white/5 ${borderClass} ${accentClass}`}>
+                                        <button type="button" onClick={() => handleOpenImagePicker('portrait')} className={`border px-3 py-1 text-[10px] font-black uppercase transition-all hover:bg-white/5 ${borderClass} ${accentClass}`}>
                                             Buscar imagen en GitHub
                                         </button>
                                         {imageUrl && (
@@ -379,7 +390,7 @@ export const CharacterEditor: React.FC<CharacterEditorProps> = ({ isOpen, onClos
                                             <div className="flex flex-col gap-3 border-b border-slate-800 p-3">
                                                 <div className="flex items-center justify-between gap-3">
                                                     <div className={`text-[10px] font-black uppercase tracking-widest ${accentClass}`}>
-                                                        Biblioteca de imagenes
+                                                        {imagePickerTarget === 'sheet' ? 'Biblioteca de fichas' : 'Biblioteca de imagenes'}
                                                     </div>
                                                     <button type="button" onClick={() => setIsImagePickerOpen(false)} className="text-[10px] uppercase text-gray-500 hover:text-white">
                                                         Cerrar
@@ -429,8 +440,18 @@ export const CharacterEditor: React.FC<CharacterEditorProps> = ({ isOpen, onClos
                                 </div>
 
                                 <div>
-                                    <label className="mb-1 block text-[10px] font-black uppercase tracking-widest text-yellow-600">URL FICHA DE JUEGO</label>
+                                    <label className="mb-1 block text-[10px] font-black uppercase tracking-widest text-yellow-600">URL FICHA COMPLETA</label>
                                     <input value={characterSheetUrl} onChange={(e) => setCharacterSheetUrl(e.target.value)} placeholder="https://..." className="w-full overflow-hidden border border-yellow-950 bg-slate-950 p-2 text-[10px] text-yellow-200 outline-none focus:border-yellow-500" />
+                                    <div className="mt-2 flex flex-wrap gap-2">
+                                        <button type="button" onClick={() => handleOpenImagePicker('sheet')} className="border border-yellow-800 px-3 py-1 text-[10px] font-black uppercase text-yellow-300 transition-all hover:bg-yellow-900/20">
+                                            Buscar ficha en GitHub
+                                        </button>
+                                        {characterSheetUrl && (
+                                            <button type="button" onClick={() => setCharacterSheetUrl('')} className="border border-slate-700 px-3 py-1 text-[10px] font-black uppercase text-gray-300 transition-all hover:border-white">
+                                                Limpiar ficha
+                                            </button>
+                                        )}
+                                    </div>
                                 </div>
                             </div>
 
@@ -458,12 +479,16 @@ export const CharacterEditor: React.FC<CharacterEditorProps> = ({ isOpen, onClos
 
                         <div className="space-y-4">
                             <div>
-                                <label className={`mb-1 block text-[10px] font-black uppercase tracking-widest ${accentClass}`}>ORIGEN</label>
-                                <textarea value={originEs} onChange={(e) => setOriginEs(e.target.value)} rows={2} className={`w-full resize-none border bg-slate-950 p-2 text-xs text-white outline-none ${borderClass} ${focusClass}`} />
+                                <label className={`mb-1 block text-[10px] font-black uppercase tracking-widest ${accentClass}`}>HISTORIA / HISTORIAL</label>
+                                <textarea value={originEs} onChange={(e) => setOriginEs(e.target.value)} rows={4} className={`w-full resize-none border bg-slate-950 p-2 text-xs text-white outline-none ${borderClass} ${focusClass}`} />
                             </div>
                             <div>
-                                <label className={`mb-1 block text-[10px] font-black uppercase tracking-widest ${accentClass}`}>TEXTO DE LA FICHA DEL BUNKER</label>
+                                <label className={`mb-1 block text-[10px] font-black uppercase tracking-widest ${accentClass}`}>PERFIL DE PODERES</label>
                                 <textarea value={bioEs} onChange={(e) => setBioEs(e.target.value)} rows={4} className={`w-full resize-none border bg-slate-950 p-2 text-xs text-white outline-none ${borderClass} ${focusClass}`} />
+                            </div>
+                            <div>
+                                <label className={`mb-1 block text-[10px] font-black uppercase tracking-widest ${accentClass}`}>EVALUACION DE S.H.I.E.L.D.</label>
+                                <textarea value={currentStoryText} onChange={(e) => setCurrentStoryText(e.target.value)} rows={4} className={`w-full resize-none border bg-slate-950 p-2 text-xs text-white outline-none ${borderClass} ${focusClass}`} />
                             </div>
                         </div>
 

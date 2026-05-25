@@ -42,6 +42,22 @@ const normalizeAlias = (alias: string) => {
         .trim();
 };
 
+const getSafeDossierText = (value: string | undefined, fallback: string) => {
+    const normalized = (value || '').trim();
+    return normalized || fallback;
+};
+
+const getHeroStatusLabel = (status: Hero['status'], language: Language) => {
+    const labels = {
+        AVAILABLE: language === 'es' ? 'DISPONIBLE' : 'AVAILABLE',
+        DEPLOYED: language === 'es' ? 'DESPLEGADO' : 'DEPLOYED',
+        INJURED: language === 'es' ? 'HERIDO' : 'INJURED',
+        CAPTURED: language === 'es' ? 'CAPTURADO' : 'CAPTURED'
+    };
+
+    return labels[status] || status;
+};
+
 // --- COMPONENTE: BARRA TÁCTICA ---
 const TacticalBar = ({ label, shieldVal, enemyVal, enemyColor }: { label: string, shieldVal: number, enemyVal: number, enemyColor: string }) => {
     const total = shieldVal + enemyVal;
@@ -196,6 +212,34 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
 
     const t = translations[language];
     const selectedHero = heroes.find(h => h.id === selectedHeroId);
+    const dossierIsZombie = playerAlignment === 'ZOMBIE';
+    const dossierAccentClass = dossierIsZombie ? 'text-lime-400' : 'text-cyan-400';
+    const dossierBorderClass = dossierIsZombie ? 'border-lime-600' : 'border-cyan-600';
+    const dossierPanelClass = dossierIsZombie ? 'border-lime-900/50 bg-lime-950/10' : 'border-cyan-900/50 bg-cyan-950/10';
+    const dossierStamp = dossierIsZombie ? 'BIOHAZARD DOSSIER' : 'S.H.I.E.L.D. DOSSIER';
+    const dossierHeader = dossierIsZombie ? 'ARCHIVO CONTAMINADO' : 'EXPEDIENTE OPERATIVO';
+    const selectedHeroHistory = selectedHero ? getSafeDossierText(
+        resolveI18n(selectedHero.origin, language),
+        language === 'es'
+            ? 'Sin historial ampliado. Pendiente de revision por el Helitransporte.'
+            : 'No extended history available. Pending Helicarrier review.'
+    ) : '';
+    const selectedHeroPowers = selectedHero ? getSafeDossierText(
+        resolveI18n(selectedHero.bio, language),
+        language === 'es'
+            ? 'No hay datos completos sobre habilidades activas. Expediente en revision.'
+            : 'No complete data on active abilities. File under review.'
+    ) : '';
+    const selectedHeroAssessment = selectedHero ? getSafeDossierText(
+        selectedHero.currentStory,
+        dossierIsZombie
+            ? (language === 'es'
+                ? 'Riesgo de contaminacion extrema. Requiere vigilancia constante y protocolos de contencion reforzados.'
+                : 'Extreme contamination risk. Constant surveillance and reinforced containment required.')
+            : (language === 'es'
+                ? 'Activo con valor tactico confirmado. Recomendado para operaciones de alto impacto y respuesta rapida.'
+                : 'Confirmed tactical asset. Recommended for high-impact and rapid-response operations.')
+    ) : '';
 
     const availableHeroes = heroes.filter(h => h.status === 'AVAILABLE');
     const deployedHeroes = heroes.filter(h => h.status === 'DEPLOYED');
@@ -576,7 +620,9 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
                             {/* BIO DATA OVERLAY */}
                             <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/20 to-transparent"></div>
                             <div className="absolute bottom-0 left-0 right-0 p-8 pt-20">
-                                <div className={`text-[10px] font-bold ${playerAlignment === 'ZOMBIE' ? 'text-lime-500' : 'text-cyan-500'} tracking-[0.4em] mb-2`}>SUBJECT_IDENTIFICATION</div>
+                                <div className={`text-[10px] font-bold ${playerAlignment === 'ZOMBIE' ? 'text-lime-500' : 'text-cyan-500'} tracking-[0.4em] mb-2`}>
+                                    {dossierIsZombie ? 'ARCHIVO CONTAMINADO' : 'EXPEDIENTE OPERATIVO'}
+                                </div>
                                 <h2 className="text-4xl md:text-5xl font-black text-white uppercase italic tracking-tighter leading-none mb-1 drop-shadow-2xl" style={{ fontFamily: 'Impact, sans-serif' }}>
                                     {selectedHero.alias}
                                 </h2>
@@ -585,7 +631,7 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
 
                             {/* Faction Seal (Transparent back) */}
                             <div className="absolute top-4 left-4 opacity-10 pointer-events-none">
-                                <span className="text-6xl font-black text-white">{playerAlignment === 'ZOMBIE' ? 'HIVE' : 'SHIELD'}</span>
+                                <span className="text-6xl font-black text-white">{playerAlignment === 'ZOMBIE' ? 'BIOHAZARD' : 'S.H.I.E.L.D.'}</span>
                             </div>
                         </div>
 
@@ -601,7 +647,7 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
                             {/* DIAGNOSTIC SECTION */}
                             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8 mt-4">
                                 <div className="space-y-6">
-                                    <h4 className="text-[10px] font-black text-gray-500 tracking-[0.3em] uppercase border-b border-slate-800 pb-2">DIAGNOSTIC_SUMMARY</h4>
+                                    <h4 className="text-[10px] font-black text-gray-500 tracking-[0.3em] uppercase border-b border-slate-800 pb-2">LECTURA TACTICA</h4>
 
                                     <BiometricMonitor alignment={playerAlignment || 'ALIVE'} />
 
@@ -622,39 +668,43 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
                                 </div>
 
                                 <div className="space-y-6">
-                                    <h4 className="text-[10px] font-black text-gray-500 tracking-[0.3em] uppercase border-b border-slate-800 pb-2">SUBJECT_LOG</h4>
+                                    <h4 className="text-[10px] font-black text-gray-500 tracking-[0.3em] uppercase border-b border-slate-800 pb-2">EXPEDIENTE DE CAMPO</h4>
                                     <div className="bg-slate-900/30 p-6 border border-slate-800 relative min-h-[180px]">
                                         <div className="absolute top-2 right-2 opacity-5 pointer-events-none">
                                             <div className="w-16 h-16 border-4 border-white rotate-45"></div>
                                         </div>
 
-                                        {selectedHero.origin && (
-                                            <div className="mb-4">
-                                                <div className="text-[8px] text-cyan-600 font-bold uppercase mb-1">ORIGIN_DATA</div>
-                                                <div className="text-[10px] text-cyan-100 font-mono italic opacity-80">
-                                                    {resolveI18n(selectedHero.origin, language)}
-                                                </div>
+                                        <div className="mb-4">
+                                            <div className="text-[8px] text-cyan-600 font-bold uppercase mb-1">HISTORIAL CONOCIDO</div>
+                                            <div className="whitespace-pre-wrap text-[11px] leading-relaxed text-cyan-100 opacity-90">
+                                                {selectedHeroHistory}
                                             </div>
-                                        )}
+                                        </div>
 
-                                        <div className="text-[8px] text-gray-600 font-bold uppercase mb-1">BEHAVIORAL_REPORT</div>
-                                        <div className="font-mono text-[11px] leading-relaxed text-slate-300 italic first-letter:text-2xl first-letter:font-black first-letter:mr-1 first-letter:float-left">
-                                            "{resolveI18n(selectedHero.bio, language)}"
+                                        <div className="text-[8px] text-gray-600 font-bold uppercase mb-1">PERFIL DE PODERES</div>
+                                        <div className="whitespace-pre-wrap text-[11px] leading-relaxed text-slate-300">
+                                            {selectedHeroPowers}
+                                        </div>
+                                        <div className="mt-5">
+                                            <div className={`mb-1 text-[8px] font-bold uppercase ${dossierAccentClass}`}>EVALUACION DE S.H.I.E.L.D.</div>
+                                            <div className="whitespace-pre-wrap text-[11px] leading-relaxed text-slate-300">
+                                                {selectedHeroAssessment}
+                                            </div>
                                         </div>
                                         <div className="mt-6 pt-6 border-t border-slate-800 flex justify-between items-center text-[9px] font-mono text-slate-500">
                                             <span>CLASS_SPEC: {selectedHero.class}</span>
-                                            <span>STATUS: {selectedHero.status}</span>
+                                            <span>STATUS: {getHeroStatusLabel(selectedHero.status, language)}</span>
                                         </div>
                                     </div>
 
                                     <div className="flex gap-4">
                                         <div className="flex-1 bg-black/40 border border-slate-800 p-3">
-                                            <div className="text-[8px] text-gray-600 font-bold mb-1">BLOOD_TYPE / STRAIN</div>
-                                            <div className="text-xs text-white font-mono">{playerAlignment === 'ZOMBIE' ? 'CEPA_G_004 (GAMMA)' : 'AB_POS_OPTIMIZED'}</div>
+                                            <div className="text-[8px] text-gray-600 font-bold mb-1">CLAVE DE ARCHIVO</div>
+                                            <div className="text-xs text-white font-mono">{dossierIsZombie ? 'BIOHAZARD FILE' : 'OMEGA CLEARANCE'}</div>
                                         </div>
                                         <div className="flex-1 bg-black/40 border border-slate-800 p-3">
-                                            <div className="text-[8px] text-gray-600 font-bold mb-1">ASSIGNED_LOCATION</div>
-                                            <div className="text-xs text-white font-mono">SECTOR_B-92</div>
+                                            <div className="text-[8px] text-gray-600 font-bold mb-1">ESTADO OPERATIVO</div>
+                                            <div className="text-xs text-white font-mono">{getHeroStatusLabel(selectedHero.status, language)}</div>
                                         </div>
                                     </div>
                                 </div>
@@ -669,13 +719,13 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
                                             className="flex-1 md:flex-none px-6 py-4 bg-yellow-900/10 border border-yellow-600/50 text-yellow-500 hover:bg-yellow-900/40 hover:text-yellow-200 font-black uppercase tracking-[0.2em] text-[10px] transition-all flex items-center justify-center gap-3 group"
                                         >
                                             <span className="text-xl group-hover:scale-110 transition-transform">🗃</span>
-                                            FICHA TÁCTICA
+                                            ABRIR FICHA COMPLETA
                                         </button>
                                     )}
                                 </div>
 
-                                <button className={`w-full md:w-auto px-10 py-4 ${playerAlignment === 'ZOMBIE' ? 'bg-lime-600 shadow-[0_0_20px_rgba(132,204,22,0.4)]' : 'bg-cyan-600 shadow-[0_0_20px_rgba(6,182,212,0.4)]'} hover:opacity-90 text-black font-black uppercase tracking-[0.3em] text-[11px] clip-tactical transition-all transform active:scale-95`}>
-                                    {playerAlignment === 'ZOMBIE' ? 'INICIAR ASIMILACIÓN' : 'ASIGNAR OPERACIÓN'}
+                                <button onClick={() => setSelectedHeroId(null)} className={`w-full md:w-auto px-10 py-4 ${playerAlignment === 'ZOMBIE' ? 'bg-lime-600 shadow-[0_0_20px_rgba(132,204,22,0.4)]' : 'bg-cyan-600 shadow-[0_0_20px_rgba(6,182,212,0.4)]'} hover:opacity-90 text-black font-black uppercase tracking-[0.3em] text-[11px] clip-tactical transition-all transform active:scale-95`}>
+                                    VOLVER AL BUNKER
                                 </button>
                             </div>
                         </div>
