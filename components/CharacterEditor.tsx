@@ -23,7 +23,8 @@ export const CharacterEditor: React.FC<CharacterEditorProps> = ({ isOpen, onClos
     const [bioEn, setBioEn] = useState('');
     const [originEs, setOriginEs] = useState('');
     const [originEn, setOriginEn] = useState('');
-    const [currentStoryText, setCurrentStoryText] = useState('');
+    const [currentStoryEs, setCurrentStoryEs] = useState('');
+    const [currentStoryEn, setCurrentStoryEn] = useState('');
     const [imageUrl, setImageUrl] = useState('');
     const [characterSheetUrl, setCharacterSheetUrl] = useState('');
     const [alignment, setAlignment] = useState<'ALIVE' | 'ZOMBIE'>('ALIVE');
@@ -67,7 +68,13 @@ export const CharacterEditor: React.FC<CharacterEditorProps> = ({ isOpen, onClos
             setOriginEn((initialData.origin as string) || '');
         }
 
-        setCurrentStoryText(initialData.currentStory || '');
+        if (initialData.currentStory && typeof initialData.currentStory === 'object') {
+            setCurrentStoryEs(initialData.currentStory.es || '');
+            setCurrentStoryEn(initialData.currentStory.en || '');
+        } else {
+            setCurrentStoryEs((initialData.currentStory as string) || '');
+            setCurrentStoryEn((initialData.currentStory as string) || '');
+        }
         setImageUrl(initialData.imageUrl || '');
         setCharacterSheetUrl(initialData.characterSheetUrl || '');
             setAlignment(initialData.defaultAlignment || 'ALIVE');
@@ -91,7 +98,8 @@ export const CharacterEditor: React.FC<CharacterEditorProps> = ({ isOpen, onClos
             setBioEn('');
             setOriginEs('');
             setOriginEn('');
-            setCurrentStoryText('');
+            setCurrentStoryEs('');
+            setCurrentStoryEn('');
             setImageUrl('');
             setCharacterSheetUrl('');
             setAlignment('ALIVE');
@@ -132,7 +140,7 @@ export const CharacterEditor: React.FC<CharacterEditorProps> = ({ isOpen, onClos
             defaultStats: stats,
             bio: { es: bioEs, en: bioEn },
             origin: { es: originEs, en: originEn },
-            currentStory: currentStoryText,
+            currentStory: { es: currentStoryEs, en: currentStoryEn },
             imageUrl,
             characterSheetUrl,
             defaultAlignment: alignment,
@@ -488,7 +496,10 @@ export const CharacterEditor: React.FC<CharacterEditorProps> = ({ isOpen, onClos
                             </div>
                             <div>
                                 <label className={`mb-1 block text-[10px] font-black uppercase tracking-widest ${accentClass}`}>EVALUACION DE S.H.I.E.L.D.</label>
-                                <textarea value={currentStoryText} onChange={(e) => setCurrentStoryText(e.target.value)} rows={4} className={`w-full resize-none border bg-slate-950 p-2 text-xs text-white outline-none ${borderClass} ${focusClass}`} />
+                                <div className="grid gap-3 md:grid-cols-2">
+                                    <textarea value={currentStoryEs} onChange={(e) => setCurrentStoryEs(e.target.value)} rows={4} placeholder="Texto en espanol" className={`w-full resize-none border bg-slate-950 p-2 text-xs text-white outline-none ${borderClass} ${focusClass}`} />
+                                    <textarea value={currentStoryEn} onChange={(e) => setCurrentStoryEn(e.target.value)} rows={4} placeholder="Text in English" className={`w-full resize-none border bg-slate-950 p-2 text-xs text-white outline-none ${borderClass} ${focusClass}`} />
+                                </div>
                             </div>
                         </div>
 

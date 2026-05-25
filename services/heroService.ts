@@ -3,6 +3,7 @@ import { db } from '../firebaseConfig';
 import { HeroTemplate, HeroClass } from '../types';
 import { HERO_DATABASE } from '../data/heroDatabase';
 import { GAME_EXPANSIONS } from '../data/gameContent';
+import { getHeroLoreEntry } from '../data/heroLore';
 import { preferGithubCharacterImage } from './characterGithubImageService';
 
 const COLLECTION_NAME = 'heroes';
@@ -25,6 +26,17 @@ const isDbReady = (): boolean => {
         return false;
     }
     return true;
+};
+
+const hasDetailedCopy = (value: any): boolean => {
+    if (!value) return false;
+    if (typeof value === 'string') return value.trim().length > 80;
+    if (typeof value === 'object') {
+        const es = typeof value.es === 'string' ? value.es.trim().length : 0;
+        const en = typeof value.en === 'string' ? value.en.trim().length : 0;
+        return es > 80 || en > 80;
+    }
+    return false;
 };
 
 export const getHeroTemplates = async (): Promise<HeroTemplate[]> => {
@@ -55,6 +67,10 @@ export const getHeroTemplates = async (): Promise<HeroTemplate[]> => {
             const imageParams = findField(data, ['imageParams', 'ajusteImagen', 'crop']);
             const resolvedAlignment = defaultAlignment || 'ALIVE';
             const resolvedAlias = alias || name || '';
+            const loreEntry = resolvedAlignment === 'ALIVE' ? getHeroLoreEntry(resolvedAlias) : undefined;
+            const resolvedBio = hasDetailedCopy(bio) ? bio : (loreEntry?.bio || bio || '');
+            const resolvedOrigin = hasDetailedCopy(origin) ? origin : (loreEntry?.origin || origin || '');
+            const resolvedCurrentStory = hasDetailedCopy(currentStory) ? currentStory : (loreEntry?.currentStory || currentStory || '');
 
             templates.push({
                 id: doc.id,
@@ -67,10 +83,10 @@ export const getHeroTemplates = async (): Promise<HeroTemplate[]> => {
                 },
                 imageUrl: preferGithubCharacterImage(resolvedAlias, resolvedAlignment, imageUrl || ''),
                 characterSheetUrl: characterSheetUrl || '',
-                bio: bio || '',
-                origin: origin || '',
+                bio: resolvedBio,
+                origin: resolvedOrigin,
                 alias: resolvedAlias,
-                currentStory: currentStory || '',
+                currentStory: resolvedCurrentStory,
                 objectives: Array.isArray(objectives) ? objectives : [],
                 defaultAlignment: resolvedAlignment,
                 expansionId: expansionId || 'unknown',
@@ -149,16 +165,18 @@ export const seedExpansionsToDB = async (): Promise<void> => {
         for (const exp of GAME_EXPANSIONS) {
             for (const hero of exp.heroes) {
                 const docRef = doc(db, COLLECTION_NAME, hero.id);
+                const loreEntry = getHeroLoreEntry(hero.alias);
                 const templateData: HeroTemplate = {
                     id: hero.id,
                     defaultName: hero.name,
                     alias: hero.alias,
                     defaultClass: hero.class,
-                    bio: hero.bio,
+                    bio: loreEntry?.bio || hero.bio,
                     imageUrl: preferGithubCharacterImage(hero.alias, 'ALIVE', hero.imageUrl || ''),
                     defaultStats: hero.stats,
                     defaultAlignment: 'ALIVE',
-                    currentStory: '',
+                    origin: loreEntry?.origin || '',
+                    currentStory: loreEntry?.currentStory || '',
                     objectives: [],
                     expansionId: exp.id
                 };

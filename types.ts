@@ -28,7 +28,7 @@ export interface Hero {
   class: HeroClass;
   bio: I18nString;
   origin?: I18nString;
-  currentStory?: string;
+  currentStory?: I18nString;
   objectives?: string[];
   completedObjectiveIndices?: number[];
   imageUrl?: string;
@@ -50,7 +50,7 @@ export interface HeroTemplate {
   bio?: I18nString;
   origin?: I18nString;
   alias: string;
-  currentStory?: string;
+  currentStory?: I18nString;
   objectives?: string[];
   defaultAlignment?: 'ALIVE' | 'ZOMBIE';
   expansionId?: string;

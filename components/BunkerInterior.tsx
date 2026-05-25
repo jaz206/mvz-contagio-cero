@@ -233,7 +233,7 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
             : 'No complete data on active abilities. File under review.'
     ) : '';
     const selectedHeroAssessment = selectedHero ? getSafeDossierText(
-        selectedHero.currentStory,
+        resolveI18n(selectedHero.currentStory, language),
         dossierIsZombie
             ? (language === 'es'
                 ? 'Riesgo de contaminacion extrema. Requiere vigilancia constante y protocolos de contencion reforzados.'
@@ -362,9 +362,9 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
                         <div className={`absolute inset-0 pointer-events-none opacity-5 ${activeTab === 'MEDBAY' ? 'bg-[radial-gradient(circle,#ef4444_1px,transparent_1px)] bg-[length:20px_20px]' : ''}`}></div>
                         {activeTab === 'ROSTER' ? (
                             <>
-                                {availableHeroes.map(h => <RosterHeroCard key={h.id} hero={h} onClick={() => setSelectedHeroId(h.id)} />)}
+                                {availableHeroes.map(h => <RosterHeroCard key={h.id} hero={h} language={language} onClick={() => setSelectedHeroId(h.id)} />)}
                                 {deployedHeroes.length > 0 && <div className="text-[9px] font-black text-yellow-500 uppercase mt-6 mb-2 px-4 tracking-widest border-b border-yellow-900/30 pb-1">DESPLEGADOS</div>}
-                                {deployedHeroes.map(h => <RosterHeroCard key={h.id} hero={h} onClick={() => setSelectedHeroId(h.id)} actionIcon="✕" onAction={() => onUnassign(h.id)} />)}
+                                {deployedHeroes.map(h => <RosterHeroCard key={h.id} hero={h} language={language} onClick={() => setSelectedHeroId(h.id)} actionIcon="✕" onAction={() => onUnassign(h.id)} />)}
                             </>
                         ) : (
                             injuredHeroes.map(h => {
@@ -430,6 +430,7 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
                                     <RosterHeroCard
                                         key={h.id}
                                         hero={h}
+                                        language={language}
                                         onClick={() => setSelectedHeroId(h.id)}
                                         actionIcon={actionIcon}
                                         actionMuted={!transformAvailability.allowed}
@@ -743,7 +744,7 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
     );
 };
 
-const RosterHeroCard = ({ hero, onClick, actionIcon, onAction, actionMuted = false }: { hero: Hero, onClick: () => void, actionIcon?: string, onAction?: () => void, actionMuted?: boolean }) => {
+const RosterHeroCard = ({ hero, language, onClick, actionIcon, onAction, actionMuted = false }: { hero: Hero, language: Language, onClick: () => void, actionIcon?: string, onAction?: () => void, actionMuted?: boolean }) => {
     const statusColors = {
         AVAILABLE: 'border-emerald-500 shadow-emerald-500/20',
         DEPLOYED: 'border-yellow-500 shadow-yellow-500/20',
@@ -752,7 +753,7 @@ const RosterHeroCard = ({ hero, onClick, actionIcon, onAction, actionMuted = fal
     };
     const colorClass = statusColors[hero.status] || 'border-slate-600';
     const displayImageUrl = preferGithubCharacterImage(hero.alias, hero.alignment || 'ALIVE', hero.imageUrl);
-    const dossierSummary = (hero.currentStory || hero.name || '').trim();
+    const dossierSummary = getSafeDossierText(resolveI18n(hero.currentStory, language), hero.name || '');
     const imgStyle = hero.imageParams ? {
         transform: `scale(${hero.imageParams.scale}) translate(${hero.imageParams.x}%, ${hero.imageParams.y}%)`
     } : {};
