@@ -290,7 +290,7 @@ export const ExpansionSelector: React.FC<ExpansionSelectorProps> = ({
                                     const isBlocked = isBlockedHero(hero);
                                     const transformAvailability = transformAvailabilityByHeroId.get(hero.id);
                                     const isMissingPair = !!transformAvailability && !transformAvailability.allowed;
-                                    const isDisabled = isBlocked || isMissingPair || (!isSelected && selectedHeroes.length >= 6);
+                                    const isDisabled = isBlocked || (!isSelected && selectedHeroes.length >= 6);
                                     const imgStyle = hero.imageParams ? {
                                         transform: `scale(${hero.imageParams.scale}) translate(${hero.imageParams.x}%, ${hero.imageParams.y}%)`
                                     } : {};
@@ -307,7 +307,9 @@ export const ExpansionSelector: React.FC<ExpansionSelectorProps> = ({
                                                     ? `${borderColor} ring-2 ring-offset-2 ring-offset-slate-950 ${isZombie ? 'ring-lime-500/50' : 'ring-cyan-500/50'}`
                                                     : isDisabled
                                                         ? 'cursor-not-allowed border-slate-800 opacity-30 grayscale'
-                                                        : 'border-slate-700 hover:z-10 hover:scale-[1.02] hover:border-white hover:shadow-xl'
+                                                        : isMissingPair
+                                                            ? 'border-amber-700/60 hover:z-10 hover:scale-[1.02] hover:border-amber-400 hover:shadow-xl'
+                                                            : 'border-slate-700 hover:z-10 hover:scale-[1.02] hover:border-white hover:shadow-xl'
                                                 }
                                             `}
                                         >
