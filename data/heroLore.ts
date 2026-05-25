@@ -486,6 +486,286 @@ const HERO_LORE: Record<string, HeroLoreEntry> = {
         'She combines agility, hand-to-hand combat, and offensive psychic projection with great precision. She works especially well as a fast eliminator and as a hybrid threat of mind and steel.',
         'Activo de asalto psíquico y precisión letal. Recomendado para aperturas rápidas, duelos de alto valor y neutralización de objetivos protegidos.',
         'Psychic-assault and lethal-precision asset. Recommended for rapid openings, high-value duels, and neutralization of protected targets.'
+    ),
+    nana: entry(
+        'Nana es una unidad centinela reprogramada y reconducida fuera de su propósito original de exterminio mutante. Su expediente combina memoria de combate mecánica con una identidad operativa todavía en construcción.',
+        'Nana is a reprogrammed Sentinel unit redirected away from its original mutant-extermination purpose. Its file combines machine combat memory with an operational identity still under construction.',
+        'Dispone de gran potencia física, sistemas de puntería estables y una resistencia superior a la media humana. Rinde mejor como plataforma táctica de soporte y contención sostenida.',
+        'It brings heavy physical power, stable targeting systems, and durability above human standards. It performs best as a tactical support and sustained containment platform.',
+        'Activo experimental de alto valor. Recomendado para control de zona, protección de unidades frágiles y choque mecánico supervisado.',
+        'Experimental high-value asset. Recommended for zone control, protection of fragile units, and supervised mechanical shock deployment.'
+    ),
+    daredevilartist: entry(
+        'Esta variante recoge a Matt Murdock en una presentación de archivo especial, pero conserva el mismo núcleo: abogado de día, vigilante de noche y una voluntad de hierro frente a la corrupción. Su hoja de servicio mantiene la misma mezcla de disciplina, culpa y resistencia moral.',
+        'This variant presents Matt Murdock through a special archive format, but preserves the same core: lawyer by day, vigilante by night, and an iron will against corruption. His service record keeps the same blend of discipline, guilt, and moral endurance.',
+        'Sigue basando su valor en sentidos hiperdesarrollados, lectura del entorno y combate cercano de precisión. La diferencia es estética, no operativa: continúa siendo un especialista en movilidad urbana y neutralización silenciosa.',
+        'His value still rests on hyper-developed senses, environmental reading, and precise close-quarters combat. The difference is aesthetic, not operational: he remains a specialist in urban mobility and silent neutralization.',
+        'Variante de archivo con rendimiento equivalente al original. Recomendado para patrulla urbana, protección de civiles y presión sostenida sobre redes criminales.',
+        'Archive-format variant with performance equivalent to the original. Recommended for urban patrol, civilian protection, and sustained pressure on criminal networks.'
+    ),
+    daredevilelektra: entry(
+        'Elektra Natchios tomó el manto de Daredevil llevando al símbolo una mezcla distinta de culpa, letalidad y autocontrol. Su expediente refleja una combatiente entrenada para matar que decide contenerse cuando el papel exige algo más que sangre.',
+        'Elektra Natchios took up the Daredevil mantle, bringing to the symbol a different blend of guilt, lethality, and self-control. Her file reflects a fighter trained to kill who chooses restraint when the role demands more than blood.',
+        'Combina velocidad, técnica ninja y sentidos disciplinados con una agresividad muy superior a la de Matt Murdock. Destaca en infiltración, duelos rápidos y resolución violenta de espacios cerrados.',
+        'She combines speed, ninja technique, and disciplined senses with aggression well beyond Matt Murdock’s approach. She excels in infiltration, rapid duels, and violent resolution in confined spaces.',
+        'Activo de sustitución de alto riesgo y gran eficacia. Recomendado para operaciones donde la identidad simbólica y la fuerza decisiva deban convivir.',
+        'High-risk, high-efficiency mantle-substitution asset. Recommended for operations where symbolic identity and decisive force must coexist.'
+    ),
+    marshallbullseye: entry(
+        'Esta variante traslada a Lester a un registro casi legendario de pistolero implacable. El expediente subraya lo mismo que en cualquier otra encarnación: obsesión con la puntería perfecta y una relación enfermiza con la violencia como espectáculo.',
+        'This variant shifts Lester into an almost legendary gunslinger register. The file underscores the same core seen in every incarnation: obsession with perfect aim and an unhealthy relationship with violence as spectacle.',
+        'Mantiene precisión extrema con armas arrojadizas o de fuego, velocidad de ejecución y una capacidad malsana para convertir cualquier objeto en munición letal. Funciona como verdugo móvil y pieza de control por terror.',
+        'He retains extreme precision with thrown or firearm weapons, execution speed, and a sick ability to turn almost anything into lethal ammunition. He functions as a mobile executioner and terror-control piece.',
+        'Activo de precisión hostil. Recomendado solo para escenarios donde el daño psicológico sobre el enemigo compense el riesgo moral del despliegue.',
+        'Hostile-precision asset. Recommended only for scenarios where psychological damage to the enemy outweighs the moral risk of deployment.'
+    ),
+    oldmanhawkeye: entry(
+        'Clint Barton envejecido conserva menos vista, menos margen y la misma terquedad suicida de siempre. Su expediente refleja a un veterano roto por la pérdida, pero todavía peligrosísimo cuando se le da un blanco y algo de tiempo.',
+        'An aged Clint Barton retains less sight, less margin, and the same suicidal stubbornness as ever. His file reflects a veteran broken by loss, yet still extremely dangerous when given a target and enough time.',
+        'Aunque el cuerpo ya no responda como antes, la experiencia compensa con lectura de terreno, disciplina de fuego y brutal economía de movimiento. Es un recurso de caza lenta, no de explosión inmediata.',
+        'Though the body no longer responds as it once did, experience compensates with terrain reading, fire discipline, and brutal economy of movement. He is a slow-hunt asset, not an instant-explosion one.',
+        'Activo veterano de precisión residual. Recomendado para vigilancia, represalia planificada y misiones donde la experiencia valga más que la velocidad.',
+        'Veteran residual-precision asset. Recommended for overwatch, planned retaliation, and missions where experience matters more than speed.'
+    ),
+    oldmanlogan: entry(
+        'Esta variante de Logan carga con un desgaste emocional y físico más profundo que el del expediente estándar. Aun así, bajo la fatiga persiste la misma máquina de supervivencia, más seca, más amarga y quizá más peligrosa.',
+        'This Logan variant carries deeper emotional and physical wear than the standard file. Even so, beneath the fatigue remains the same survival machine, drier, angrier, and perhaps more dangerous.',
+        'Sigue contando con factor curativo, garras letales y una tolerancia salvaje al castigo, aunque opera desde la experiencia y la dureza acumulada más que desde el impulso. Es un depredador cansado, no debilitado.',
+        'He still carries a healing factor, lethal claws, and savage pain tolerance, though he operates more from accumulated experience and hardness than impulse. He is a tired predator, not a weakened one.',
+        'Activo crepuscular de altísimo instinto. Recomendado para cacerías de larga duración, entornos hostiles y operaciones donde el cansancio no sea una opción.',
+        'Twilight-phase asset with exceptional instinct. Recommended for long hunts, hostile environments, and operations where exhaustion is not an option.'
+    ),
+    spidermanartist: entry(
+        'Esta edición especial mantiene intacto el núcleo de Peter Parker: ingenio, responsabilidad y un impulso casi compulsivo por intervenir cuando alguien está en peligro. El formato cambia, el sujeto no.',
+        'This special edition preserves Peter Parker’s core intact: wit, responsibility, and an almost compulsive urge to intervene when someone is in danger. The format changes; the subject does not.',
+        'Su combinación de agilidad extrema, fuerza proporcional y sentido arácnido sigue ofreciendo movilidad, improvisación y una capacidad poco común para sobrevivir a lo imposible. Opera como explorador, rescatista y disruptor en un mismo cuerpo.',
+        'His combination of extreme agility, proportional strength, and spider-sense still delivers mobility, improvisation, and an uncommon ability to survive the impossible. He operates as scout, rescuer, and disruptor in the same body.',
+        'Variante de archivo con valor operativo estable. Recomendado para respuesta rápida, extracción urbana y gestión de amenazas imprevisibles.',
+        'Archive-format variant with stable operational value. Recommended for rapid response, urban extraction, and management of unpredictable threats.'
+    ),
+    baronzemo: entry(
+        'Helmut Zemo heredó un legado de odio y lo refinó en forma de estrategia, paciencia y venganza calculada. Su expediente refleja a un aristócrata de la destrucción, más peligroso por su cabeza que por su fuerza física.',
+        'Helmut Zemo inherited a legacy of hatred and refined it into strategy, patience, and calculated revenge. His file reflects an aristocrat of destruction, more dangerous for his mind than for his physical power.',
+        'Destaca en planificación, manipulación de grupos y explotación de fracturas ideológicas dentro del enemigo. No gana por choque frontal, sino por convertir la estructura rival en un arma contra sí misma.',
+        'He excels in planning, group manipulation, and exploitation of ideological fractures within the enemy. He wins not through frontal shock, but by turning the rival structure into a weapon against itself.',
+        'Activo de intriga táctica. Recomendado para operaciones de sabotaje, guerra de confianza y desestabilización de liderazgos hostiles.',
+        'Tactical-intrigue asset. Recommended for sabotage, confidence warfare, and destabilization of hostile leadership.'
+    ),
+    blackbolt: entry(
+        'Blackagar Boltagon ha cargado durante toda su vida con el deber de gobernar sin concederse el lujo de hablar libremente. Su expediente transmite contención absoluta, nobleza severa y una conciencia constante del daño que puede causar.',
+        'Blackagar Boltagon has spent his life carrying the duty to rule without granting himself the luxury of speaking freely. His file conveys absolute restraint, severe nobility, and constant awareness of the damage he can cause.',
+        'Su voz es un arma de destrucción masiva; incluso una fracción de su potencia puede arrasar estructuras o cuerpos enteros. Fuera de eso, mantiene disciplina física, liderazgo y una presencia táctica de primera categoría.',
+        'His voice is a weapon of mass destruction; even a fraction of its power can level structures or bodies outright. Beyond that, he maintains physical discipline, leadership, and first-rate tactical presence.',
+        'Activo de contención vocal extrema. Recomendado solo en crisis mayores y con reglas de enfrentamiento claras antes de cualquier despliegue.',
+        'Extreme vocal-containment asset. Recommended only in major crises and with clear rules of engagement before any deployment.'
+    ),
+    blackknight: entry(
+        'Dane Whitman heredó tanto un nombre heroico como una espada maldita, y desde entonces vive negociando con ambos pesos. Su expediente combina caballerosidad moderna, culpa heredada y una firme voluntad de no dejar que el arma decida por él.',
+        'Dane Whitman inherited both a heroic name and a cursed sword, and has lived ever since negotiating with both burdens. His file combines modern chivalry, inherited guilt, and a firm will not to let the weapon choose for him.',
+        'La Espada de Ébano lo convierte en una amenaza letal en combate cercano, capaz de atravesar defensas y sostener duelos prolongados. Su valor aumenta cuando la operación exige una punta de lanza disciplinada y obstinada.',
+        'The Ebony Blade makes him a lethal close-combat threat capable of piercing defenses and sustaining prolonged duels. His value rises when the operation requires a disciplined and stubborn spearhead.',
+        'Activo de vanguardia caballeresca. Recomendado para asaltos dirigidos, defensa de personal clave y enfrentamientos contra campeones enemigos.',
+        'Chivalric-vanguard asset. Recommended for directed assaults, key-personnel defense, and clashes against enemy champions.'
+    ),
+    bullseye: entry(
+        'Lester ha reducido la violencia a un arte de precisión fría y profundamente enfermiza. Su expediente lo define por ego, sadismo y una puntería tan perfecta que convierte cualquier superficie del campo en amenaza potencial.',
+        'Lester has reduced violence to an art of cold and deeply unhealthy precision. His file is defined by ego, sadism, and marksmanship so perfect that it turns any battlefield surface into a potential threat.',
+        'Puede usar armas de fuego, cuchillos o simples objetos cotidianos con una eficacia letal absurda. Destaca por velocidad de ejecución, economía de movimiento y capacidad de castigar cualquier exposición mínima.',
+        'He can use firearms, knives, or ordinary objects with absurd lethal efficiency. He stands out for execution speed, economy of movement, and the ability to punish even minimal exposure.',
+        'Activo de eliminación quirúrgica hostil. Recomendado solo en situaciones donde la precisión extrema pese más que cualquier consideración ética.',
+        'Hostile surgical-elimination asset. Recommended only in situations where extreme precision outweighs any ethical consideration.'
+    ),
+    carnage: entry(
+        'Cletus Kasady es una convergencia entre psicopatía pura y un simbionte aún menos estable que el de Venom. Su expediente no presenta redención ni ambigüedad: solo violencia celebrada con entusiasmo patológico.',
+        'Cletus Kasady is a convergence of pure psychopathy and a symbiote even less stable than Venom’s. His file offers neither redemption nor ambiguity: only violence celebrated with pathological enthusiasm.',
+        'Su simbionte potencia fuerza, velocidad y capacidad de desgarro, añadiendo una imprevisibilidad orgánica difícil de contener. No busca vencer de forma eficiente, sino convertir el combate en carnicería.',
+        'His symbiote enhances strength, speed, and tearing capability while adding an organic unpredictability difficult to contain. He does not seek efficient victory, but to turn combat into slaughter.',
+        'Activo de riesgo crítico no recomendable salvo colapso total del frente. Su despliegue solo se considera cuando el control del daño ha dejado de ser realista.',
+        'Critical-risk asset not recommended outside total front collapse. Deployment is considered only when damage control has already ceased to be realistic.'
+    ),
+    crossbones: entry(
+        'Brock Rumlow ha construido su carrera sobre disciplina mercenaria, resentimiento y una violencia sin matices. Su expediente muestra un operador duro, persistente y perfectamente cómodo trabajando como martillo de otros.',
+        'Brock Rumlow has built his career on mercenary discipline, resentment, and violence without nuance. His file shows a hard, persistent operator perfectly comfortable serving as someone else’s hammer.',
+        'Sobresale en combate físico, armas convencionales y presión ofensiva de corto alcance. No destaca por sutileza, pero sí por obediencia táctica y capacidad para seguir avanzando incluso cuando el entorno ya debería frenar a cualquiera.',
+        'He excels in physical combat, conventional weapons, and short-range offensive pressure. He is not subtle, but he does stand out for tactical obedience and the ability to keep advancing long after the environment should stop anyone else.',
+        'Activo de asalto brutal. Recomendado para irrupción de posiciones, protección intimidatoria y desgaste directo de fuerzas enemigas.',
+        'Brutal-assault asset. Recommended for breaching positions, intimidation protection, and direct attrition of enemy forces.'
+    ),
+    darkphoenix: entry(
+        'Jean Grey en estado Fénix Oscura representa la fractura definitiva entre poder absoluto y estabilidad emocional. Su expediente está marcado por tragedia, escala cósmica y el peligro permanente de que la voluntad individual no baste para contener lo que porta.',
+        'Jean Grey in her Dark Phoenix state represents the ultimate fracture between absolute power and emotional stability. Her file is marked by tragedy, cosmic scale, and the permanent danger that individual will may no longer be enough to contain what she carries.',
+        'Puede desatar energía de magnitud astronómica, alterar materia y aniquilar defensas a un nivel fuera de escala para la mayoría de operaciones terrestres. No es una unidad táctica normal, sino una posible fuerza de extinción localizada.',
+        'She can unleash energy on an astronomical scale, alter matter, and annihilate defenses beyond the scale of most terrestrial operations. She is not a normal tactical unit but a possible localized extinction force.',
+        'Activo de categoría terminal. Recomendado solo en escenarios de último recurso donde la alternativa inmediata sea peor que el riesgo de desplegarla.',
+        'Terminal-category asset. Recommended only in last-resort scenarios where the immediate alternative is worse than the risk of deploying her.'
+    ),
+    deadpool: entry(
+        'Wade Wilson convirtió dolor, trauma y deterioro mental en una versión grotesca de supervivencia eterna. Su expediente mezcla utilidad real, indisciplina extrema y una imposibilidad casi absoluta de prever la siguiente decisión del sujeto.',
+        'Wade Wilson turned pain, trauma, and mental deterioration into a grotesque form of eternal survival. His file mixes real usefulness, extreme indiscipline, and an almost total impossibility of predicting the subject’s next decision.',
+        'Su factor curativo, su tolerancia al daño y su versatilidad con armamento lo hacen peligrosamente persistente. Lo que gana en aguante lo pierde en control, pero cuando se necesita caos dirigido pocas piezas aguantan tanto.',
+        'His healing factor, pain tolerance, and weapon versatility make him dangerously persistent. What he gains in staying power he loses in control, but when directed chaos is needed few assets last as long.',
+        'Activo de utilidad imprevisible. Recomendado para distracción, agotamiento del enemigo y operaciones donde la cordura no sea un requisito de misión.',
+        'Unpredictably useful asset. Recommended for distraction, enemy exhaustion, and operations where sanity is not a mission requirement.'
+    ),
+    doctoroctopus: entry(
+        'Otto Octavius fue un científico brillante cuya vanidad y resentimiento terminaron amplificados por su propia creación. Su expediente refleja arrogancia intelectual, necesidad de control y una tendencia a justificar cualquier medio si refuerza su ego.',
+        'Otto Octavius was a brilliant scientist whose vanity and resentment were ultimately amplified by his own invention. His file reflects intellectual arrogance, a need for control, and a tendency to justify any means if it reinforces his ego.',
+        'Sus brazos mecánicos le otorgan fuerza, alcance, multitarea y capacidad de combate en espacios congestionados. Funciona muy bien como controlador de área y como cerebro táctico cuando el campo exige coordinación mecánica precisa.',
+        'His mechanical arms grant strength, reach, multitasking, and strong combat capability in congested spaces. He functions very well as an area controller and tactical brain when the field demands precise mechanical coordination.',
+        'Activo de control técnico. Recomendado para asaltos urbanos, manipulación de infraestructuras y combate en pasillos estrechos.',
+        'Technical-control asset. Recommended for urban assaults, infrastructure manipulation, and combat in narrow corridors.'
+    ),
+    electro: entry(
+        'Max Dillon transformó frustración personal y poder recién adquirido en una carrera criminal alimentada por impulsividad. Su expediente demuestra que, incluso sin gran disciplina, una fuente de energía humana puede alterar por sí sola un teatro de operaciones.',
+        'Max Dillon turned personal frustration and newly gained power into a criminal career fueled by impulsiveness. His file proves that, even without deep discipline, a human power source can alter a theater of operations on its own.',
+        'Genera y canaliza electricidad para incapacitar, sobrecargar sistemas y castigar agrupaciones enemigas. Es especialmente útil contra blindaje ligero, tecnología y despliegues que dependan de continuidad energética.',
+        'He generates and channels electricity to incapacitate, overload systems, and punish hostile clusters. He is especially useful against light armor, technology, and deployments dependent on continuous power.',
+        'Activo de saturación energética. Recomendado para sabotaje de sistemas, negación tecnológica y castigo de agrupaciones compactas.',
+        'Energy-saturation asset. Recommended for system sabotage, tech denial, and punishment of dense hostile groupings.'
+    ),
+    elektra: entry(
+        'Elektra Natchios fue moldeada por el dolor, la disciplina y un aprendizaje de muerte tan refinado como devastador. Su expediente combina elegancia letal, autocontrol severo y una línea moral que rara vez se parece a la del resto del equipo.',
+        'Elektra Natchios was shaped by pain, discipline, and a training in death as refined as it is devastating. Her file combines lethal elegance, severe self-control, and a moral line that rarely resembles that of the rest of the team.',
+        'Es una especialista absoluta en infiltración, asesinato silencioso y combate cuerpo a cuerpo con armas blancas. Rinde al máximo cuando la misión exige rapidez, limpieza y ninguna concesión emocional.',
+        'She is an absolute specialist in infiltration, silent assassination, and bladed close combat. She performs at her best when the mission demands speed, cleanliness, and no emotional concessions.',
+        'Activo de inserción mortal. Recomendado para eliminación selectiva, entrada furtiva y neutralización de blancos muy protegidos.',
+        'Lethal-insertion asset. Recommended for selective elimination, stealth entry, and neutralization of heavily protected targets.'
+    ),
+    juggernaut: entry(
+        'Cain Marko ha vivido a la sombra del resentimiento hasta convertirse en la encarnación física de la fuerza imparable. Su expediente refleja brutalidad, terquedad y una resistencia a la humillación que lo empuja a seguir avanzando aunque todo se derrumbe.',
+        'Cain Marko has lived in the shadow of resentment until becoming the physical embodiment of unstoppable force. His file reflects brutality, stubbornness, and a resistance to humiliation that drives him forward even when everything collapses.',
+        'Su conexión mística y su masa lo convierten en un proyectil casi imposible de frenar una vez toma impulso. No ofrece sutileza ni flexibilidad, pero pocas piezas rompen una defensa con tanta certeza.',
+        'His mystical empowerment and mass turn him into a nearly impossible projectile to stop once momentum is gained. He offers neither subtlety nor flexibility, but few assets break a defense with such certainty.',
+        'Activo de ruptura total. Recomendado para colapsar fortificaciones, atraer fuego enemigo y abrir corredores a cualquier precio.',
+        'Total-breach asset. Recommended for collapsing fortifications, drawing enemy fire, and opening corridors at any cost.'
+    ),
+    kingpin: entry(
+        'Wilson Fisk construyó un imperio criminal con la disciplina de un ejecutivo y la violencia de un depredador. Su expediente refleja inteligencia estratégica, dominio del miedo y una comprensión perfecta de cómo doblegar sistemas completos sin disparar primero.',
+        'Wilson Fisk built a criminal empire with the discipline of an executive and the violence of a predator. His file reflects strategic intelligence, mastery of fear, and a perfect understanding of how to bend entire systems without firing first.',
+        'Aunque su tamaño y fuerza lo vuelven peligroso en combate directo, su verdadero poder reside en redes, presión y control estructural. Funciona mejor como centro de mando coercitivo que como simple matón de primera línea.',
+        'Though his size and strength make him dangerous in direct combat, his real power lies in networks, pressure, and structural control. He functions better as a coercive command center than as a simple front-line thug.',
+        'Activo de mando criminal. Recomendado para control territorial, negociación hostil y campañas de desgaste donde la ciudad misma sea parte del arma.',
+        'Criminal-command asset. Recommended for territorial control, hostile negotiation, and attritional campaigns where the city itself becomes part of the weapon.'
+    ),
+    kittypryde: entry(
+        'Kitty Pryde creció pasando muy rápido de alumna prometedora a combatiente esencial, sin perder una humanidad sorprendente para alguien con tanto historial de guerra. Su expediente combina ingenio, calidez y una enorme capacidad de adaptación.',
+        'Kitty Pryde grew very quickly from promising student to essential combatant without losing a remarkable humanity for someone with so much war behind her. Her file combines ingenuity, warmth, and enormous adaptability.',
+        'Su capacidad de atravesar materia le permite infiltrarse, sabotear y extraer aliados ignorando barreras físicas convencionales. Es especialmente útil cuando el terreno parece imposible y la puerta correcta no existe.',
+        'Her ability to phase through matter lets her infiltrate, sabotage, and extract allies by ignoring conventional physical barriers. She is especially useful when terrain appears impossible and the right door simply does not exist.',
+        'Activo de infiltración avanzada. Recomendado para penetración silenciosa, recuperación de activos y evasión de entornos fuertemente cerrados.',
+        'Advanced-infiltration asset. Recommended for silent penetration, asset recovery, and evasion inside heavily sealed environments.'
+    ),
+    lizard: entry(
+        'Curt Connors encarna una tragedia científica donde la ambición por curar terminó liberando un instinto depredador difícil de contener. Su expediente oscila entre el médico brillante y la bestia territorial que emerge cuando la razón retrocede.',
+        'Curt Connors embodies a scientific tragedy in which the ambition to heal ended up unleashing a predatory instinct difficult to contain. His file swings between brilliant physician and territorial beast whenever reason gives ground.',
+        'Su forma reptil aporta fuerza, velocidad, regeneración y un salvajismo constante en combate cercano. Rinde bien en persecución, ruptura y escenarios donde la ferocidad animal marque el ritmo.',
+        'His reptilian form brings strength, speed, regeneration, and constant savagery in close combat. He performs well in pursuit, breaching, and scenarios where animal ferocity sets the tempo.',
+        'Activo de choque biológico inestable. Recomendado para ruptura agresiva y caza en espacios donde la contención posterior sea viable.',
+        'Unstable biological-shock asset. Recommended for aggressive breaching and hunting in spaces where later containment remains viable.'
+    ),
+    loki: entry(
+        'Loki ha vivido entre tronos, destierros y ficciones tejidas a su medida, moviéndose siempre entre villano, aliado incómodo y superviviente cósmico. Su expediente define a un manipulador brillante cuya lealtad suele durar lo mismo que su interés.',
+        'Loki has lived among thrones, exiles, and fictions of his own making, always moving between villain, uneasy ally, and cosmic survivor. His file defines a brilliant manipulator whose loyalty often lasts only as long as his interest.',
+        'Domina magia, ilusión, engaño y guerra psicológica con una flexibilidad casi teatral. No aplasta por fuerza directa: fractura voluntades, altera percepciones y convierte la incertidumbre en arma.',
+        'He masters magic, illusion, deception, and psychological warfare with almost theatrical flexibility. He does not overwhelm through direct force: he fractures wills, alters perception, and turns uncertainty into a weapon.',
+        'Activo de manipulación arcana. Recomendado para confusión estratégica, negociación imposible y operaciones donde la verdad sea negociable.',
+        'Arcane-manipulation asset. Recommended for strategic confusion, impossible negotiation, and operations where truth itself is negotiable.'
+    ),
+    milesmorales: entry(
+        'Miles Morales heredó el peso del símbolo de Spider-Man a una edad en la que casi nadie está preparado ni para sí mismo. Su expediente refleja coraje, empatía y una curva de aprendizaje muy rápida bajo presión extrema.',
+        'Miles Morales inherited the weight of the Spider-Man symbol at an age when almost nobody is ready even for themselves. His file reflects courage, empathy, and a very fast learning curve under extreme pressure.',
+        'A su movilidad arácnida suma camuflaje activo y descargas bioeléctricas capaces de sorprender incluso a rivales experimentados. Es excelente para infiltración, rescate y neutralización rápida sin potencia masiva.',
+        'To his spider-like mobility he adds active camouflage and bioelectric discharges capable of surprising even experienced opponents. He excels at infiltration, rescue, and rapid neutralization without massive output.',
+        'Activo de sigilo y respuesta joven. Recomendado para reconocimiento encubierto, extracción urbana y presión táctica sobre blancos móviles.',
+        'Stealth and rapid-response youth asset. Recommended for covert reconnaissance, urban extraction, and tactical pressure on mobile targets.'
+    ),
+    moonknight: entry(
+        'Marc Spector opera entre trauma, fe fragmentada y una identidad que nunca termina de estabilizarse. Su expediente refleja brutalidad controlada, experiencia paramilitar y una relación compleja con la violencia como forma de servicio.',
+        'Marc Spector operates among trauma, fractured faith, and an identity that never fully stabilizes. His file reflects controlled brutality, paramilitary experience, and a complex relationship with violence as a form of service.',
+        'Combina entrenamiento de mercenario, tolerancia al dolor y un estilo de combate que busca abrumar al rival antes de que pueda asentarse. Rinde bien en entornos nocturnos, patrulla urbana y represalia directa.',
+        'He combines mercenary training, pain tolerance, and a fighting style built to overwhelm the opponent before they can settle in. He performs well in nighttime environments, urban patrol, and direct reprisal.',
+        'Activo de castigo nocturno. Recomendado para persecución urbana, presión sobre redes violentas y operaciones donde el miedo sea útil.',
+        'Night-punishment asset. Recommended for urban pursuit, pressure on violent networks, and operations where fear is useful.'
+    ),
+    morbius: entry(
+        'Michael Morbius intentó curar su propia enfermedad con ciencia extrema y acabó creando una nueva forma de condena. Su expediente refleja culpa, aislamiento y un equilibrio precario entre intelecto brillante y hambre depredadora.',
+        'Michael Morbius tried to cure his own condition through extreme science and ended up creating a new form of damnation. His file reflects guilt, isolation, and a precarious balance between brilliant intellect and predatory hunger.',
+        'Dispone de fuerza, velocidad y sentidos aumentados, además de una capacidad de movilidad aérea limitada y gran conocimiento biomédico. Es útil cuando se necesita a la vez depredador y analista de laboratorio.',
+        'He possesses enhanced strength, speed, and senses, along with limited aerial mobility and deep biomedical knowledge. He is useful when both predator and laboratory analyst are needed in the same body.',
+        'Activo biológico de doble filo. Recomendado para rastreo, contención de amenazas orgánicas y análisis de emergencias hematológicas o infecciosas.',
+        'Double-edged biological asset. Recommended for tracking, containment of organic threats, and analysis of hematological or infectious emergencies.'
+    ),
+    namor: entry(
+        'Namor gobierna Atlantis con el orgullo de un monarca que nunca ha pedido permiso para existir. Su expediente lo sitúa entre aliado temible y potencia geopolítica impredecible, siempre guiado por el interés de su pueblo.',
+        'Namor rules Atlantis with the pride of a monarch who has never asked permission to exist. His file places him between fearsome ally and unpredictable geopolitical power, always guided by the interest of his people.',
+        'Bajo el agua y fuera de ella combina fuerza masiva, velocidad, vuelo y agresividad regia. Es una pieza de dominio ofensivo cuyo rendimiento crece cuando el escenario incluye costa, ríos o infraestructura marítima.',
+        'In and out of the water he combines massive strength, speed, flight, and regal aggression. He is an offensive-dominance piece whose performance rises whenever the scenario includes coastlines, rivers, or maritime infrastructure.',
+        'Activo de supremacía anfibia. Recomendado para intervención costera, choque frontal y negociación armada con amenazas de gran escala.',
+        'Amphibious-supremacy asset. Recommended for coastal intervention, frontal shock, and armed negotiation with large-scale threats.'
+    ),
+    sabretooth: entry(
+        'Victor Creed ha convertido el salvajismo en identidad y la crueldad en método. Su expediente muestra una criatura humana apenas sujeta por cálculo suficiente para dirigir su violencia hacia el blanco correcto.',
+        'Victor Creed has turned savagery into identity and cruelty into method. His file shows a human creature barely restrained by just enough calculation to direct its violence at the proper target.',
+        'Su fuerza, velocidad, olfato y capacidad regenerativa lo convierten en un perseguidor de pesadilla. Es especialmente eficaz en combate cercano y en escenarios donde la brutalidad pura desgaste más rápido que la táctica limpia.',
+        'His strength, speed, scent tracking, and regenerative ability make him a nightmare pursuer. He is especially effective in close combat and in scenarios where pure brutality wears the enemy down faster than clean tactics.',
+        'Activo de caza feroz. Recomendado para persecución, combate de desgaste y ruptura de moral por intimidación física directa.',
+        'Feral-hunt asset. Recommended for pursuit, attritional combat, and morale-breaking through direct physical intimidation.'
+    ),
+    shangchi: entry(
+        'Shang-Chi fue criado como arma viviente y pasó gran parte de su vida reaprendiendo lo que significa elegir por sí mismo. Su expediente combina disciplina absoluta, serenidad y una eficacia marcial casi perfecta.',
+        'Shang-Chi was raised as a living weapon and spent much of his life relearning what it means to choose for himself. His file combines absolute discipline, serenity, and nearly perfect martial efficiency.',
+        'No necesita armamento ni poder externo para dominar el combate: su técnica, lectura corporal y velocidad de ejecución bastan para desactivar amenazas superiores. Rinde al máximo en espacios cerrados y duelos de alto valor.',
+        'He does not need external weapons or powers to dominate combat: his technique, body-reading, and execution speed are enough to disable superior threats. He performs best in confined spaces and high-value duels.',
+        'Activo de excelencia marcial. Recomendado para neutralización precisa, entrenamiento de élite y resolución de conflictos sin dependencia tecnológica.',
+        'Martial-excellence asset. Recommended for precise neutralization, elite training, and conflict resolution without technological dependence.'
+    ),
+    spiderwoman: entry(
+        'Jessica Drew ha sido espía, agente doble y heroína mientras trataba de recomponer una identidad marcada por la manipulación. Su expediente refleja resistencia psicológica, oficio encubierto y una voluntad muy difícil de desactivar.',
+        'Jessica Drew has been spy, double agent, and hero while trying to rebuild an identity shaped by manipulation. Her file reflects psychological endurance, covert tradecraft, and a will very difficult to switch off.',
+        'Combina fuerza aumentada, vuelo, sigilo y bioelectricidad con entrenamiento de inteligencia. Es especialmente valiosa cuando una misión exige a la vez infiltración, combate y lectura fina del entorno humano.',
+        'She combines enhanced strength, flight, stealth, and bioelectricity with intelligence training. She is especially valuable when a mission demands infiltration, combat, and fine reading of the human environment at once.',
+        'Activo de espionaje ofensivo. Recomendado para penetración encubierta, contrainteligencia y extracción de información bajo presión.',
+        'Offensive-espionage asset. Recommended for covert penetration, counterintelligence, and information extraction under pressure.'
+    ),
+    starlord: entry(
+        'Peter Quill ha sobrevivido a imperios, sectas cósmicas y equipos imposibles gracias a una mezcla de descaro, liderazgo improvisado y suerte bien aprovechada. Su expediente no inspira confianza inmediata, pero sí una sorprendente tasa de supervivencia.',
+        'Peter Quill has survived empires, cosmic cults, and impossible teams through a blend of nerve, improvised leadership, and well-used luck. His file does not inspire immediate confidence, but it does show a surprising survival rate.',
+        'Aporta movilidad táctica, armamento dual y una notable capacidad para coordinar personalidades dispares en escenarios de caos. Destaca cuando el plan ha dejado de existir y alguien tiene que mantener el movimiento.',
+        'He brings tactical mobility, dual sidearms, and a notable ability to coordinate clashing personalities in chaotic scenarios. He stands out when the plan has already collapsed and someone still has to keep the team moving.',
+        'Activo de liderazgo flexible. Recomendado para operaciones móviles, grupos heterogéneos y escenarios donde el carisma operativo importe tanto como la potencia.',
+        'Flexible-leadership asset. Recommended for mobile operations, heterogeneous teams, and scenarios where operational charisma matters as much as firepower.'
+    ),
+    vulture: entry(
+        'Adrian Toomes transformó resentimiento, ambición y talento técnico en una depredación aérea sostenida por décadas. Su expediente lo describe como oportunista paciente, poco glamuroso y peligrosamente constante.',
+        'Adrian Toomes turned resentment, ambition, and technical skill into aerial predation sustained for decades. His file describes him as a patient opportunist, not glamorous but dangerously consistent.',
+        'Su arnés le concede vuelo, maniobra y capacidad de ataque rápido desde ángulos difíciles de cubrir. Resulta útil como hostigador aéreo y como pieza de desgaste contra formaciones dispersas.',
+        'His harness grants flight, maneuverability, and fast attack capability from angles difficult to cover. He is useful as an aerial harasser and attrition piece against dispersed formations.',
+        'Activo de presión vertical. Recomendado para acoso aéreo, patrulla hostil y explotación de huecos defensivos desde altura.',
+        'Vertical-pressure asset. Recommended for aerial harassment, hostile patrol, and exploitation of defensive gaps from above.'
+    ),
+    warmachine: entry(
+        'James Rhodes ha sido piloto, soldado y uno de los pocos capaces de soportar la presión de llevar una armadura de guerra sin perder claridad moral. Su expediente combina disciplina militar, lealtad firme y una comprensión muy real del coste del combate.',
+        'James Rhodes has been pilot, soldier, and one of the few capable of bearing a war armor without losing moral clarity. His file combines military discipline, firm loyalty, and a very real understanding of combat’s cost.',
+        'Su plataforma War Machine prioriza potencia de fuego, resistencia y apoyo pesado por encima de la versatilidad estilizada de Stark. Es ideal para sostener una ofensiva o cubrir retirada con una lluvia de castigo controlado.',
+        'His War Machine platform prioritizes firepower, durability, and heavy support over the more stylized versatility of Stark. It is ideal for sustaining an offensive or covering a retreat with disciplined punishment.',
+        'Activo de artillería táctica. Recomendado para cobertura de columnas, supresión sostenida y respuesta militar de alta intensidad.',
+        'Tactical-artillery asset. Recommended for column cover, sustained suppression, and high-intensity military response.'
+    ),
+    wasp: entry(
+        'Janet Van Dyne fue mucho más que socia de laboratorio: su expediente la sitúa como fundadora, estratega social y figura clave en la cohesión vengadora. Tras una imagen luminosa hay una operadora muy difícil de subestimar.',
+        'Janet Van Dyne was far more than a laboratory partner: her file places her as founder, social strategist, and a key figure in Avengers cohesion. Beneath the bright image stands an operator very hard to underestimate.',
+        'Puede reducir su tamaño, volar y proyectar bio-descargas mientras se mueve por espacios casi imposibles para otros agentes. Su combinación de movilidad, sigilo y hostigamiento la vuelve excelente para apoyo quirúrgico.',
+        'She can shrink, fly, and project bio-stings while moving through spaces almost impossible for other agents. Her mix of mobility, stealth, and harassment makes her excellent for surgical support.',
+        'Activo de inserción mínima y hostigamiento preciso. Recomendado para reconocimiento encubierto, sabotaje fino y apoyo a objetivos de alto valor.',
+        'Minimal-insertion and precise-harassment asset. Recommended for covert reconnaissance, fine sabotage, and support on high-value targets.'
+    ),
+    wintersoldier: entry(
+        'Bucky Barnes sobrevivió a la guerra, al lavado de cerebro y a décadas de convertir su propia memoria en terreno enemigo. Su expediente refleja un operador excepcional marcado por culpa profunda, pero todavía capaz de una lealtad feroz.',
+        'Bucky Barnes survived war, brainwashing, and decades of having his own memory turned into hostile ground. His file reflects an exceptional operator marked by deep guilt, yet still capable of fierce loyalty.',
+        'Combina puntería de élite, brazo cibernético, infiltración y experiencia negra de combate en múltiples teatros. Es especialmente eficaz cuando la misión exige matar rápido, desaparecer y seguir operando bajo presión extrema.',
+        'He combines elite marksmanship, a cybernetic arm, infiltration skill, and black-ops combat experience across multiple theaters. He is especially effective when the mission demands killing fast, vanishing, and continuing to operate under extreme pressure.',
+        'Activo de operaciones encubiertas de alta letalidad. Recomendado para eliminación precisa, sabotaje y extracción en entorno hostil persistente.',
+        'High-lethality covert-operations asset. Recommended for precise elimination, sabotage, and extraction inside persistently hostile environments.'
     )
 };
 
