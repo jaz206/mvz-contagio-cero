@@ -119,11 +119,18 @@ export const AdminStaffPanel: React.FC<AdminStaffPanelProps> = ({
 
     useEffect(() => {
         if (!isOpen) return;
+        setActiveTab('staff');
+        setEditingHero(null);
+        setCreatingHero(false);
         setIntroDraft(cloneIntroConfig(introConfig));
         setStoryDraft(cloneStoryConfig(storyConfig));
         loadAccounts();
-        loadHeroes();
     }, [isOpen, introConfig, storyConfig]);
+
+    useEffect(() => {
+        if (!isOpen || activeTab !== 'characters' || heroes.length > 0) return;
+        loadHeroes();
+    }, [activeTab, heroes.length, isOpen]);
 
     if (!isOpen) return null;
 
