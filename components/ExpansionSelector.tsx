@@ -168,8 +168,8 @@ export const ExpansionSelector: React.FC<ExpansionSelectorProps> = ({
         if (!hasTransformRuleAvailable) {
             alert(
                 language === 'es'
-                    ? 'Con las expansiones elegidas no tienes ninguna pareja valida para la regla de cura / infeccion. Puedes seguir jugando, pero esa regla quedara desactivada.'
-                    : 'With the selected expansions you have no valid cure / infection pair. You can keep playing, but that rule will stay disabled.'
+                    ? 'REGLA DE CURA / INFECCION NO DISPONIBLE. Con las expansiones activas no hay versiones compatibles para aplicar esta regla. La partida continuara con normalidad, pero esta funcion no estara operativa en el bunker.'
+                    : 'CURE / INFECTION RULE UNAVAILABLE. With the active expansions there are no compatible versions for this rule. The game will continue normally, but this function will not be available in the bunker.'
             );
         }
 
@@ -307,9 +307,7 @@ export const ExpansionSelector: React.FC<ExpansionSelectorProps> = ({
                                                     ? `${borderColor} ring-2 ring-offset-2 ring-offset-slate-950 ${isZombie ? 'ring-lime-500/50' : 'ring-cyan-500/50'}`
                                                     : isDisabled
                                                         ? 'cursor-not-allowed border-slate-800 opacity-30 grayscale'
-                                                        : isMissingPair
-                                                            ? 'border-amber-700/60 hover:z-10 hover:scale-[1.02] hover:border-amber-400 hover:shadow-xl'
-                                                            : 'border-slate-700 hover:z-10 hover:scale-[1.02] hover:border-white hover:shadow-xl'
+                                                        : 'border-slate-700 hover:z-10 hover:scale-[1.02] hover:border-white hover:shadow-xl'
                                                 }
                                             `}
                                         >
@@ -331,14 +329,6 @@ export const ExpansionSelector: React.FC<ExpansionSelectorProps> = ({
                                                     </span>
                                                 </div>
                                             )}
-                                            {!isBlocked && isMissingPair && (
-                                                <div className="absolute inset-0 flex items-center justify-center bg-black/60 pointer-events-none">
-                                                    <span className="border border-amber-500/70 bg-slate-950/90 px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-amber-300">
-                                                        {language === 'es' ? 'SIN PAREJA' : 'NO PAIR'}
-                                                    </span>
-                                                </div>
-                                            )}
-
                                             {hero.characterSheetUrl && (
                                                 <button
                                                     onClick={(e) => {
@@ -386,8 +376,8 @@ export const ExpansionSelector: React.FC<ExpansionSelectorProps> = ({
                         {selectedHeroes.length > 0 && !hasTransformRuleAvailable && (
                             <div className="mt-3 border border-amber-700 bg-amber-950/30 px-3 py-2 text-[10px] font-bold uppercase tracking-wide text-amber-300">
                                 {language === 'es'
-                                    ? 'Sin pares validos para la regla de cura / infeccion.'
-                                    : 'No valid pairs for the cure / infection rule.'}
+                                    ? 'REGLA DE CURA / INFECCION NO DISPONIBLE. La partida seguira con normalidad, pero esta funcion no estara operativa en el bunker.'
+                                    : 'CURE / INFECTION RULE UNAVAILABLE. The game will continue normally, but this function will not be available in the bunker.'}
                             </div>
                         )}
                     </div>

@@ -450,8 +450,8 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
                         {!hasTransformRuleAvailable && (
                             <div className="mb-4 border border-amber-700 bg-amber-950/30 px-4 py-3 text-[10px] font-bold uppercase tracking-wide text-amber-300">
                                 {playerAlignment === 'ZOMBIE'
-                                    ? 'Regla de infeccion desactivada: te faltan expansiones compatibles.'
-                                    : 'Regla de cura desactivada: te faltan expansiones compatibles.'}
+                                    ? 'Regla de cura / infeccion no disponible. Con las expansiones activas, esta funcion no estara operativa en el bunker.'
+                                    : 'Regla de cura / infeccion no disponible. Con las expansiones activas, esta funcion no estara operativa en el bunker.'}
                             </div>
                         )}
                         <button onClick={handleOpenRecruit} className="w-full aspect-square border-2 border-cyan-800 hover:border-cyan-400 hover:bg-cyan-900/20 transition-all group flex flex-col items-center justify-center gap-4 rounded-xl relative overflow-hidden bg-slate-950/50">

@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from 'react';
-import { IntroConfig, IntroSlide, LoginAccessMode, StaffAccount, StaffPermissions, StoryConfig, StorySlide } from '../types';
+import React, { useEffect, useMemo, useState } from 'react';
+import { HeroTemplate, IntroConfig, IntroSlide, LoginAccessMode, StaffAccount, StaffPermissions, StoryConfig, StorySlide } from '../types';
 import {
     createEditorAccount,
     listStaffAccounts,
@@ -7,6 +7,8 @@ import {
     updateStaffStatus
 } from '../services/staffService';
 import { getLoginAccessConfig, saveLoginAccessMode } from '../services/accessControlService';
+import { deleteHeroInDB, getHeroTemplates } from '../services/heroService';
+import { CharacterEditor } from './CharacterEditor';
 
 interface AdminStaffPanelProps {
     isOpen: boolean;
@@ -59,7 +61,7 @@ export const AdminStaffPanel: React.FC<AdminStaffPanelProps> = ({
     omegaCylinders,
     onSetOmegaCylinders
 }) => {
-    const [activeTab, setActiveTab] = useState<'staff' | 'story' | 'intro'>('staff');
+    const [activeTab, setActiveTab] = useState<'staff' | 'characters' | 'story' | 'intro'>('staff');
     const [introMode, setIntroMode] = useState<'alive' | 'zombie'>('alive');
 
     const [accounts, setAccounts] = useState<StaffAccount[]>([]);
@@ -77,6 +79,11 @@ export const AdminStaffPanel: React.FC<AdminStaffPanelProps> = ({
     const [savingIntro, setSavingIntro] = useState(false);
     const [storyDraft, setStoryDraft] = useState<StoryConfig>(cloneStoryConfig(storyConfig));
     const [savingStory, setSavingStory] = useState(false);
+    const [heroes, setHeroes] = useState<HeroTemplate[]>([]);
+    const [loadingHeroes, setLoadingHeroes] = useState(false);
+    const [heroSearch, setHeroSearch] = useState('');
+    const [editingHero, setEditingHero] = useState<HeroTemplate | null>(null);
+    const [creatingHero, setCreatingHero] = useState(false);
 
     const loadAccounts = async () => {
         setLoading(true);
@@ -95,11 +102,27 @@ export const AdminStaffPanel: React.FC<AdminStaffPanelProps> = ({
         }
     };
 
+    const loadHeroes = async () => {
+        setLoadingHeroes(true);
+        setError(null);
+
+        try {
+            const loadedHeroes = await getHeroTemplates();
+            setHeroes(loadedHeroes);
+        } catch (err) {
+            console.error(err);
+            setError('No se pudieron cargar los personajes.');
+        } finally {
+            setLoadingHeroes(false);
+        }
+    };
+
     useEffect(() => {
         if (!isOpen) return;
         setIntroDraft(cloneIntroConfig(introConfig));
         setStoryDraft(cloneStoryConfig(storyConfig));
         loadAccounts();
+        loadHeroes();
     }, [isOpen, introConfig, storyConfig]);
 
     if (!isOpen) return null;
@@ -307,15 +330,60 @@ export const AdminStaffPanel: React.FC<AdminStaffPanelProps> = ({
         }
     };
 
+    const handleDeleteHero = async (heroId: string) => {
+        const confirmed = window.confirm('Vas a borrar este personaje. Esta accion no se puede deshacer.');
+        if (!confirmed) return;
+
+        try {
+            await deleteHeroInDB(heroId);
+            await loadHeroes();
+        } catch (err) {
+            console.error(err);
+            setError('No se pudo borrar el personaje.');
+        }
+    };
+
     const activeSlides = introDraft[introMode];
+    const filteredHeroes = useMemo(() => {
+        const query = heroSearch.trim().toLowerCase();
+        if (!query) return heroes;
+        return heroes.filter((hero) => (
+            `${hero.alias} ${hero.defaultName}`.toLowerCase().includes(query)
+        ));
+    }, [heroSearch, heroes]);
 
     return (
         <div className="fixed inset-0 z-[140] flex items-center justify-center bg-slate-950/85 p-4 backdrop-blur-md">
             <div className="flex max-h-[92vh] w-full max-w-6xl flex-col overflow-hidden border border-cyan-700 bg-slate-950 shadow-2xl">
+                {editingHero && (
+                    <CharacterEditor
+                        isOpen={true}
+                        onClose={() => setEditingHero(null)}
+                        language="es"
+                        initialData={editingHero}
+                        onSave={async () => {
+                            await loadHeroes();
+                            setEditingHero(null);
+                        }}
+                    />
+                )}
+
+                {creatingHero && (
+                    <CharacterEditor
+                        isOpen={true}
+                        onClose={() => setCreatingHero(false)}
+                        language="es"
+                        onSave={async () => {
+                            await loadHeroes();
+                            setCreatingHero(false);
+                        }}
+                    />
+                )}
+
                 <div className="flex items-center justify-between border-b border-cyan-900 p-4">
                     <div>
                         <div className="text-xs font-black uppercase tracking-[0.3em] text-cyan-600">Panel Admin</div>
-                        <h2 className="text-lg font-black uppercase tracking-widest text-white">Control de Editores, Historia e Intro</h2>
+                        <h2 className="text-lg font-black uppercase tracking-widest text-white">Control de Editores, Personajes, Historia e Intro</h2>
                     </div>
                     <button onClick={onClose} className="border border-red-900 px-4 py-2 text-xs font-black uppercase text-red-400 hover:bg-red-900/20">
                         Cerrar
@@ -328,6 +396,12 @@ export const AdminStaffPanel: React.FC<AdminStaffPanelProps> = ({
                         className={`px-4 py-2 text-xs font-black uppercase ${activeTab === 'staff' ? 'border border-cyan-700 bg-cyan-900/20 text-cyan-300' : 'border border-slate-800 text-gray-400 hover:text-white'}`}
                     >
                         Editores
+                    </button>
+                    <button
+                        onClick={() => setActiveTab('characters')}
+                        className={`px-4 py-2 text-xs font-black uppercase ${activeTab === 'characters' ? 'border border-cyan-700 bg-cyan-900/20 text-cyan-300' : 'border border-slate-800 text-gray-400 hover:text-white'}`}
+                    >
+                        Personajes
                     </button>
                     <button
                         onClick={() => setActiveTab('story')}
@@ -508,6 +582,84 @@ export const AdminStaffPanel: React.FC<AdminStaffPanelProps> = ({
                                             )}
                                         </div>
                                     ))}
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                ) : activeTab === 'characters' ? (
+                    <div className="flex min-h-0 flex-1 flex-col">
+                        <div className="flex items-center justify-between border-b border-slate-800 p-4">
+                            <div className="text-[11px] text-gray-400">
+                                Aqui puedes editar el nombre, la imagen, la ficha y el texto que sale en el bunker.
+                            </div>
+
+                            <div className="flex items-center gap-2">
+                                <input
+                                    value={heroSearch}
+                                    onChange={(event) => setHeroSearch(event.target.value)}
+                                    placeholder="Buscar personaje..."
+                                    className="w-64 border border-slate-800 bg-black p-3 text-sm text-white outline-none focus:border-cyan-500"
+                                />
+                                <button
+                                    onClick={() => setCreatingHero(true)}
+                                    className="border border-cyan-800 bg-cyan-900/20 px-3 py-2 text-xs font-black uppercase text-cyan-300 hover:bg-cyan-900/40"
+                                >
+                                    Nuevo Personaje
+                                </button>
+                                <button
+                                    onClick={loadHeroes}
+                                    className="border border-slate-700 px-3 py-2 text-xs font-black uppercase text-slate-200 hover:bg-slate-800"
+                                >
+                                    Recargar
+                                </button>
+                            </div>
+                        </div>
+
+                        <div className="overflow-y-auto p-4">
+                            {loadingHeroes ? (
+                                <div className="text-sm text-cyan-400">Cargando personajes...</div>
+                            ) : (
+                                <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+                                    {filteredHeroes.map((hero) => (
+                                        <div key={hero.id} className="group flex gap-3 border border-slate-800 bg-slate-900/40 p-3">
+                                            <div className="h-20 w-20 shrink-0 overflow-hidden border border-slate-700 bg-black">
+                                                <img src={hero.imageUrl} alt={hero.alias} className="h-full w-full object-cover" referrerPolicy="no-referrer" />
+                                            </div>
+
+                                            <div className="min-w-0 flex-1">
+                                                <div className="truncate text-sm font-black uppercase tracking-wide text-white">{hero.alias}</div>
+                                                <div className="truncate text-xs text-gray-400">{hero.defaultName}</div>
+                                                <div className="mt-2 flex flex-wrap gap-2 text-[10px] uppercase">
+                                                    <span className="border border-cyan-900 px-2 py-1 text-cyan-300">{hero.defaultAlignment}</span>
+                                                    <span className="border border-slate-700 px-2 py-1 text-slate-300">{hero.defaultClass}</span>
+                                                </div>
+                                                <div className="mt-2 line-clamp-2 text-[11px] text-gray-500">
+                                                    {typeof hero.bio === 'string' ? hero.bio : (hero.bio?.es || '')}
+                                                </div>
+                                            </div>
+
+                                            <div className="flex flex-col gap-2 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
+                                                <button
+                                                    onClick={() => setEditingHero(hero)}
+                                                    className="border border-blue-800 bg-blue-900/20 px-3 py-2 text-xs font-black uppercase text-blue-300 hover:bg-blue-900/40"
+                                                >
+                                                    Editar
+                                                </button>
+                                                <button
+                                                    onClick={() => handleDeleteHero(hero.id)}
+                                                    className="border border-red-900 px-3 py-2 text-xs font-black uppercase text-red-300 hover:bg-red-900/20"
+                                                >
+                                                    Borrar
+                                                </button>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+
+                            {error && (
+                                <div className="mt-4 border border-red-900 bg-red-950/30 p-3 text-xs text-red-300">
+                                    {error}
                                 </div>
                             )}
                         </div>

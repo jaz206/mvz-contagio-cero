@@ -176,13 +176,7 @@ export const RecruitModal: React.FC<RecruitModalProps> = ({
                                         </div>
                                     </div>
 
-                                    {isMissingPair ? (
-                                        <div className="absolute inset-0 flex items-center justify-center bg-black/55 pointer-events-none">
-                                            <span className="border border-amber-500/70 bg-slate-950/90 px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-amber-300">
-                                                {language === 'es' ? 'SIN PAREJA' : 'NO PAIR'}
-                                            </span>
-                                        </div>
-                                    ) : (
+                                    {isMissingPair ? null : (
                                         <div className="absolute right-2 top-1/2 -translate-y-1/2 opacity-0 transition-opacity group-hover:opacity-100">
                                             <div className={`flex h-8 w-8 items-center justify-center text-lg font-bold text-black shadow-lg ${mode === 'RECRUIT' ? 'bg-cyan-600' : 'bg-red-600'}`}>
                                                 {mode === 'RECRUIT' ? '+' : '!'}
