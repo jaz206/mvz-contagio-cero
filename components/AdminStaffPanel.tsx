@@ -8,6 +8,7 @@ import {
 } from '../services/staffService';
 import { getLoginAccessConfig, saveLoginAccessMode } from '../services/accessControlService';
 import { deleteHeroInDB, getHeroTemplates } from '../services/heroService';
+import { preferGithubCharacterImage } from '../services/characterGithubImageService';
 import { CharacterEditor } from './CharacterEditor';
 
 interface AdminStaffPanelProps {
@@ -630,7 +631,7 @@ export const AdminStaffPanel: React.FC<AdminStaffPanelProps> = ({
                                     {filteredHeroes.map((hero) => (
                                         <div key={hero.id} className="group flex gap-3 border border-slate-800 bg-slate-900/40 p-3">
                                             <div className="h-20 w-20 shrink-0 overflow-hidden border border-slate-700 bg-black">
-                                                <img src={hero.imageUrl} alt={hero.alias} className="h-full w-full object-cover" referrerPolicy="no-referrer" />
+                                                <img src={preferGithubCharacterImage(hero.alias, hero.defaultAlignment, hero.imageUrl)} alt={hero.alias} className="h-full w-full object-cover" referrerPolicy="no-referrer" />
                                             </div>
 
                                             <div className="min-w-0 flex-1">

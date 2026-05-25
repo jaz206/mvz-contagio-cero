@@ -2,6 +2,7 @@ import React, { useState, useMemo, useEffect } from "react";
 import { translations, Language } from "../translations";
 import { Hero, Mission, HeroClass, HeroTemplate, I18nString } from "../types";
 import { getHeroTransformAvailability, hasAnyHeroWithTransformRule } from "../services/heroVariantRuleService";
+import { preferGithubCharacterImage } from "../services/characterGithubImageService";
 
 // ... utilities ...
 const resolveI18n = (text: I18nString | undefined, lang: Language): string => {
@@ -212,6 +213,7 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
 
     const t = translations[language];
     const selectedHero = heroes.find(h => h.id === selectedHeroId);
+    const selectedHeroImageUrl = selectedHero ? preferGithubCharacterImage(selectedHero.alias, selectedHero.alignment || 'ALIVE', selectedHero.imageUrl) : '';
     const dossierIsZombie = playerAlignment === 'ZOMBIE';
     const dossierAccentClass = dossierIsZombie ? 'text-lime-400' : 'text-cyan-400';
     const dossierBorderClass = dossierIsZombie ? 'border-lime-600' : 'border-cyan-600';
@@ -360,9 +362,9 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
                         <div className={`absolute inset-0 pointer-events-none opacity-5 ${activeTab === 'MEDBAY' ? 'bg-[radial-gradient(circle,#ef4444_1px,transparent_1px)] bg-[length:20px_20px]' : ''}`}></div>
                         {activeTab === 'ROSTER' ? (
                             <>
-                                {availableHeroes.map(h => <HeroCard key={h.id} hero={h} onClick={() => setSelectedHeroId(h.id)} />)}
+                                {availableHeroes.map(h => <RosterHeroCard key={h.id} hero={h} onClick={() => setSelectedHeroId(h.id)} />)}
                                 {deployedHeroes.length > 0 && <div className="text-[9px] font-black text-yellow-500 uppercase mt-6 mb-2 px-4 tracking-widest border-b border-yellow-900/30 pb-1">DESPLEGADOS</div>}
-                                {deployedHeroes.map(h => <HeroCard key={h.id} hero={h} onClick={() => setSelectedHeroId(h.id)} actionIcon="✕" onAction={() => onUnassign(h.id)} />)}
+                                {deployedHeroes.map(h => <RosterHeroCard key={h.id} hero={h} onClick={() => setSelectedHeroId(h.id)} actionIcon="✕" onAction={() => onUnassign(h.id)} />)}
                             </>
                         ) : (
                             injuredHeroes.map(h => {
@@ -425,7 +427,7 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
                                 };
 
                                 return (
-                                    <HeroCard
+                                    <RosterHeroCard
                                         key={h.id}
                                         hero={h}
                                         onClick={() => setSelectedHeroId(h.id)}
@@ -612,7 +614,7 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
 
                         {/* LEFT: PORTRAIT & SCANNER */}
                         <div className="w-full md:w-2/5 h-64 md:h-full relative border-b md:border-b-0 md:border-r border-slate-800 shrink-0">
-                            <img src={selectedHero.imageUrl} className="w-full h-full object-cover object-top filter contrast-125 saturate-[0.8]" referrerPolicy="no-referrer" />
+                            <img src={selectedHeroImageUrl} className="w-full h-full object-cover object-top filter contrast-125 saturate-[0.8]" referrerPolicy="no-referrer" />
 
                             {/* SCANNING BEAM */}
                             <div className={`absolute left-0 right-0 h-0.5 ${playerAlignment === 'ZOMBIE' ? 'bg-lime-500 shadow-[0_0_15px_#84cc16]' : 'bg-cyan-500 shadow-[0_0_15px_#06b6d4]'} z-10 animate-scanning-beam`}></div>
@@ -737,6 +739,77 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
                     </div>
                 </div>
             )}
+        </div>
+    );
+};
+
+const RosterHeroCard = ({ hero, onClick, actionIcon, onAction, actionMuted = false }: { hero: Hero, onClick: () => void, actionIcon?: string, onAction?: () => void, actionMuted?: boolean }) => {
+    const statusColors = {
+        AVAILABLE: 'border-emerald-500 shadow-emerald-500/20',
+        DEPLOYED: 'border-yellow-500 shadow-yellow-500/20',
+        INJURED: 'border-red-500 shadow-red-500/20',
+        CAPTURED: 'border-red-900 shadow-red-900/20 grayscale'
+    };
+    const colorClass = statusColors[hero.status] || 'border-slate-600';
+    const displayImageUrl = preferGithubCharacterImage(hero.alias, hero.alignment || 'ALIVE', hero.imageUrl);
+    const dossierSummary = (hero.currentStory || hero.name || '').trim();
+    const imgStyle = hero.imageParams ? {
+        transform: `scale(${hero.imageParams.scale}) translate(${hero.imageParams.x}%, ${hero.imageParams.y}%)`
+    } : {};
+
+    return (
+        <div onClick={onClick} className={`group relative w-full cursor-pointer overflow-hidden border-l-4 border-b border-slate-800 bg-gradient-to-r from-slate-950 via-slate-950/95 to-slate-900/95 p-3 transition-all duration-300 hover:bg-slate-900 hover:scale-[1.01] hover:z-10 ${colorClass}`}>
+            <div className="flex items-center gap-4">
+                <div className="relative h-24 w-24 shrink-0 overflow-hidden border border-slate-700 bg-slate-950">
+                    <img
+                        src={displayImageUrl}
+                        alt={hero.alias}
+                        className="h-full w-full object-cover object-top transition-transform duration-500 group-hover:scale-110"
+                        style={imgStyle}
+                        referrerPolicy="no-referrer"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-slate-950/40 via-transparent to-transparent pointer-events-none"></div>
+                </div>
+
+                <div className="min-w-0 flex-1 pr-10">
+                    <div className="text-[9px] font-black uppercase tracking-[0.25em] text-cyan-500">
+                        Registro operativo
+                    </div>
+                    <h3 className="mt-1 truncate text-lg font-black uppercase tracking-wider text-white group-hover:text-cyan-300" style={{ fontFamily: 'Impact, sans-serif' }}>
+                        {hero.alias}
+                    </h3>
+                    <div className="truncate text-[11px] uppercase tracking-[0.25em] text-slate-400">
+                        {hero.name}
+                    </div>
+
+                    <div className="mt-3 flex flex-wrap items-center gap-2">
+                        <span className="border border-cyan-900 bg-cyan-950/30 px-2 py-1 text-[8px] font-bold uppercase tracking-widest text-cyan-300">
+                            {hero.class}
+                        </span>
+                        {hero.status !== 'AVAILABLE' && (
+                            <span className={`border px-2 py-1 text-[8px] font-bold uppercase tracking-widest ${hero.status === 'DEPLOYED' ? 'border-yellow-700 bg-yellow-950/40 text-yellow-300' : 'border-red-800 bg-red-950/40 text-red-300'}`}>
+                                {hero.status}
+                            </span>
+                        )}
+                    </div>
+
+                    {dossierSummary && (
+                        <p className="mt-3 line-clamp-2 text-[11px] leading-relaxed text-slate-500">
+                            {dossierSummary}
+                        </p>
+                    )}
+                </div>
+            </div>
+
+            {actionIcon && onAction && (
+                <button
+                    onClick={(e) => { e.stopPropagation(); onAction(); }}
+                    className={`absolute right-2 top-2 z-20 flex h-8 w-8 items-center justify-center rounded-sm border text-white transition-all backdrop-blur-sm ${actionMuted ? 'border-amber-700/60 bg-slate-900/80 text-amber-300 hover:bg-amber-900/40' : 'border-white/20 bg-black/50 hover:border-red-500 hover:bg-red-600'}`}
+                >
+                    {actionIcon}
+                </button>
+            )}
+            <div className="absolute inset-0 bg-scan opacity-0 transition-opacity pointer-events-none group-hover:opacity-10"></div>
         </div>
     );
 };
