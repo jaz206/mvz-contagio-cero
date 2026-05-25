@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { GAME_EXPANSIONS } from '../data/gameContent';
+import { getHeroLoreEntry } from '../data/heroLore';
 import { getHeroTemplates } from '../services/heroService';
 import { getHeroTransformAvailability, hasAnyHeroWithTransformRule } from '../services/heroVariantRuleService';
 import { preferGithubCharacterImage } from '../services/characterGithubImageService';
@@ -64,6 +65,7 @@ export const ExpansionSelector: React.FC<ExpansionSelectorProps> = ({
                 processedIds.add(localHero.id);
 
                 if (dbVersion) {
+                    const loreEntry = playerAlignment === 'ALIVE' ? getHeroLoreEntry(dbVersion.alias) : undefined;
                     return {
                         ...localHero,
                         name: dbVersion.defaultName,
@@ -71,9 +73,11 @@ export const ExpansionSelector: React.FC<ExpansionSelectorProps> = ({
                         class: dbVersion.defaultClass,
                         stats: dbVersion.defaultStats,
                         imageUrl: preferGithubCharacterImage(dbVersion.alias, playerAlignment, dbVersion.imageUrl),
-                        bio: dbVersion.bio || localHero.bio,
+                        bio: dbVersion.bio || loreEntry?.bio || localHero.bio,
+                        origin: dbVersion.origin || loreEntry?.origin || localHero.origin,
                         imageParams: dbVersion.imageParams,
                         characterSheetUrl: dbVersion.characterSheetUrl,
+                        currentStory: dbVersion.currentStory || loreEntry?.currentStory || localHero.currentStory,
                         expansionId: dbVersion.expansionId || exp.id,
                         relatedHeroId: dbVersion.relatedHeroId
                     };
@@ -104,6 +108,7 @@ export const ExpansionSelector: React.FC<ExpansionSelectorProps> = ({
                 alias: h.alias,
                 class: h.defaultClass,
                 bio: h.bio || '',
+                origin: h.origin || '',
                 status: 'AVAILABLE',
                 imageUrl: preferGithubCharacterImage(h.alias, playerAlignment, h.imageUrl),
                 stats: h.defaultStats,

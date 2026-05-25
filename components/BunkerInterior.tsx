@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useEffect } from "react";
+import { getHeroLoreEntry } from "../data/heroLore";
 import { translations, Language } from "../translations";
 import { Hero, Mission, HeroClass, HeroTemplate, I18nString } from "../types";
 import { getHeroTransformAvailability, hasAnyHeroWithTransformRule } from "../services/heroVariantRuleService";
@@ -213,6 +214,7 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
 
     const t = translations[language];
     const selectedHero = heroes.find(h => h.id === selectedHeroId);
+    const selectedHeroLore = selectedHero ? getHeroLoreEntry(selectedHero.alias) : undefined;
     const selectedHeroImageUrl = selectedHero ? preferGithubCharacterImage(selectedHero.alias, selectedHero.alignment || 'ALIVE', selectedHero.imageUrl) : '';
     const dossierIsZombie = playerAlignment === 'ZOMBIE';
     const dossierAccentClass = dossierIsZombie ? 'text-lime-400' : 'text-cyan-400';
@@ -222,18 +224,21 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
     const dossierHeader = dossierIsZombie ? 'ARCHIVO CONTAMINADO' : 'EXPEDIENTE OPERATIVO';
     const selectedHeroHistory = selectedHero ? getSafeDossierText(
         resolveI18n(selectedHero.origin, language),
+        resolveI18n(selectedHeroLore?.origin, language) ||
         language === 'es'
             ? 'Sin historial ampliado. Pendiente de revision por el Helitransporte.'
             : 'No extended history available. Pending Helicarrier review.'
     ) : '';
     const selectedHeroPowers = selectedHero ? getSafeDossierText(
         resolveI18n(selectedHero.bio, language),
+        resolveI18n(selectedHeroLore?.bio, language) ||
         language === 'es'
             ? 'No hay datos completos sobre habilidades activas. Expediente en revision.'
             : 'No complete data on active abilities. File under review.'
     ) : '';
     const selectedHeroAssessment = selectedHero ? getSafeDossierText(
         resolveI18n(selectedHero.currentStory, language),
+        resolveI18n(selectedHeroLore?.currentStory, language) ||
         dossierIsZombie
             ? (language === 'es'
                 ? 'Riesgo de contaminacion extrema. Requiere vigilancia constante y protocolos de contencion reforzados.'
