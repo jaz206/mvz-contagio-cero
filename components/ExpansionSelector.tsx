@@ -2,6 +2,7 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { GAME_EXPANSIONS } from '../data/gameContent';
 import { getHeroTemplates } from '../services/heroService';
 import { getHeroTransformAvailability, hasAnyHeroWithTransformRule } from '../services/heroVariantRuleService';
+import { preferGithubCharacterImage } from '../services/characterGithubImageService';
 import { Language } from '../translations';
 import { Hero, HeroTemplate } from '../types';
 
@@ -69,7 +70,7 @@ export const ExpansionSelector: React.FC<ExpansionSelectorProps> = ({
                         alias: dbVersion.alias,
                         class: dbVersion.defaultClass,
                         stats: dbVersion.defaultStats,
-                        imageUrl: dbVersion.imageUrl,
+                        imageUrl: preferGithubCharacterImage(dbVersion.alias, playerAlignment, dbVersion.imageUrl),
                         bio: dbVersion.bio || localHero.bio,
                         imageParams: dbVersion.imageParams,
                         characterSheetUrl: dbVersion.characterSheetUrl,
@@ -80,6 +81,7 @@ export const ExpansionSelector: React.FC<ExpansionSelectorProps> = ({
 
                 return {
                     ...localHero,
+                    imageUrl: preferGithubCharacterImage(localHero.alias, playerAlignment, localHero.imageUrl),
                     expansionId: exp.id
                 };
             });
@@ -103,7 +105,7 @@ export const ExpansionSelector: React.FC<ExpansionSelectorProps> = ({
                 class: h.defaultClass,
                 bio: h.bio || '',
                 status: 'AVAILABLE',
-                imageUrl: h.imageUrl,
+                imageUrl: preferGithubCharacterImage(h.alias, playerAlignment, h.imageUrl),
                 stats: h.defaultStats,
                 assignedMissionId: null,
                 expansionId: h.expansionId,

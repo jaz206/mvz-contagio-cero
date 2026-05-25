@@ -3,6 +3,7 @@ import { db } from '../firebaseConfig';
 import { HeroTemplate, HeroClass } from '../types';
 import { HERO_DATABASE } from '../data/heroDatabase';
 import { GAME_EXPANSIONS } from '../data/gameContent';
+import { preferGithubCharacterImage } from './characterGithubImageService';
 
 const COLLECTION_NAME = 'heroes';
 
@@ -52,6 +53,8 @@ export const getHeroTemplates = async (): Promise<HeroTemplate[]> => {
             const expansionId = findField(data, ['expansionId', 'expansion', 'caja']);
             const relatedHeroId = findField(data, ['relatedHeroId', 'relatedId', 'counterpart', 'version_contraria']);
             const imageParams = findField(data, ['imageParams', 'ajusteImagen', 'crop']);
+            const resolvedAlignment = defaultAlignment || 'ALIVE';
+            const resolvedAlias = alias || name || '';
 
             templates.push({
                 id: doc.id,
@@ -62,14 +65,14 @@ export const getHeroTemplates = async (): Promise<HeroTemplate[]> => {
                     agility: Number(agi) || 5,
                     intellect: Number(int) || 5
                 },
-                imageUrl: imageUrl || '',
+                imageUrl: preferGithubCharacterImage(resolvedAlias, resolvedAlignment, imageUrl || ''),
                 characterSheetUrl: characterSheetUrl || '',
                 bio: bio || '',
                 origin: origin || '',
-                alias: alias || '',
+                alias: resolvedAlias,
                 currentStory: currentStory || '',
                 objectives: Array.isArray(objectives) ? objectives : [],
-                defaultAlignment: defaultAlignment || 'ALIVE',
+                defaultAlignment: resolvedAlignment,
                 expansionId: expansionId || 'unknown',
                 relatedHeroId: relatedHeroId || undefined,
                 imageParams: imageParams || undefined
@@ -152,7 +155,7 @@ export const seedExpansionsToDB = async (): Promise<void> => {
                     alias: hero.alias,
                     defaultClass: hero.class,
                     bio: hero.bio,
-                    imageUrl: hero.imageUrl || '',
+                    imageUrl: preferGithubCharacterImage(hero.alias, 'ALIVE', hero.imageUrl || ''),
                     defaultStats: hero.stats,
                     defaultAlignment: 'ALIVE',
                     currentStory: '',
@@ -171,7 +174,7 @@ export const seedExpansionsToDB = async (): Promise<void> => {
                     alias: zHero.alias,
                     defaultClass: zHero.class,
                     bio: zHero.bio,
-                    imageUrl: zHero.imageUrl || '',
+                    imageUrl: preferGithubCharacterImage(zHero.alias, 'ZOMBIE', zHero.imageUrl || ''),
                     defaultStats: zHero.stats,
                     defaultAlignment: 'ZOMBIE',
                     currentStory: '',
