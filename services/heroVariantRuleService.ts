@@ -9,6 +9,26 @@ export interface TransformAvailability {
     targetTemplate?: HeroTemplate;
 }
 
+const buildHeroStubFromTemplate = (template: HeroTemplate): Hero => ({
+    id: template.id,
+    templateId: template.id,
+    name: template.defaultName,
+    alias: template.alias,
+    status: 'AVAILABLE',
+    class: template.defaultClass,
+    bio: template.bio || '',
+    currentStory: template.currentStory || '',
+    objectives: template.objectives || [],
+    completedObjectiveIndices: [],
+    imageUrl: template.imageUrl,
+    characterSheetUrl: template.characterSheetUrl,
+    stats: template.defaultStats,
+    assignedMissionId: null,
+    expansionId: template.expansionId,
+    relatedHeroId: template.relatedHeroId,
+    imageParams: template.imageParams
+});
+
 const cleanComparableText = (value: string) => value.toLowerCase()
     .replace(/\(z\)/g, '')
     .replace(/\(zombie\)/g, '')
@@ -114,3 +134,12 @@ export const hasAnyHeroWithTransformRule = (
     allTemplates: HeroTemplate[],
     ownedExpansions: Set<string>
 ) => heroes.some((hero) => getHeroTransformAvailability(hero, targetAlignment, allTemplates, ownedExpansions).allowed);
+
+export const getTemplateTransformAvailability = (
+    template: HeroTemplate,
+    allTemplates: HeroTemplate[],
+    ownedExpansions: Set<string>
+): TransformAvailability => {
+    const targetAlignment = template.defaultAlignment === 'ZOMBIE' ? 'ALIVE' : 'ZOMBIE';
+    return getHeroTransformAvailability(buildHeroStubFromTemplate(template), targetAlignment, allTemplates, ownedExpansions);
+};

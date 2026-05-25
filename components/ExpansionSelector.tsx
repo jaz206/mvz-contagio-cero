@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { GAME_EXPANSIONS } from '../data/gameContent';
 import { getHeroTemplates } from '../services/heroService';
-import { hasAnyHeroWithTransformRule } from '../services/heroVariantRuleService';
+import { getHeroTransformAvailability, hasAnyHeroWithTransformRule } from '../services/heroVariantRuleService';
 import { Language } from '../translations';
 import { Hero, HeroTemplate } from '../types';
 
@@ -132,6 +132,17 @@ export const ExpansionSelector: React.FC<ExpansionSelectorProps> = ({
     const hasTransformRuleAvailable = useMemo(() => (
         hasAnyHeroWithTransformRule(selectedHeroes, transformTargetAlignment, dbHeroes, ownedExpansions)
     ), [dbHeroes, ownedExpansions, selectedHeroes, transformTargetAlignment]);
+
+    const transformAvailabilityByHeroId = useMemo(() => {
+        const availability = new Map<string, ReturnType<typeof getHeroTransformAvailability>>();
+        availableHeroes.forEach((hero) => {
+            availability.set(
+                hero.id,
+                getHeroTransformAvailability(hero, transformTargetAlignment, dbHeroes, ownedExpansions)
+            );
+        });
+        return availability;
+    }, [availableHeroes, dbHeroes, ownedExpansions, transformTargetAlignment]);
 
     const isBlockedHero = (hero: Hero) => blockedAliases.some((alias) => hero.alias.toUpperCase().startsWith(alias));
 
@@ -277,7 +288,9 @@ export const ExpansionSelector: React.FC<ExpansionSelectorProps> = ({
                                 {availableHeroes.map(hero => {
                                     const isSelected = selectedHeroes.some(h => h.id === hero.id);
                                     const isBlocked = isBlockedHero(hero);
-                                    const isDisabled = isBlocked || (!isSelected && selectedHeroes.length >= 6);
+                                    const transformAvailability = transformAvailabilityByHeroId.get(hero.id);
+                                    const isMissingPair = !!transformAvailability && !transformAvailability.allowed;
+                                    const isDisabled = isBlocked || isMissingPair || (!isSelected && selectedHeroes.length >= 6);
                                     const imgStyle = hero.imageParams ? {
                                         transform: `scale(${hero.imageParams.scale}) translate(${hero.imageParams.x}%, ${hero.imageParams.y}%)`
                                     } : {};
@@ -313,6 +326,13 @@ export const ExpansionSelector: React.FC<ExpansionSelectorProps> = ({
                                                 <div className="absolute inset-0 flex items-center justify-center bg-black/55 pointer-events-none">
                                                     <span className="border border-slate-500 bg-slate-950/90 px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-slate-300">
                                                         {language === 'es' ? 'BLOQUEADO' : 'LOCKED'}
+                                                    </span>
+                                                </div>
+                                            )}
+                                            {!isBlocked && isMissingPair && (
+                                                <div className="absolute inset-0 flex items-center justify-center bg-black/60 pointer-events-none">
+                                                    <span className="border border-amber-500/70 bg-slate-950/90 px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-amber-300">
+                                                        {language === 'es' ? 'SIN PAREJA' : 'NO PAIR'}
                                                     </span>
                                                 </div>
                                             )}

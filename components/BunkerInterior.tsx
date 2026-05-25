@@ -531,6 +531,7 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
                     existingAliases={existingAliases}
                     language={language}
                     playerAlignment={playerAlignment || 'ALIVE'}
+                    ownedExpansions={ownedExpansions}
                 />
             )}
 
