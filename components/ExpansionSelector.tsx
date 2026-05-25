@@ -7,6 +7,17 @@ import { preferGithubCharacterImage } from '../services/characterGithubImageServ
 import { Language } from '../translations';
 import { Hero, HeroTemplate } from '../types';
 
+const hasDetailedNarrative = (value: any): boolean => {
+    if (!value) return false;
+    if (typeof value === 'string') return value.trim().length > 80;
+    if (typeof value === 'object') {
+        const es = typeof value.es === 'string' ? value.es.trim().length : 0;
+        const en = typeof value.en === 'string' ? value.en.trim().length : 0;
+        return es > 80 || en > 80;
+    }
+    return false;
+};
+
 interface ExpansionSelectorProps {
     onConfirm: (selectedHeroes: Hero[]) => void;
     onBack: () => void;
@@ -73,11 +84,11 @@ export const ExpansionSelector: React.FC<ExpansionSelectorProps> = ({
                         class: dbVersion.defaultClass,
                         stats: dbVersion.defaultStats,
                         imageUrl: preferGithubCharacterImage(dbVersion.alias, playerAlignment, dbVersion.imageUrl),
-                        bio: dbVersion.bio || loreEntry?.bio || localHero.bio,
-                        origin: dbVersion.origin || loreEntry?.origin || localHero.origin,
+                        bio: hasDetailedNarrative(dbVersion.bio) ? dbVersion.bio : (loreEntry?.bio || dbVersion.bio || localHero.bio),
+                        origin: hasDetailedNarrative(dbVersion.origin) ? dbVersion.origin : (loreEntry?.origin || dbVersion.origin || localHero.origin),
                         imageParams: dbVersion.imageParams,
                         characterSheetUrl: dbVersion.characterSheetUrl,
-                        currentStory: dbVersion.currentStory || loreEntry?.currentStory || localHero.currentStory,
+                        currentStory: hasDetailedNarrative(dbVersion.currentStory) ? dbVersion.currentStory : (loreEntry?.currentStory || dbVersion.currentStory || localHero.currentStory),
                         expansionId: dbVersion.expansionId || exp.id,
                         relatedHeroId: dbVersion.relatedHeroId
                     };

@@ -49,6 +49,21 @@ const getSafeDossierText = (value: string | undefined, fallback: string) => {
     return normalized || fallback;
 };
 
+const getPreferredDossierText = (
+    primary: I18nString | undefined,
+    lore: I18nString | undefined,
+    language: Language,
+    fallback: string
+) => {
+    const primaryText = resolveI18n(primary, language).trim();
+    const loreText = resolveI18n(lore, language).trim();
+
+    if (primaryText.length > 80) return primaryText;
+    if (loreText.length > 80) return loreText;
+
+    return primaryText || loreText || fallback;
+};
+
 const getHeroStatusLabel = (status: Hero['status'], language: Language) => {
     const labels = {
         AVAILABLE: language === 'es' ? 'DISPONIBLE' : 'AVAILABLE',
@@ -222,23 +237,26 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
     const dossierPanelClass = dossierIsZombie ? 'border-lime-900/50 bg-lime-950/10' : 'border-cyan-900/50 bg-cyan-950/10';
     const dossierStamp = dossierIsZombie ? 'BIOHAZARD DOSSIER' : 'S.H.I.E.L.D. DOSSIER';
     const dossierHeader = dossierIsZombie ? 'ARCHIVO CONTAMINADO' : 'EXPEDIENTE OPERATIVO';
-    const selectedHeroHistory = selectedHero ? getSafeDossierText(
-        resolveI18n(selectedHero.origin, language),
-        resolveI18n(selectedHeroLore?.origin, language) ||
+    const selectedHeroHistory = selectedHero ? getPreferredDossierText(
+        selectedHero.origin,
+        selectedHeroLore?.origin,
+        language,
         language === 'es'
             ? 'Sin historial ampliado. Pendiente de revision por el Helitransporte.'
             : 'No extended history available. Pending Helicarrier review.'
     ) : '';
-    const selectedHeroPowers = selectedHero ? getSafeDossierText(
-        resolveI18n(selectedHero.bio, language),
-        resolveI18n(selectedHeroLore?.bio, language) ||
+    const selectedHeroPowers = selectedHero ? getPreferredDossierText(
+        selectedHero.bio,
+        selectedHeroLore?.bio,
+        language,
         language === 'es'
             ? 'No hay datos completos sobre habilidades activas. Expediente en revision.'
             : 'No complete data on active abilities. File under review.'
     ) : '';
-    const selectedHeroAssessment = selectedHero ? getSafeDossierText(
-        resolveI18n(selectedHero.currentStory, language),
-        resolveI18n(selectedHeroLore?.currentStory, language) ||
+    const selectedHeroAssessment = selectedHero ? getPreferredDossierText(
+        selectedHero.currentStory,
+        selectedHeroLore?.currentStory,
+        language,
         dossierIsZombie
             ? (language === 'es'
                 ? 'Riesgo de contaminacion extrema. Requiere vigilancia constante y protocolos de contencion reforzados.'
