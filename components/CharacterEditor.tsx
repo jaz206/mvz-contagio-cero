@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Language } from '../translations';
-import { HeroClass, HeroStats, HeroTemplate, ImageParams } from '../types';
+import { HeroClass, HeroPlayableSheet, HeroPlayableSheetsByLanguage, HeroStats, HeroTemplate, ImageParams } from '../types';
 import { createHeroTemplateInDB, getHeroTemplates, updateHeroTemplate } from '../services/heroService';
 import { CharacterImageOption, fetchCharacterImageOptions } from '../services/characterImageRepositoryService';
 
@@ -13,6 +13,44 @@ interface CharacterEditorProps {
 }
 
 const HERO_CLASSES: HeroClass[] = ['BRAWLER', 'SCOUT', 'TACTICIAN', 'BLASTER'];
+
+type SheetLanguage = 'es' | 'en';
+type SheetVariant = {
+    es: HeroPlayableSheet;
+    en: HeroPlayableSheet;
+};
+
+const createBlankSheet = (characterName = '', set = ''): HeroPlayableSheet => ({
+    characterName,
+    set,
+    life: '',
+    attack: '',
+    type: '',
+    range: '',
+    dice: '',
+    toHit: '',
+    blueSkillName: '',
+    blueSkillDescription: '',
+    yellowSkillName: '',
+    yellowSkillDescription: '',
+    orangeSkillName: '',
+    orangeSkillDescription: '',
+    redSkillName: '',
+    redSkillDescription: '',
+    spawnAbility: '',
+    toughness: ''
+});
+
+const buildSheetVariants = (playableSheets?: HeroPlayableSheetsByLanguage, alias = '', set = ''): SheetVariant[] => {
+    const esSheets = playableSheets?.es || [];
+    const enSheets = playableSheets?.en || [];
+    const count = Math.max(esSheets.length, enSheets.length, 1);
+
+    return Array.from({ length: count }, (_, index) => ({
+        es: esSheets[index] || createBlankSheet(alias, set),
+        en: enSheets[index] || createBlankSheet(alias, set)
+    }));
+};
 
 export const CharacterEditor: React.FC<CharacterEditorProps> = ({ isOpen, onClose, initialData, onSave }) => {
     const [name, setName] = useState('');
@@ -32,6 +70,12 @@ export const CharacterEditor: React.FC<CharacterEditorProps> = ({ isOpen, onClos
     const [imgScale, setImgScale] = useState(1);
     const [imgX, setImgX] = useState(0);
     const [imgY, setImgY] = useState(0);
+    const [sheetVariants, setSheetVariants] = useState<SheetVariant[]>([{
+        es: createBlankSheet(),
+        en: createBlankSheet()
+    }]);
+    const [activeSheetIndex, setActiveSheetIndex] = useState(0);
+    const [activeSheetLanguage, setActiveSheetLanguage] = useState<SheetLanguage>('es');
     const [saving, setSaving] = useState(false);
 
     const [showLinker, setShowLinker] = useState(false);
@@ -89,6 +133,10 @@ export const CharacterEditor: React.FC<CharacterEditorProps> = ({ isOpen, onClos
                 setImgX(0);
                 setImgY(0);
             }
+
+            setSheetVariants(buildSheetVariants(initialData.playableSheets, initialData.alias, initialData.defaultName));
+            setActiveSheetIndex(0);
+            setActiveSheetLanguage('es');
         } else {
             setName('');
             setAlias('');
@@ -107,6 +155,12 @@ export const CharacterEditor: React.FC<CharacterEditorProps> = ({ isOpen, onClos
             setImgScale(1);
             setImgX(0);
             setImgY(0);
+            setSheetVariants([{
+                es: createBlankSheet(),
+                en: createBlankSheet()
+            }]);
+            setActiveSheetIndex(0);
+            setActiveSheetLanguage('es');
         }
 
         setIsImagePickerOpen(false);
@@ -122,6 +176,71 @@ export const CharacterEditor: React.FC<CharacterEditorProps> = ({ isOpen, onClos
     }, [showLinker, allHeroes.length]);
 
     if (!isOpen) return null;
+
+    const activeSheetVariant = sheetVariants[activeSheetIndex] || sheetVariants[0];
+    const activeSheetData = activeSheetVariant?.[activeSheetLanguage] || createBlankSheet();
+    const updateSheetVariant = (index: number, updater: (variant: SheetVariant) => SheetVariant) => {
+        setSheetVariants((prev) => prev.map((variant, variantIndex) => (
+            variantIndex === index ? updater(variant) : variant
+        )));
+    };
+
+    const updateCommonSheetField = (field: keyof HeroPlayableSheet, value: string) => {
+        updateSheetVariant(activeSheetIndex, (variant) => ({
+            es: {
+                ...variant.es,
+                [field]: value
+            },
+            en: {
+                ...variant.en,
+                [field]: value
+            }
+        }));
+    };
+
+    const updateSheetField = (index: number, language: SheetLanguage, field: keyof HeroPlayableSheet, value: string) => {
+        updateSheetVariant(index, (variant) => ({
+            ...variant,
+            [language]: {
+                ...variant[language],
+                [field]: value
+            }
+        }));
+    };
+
+    const addSheetVariant = () => {
+        setSheetVariants((prev) => [
+            ...prev,
+            {
+                es: createBlankSheet(alias.toUpperCase(), ''),
+                en: createBlankSheet(alias.toUpperCase(), '')
+            }
+        ]);
+        setActiveSheetIndex(sheetVariants.length);
+    };
+
+    const duplicateSheetVariant = () => {
+        const current = activeSheetVariant;
+        if (!current) return;
+
+        setSheetVariants((prev) => [
+            ...prev,
+            {
+                es: { ...current.es },
+                en: { ...current.en }
+            }
+        ]);
+        setActiveSheetIndex(sheetVariants.length);
+    };
+
+    const removeSheetVariant = (index: number) => {
+        setSheetVariants((prev) => {
+            if (prev.length <= 1) return prev;
+            const next = prev.filter((_, itemIndex) => itemIndex !== index);
+            return next.length > 0 ? next : [{ es: createBlankSheet(), en: createBlankSheet() }];
+        });
+        setActiveSheetIndex((prev) => Math.max(0, Math.min(prev, Math.max(0, sheetVariants.length - 2))));
+    };
 
     const handleSubmit = async (event: React.FormEvent) => {
         event.preventDefault();
@@ -146,7 +265,11 @@ export const CharacterEditor: React.FC<CharacterEditorProps> = ({ isOpen, onClos
             defaultAlignment: alignment,
             objectives: initialData?.objectives || [],
             relatedHeroId: relatedHeroId || undefined,
-            imageParams
+            imageParams,
+            playableSheets: {
+                es: sheetVariants.map((variant) => variant.es),
+                en: sheetVariants.map((variant) => variant.en)
+            }
         };
 
         try {
@@ -371,7 +494,165 @@ export const CharacterEditor: React.FC<CharacterEditorProps> = ({ isOpen, onClos
                                             </button>
                                         </div>
                                     </div>
+                                    ))}
+                            </div>
+                        </div>
+
+                        <div className="border border-slate-800 bg-slate-900/30 p-4 space-y-4">
+                            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-800 pb-3">
+                                <label className={`text-[10px] font-black uppercase tracking-widest ${accentClass}`}>FICHA OPERATIVA</label>
+                                <div className="flex flex-wrap gap-2">
+                                    {sheetVariants.map((variant, index) => (
+                                        <button
+                                            key={`variant_${index}`}
+                                            type="button"
+                                            onClick={() => setActiveSheetIndex(index)}
+                                            className={`border px-3 py-1 text-[9px] font-black uppercase tracking-widest ${activeSheetIndex === index ? `${borderClass} ${accentClass} bg-black` : 'border-slate-800 text-gray-500 hover:text-white'}`}
+                                        >
+                                            {variant.es.set || variant.en.set || `VARIANTE ${index + 1}`}
+                                        </button>
+                                    ))}
+                                    <button
+                                        type="button"
+                                        onClick={addSheetVariant}
+                                        className="border border-emerald-800 px-3 py-1 text-[9px] font-black uppercase tracking-widest text-emerald-300 hover:bg-emerald-900/20"
+                                    >
+                                        + Variante
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={duplicateSheetVariant}
+                                        className="border border-slate-700 px-3 py-1 text-[9px] font-black uppercase tracking-widest text-slate-300 hover:bg-slate-800"
+                                    >
+                                        Duplicar
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => removeSheetVariant(activeSheetIndex)}
+                                        className="border border-red-900 px-3 py-1 text-[9px] font-black uppercase tracking-widest text-red-300 hover:bg-red-900/20"
+                                    >
+                                        Borrar
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-3 md:grid-cols-5">
+                                <div>
+                                    <label className={`mb-1 block text-[9px] font-black uppercase tracking-widest ${accentClass}`}>SERIE</label>
+                                    <input
+                                        value={activeSheetVariant.es.set}
+                                        onChange={(event) => updateCommonSheetField('set', event.target.value)}
+                                        className={`w-full border bg-slate-950 p-2 text-xs text-white outline-none ${borderClass} ${focusClass}`}
+                                    />
+                                </div>
+                                <div>
+                                    <label className={`mb-1 block text-[9px] font-black uppercase tracking-widest ${accentClass}`}>VIDA</label>
+                                    <input
+                                        value={activeSheetVariant.es.life}
+                                        onChange={(event) => updateCommonSheetField('life', event.target.value)}
+                                        className={`w-full border bg-slate-950 p-2 text-xs text-white outline-none ${borderClass} ${focusClass}`}
+                                    />
+                                </div>
+                                <div>
+                                    <label className={`mb-1 block text-[9px] font-black uppercase tracking-widest ${accentClass}`}>TIPO</label>
+                                    <input
+                                        value={activeSheetVariant.es.type}
+                                        onChange={(event) => updateCommonSheetField('type', event.target.value)}
+                                        className={`w-full border bg-slate-950 p-2 text-xs text-white outline-none ${borderClass} ${focusClass}`}
+                                    />
+                                </div>
+                                <div>
+                                    <label className={`mb-1 block text-[9px] font-black uppercase tracking-widest ${accentClass}`}>DADOS</label>
+                                    <input
+                                        value={activeSheetVariant.es.dice}
+                                        onChange={(event) => updateCommonSheetField('dice', event.target.value)}
+                                        className={`w-full border bg-slate-950 p-2 text-xs text-white outline-none ${borderClass} ${focusClass}`}
+                                    />
+                                </div>
+                                <div>
+                                    <label className={`mb-1 block text-[9px] font-black uppercase tracking-widest ${accentClass}`}>TO HIT</label>
+                                    <input
+                                        value={activeSheetVariant.es.toHit}
+                                        onChange={(event) => updateCommonSheetField('toHit', event.target.value)}
+                                        className={`w-full border bg-slate-950 p-2 text-xs text-white outline-none ${borderClass} ${focusClass}`}
+                                    />
+                                </div>
+                                <div className="md:col-span-5">
+                                    <label className={`mb-1 block text-[9px] font-black uppercase tracking-widest ${accentClass}`}>ALCANCE</label>
+                                    <input
+                                        value={activeSheetVariant.es.range}
+                                        onChange={(event) => updateCommonSheetField('range', event.target.value)}
+                                        className={`w-full border bg-slate-950 p-2 text-xs text-white outline-none ${borderClass} ${focusClass}`}
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="flex flex-wrap items-center gap-2 border-t border-slate-800 pt-3">
+                                <button
+                                    type="button"
+                                    onClick={() => setActiveSheetLanguage('es')}
+                                    className={`border px-3 py-1 text-[9px] font-black uppercase tracking-widest ${activeSheetLanguage === 'es' ? `${accentClass} ${borderClass} bg-black` : 'border-slate-800 text-gray-500 hover:text-white'}`}
+                                >
+                                    Español
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => setActiveSheetLanguage('en')}
+                                    className={`border px-3 py-1 text-[9px] font-black uppercase tracking-widest ${activeSheetLanguage === 'en' ? `${accentClass} ${borderClass} bg-black` : 'border-slate-800 text-gray-500 hover:text-white'}`}
+                                >
+                                    English
+                                </button>
+                                <span className="ml-auto text-[9px] uppercase tracking-[0.25em] text-gray-500">
+                                    {activeSheetData.characterName || alias || 'FICHA'}
+                                </span>
+                            </div>
+
+                            <div className="grid gap-4 xl:grid-cols-2">
+                                {[
+                                    { key: 'blue', title: 'AZUL', name: 'blueSkillName', desc: 'blueSkillDescription', color: 'text-cyan-400 border-cyan-900/60' },
+                                    { key: 'yellow', title: 'AMARILLA', name: 'yellowSkillName', desc: 'yellowSkillDescription', color: 'text-amber-400 border-amber-900/60' },
+                                    { key: 'orange', title: 'NARANJA', name: 'orangeSkillName', desc: 'orangeSkillDescription', color: 'text-orange-400 border-orange-900/60' },
+                                    { key: 'red', title: 'ROJA', name: 'redSkillName', desc: 'redSkillDescription', color: 'text-red-400 border-red-900/60' }
+                                ].map((ability) => (
+                                    <div key={`${ability.key}_${activeSheetLanguage}`} className={`border bg-slate-950/60 p-3 ${ability.color}`}>
+                                        <div className={`mb-2 text-[9px] font-black uppercase tracking-[0.28em] ${ability.color.split(' ')[0]}`}>
+                                            {ability.title} / {activeSheetLanguage.toUpperCase()}
+                                        </div>
+                                        <input
+                                            value={activeSheetData[ability.name as keyof HeroPlayableSheet] as string}
+                                            onChange={(event) => updateSheetField(activeSheetIndex, activeSheetLanguage, ability.name as keyof HeroPlayableSheet, event.target.value)}
+                                            placeholder="Nombre del poder"
+                                            className="mb-2 w-full border border-slate-800 bg-black p-2 text-sm font-bold text-white outline-none"
+                                        />
+                                        <textarea
+                                            value={activeSheetData[ability.desc as keyof HeroPlayableSheet] as string}
+                                            onChange={(event) => updateSheetField(activeSheetIndex, activeSheetLanguage, ability.desc as keyof HeroPlayableSheet, event.target.value)}
+                                            rows={4}
+                                            placeholder="Descripcion del poder"
+                                            className="w-full resize-none border border-slate-800 bg-black p-2 text-xs text-white outline-none"
+                                        />
+                                    </div>
                                 ))}
+                            </div>
+
+                            <div className="grid gap-4 md:grid-cols-2">
+                                <div>
+                                    <label className="mb-1 block text-[9px] font-black uppercase tracking-widest text-gray-400">APARICION ESPECIAL</label>
+                                    <textarea
+                                        value={activeSheetVariant.es.spawnAbility}
+                                        onChange={(event) => updateCommonSheetField('spawnAbility', event.target.value)}
+                                        rows={3}
+                                        className="w-full resize-none border border-slate-800 bg-black p-2 text-xs text-white outline-none"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="mb-1 block text-[9px] font-black uppercase tracking-widest text-gray-400">DUREZA</label>
+                                    <input
+                                        value={activeSheetVariant.es.toughness}
+                                        onChange={(event) => updateCommonSheetField('toughness', event.target.value)}
+                                        className="w-full border border-slate-800 bg-black p-2 text-sm text-white outline-none"
+                                    />
+                                </div>
                             </div>
                         </div>
 
