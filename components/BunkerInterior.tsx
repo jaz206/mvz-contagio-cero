@@ -395,7 +395,7 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
                             <>
                                 {availableHeroes.map(h => <RosterHeroCard key={h.id} hero={h} language={language} onClick={() => setSelectedHeroId(h.id)} />)}
                                 {deployedHeroes.length > 0 && <div className="text-[9px] font-black text-yellow-500 uppercase mt-6 mb-2 px-4 tracking-widest border-b border-yellow-900/30 pb-1">DESPLEGADOS</div>}
-                                {deployedHeroes.map(h => <RosterHeroCard key={h.id} hero={h} language={language} onClick={() => setSelectedHeroId(h.id)} actionIcon="‚úï" onAction={() => onUnassign(h.id)} />)}
+                                {deployedHeroes.map(h => <RosterHeroCard key={h.id} hero={h} language={language} onClick={() => setSelectedHeroId(h.id)} actionIcon="◊" onAction={() => onUnassign(h.id)} />)}
                             </>
                         ) : (
                             injuredHeroes.map(h => {
@@ -674,7 +674,7 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
                                 <div className={`px-3 py-1 border ${playerAlignment === 'ZOMBIE' ? 'border-lime-900 text-lime-500' : 'border-cyan-900 text-cyan-500'} text-[9px] font-bold tracking-[0.2em] bg-black/50`}>
                                     REPORT_REF: {selectedHero.id.substring(0, 8).toUpperCase()}
                                 </div>
-                                <button onClick={() => setSelectedHeroId(null)} className="text-slate-500 hover:text-white transition-colors text-2xl font-light">‚úï</button>
+                                <button onClick={() => setSelectedHeroId(null)} className="text-slate-500 hover:text-white transition-colors text-2xl font-light">◊</button>
                             </div>
 
                             {/* DIAGNOSTIC SECTION */}
@@ -713,10 +713,43 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
                                                 <div className="text-2xl font-black text-white leading-none">{selectedHeroSheet?.range || 'N/D'}</div>
                                             </div>
                                         </div>
+
+                                        <div className={`border ${dossierBorderClass} ${dossierPanelClass} p-5 lg:p-6 space-y-5`}>
+                                            <div className="flex items-center justify-between border-b border-white/10 pb-3">
+                                                <div>
+                                                    <div className="text-[8px] font-bold uppercase tracking-[0.35em] text-gray-500">EXPEDIENTE DE CAMPO</div>
+                                                    <div className={`mt-1 text-[10px] font-black uppercase tracking-[0.3em] ${dossierAccentClass}`}>{dossierStamp}</div>
+                                                </div>
+                                                <div className={`text-[8px] font-bold uppercase tracking-[0.3em] ${dossierAccentClass}`}>{selectedHeroSheet?.set || 'ARCHIVO MD'}</div>
+                                            </div>
+
+                                            <div className="grid gap-4">
+                                                <div className="border-l-2 border-cyan-900/70 pl-4">
+                                                    <div className="text-[8px] text-cyan-600 font-bold uppercase mb-2 tracking-[0.25em]">HISTORIAL CONOCIDO</div>
+                                                    <div className="text-[12px] leading-relaxed text-cyan-50/90">
+                                                        {selectedHeroHistory}
+                                                    </div>
+                                                </div>
+
+                                                <div className="border-l-2 border-slate-700 pl-4">
+                                                    <div className="text-[8px] text-gray-500 font-bold uppercase mb-2 tracking-[0.25em]">PERFIL DE PODERES</div>
+                                                    <div className="text-[12px] leading-relaxed text-slate-200">
+                                                        {selectedHeroPowers}
+                                                    </div>
+                                                </div>
+
+                                                <div className="border-l-2 border-violet-900/70 pl-4">
+                                                    <div className={`mb-2 text-[8px] font-bold uppercase tracking-[0.25em] ${dossierAccentClass}`}>EVALUACION DE S.H.I.E.L.D.</div>
+                                                    <div className="text-[12px] leading-relaxed text-slate-200">
+                                                        {selectedHeroAssessment}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
 
-                                <div className="space-y-5">
+                                <div className="space-y-5 lg:pt-14">
                                     <h4 className="text-[10px] font-black text-gray-500 tracking-[0.3em] uppercase border-b border-slate-800 pb-2">EXPEDIENTE DE CAMPO</h4>
 
                                     <div className="grid grid-cols-3 gap-3">
@@ -734,65 +767,32 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
                                         </div>
                                     </div>
 
-                                    <div className="grid gap-3 lg:grid-cols-2">
-                                        <div className="border border-cyan-900/60 bg-slate-950/80 p-4">
-                                            <div className="mb-3 border-b border-cyan-900/50 pb-2">
-                                                <div className="text-[8px] text-cyan-600 font-bold uppercase mb-1">HISTORIAL CONOCIDO</div>
-                                                <div className="text-[11px] leading-relaxed text-cyan-100 opacity-90">
-                                                    {selectedHeroHistory}
-                                                </div>
-                                            </div>
+                                    <div className="border border-slate-800 bg-black/40 p-4">
+                                        <div className="mb-3 flex items-center justify-between border-b border-slate-800 pb-2">
+                                            <span className="text-[8px] font-bold uppercase text-gray-500">RESUMEN OPERATIVO</span>
+                                            <span className="text-[8px] font-bold uppercase text-slate-400">SHIELD FILE</span>
+                                        </div>
 
-                                            <div className="mb-3 border-b border-slate-800 pb-2">
-                                                <div className="text-[8px] text-gray-500 font-bold uppercase mb-1">PERFIL DE PODERES</div>
-                                                <div className="text-[11px] leading-relaxed text-slate-300">
-                                                    {selectedHeroPowers}
+                                        <div className="space-y-3 text-[11px] leading-relaxed text-slate-300">
+                                            <div>
+                                                <div className="text-[8px] font-bold uppercase text-gray-500">Vista r·pida</div>
+                                                <div className="mt-1 text-slate-100">
+                                                    {selectedHeroHistory.split('. ')[0] || selectedHeroHistory}
                                                 </div>
                                             </div>
 
                                             <div>
-                                                <div className={`mb-1 text-[8px] font-bold uppercase ${dossierAccentClass}`}>EVALUACION DE S.H.I.E.L.D.</div>
-                                                <div className="text-[11px] leading-relaxed text-slate-300">
-                                                    {selectedHeroAssessment}
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        <div className="border border-slate-800 bg-black/40 p-4">
-                                            <div className="mb-3 flex items-center justify-between border-b border-slate-800 pb-2">
-                                                <span className="text-[8px] font-bold uppercase text-gray-500">LECTURA R√ÅPIDA</span>
-                                                <span className="text-[8px] font-bold uppercase text-slate-400">SHIELD FILE</span>
-                                            </div>
-
-                                            <div className="space-y-3 text-[11px] leading-relaxed text-slate-300">
-                                                <div>
-                                                    <div className="text-[8px] font-bold uppercase text-gray-500">Resumen operativo</div>
-                                                    <div className="mt-1 text-slate-100">
-                                                        {selectedHeroHistory.split('. ')[0] || selectedHeroHistory}
-                                                    </div>
-                                                </div>
-
-                                                <div>
-                                                    <div className="text-[8px] font-bold uppercase text-gray-500">Uso recomendado</div>
-                                                    <div className="mt-1 text-slate-100">
-                                                        {selectedHeroAssessment}
-                                                    </div>
-                                                </div>
-
-                                                <div className="pt-2 border-t border-slate-800">
-                                                    <div className="text-[8px] font-bold uppercase text-gray-500">Acceso</div>
-                                                    <div className="mt-1 flex flex-wrap gap-2">
-                                                        <span className="border border-cyan-900 bg-cyan-950/30 px-2 py-1 text-[8px] font-bold uppercase text-cyan-300">FIELD ASSET</span>
-                                                        <span className="border border-slate-700 bg-slate-900 px-2 py-1 text-[8px] font-bold uppercase text-slate-300">{selectedHero.class}</span>
-                                                        <span className="border border-slate-700 bg-slate-900 px-2 py-1 text-[8px] font-bold uppercase text-slate-300">{getHeroStatusLabel(selectedHero.status, language)}</span>
-                                                    </div>
+                                                <div className="text-[8px] font-bold uppercase text-gray-500">Acceso</div>
+                                                <div className="mt-1 flex flex-wrap gap-2">
+                                                    <span className="border border-cyan-900 bg-cyan-950/30 px-2 py-1 text-[8px] font-bold uppercase text-cyan-300">FIELD ASSET</span>
+                                                    <span className="border border-slate-700 bg-slate-900 px-2 py-1 text-[8px] font-bold uppercase text-slate-300">{selectedHero.class}</span>
+                                                    <span className="border border-slate-700 bg-slate-900 px-2 py-1 text-[8px] font-bold uppercase text-slate-300">{getHeroStatusLabel(selectedHero.status, language)}</span>
                                                 </div>
                                             </div>
                                         </div>
                                     </div>
                                 </div>
                             </div>
-
                             {/* ACTION FOOTER */}
                             <div className="mt-auto flex flex-col md:flex-row gap-4 justify-between items-center pt-8 border-t border-slate-800 bg-slate-900/20 -mx-10 px-10">
                                 <div className="flex gap-4 w-full md:w-auto">
@@ -801,7 +801,7 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
                                             onClick={() => setViewingSheet(selectedHero.characterSheetUrl!)}
                                             className="flex-1 md:flex-none px-6 py-4 bg-yellow-900/10 border border-yellow-600/50 text-yellow-500 hover:bg-yellow-900/40 hover:text-yellow-200 font-black uppercase tracking-[0.2em] text-[10px] transition-all flex items-center justify-center gap-3 group"
                                         >
-                                            <span className="text-xl group-hover:scale-110 transition-transform">üóÉ</span>
+                                            <span className="text-xl group-hover:scale-110 transition-transform">PDF</span>
                                             ABRIR FICHA COMPLETA
                                         </button>
                                     )}
