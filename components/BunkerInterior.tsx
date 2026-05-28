@@ -4,7 +4,7 @@ import { translations, Language } from "../translations";
 import { Hero, Mission, HeroClass, HeroTemplate, I18nString } from "../types";
 import { getHeroTransformAvailability, hasAnyHeroWithTransformRule } from "../services/heroVariantRuleService";
 import { preferGithubCharacterImage } from "../services/characterGithubImageService";
-import { getLocalizedPlayableHeroSheetForHero } from "../services/playableHeroSheetService";
+import { getLocalizedPlayableHeroSheetsForHero } from "../services/playableHeroSheetService";
 
 // ... utilities ...
 const resolveI18n = (text: I18nString | undefined, lang: Language): string => {
@@ -214,6 +214,7 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
     const [activeTab, setActiveTab] = useState<'ROSTER' | 'MEDBAY'>('ROSTER');
     const [selectedHeroId, setSelectedHeroId] = useState<string | null>(null);
     const [heroDossierTab, setHeroDossierTab] = useState<'EXPEDIENTE' | 'HISTORIA' | 'PODERES'>('EXPEDIENTE');
+    const [selectedHeroSheetIndex, setSelectedHeroSheetIndex] = useState(0);
     const [showRecruitModal, setShowRecruitModal] = useState(false);
     const [dbTemplates, setDbTemplates] = useState<HeroTemplate[]>([]);
     const [viewingSheet, setViewingSheet] = useState<string | null>(null);
@@ -233,7 +234,8 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
     const selectedHero = heroes.find(h => h.id === selectedHeroId);
     const selectedHeroLore = selectedHero ? getHeroLoreEntry(selectedHero.alias) : undefined;
     const selectedHeroImageUrl = selectedHero ? preferGithubCharacterImage(selectedHero.alias, selectedHero.alignment || 'ALIVE', selectedHero.imageUrl) : '';
-    const selectedHeroSheet = selectedHero ? getLocalizedPlayableHeroSheetForHero(selectedHero, language) : undefined;
+    const selectedHeroSheets = selectedHero ? getLocalizedPlayableHeroSheetsForHero(selectedHero, language) : [];
+    const selectedHeroSheet = selectedHeroSheets[selectedHeroSheetIndex] || selectedHeroSheets[0];
     const heroDossierUi = {
         combatProfile: language === 'es' ? 'PERFIL DE COMBATE' : 'COMBAT PROFILE',
         fieldDossier: language === 'es' ? 'EXPEDIENTE DE CAMPO' : 'FIELD DOSSIER',
@@ -300,8 +302,9 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
     useEffect(() => {
         if (selectedHeroId) {
             setHeroDossierTab('EXPEDIENTE');
+            setSelectedHeroSheetIndex(0);
         }
-    }, [selectedHeroId]);
+    }, [selectedHeroId, language]);
 
     const availableHeroes = heroes.filter(h => h.status === 'AVAILABLE');
     const deployedHeroes = heroes.filter(h => h.status === 'DEPLOYED');
@@ -720,6 +723,23 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
                                     <span className="text-[9px] font-black uppercase tracking-[0.3em] text-cyan-500">{heroDossierUi.combatProfile}</span>
                                     <span className="text-[8px] font-bold uppercase tracking-[0.25em] text-slate-500">{selectedHeroSheet?.set || heroDossierUi.series}</span>
                                 </div>
+
+                                {selectedHeroSheets.length > 1 && (
+                                    <div className="flex flex-wrap gap-2">
+                                        {selectedHeroSheets.map((sheet, index) => (
+                                            <button
+                                                key={`${sheet.characterName}-${sheet.set}-${index}`}
+                                                type="button"
+                                                onClick={() => setSelectedHeroSheetIndex(index)}
+                                                className={`border px-3 py-1.5 text-[8px] font-black uppercase tracking-[0.22em] transition-colors ${selectedHeroSheetIndex === index
+                                                    ? 'border-cyan-500 bg-cyan-950/50 text-cyan-200'
+                                                    : 'border-slate-800 bg-black/30 text-slate-400 hover:text-white'}`}
+                                            >
+                                                {sheet.set}
+                                            </button>
+                                        ))}
+                                    </div>
+                                )}
 
                                 <div className="grid grid-cols-2 gap-2 sm:grid-cols-[minmax(0,0.86fr)_minmax(0,1.38fr)_minmax(0,0.86fr)_minmax(0,0.86fr)_minmax(0,0.86fr)]">
                                     <div className="border border-red-900/70 bg-slate-950/80 p-2.5 min-w-0">

@@ -77,9 +77,18 @@ const HEADER_TO_FIELD: Record<string, keyof PlayableHeroSheet> = {
     toughness: 'toughness'
 };
 
+const HEADER_ALIASES = new Set([
+    'charactername',
+    'nombredelpersonaje'
+]);
+
 const parseSheetTable = (markdown: string) => {
     const lines = markdown.split(/\r?\n/);
-    const tableStart = lines.findIndex((line) => line.startsWith('|Character Name|'));
+    const tableStart = lines.findIndex((line) => {
+        if (!line.startsWith('|')) return false;
+        const headers = line.split('|').map((part) => part.trim()).filter(Boolean);
+        return headers.length > 0 && HEADER_ALIASES.has(normalizeSheetHeader(headers[0]));
+    });
     if (tableStart === -1) return [];
 
     const headerLine = lines[tableStart];
@@ -142,12 +151,6 @@ PLAYABLE_HERO_SHEETS_ES.forEach((sheet) => {
     SHEET_BY_KEY_ES.set(normalizeSheetKey(sheet.characterName), sheet);
 });
 
-const candidateKeys = (hero: Pick<Hero, 'alias' | 'name'>) => [
-    hero.alias,
-    hero.name,
-    `${hero.alias} ${hero.name}`
-];
-
 export const getPlayableHeroSheetForHero = (hero: Pick<Hero, 'alias' | 'name'>) => {
     for (const key of candidateKeys(hero)) {
         const sheet = SHEET_BY_KEY.get(normalizeSheetKey(key));
@@ -161,11 +164,41 @@ export const getPlayableHeroSheetByName = (characterName: string) => {
     return SHEET_BY_KEY.get(normalizeSheetKey(characterName));
 };
 
-export const getLocalizedPlayableHeroSheetForHero = (hero: Pick<Hero, 'alias' | 'name'>, language: Language) => {
-    const englishSheet = getPlayableHeroSheetForHero(hero);
-    if (!englishSheet) return undefined;
-    if (language !== 'es') return englishSheet;
+const candidateKeys = (hero: Pick<Hero, 'alias' | 'name'>) => [
+    hero.alias,
+    hero.name,
+    `${hero.alias} ${hero.name}`
+];
 
-    const spanishSheet = SHEET_BY_KEY_ES.get(normalizeSheetKey(englishSheet.characterName));
-    return spanishSheet ?? englishSheet;
+const findMatchingSheets = (hero: Pick<Hero, 'alias' | 'name'>, sheets: PlayableHeroSheet[]) => {
+    const normalizedCandidates = new Set(candidateKeys(hero).map((value) => normalizeSheetKey(value)));
+    return sheets.filter((sheet) => normalizedCandidates.has(normalizeSheetKey(sheet.characterName)));
+};
+
+const preferPrimarySheet = (hero: Pick<Hero, 'alias' | 'name'>, sheets: PlayableHeroSheet[]) => {
+    if (sheets.length <= 1) return sheets[0];
+
+    const isArtistHero = /artist/i.test(hero.alias) || /artist/i.test(hero.name);
+    const ranked = [...sheets].sort((a, b) => {
+        const aArtist = /artist/i.test(a.characterName) || /artist/i.test(a.set);
+        const bArtist = /artist/i.test(b.characterName) || /artist/i.test(b.set);
+        if (aArtist === bArtist) return 0;
+        return isArtistHero ? (aArtist ? -1 : 1) : (aArtist ? 1 : -1);
+    });
+
+    return ranked[0];
+};
+
+export const getPlayableHeroSheetsForHero = (hero: Pick<Hero, 'alias' | 'name'>) => {
+    return findMatchingSheets(hero, PLAYABLE_HERO_SHEETS);
+};
+
+export const getLocalizedPlayableHeroSheetsForHero = (hero: Pick<Hero, 'alias' | 'name'>, language: Language) => {
+    const sourceSheets = language === 'es' ? PLAYABLE_HERO_SHEETS_ES : PLAYABLE_HERO_SHEETS;
+    return findMatchingSheets(hero, sourceSheets);
+};
+
+export const getLocalizedPlayableHeroSheetForHero = (hero: Pick<Hero, 'alias' | 'name'>, language: Language) => {
+    const sheets = getLocalizedPlayableHeroSheetsForHero(hero, language);
+    return preferPrimarySheet(hero, sheets) || undefined;
 };
