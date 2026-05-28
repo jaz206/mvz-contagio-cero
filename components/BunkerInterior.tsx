@@ -4,6 +4,7 @@ import { translations, Language } from "../translations";
 import { Hero, Mission, HeroClass, HeroTemplate, I18nString } from "../types";
 import { getHeroTransformAvailability, hasAnyHeroWithTransformRule } from "../services/heroVariantRuleService";
 import { preferGithubCharacterImage } from "../services/characterGithubImageService";
+import { getPlayableHeroSheetForHero } from "../services/playableHeroSheetService";
 
 // ... utilities ...
 const resolveI18n = (text: I18nString | undefined, lang: Language): string => {
@@ -231,6 +232,7 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
     const selectedHero = heroes.find(h => h.id === selectedHeroId);
     const selectedHeroLore = selectedHero ? getHeroLoreEntry(selectedHero.alias) : undefined;
     const selectedHeroImageUrl = selectedHero ? preferGithubCharacterImage(selectedHero.alias, selectedHero.alignment || 'ALIVE', selectedHero.imageUrl) : '';
+    const selectedHeroSheet = selectedHero ? getPlayableHeroSheetForHero(selectedHero) : undefined;
     const dossierIsZombie = playerAlignment === 'ZOMBIE';
     const dossierAccentClass = dossierIsZombie ? 'text-lime-400' : 'text-cyan-400';
     const dossierBorderClass = dossierIsZombie ? 'border-lime-600' : 'border-cyan-600';
@@ -682,18 +684,34 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
 
                                     <BiometricMonitor alignment={playerAlignment || 'ALIVE'} />
 
-                                    <div className="grid grid-cols-3 gap-4">
-                                        <div className="bg-slate-950/80 p-4 border-l-2 border-red-600">
-                                            <div className="text-[8px] text-red-500 font-bold uppercase mb-1">STRENGTH</div>
-                                            <div className="text-2xl font-black text-white">{selectedHero.stats.strength}</div>
+                                    <div className="space-y-3">
+                                        <div className="flex items-center justify-between border-b border-cyan-900/40 pb-2">
+                                            <span className="text-[9px] font-black uppercase tracking-[0.3em] text-cyan-500">PERFIL DE COMBATE</span>
+                                            <span className="text-[8px] font-bold uppercase tracking-[0.25em] text-slate-500">{selectedHeroSheet?.set || 'ARCHIVO MD'}</span>
                                         </div>
-                                        <div className="bg-slate-950/80 p-4 border-l-2 border-emerald-600">
-                                            <div className="text-[8px] text-emerald-500 font-bold uppercase mb-1">AGILITY</div>
-                                            <div className="text-2xl font-black text-white">{selectedHero.stats.agility}</div>
-                                        </div>
-                                        <div className="bg-slate-950/80 p-4 border-l-2 border-blue-600">
-                                            <div className="text-[8px] text-blue-500 font-bold uppercase mb-1">INTELLECT</div>
-                                            <div className="text-2xl font-black text-white">{selectedHero.stats.intellect}</div>
+
+                                        <div className="grid grid-cols-2 gap-3 md:grid-cols-5">
+                                            <div className="border border-red-900/70 bg-slate-950/80 p-3">
+                                                <div className="text-[8px] text-red-500 font-bold uppercase tracking-widest mb-1">VIDA</div>
+                                                <div className="text-2xl font-black text-white leading-none">{selectedHeroSheet?.life || 'N/D'}</div>
+                                            </div>
+                                            <div className="border border-cyan-900/70 bg-slate-950/80 p-3 md:col-span-2">
+                                                <div className="text-[8px] text-cyan-400 font-bold uppercase tracking-widest mb-1">TIPO</div>
+                                                <div className="text-xl font-black text-white uppercase leading-none">{selectedHeroSheet?.type || selectedHero.class}</div>
+                                                <div className="mt-1 text-[8px] uppercase tracking-[0.25em] text-slate-500">{selectedHeroSheet?.attack || 'ATK'}</div>
+                                            </div>
+                                            <div className="border border-emerald-900/70 bg-slate-950/80 p-3">
+                                                <div className="text-[8px] text-emerald-400 font-bold uppercase tracking-widest mb-1">DADOS</div>
+                                                <div className="text-2xl font-black text-white leading-none">{selectedHeroSheet?.dice || 'N/D'}</div>
+                                            </div>
+                                            <div className="border border-blue-900/70 bg-slate-950/80 p-3">
+                                                <div className="text-[8px] text-blue-400 font-bold uppercase tracking-widest mb-1">TO HIT</div>
+                                                <div className="text-2xl font-black text-white leading-none">{selectedHeroSheet?.toHit || 'N/D'}</div>
+                                            </div>
+                                            <div className="border border-violet-900/70 bg-slate-950/80 p-3">
+                                                <div className="text-[8px] text-violet-400 font-bold uppercase tracking-widest mb-1">ALCANCE</div>
+                                                <div className="text-2xl font-black text-white leading-none">{selectedHeroSheet?.range || 'N/D'}</div>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
