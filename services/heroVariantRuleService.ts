@@ -1,7 +1,8 @@
 import { GAME_EXPANSIONS } from '../data/gameContent';
 import { Hero, HeroTemplate } from '../types';
+import { isStoryLockedAlias } from './storyLockService';
 
-export type TransformAvailabilityReason = 'OK' | 'NO_VARIANT' | 'MISSING_EXPANSION' | 'NO_COUNTERPART';
+export type TransformAvailabilityReason = 'OK' | 'NO_VARIANT' | 'MISSING_EXPANSION' | 'NO_COUNTERPART' | 'STORY_LOCKED';
 
 export interface TransformAvailability {
     allowed: boolean;
@@ -87,6 +88,10 @@ export const getHeroTransformAvailability = (
     allTemplates: HeroTemplate[],
     ownedExpansions: Set<string>
 ): TransformAvailability => {
+    if (isStoryLockedAlias(hero.alias)) {
+        return { allowed: false, reason: 'STORY_LOCKED' };
+    }
+
     if (hero.relatedHeroId === 'NO_VARIANT') {
         return { allowed: false, reason: 'NO_VARIANT' };
     }

@@ -2,8 +2,9 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { GAME_EXPANSIONS } from '../data/gameContent';
 import { getHeroLoreEntry } from '../data/heroLore';
 import { getHeroTemplates } from '../services/heroService';
-import { getHeroTransformAvailability, hasAnyHeroWithTransformRule } from '../services/heroVariantRuleService';
 import { preferGithubCharacterImage } from '../services/characterGithubImageService';
+import { isStoryLockedAlias } from '../services/storyLockService';
+import { hasAnyHeroWithTransformRule } from '../services/heroVariantRuleService';
 import { Language } from '../translations';
 import { Hero, HeroTemplate } from '../types';
 
@@ -42,7 +43,6 @@ export const ExpansionSelector: React.FC<ExpansionSelectorProps> = ({
     const borderColor = isZombie ? 'border-lime-500' : 'border-cyan-500';
     const textColor = isZombie ? 'text-lime-400' : 'text-cyan-400';
     const bgColor = isZombie ? 'bg-lime-600' : 'bg-cyan-600';
-    const blockedAliases = ['MAGNETO', 'KINGPIN', 'DOCTOR DOOM'];
     const transformTargetAlignment = isZombie ? 'ALIVE' : 'ZOMBIE';
 
     useEffect(() => {
@@ -151,18 +151,7 @@ export const ExpansionSelector: React.FC<ExpansionSelectorProps> = ({
         hasAnyHeroWithTransformRule(selectedHeroes, transformTargetAlignment, dbHeroes, ownedExpansions)
     ), [dbHeroes, ownedExpansions, selectedHeroes, transformTargetAlignment]);
 
-    const transformAvailabilityByHeroId = useMemo(() => {
-        const availability = new Map<string, ReturnType<typeof getHeroTransformAvailability>>();
-        availableHeroes.forEach((hero) => {
-            availability.set(
-                hero.id,
-                getHeroTransformAvailability(hero, transformTargetAlignment, dbHeroes, ownedExpansions)
-            );
-        });
-        return availability;
-    }, [availableHeroes, dbHeroes, ownedExpansions, transformTargetAlignment]);
-
-    const isBlockedHero = (hero: Hero) => blockedAliases.some((alias) => hero.alias.toUpperCase().startsWith(alias));
+    const isBlockedHero = (hero: Hero) => isStoryLockedAlias(hero.alias);
 
     const toggleHero = (hero: Hero) => {
         if (isBlockedHero(hero)) return;
@@ -186,8 +175,8 @@ export const ExpansionSelector: React.FC<ExpansionSelectorProps> = ({
         if (!hasTransformRuleAvailable) {
             alert(
                 language === 'es'
-                    ? 'REGLA DE CURA / INFECCION NO DISPONIBLE. Con las expansiones activas no hay versiones compatibles para aplicar esta regla. La partida continuara con normalidad, pero esta funcion no estara operativa en el bunker.'
-                    : 'CURE / INFECTION RULE UNAVAILABLE. With the active expansions there are no compatible versions for this rule. The game will continue normally, but this function will not be available in the bunker.'
+                    ? 'REGLA DE CURA/INFECCION NO HABILITADA. Con las expansiones activas no hay versiones compatibles para activar el complemento del bunker. La partida continuara con normalidad, pero esta funcion quedara desactivada.'
+                    : 'CURE/INFECTION RULE DISABLED. With the active expansions there are no compatible versions to activate the bunker complement. The game will continue normally, but this function will remain disabled.'
             );
         }
 
@@ -291,7 +280,7 @@ export const ExpansionSelector: React.FC<ExpansionSelectorProps> = ({
                     <div className="flex items-center justify-between border-b border-slate-800 bg-slate-900/50 p-3">
                         <h3 className={`text-xs font-bold uppercase tracking-widest ${textColor}`}>AGENTES DISPONIBLES ({availableHeroes.length})</h3>
                         <div className="text-[10px] text-gray-500">
-                            {language === 'es' ? 'ELIGE TU EQUIPO. MAGNETO, DOOM Y KINGPIN NO ESTAN DISPONIBLES.' : 'CHOOSE YOUR TEAM. MAGNETO, DOOM AND KINGPIN ARE UNAVAILABLE.'}
+                            {language === 'es' ? 'ELIGE TU EQUIPO. MAGNETO, DOOM, KINGPIN Y HULK NO ESTAN DISPONIBLES.' : 'CHOOSE YOUR TEAM. MAGNETO, DOOM, KINGPIN AND HULK ARE UNAVAILABLE.'}
                         </div>
                     </div>
 
@@ -306,8 +295,6 @@ export const ExpansionSelector: React.FC<ExpansionSelectorProps> = ({
                                 {availableHeroes.map(hero => {
                                     const isSelected = selectedHeroes.some(h => h.id === hero.id);
                                     const isBlocked = isBlockedHero(hero);
-                                    const transformAvailability = transformAvailabilityByHeroId.get(hero.id);
-                                    const isMissingPair = !!transformAvailability && !transformAvailability.allowed;
                                     const isDisabled = isBlocked || (!isSelected && selectedHeroes.length >= 6);
                                     const imgStyle = hero.imageParams ? {
                                         transform: `scale(${hero.imageParams.scale}) translate(${hero.imageParams.x}%, ${hero.imageParams.y}%)`

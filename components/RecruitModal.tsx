@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { Hero, HeroTemplate } from '../types';
 import { translations, Language } from '../translations';
-import { getTemplateTransformAvailability } from '../services/heroVariantRuleService';
+import { isStoryLockedAlias } from '../services/storyLockService';
 
 interface RecruitModalProps {
     isOpen: boolean;
@@ -11,7 +11,6 @@ interface RecruitModalProps {
     existingAliases: Set<string>;
     language: Language;
     playerAlignment: 'ALIVE' | 'ZOMBIE' | null;
-    ownedExpansions: Set<string>;
 }
 
 const normalizeAlias = (alias: string) => {
@@ -24,7 +23,7 @@ const normalizeAlias = (alias: string) => {
 };
 
 export const RecruitModal: React.FC<RecruitModalProps> = ({
-    isOpen, onClose, onRecruit, templates, existingAliases, language, playerAlignment, ownedExpansions
+    isOpen, onClose, onRecruit, templates, existingAliases, language, playerAlignment
 }) => {
     const [searchTerm, setSearchTerm] = useState('');
     const [mode, setMode] = useState<'RECRUIT' | 'CAPTURE'>('RECRUIT');
@@ -49,14 +48,6 @@ export const RecruitModal: React.FC<RecruitModalProps> = ({
             return matchesSearch && !isAlreadyOwned && matchesAlignment;
         });
     }, [templates, searchTerm, playerAlignment, existingAliases, mode]);
-
-    const transformAvailabilityByTemplateId = useMemo(() => {
-        const availability = new Map<string, ReturnType<typeof getTemplateTransformAvailability>>();
-        filteredTemplates.forEach((template) => {
-            availability.set(template.id, getTemplateTransformAvailability(template, templates, ownedExpansions));
-        });
-        return availability;
-    }, [filteredTemplates, ownedExpansions, templates]);
 
     const handleActionClick = (template: HeroTemplate) => {
         const initialStatus = mode === 'CAPTURE' ? 'CAPTURED' : 'AVAILABLE';
@@ -137,21 +128,20 @@ export const RecruitModal: React.FC<RecruitModalProps> = ({
                 <div className="flex-1 overflow-y-auto bg-slate-950 p-4 scrollbar-thin scrollbar-thumb-cyan-900">
                     <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
                         {filteredTemplates.map((template) => {
-                            const transformAvailability = transformAvailabilityByTemplateId.get(template.id);
-                            const isMissingPair = !!transformAvailability && !transformAvailability.allowed;
                             const imgStyle = template.imageParams ? {
                                 transform: `scale(${template.imageParams.scale}) translate(${template.imageParams.x}%, ${template.imageParams.y}%)`
                             } : {};
+                            const isBlocked = isStoryLockedAlias(template.alias);
 
                             return (
                                 <div
                                     key={template.id}
                                     onClick={() => {
-                                        if (isMissingPair) return;
+                                        if (isBlocked) return;
                                         handleActionClick(template);
                                     }}
-                                    className={`group relative flex gap-3 overflow-hidden border bg-slate-900/50 p-2 transition-all ${isMissingPair
-                                        ? 'cursor-not-allowed border-amber-900/60 opacity-40 grayscale'
+                                    className={`group relative flex gap-3 overflow-hidden border bg-slate-900/50 p-2 transition-all ${isBlocked
+                                        ? 'cursor-not-allowed border-slate-800 opacity-40 grayscale'
                                         : `cursor-pointer ${mode === 'RECRUIT'
                                             ? 'border-cyan-900 hover:border-cyan-500 hover:bg-cyan-900/20'
                                             : 'border-red-900 hover:border-red-500 hover:bg-red-900/20'}`}`}
@@ -176,7 +166,13 @@ export const RecruitModal: React.FC<RecruitModalProps> = ({
                                         </div>
                                     </div>
 
-                                    {isMissingPair ? null : (
+                                    {isBlocked ? (
+                                        <div className="absolute inset-0 flex items-center justify-center bg-black/55 pointer-events-none">
+                                            <span className="border border-slate-500 bg-slate-950/90 px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-slate-300">
+                                                {language === 'es' ? 'BLOQUEADO' : 'LOCKED'}
+                                            </span>
+                                        </div>
+                                    ) : (
                                         <div className="absolute right-2 top-1/2 -translate-y-1/2 opacity-0 transition-opacity group-hover:opacity-100">
                                             <div className={`flex h-8 w-8 items-center justify-center text-lg font-bold text-black shadow-lg ${mode === 'RECRUIT' ? 'bg-cyan-600' : 'bg-red-600'}`}>
                                                 {mode === 'RECRUIT' ? '+' : '!'}

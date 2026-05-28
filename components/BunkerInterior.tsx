@@ -291,7 +291,13 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
         [dbTemplates, heroes, ownedExpansions, transformTargetAlignment]
     );
 
-    const getBlockedTransformMessage = (hero: Hero, reason: 'NO_VARIANT' | 'MISSING_EXPANSION' | 'NO_COUNTERPART', isAlivePlayer: boolean) => {
+    const getBlockedTransformMessage = (hero: Hero, reason: 'NO_VARIANT' | 'MISSING_EXPANSION' | 'NO_COUNTERPART' | 'STORY_LOCKED', isAlivePlayer: boolean) => {
+        if (reason === 'STORY_LOCKED') {
+            return isAlivePlayer
+                ? `PROTOCOLO RESERVADO.\n\n${hero.alias} forma parte del nucleo narrativo de la campaña y no puede ser curado, capturado ni infectado.`
+                : `PROTOCOLO RESERVADO.\n\n${hero.alias} forma parte del nucleo narrativo de la campaña y no puede ser curado, capturado ni infectado.`;
+        }
+
         if (reason === 'NO_VARIANT') {
             return isAlivePlayer
                 ? `SUJETO IRRECUPERABLE.\n\nEl tejido de ${hero.alias} ha sufrido una degradacion celular total. No queda ADN humano viable para la reestructuracion.\n\nLA CURA ES INEFICAZ.`
@@ -601,7 +607,6 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
                     existingAliases={existingAliases}
                     language={language}
                     playerAlignment={playerAlignment || 'ALIVE'}
-                    ownedExpansions={ownedExpansions}
                 />
             )}
 
