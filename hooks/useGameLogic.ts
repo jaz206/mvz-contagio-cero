@@ -241,6 +241,30 @@ export const useGameLogic = () => {
 
             const coreExpansion = GAME_EXPANSIONS.find((item) => item.id === 'core_box');
             const coreHeroes = coreExpansion ? coreExpansion.heroes : [];
+            const heroTemplates = await getHeroTemplates();
+            const hydrateHeroFromTemplate = (hero: Hero): Hero => {
+                const template = heroTemplates.find((item) => item.id === hero.id);
+                if (!template) return hero;
+
+                return {
+                    ...hero,
+                    name: template.defaultName,
+                    alias: template.alias,
+                    class: template.defaultClass,
+                    stats: template.defaultStats,
+                    imageUrl: template.imageUrl || hero.imageUrl,
+                    bio: template.bio || hero.bio,
+                    origin: template.origin || hero.origin,
+                    currentStory: template.currentStory || hero.currentStory,
+                    objectives: template.objectives || hero.objectives,
+                    imageParams: template.imageParams || hero.imageParams,
+                    characterSheetUrl: template.characterSheetUrl || hero.characterSheetUrl,
+                    relatedHeroId: template.relatedHeroId || hero.relatedHeroId,
+                    expansionId: template.expansionId || hero.expansionId,
+                    playableSheets: template.playableSheets || hero.playableSheets
+                };
+            };
+            const hydratedCoreHeroes = coreHeroes.map(hydrateHeroFromTemplate);
 
             const currentEmail = (currentUser.email || '').toLowerCase();
             const isAdminUser = currentUser.uid === ADMIN_UID || currentEmail === ADMIN_EMAIL;
@@ -261,7 +285,7 @@ export const useGameLogic = () => {
                 setPlayerAlignment('ALIVE');
                 setShowStory(false);
                 setShowTutorial(false);
-                setHeroes(coreHeroes);
+                setHeroes(hydratedCoreHeroes);
                 setCompletedMissionIds(new Set());
                 setOmegaCylinders(0);
                 setWorldStage('NORMAL');
@@ -288,7 +312,7 @@ export const useGameLogic = () => {
                 setPlayerAlignment('ALIVE');
                 setShowStory(false);
                 setShowTutorial(false);
-                setHeroes(coreHeroes);
+                setHeroes(hydratedCoreHeroes);
                 setCompletedMissionIds(new Set());
                 setOmegaCylinders(0);
                 setWorldStage('NORMAL');
@@ -775,7 +799,8 @@ export const useGameLogic = () => {
             completedObjectiveIndices: [],
             currentStory: targetTemplate.currentStory || '',
             relatedHeroId: currentHero.templateId || currentHero.id,
-            imageParams: targetTemplate.imageParams
+            imageParams: targetTemplate.imageParams,
+            playableSheets: targetTemplate.playableSheets
         };
 
         const nextHeroes = [...heroes];

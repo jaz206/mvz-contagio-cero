@@ -19,6 +19,32 @@ export interface ImageParams {
 
 export type I18nString = string | { es: string; en: string };
 
+export interface HeroPlayableSheet {
+  characterName: string;
+  set: string;
+  life: string;
+  attack: string;
+  type: string;
+  range: string;
+  dice: string;
+  toHit: string;
+  blueSkillName: string;
+  blueSkillDescription: string;
+  yellowSkillName: string;
+  yellowSkillDescription: string;
+  orangeSkillName: string;
+  orangeSkillDescription: string;
+  redSkillName: string;
+  redSkillDescription: string;
+  spawnAbility: string;
+  toughness: string;
+}
+
+export interface HeroPlayableSheetsByLanguage {
+  es?: HeroPlayableSheet[];
+  en?: HeroPlayableSheet[];
+}
+
 export interface Hero {
   id: string;
   templateId?: string;
@@ -38,6 +64,7 @@ export interface Hero {
   expansionId?: string;
   relatedHeroId?: string;
   imageParams?: ImageParams;
+  playableSheets?: HeroPlayableSheetsByLanguage;
 }
 
 export interface HeroTemplate {
@@ -56,6 +83,7 @@ export interface HeroTemplate {
   expansionId?: string;
   relatedHeroId?: string;
   imageParams?: ImageParams;
+  playableSheets?: HeroPlayableSheetsByLanguage;
 }
 
 export interface Location {

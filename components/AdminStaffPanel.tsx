@@ -7,7 +7,7 @@ import {
     updateStaffStatus
 } from '../services/staffService';
 import { getLoginAccessConfig, saveLoginAccessMode } from '../services/accessControlService';
-import { deleteHeroInDB, getHeroTemplates } from '../services/heroService';
+import { deleteHeroInDB, getHeroTemplates, syncHeroRepositoryToDB } from '../services/heroService';
 import { preferGithubCharacterImage } from '../services/characterGithubImageService';
 import { CharacterEditor } from './CharacterEditor';
 
@@ -82,6 +82,7 @@ export const AdminStaffPanel: React.FC<AdminStaffPanelProps> = ({
     const [savingStory, setSavingStory] = useState(false);
     const [heroes, setHeroes] = useState<HeroTemplate[]>([]);
     const [loadingHeroes, setLoadingHeroes] = useState(false);
+    const [syncingHeroes, setSyncingHeroes] = useState(false);
     const [heroSearch, setHeroSearch] = useState('');
     const [editingHero, setEditingHero] = useState<HeroTemplate | null>(null);
     const [creatingHero, setCreatingHero] = useState(false);
@@ -349,6 +350,25 @@ export const AdminStaffPanel: React.FC<AdminStaffPanelProps> = ({
         }
     };
 
+    const handleSyncHeroes = async () => {
+        const confirmed = window.confirm('Voy a guardar toda la ficha de cada heroe en Firebase. ¿Continuar?');
+        if (!confirmed) return;
+
+        setSyncingHeroes(true);
+        setError(null);
+
+        try {
+            const total = await syncHeroRepositoryToDB();
+            await loadHeroes();
+            alert(`Heroes actualizados en Firebase: ${total}`);
+        } catch (err) {
+            console.error(err);
+            setError('No se pudieron guardar los heroes en Firebase.');
+        } finally {
+            setSyncingHeroes(false);
+        }
+    };
+
     const activeSlides = introDraft[introMode];
     const filteredHeroes = useMemo(() => {
         const query = heroSearch.trim().toLowerCase();
@@ -613,6 +633,13 @@ export const AdminStaffPanel: React.FC<AdminStaffPanelProps> = ({
                                     className="border border-cyan-800 bg-cyan-900/20 px-3 py-2 text-xs font-black uppercase text-cyan-300 hover:bg-cyan-900/40"
                                 >
                                     Nuevo Personaje
+                                </button>
+                                <button
+                                    onClick={handleSyncHeroes}
+                                    disabled={syncingHeroes}
+                                    className="border border-emerald-800 bg-emerald-900/20 px-3 py-2 text-xs font-black uppercase text-emerald-300 hover:bg-emerald-900/40 disabled:opacity-50"
+                                >
+                                    {syncingHeroes ? 'Guardando...' : 'Guardar en Firebase'}
                                 </button>
                                 <button
                                     onClick={loadHeroes}

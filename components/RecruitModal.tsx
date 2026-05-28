@@ -69,7 +69,8 @@ export const RecruitModal: React.FC<RecruitModalProps> = ({
             currentStory: template.currentStory || '',
             relatedHeroId: template.relatedHeroId,
             imageParams: template.imageParams,
-            expansionId: template.expansionId
+            expansionId: template.expansionId,
+            playableSheets: template.playableSheets
         };
 
         onRecruit(newHero);

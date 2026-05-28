@@ -77,27 +77,29 @@ export const ExpansionSelector: React.FC<ExpansionSelectorProps> = ({
 
                 if (dbVersion) {
                     const loreEntry = playerAlignment === 'ALIVE' ? getHeroLoreEntry(dbVersion.alias) : undefined;
-                    return {
-                        ...localHero,
-                        name: dbVersion.defaultName,
-                        alias: dbVersion.alias,
-                        class: dbVersion.defaultClass,
-                        stats: dbVersion.defaultStats,
-                        imageUrl: preferGithubCharacterImage(dbVersion.alias, playerAlignment, dbVersion.imageUrl),
-                        bio: hasDetailedNarrative(dbVersion.bio) ? dbVersion.bio : (loreEntry?.bio || dbVersion.bio || localHero.bio),
-                        origin: hasDetailedNarrative(dbVersion.origin) ? dbVersion.origin : (loreEntry?.origin || dbVersion.origin || localHero.origin),
-                        imageParams: dbVersion.imageParams,
-                        characterSheetUrl: dbVersion.characterSheetUrl,
-                        currentStory: hasDetailedNarrative(dbVersion.currentStory) ? dbVersion.currentStory : (loreEntry?.currentStory || dbVersion.currentStory || localHero.currentStory),
-                        expansionId: dbVersion.expansionId || exp.id,
-                        relatedHeroId: dbVersion.relatedHeroId
-                    };
-                }
+                        return {
+                            ...localHero,
+                            name: dbVersion.defaultName,
+                            alias: dbVersion.alias,
+                            class: dbVersion.defaultClass,
+                            stats: dbVersion.defaultStats,
+                            imageUrl: preferGithubCharacterImage(dbVersion.alias, playerAlignment, dbVersion.imageUrl),
+                            bio: hasDetailedNarrative(dbVersion.bio) ? dbVersion.bio : (loreEntry?.bio || dbVersion.bio || localHero.bio),
+                            origin: hasDetailedNarrative(dbVersion.origin) ? dbVersion.origin : (loreEntry?.origin || dbVersion.origin || localHero.origin),
+                            imageParams: dbVersion.imageParams,
+                            characterSheetUrl: dbVersion.characterSheetUrl,
+                            currentStory: hasDetailedNarrative(dbVersion.currentStory) ? dbVersion.currentStory : (loreEntry?.currentStory || dbVersion.currentStory || localHero.currentStory),
+                            expansionId: dbVersion.expansionId || exp.id,
+                            relatedHeroId: dbVersion.relatedHeroId,
+                            playableSheets: dbVersion.playableSheets
+                        };
+                    }
 
                 return {
                     ...localHero,
                     imageUrl: preferGithubCharacterImage(localHero.alias, playerAlignment, localHero.imageUrl),
-                    expansionId: exp.id
+                    expansionId: exp.id,
+                    playableSheets: dbVersion?.playableSheets
                 };
             });
 
@@ -130,7 +132,8 @@ export const ExpansionSelector: React.FC<ExpansionSelectorProps> = ({
                 completedObjectiveIndices: [],
                 currentStory: h.currentStory || '',
                 imageParams: h.imageParams,
-                characterSheetUrl: h.characterSheetUrl
+                characterSheetUrl: h.characterSheetUrl,
+                playableSheets: h.playableSheets
             }));
 
             allHeroes = [...allHeroes, ...formattedCustomHeroes];

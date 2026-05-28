@@ -1,28 +1,9 @@
 import playableHeroesMarkdown from '../Heroes jugables.md?raw';
 import playableHeroesMarkdownEs from '../Heroes_jugables_es.md?raw';
-import { Hero } from '../types';
+import { Hero, HeroPlayableSheet, HeroPlayableSheetsByLanguage } from '../types';
 import { Language } from '../translations';
 
-export interface PlayableHeroSheet {
-    characterName: string;
-    set: string;
-    life: string;
-    attack: string;
-    type: string;
-    range: string;
-    dice: string;
-    toHit: string;
-    blueSkillName: string;
-    blueSkillDescription: string;
-    yellowSkillName: string;
-    yellowSkillDescription: string;
-    orangeSkillName: string;
-    orangeSkillDescription: string;
-    redSkillName: string;
-    redSkillDescription: string;
-    spawnAbility: string;
-    toughness: string;
-}
+export type PlayableHeroSheet = HeroPlayableSheet;
 
 const normalizeSheetKey = (value: string) => value
     .normalize('NFD')
@@ -160,7 +141,23 @@ PLAYABLE_HERO_SHEETS_ES.forEach((sheet) => {
     SHEET_BY_KEY_ES.set(normalizeSheetKey(sheet.characterName), sheet);
 });
 
-export const getPlayableHeroSheetForHero = (hero: Pick<Hero, 'alias' | 'name'>) => {
+type HeroSheetSource = Pick<Hero, 'alias' | 'name'> & { playableSheets?: HeroPlayableSheetsByLanguage };
+
+const getSheetsFromHeroSource = (hero: HeroSheetSource, language: Language) => {
+    const languageKey = isSpanishLanguage(language) ? 'es' : 'en';
+    const heroSheets = hero.playableSheets?.[languageKey];
+    if (Array.isArray(heroSheets) && heroSheets.length > 0) {
+        return heroSheets;
+    }
+    return undefined;
+};
+
+export const getPlayableHeroSheetForHero = (hero: HeroSheetSource) => {
+    const cachedSheets = hero.playableSheets?.en || hero.playableSheets?.es;
+    if (Array.isArray(cachedSheets) && cachedSheets.length > 0) {
+        return cachedSheets[0];
+    }
+
     for (const key of candidateKeys(hero)) {
         const sheet = SHEET_BY_KEY.get(normalizeSheetKey(key));
         if (sheet) return sheet;
@@ -202,12 +199,20 @@ export const getPlayableHeroSheetsForHero = (hero: Pick<Hero, 'alias' | 'name'>)
     return findMatchingSheets(hero, PLAYABLE_HERO_SHEETS);
 };
 
-export const getLocalizedPlayableHeroSheetsForHero = (hero: Pick<Hero, 'alias' | 'name'>, language: Language) => {
+export const getLocalizedPlayableHeroSheetsForHero = (hero: HeroSheetSource, language: Language) => {
+    const cachedSheets = getSheetsFromHeroSource(hero, language);
+    if (cachedSheets) return cachedSheets;
+
     const sourceSheets = isSpanishLanguage(language) ? PLAYABLE_HERO_SHEETS_ES : PLAYABLE_HERO_SHEETS;
     return findMatchingSheets(hero, sourceSheets);
 };
 
-export const getLocalizedPlayableHeroSheetForHero = (hero: Pick<Hero, 'alias' | 'name'>, language: Language) => {
+export const getLocalizedPlayableHeroSheetForHero = (hero: HeroSheetSource, language: Language) => {
     const sheets = getLocalizedPlayableHeroSheetsForHero(hero, language);
     return preferPrimarySheet(hero, sheets) || undefined;
 };
+
+export const buildPlayableHeroSheetCollectionForHero = (hero: Pick<Hero, 'alias' | 'name'>): HeroPlayableSheetsByLanguage => ({
+    es: getLocalizedPlayableHeroSheetsForHero(hero, 'es'),
+    en: getLocalizedPlayableHeroSheetsForHero(hero, 'en')
+});

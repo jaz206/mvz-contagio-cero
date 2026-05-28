@@ -1,10 +1,11 @@
 import { collection, getDocs, doc, writeBatch, updateDoc, addDoc, deleteDoc } from 'firebase/firestore';
 import { db } from '../firebaseConfig';
-import { HeroTemplate, HeroClass } from '../types';
+import { HeroTemplate, HeroClass, HeroPlayableSheetsByLanguage } from '../types';
 import { HERO_DATABASE } from '../data/heroDatabase';
 import { GAME_EXPANSIONS } from '../data/gameContent';
 import { getHeroLoreEntry } from '../data/heroLore';
 import { preferGithubCharacterImage } from './characterGithubImageService';
+import { buildPlayableHeroSheetCollectionForHero } from './playableHeroSheetService';
 
 const COLLECTION_NAME = 'heroes';
 
@@ -39,6 +40,23 @@ const hasDetailedCopy = (value: any): boolean => {
     return false;
 };
 
+const normalizePlayableSheets = (value: any): HeroPlayableSheetsByLanguage | undefined => {
+    if (!value) return undefined;
+
+    if (Array.isArray(value)) {
+        return { es: value };
+    }
+
+    if (typeof value !== 'object') return undefined;
+
+    const result: HeroPlayableSheetsByLanguage = {};
+    if (Array.isArray(value.es)) result.es = value.es;
+    if (Array.isArray(value.en)) result.en = value.en;
+    if (!result.es && !result.en) return undefined;
+
+    return result;
+};
+
 export const getHeroTemplates = async (): Promise<HeroTemplate[]> => {
     if (!db) return [];
     try {
@@ -65,6 +83,7 @@ export const getHeroTemplates = async (): Promise<HeroTemplate[]> => {
             const expansionId = findField(data, ['expansionId', 'expansion', 'caja']);
             const relatedHeroId = findField(data, ['relatedHeroId', 'relatedId', 'counterpart', 'version_contraria']);
             const imageParams = findField(data, ['imageParams', 'ajusteImagen', 'crop']);
+            const playableSheets = normalizePlayableSheets(findField(data, ['playableSheets', 'heroSheets', 'sheets', 'fichas']));
             const resolvedAlignment = defaultAlignment || 'ALIVE';
             const resolvedAlias = alias || name || '';
             const loreEntry = resolvedAlignment === 'ALIVE' ? getHeroLoreEntry(resolvedAlias) : undefined;
@@ -91,7 +110,8 @@ export const getHeroTemplates = async (): Promise<HeroTemplate[]> => {
                 defaultAlignment: resolvedAlignment,
                 expansionId: expansionId || 'unknown',
                 relatedHeroId: relatedHeroId || undefined,
-                imageParams: imageParams || undefined
+                imageParams: imageParams || undefined,
+                playableSheets
             });
         });
         return templates;
@@ -149,62 +169,73 @@ export const deleteHeroInDB = async (id: string): Promise<void> => {
     }
 };
 
-export const seedExpansionsToDB = async (): Promise<void> => {
+export const syncHeroRepositoryToDB = async (): Promise<number> => {
     if (!db) throw new Error("DB no disponible");
     try {
         const snapshot = await getDocs(collection(db, COLLECTION_NAME));
-        const deleteBatch = writeBatch(db);
-        snapshot.docs.forEach((doc) => {
-            deleteBatch.delete(doc.ref);
-        });
-        await deleteBatch.commit();
-
-        const createBatch = writeBatch(db);
+        const existingDocs = new Map(snapshot.docs.map((item) => [item.id, item.data()]));
+        const writeBatchOp = writeBatch(db);
         let count = 0;
 
-        for (const exp of GAME_EXPANSIONS) {
-            for (const hero of exp.heroes) {
-                const docRef = doc(db, COLLECTION_NAME, hero.id);
-                const loreEntry = getHeroLoreEntry(hero.alias);
-                const templateData: HeroTemplate = {
-                    id: hero.id,
-                    defaultName: hero.name,
-                    alias: hero.alias,
-                    defaultClass: hero.class,
-                    bio: loreEntry?.bio || hero.bio,
-                    imageUrl: preferGithubCharacterImage(hero.alias, 'ALIVE', hero.imageUrl || ''),
-                    defaultStats: hero.stats,
-                    defaultAlignment: 'ALIVE',
-                    origin: loreEntry?.origin || '',
-                    currentStory: loreEntry?.currentStory || '',
-                    objectives: [],
-                    expansionId: exp.id
-                };
-                createBatch.set(docRef, templateData);
-                count++;
-            }
+        const allSourceHeroes = GAME_EXPANSIONS.flatMap((exp) => ([
+            ...exp.heroes.map((hero) => ({ ...hero, expansionId: exp.id, defaultAlignment: 'ALIVE' as const })),
+            ...exp.zombieHeroes.map((hero) => ({ ...hero, expansionId: exp.id, defaultAlignment: 'ZOMBIE' as const }))
+        ]));
 
-            for (const zHero of exp.zombieHeroes) {
-                const docRef = doc(db, COLLECTION_NAME, zHero.id);
-                const templateData: HeroTemplate = {
-                    id: zHero.id,
-                    defaultName: zHero.name,
-                    alias: zHero.alias,
-                    defaultClass: zHero.class,
-                    bio: zHero.bio,
-                    imageUrl: preferGithubCharacterImage(zHero.alias, 'ZOMBIE', zHero.imageUrl || ''),
-                    defaultStats: zHero.stats,
-                    defaultAlignment: 'ZOMBIE',
-                    currentStory: '',
-                    objectives: [],
-                    expansionId: exp.id
-                };
-                createBatch.set(docRef, templateData);
-                count++;
-            }
+        const allKnownIds = new Set([...existingDocs.keys(), ...allSourceHeroes.map((hero) => hero.id)]);
+
+        for (const heroId of allKnownIds) {
+            const existing = existingDocs.get(heroId) || {};
+            const localSource = allSourceHeroes.find((hero) => hero.id === heroId);
+            const existingAlias = findField(existing, ['alias', 'codename', 'nombre_en_clave', 'heroname']);
+            const existingName = findField(existing, ['defaultName', 'nombre_Real', 'nombreReal', 'realName', 'name', 'nombre']);
+            const resolvedAlias = existingAlias || localSource?.alias || existingName || '';
+            const resolvedName = existingName || localSource?.name || 'Unknown Agent';
+            const resolvedAlignment = findField(existing, ['defaultAlignment', 'alignment', 'bando', 'tipo']) || localSource?.defaultAlignment || 'ALIVE';
+            const resolvedClass = findField(existing, ['defaultClass', 'clase', 'class', 'rol']) || localSource?.class || 'BRAWLER';
+            const resolvedStats = findField(existing, ['defaultStats', 'stats', 'estadisticas']) || localSource?.stats || { strength: 5, agility: 5, intellect: 5 };
+            const resolvedImageUrl = findField(existing, ['imageUrl', 'foto', 'image', 'img', 'url', 'picture']) || localSource?.imageUrl || '';
+            const resolvedCharacterSheetUrl = findField(existing, ['characterSheetUrl', 'ficha', 'gameCard', 'sheet', 'carta']) || '';
+            const loreEntry = getHeroLoreEntry(resolvedAlias);
+            const existingPlayables = normalizePlayableSheets(findField(existing, ['playableSheets', 'heroSheets', 'sheets', 'fichas']));
+            const playableSheets = existingPlayables || buildPlayableHeroSheetCollectionForHero({ alias: resolvedAlias, name: resolvedName });
+
+            const templateData: HeroTemplate = {
+                id: heroId,
+                defaultName: resolvedName,
+                alias: resolvedAlias,
+                defaultClass: resolvedClass as HeroClass,
+                bio: hasDetailedCopy(findField(existing, ['bio', 'biografia', 'biography', 'historia', 'history'])) ? findField(existing, ['bio', 'biografia', 'biography', 'historia', 'history']) : (loreEntry?.bio || localSource?.bio || ''),
+                imageUrl: preferGithubCharacterImage(resolvedAlias, resolvedAlignment, resolvedImageUrl),
+                defaultStats: resolvedStats,
+                defaultAlignment: resolvedAlignment,
+                origin: hasDetailedCopy(findField(existing, ['origin', 'origen', 'source'])) ? findField(existing, ['origin', 'origen', 'source']) : (loreEntry?.origin || ''),
+                currentStory: hasDetailedCopy(findField(existing, ['currentStory', 'historia_actual', 'historiaActual', 'current_story'])) ? findField(existing, ['currentStory', 'historia_actual', 'historiaActual', 'current_story']) : (loreEntry?.currentStory || ''),
+                objectives: Array.isArray(findField(existing, ['objectives', 'objetivos', 'goals', 'misiones'])) ? findField(existing, ['objectives', 'objetivos', 'goals', 'misiones']) : [],
+                expansionId: findField(existing, ['expansionId', 'expansion', 'caja']) || localSource?.expansionId || 'custom_database',
+                relatedHeroId: findField(existing, ['relatedHeroId', 'relatedId', 'counterpart', 'version_contraria']) || undefined,
+                imageParams: findField(existing, ['imageParams', 'ajusteImagen', 'crop']) || undefined,
+                characterSheetUrl: resolvedCharacterSheetUrl || '',
+                playableSheets
+            };
+
+            const docRef = doc(db, COLLECTION_NAME, heroId);
+            writeBatchOp.set(docRef, templateData, { merge: true });
+            count++;
         }
 
-        await createBatch.commit();
+        await writeBatchOp.commit();
+        return count;
+    } catch (error) {
+        console.error("Error syncing heroes:", error);
+        throw error;
+    }
+};
+
+export const seedExpansionsToDB = async (): Promise<void> => {
+    if (!db) throw new Error("DB no disponible");
+    try {
+        const count = await syncHeroRepositoryToDB();
         alert(`BBDD REINICIADA: ${count} personajes creados correctamente.`);
     } catch (error) {
         console.error("Error seeding expansions:", error);
