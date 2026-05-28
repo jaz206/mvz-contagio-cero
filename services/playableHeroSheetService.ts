@@ -1,5 +1,7 @@
 import playableHeroesMarkdown from '../Heroes jugables.md?raw';
 import { Hero } from '../types';
+import { Language } from '../translations';
+import playableHeroSheetTranslationsEs from '../data/playableHeroSheetTranslations.es.json';
 
 export interface PlayableHeroSheet {
     characterName: string;
@@ -21,6 +23,8 @@ export interface PlayableHeroSheet {
     spawnAbility: string;
     toughness: string;
 }
+
+const PLAYABLE_HERO_SHEET_TRANSLATIONS_ES = playableHeroSheetTranslationsEs as Record<string, string>;
 
 const normalizeSheetKey = (value: string) => value
     .normalize('NFD')
@@ -113,3 +117,29 @@ export const getPlayableHeroSheetByName = (characterName: string) => {
     return SHEET_BY_KEY.get(normalizeSheetKey(characterName));
 };
 
+const translateSheetText = (value: string, language: Language) => {
+    if (!value || language !== 'es') return value;
+    return PLAYABLE_HERO_SHEET_TRANSLATIONS_ES[value] || value;
+};
+
+export const getLocalizedPlayableHeroSheetForHero = (hero: Pick<Hero, 'alias' | 'name'>, language: Language) => {
+    const sheet = getPlayableHeroSheetForHero(hero);
+    if (!sheet) return undefined;
+    if (language !== 'es') return sheet;
+
+    return {
+        ...sheet,
+        set: translateSheetText(sheet.set, language),
+        attack: translateSheetText(sheet.attack, language),
+        type: translateSheetText(sheet.type, language),
+        blueSkillName: translateSheetText(sheet.blueSkillName, language),
+        blueSkillDescription: translateSheetText(sheet.blueSkillDescription, language),
+        yellowSkillName: translateSheetText(sheet.yellowSkillName, language),
+        yellowSkillDescription: translateSheetText(sheet.yellowSkillDescription, language),
+        orangeSkillName: translateSheetText(sheet.orangeSkillName, language),
+        orangeSkillDescription: translateSheetText(sheet.orangeSkillDescription, language),
+        redSkillName: translateSheetText(sheet.redSkillName, language),
+        redSkillDescription: translateSheetText(sheet.redSkillDescription, language),
+        spawnAbility: translateSheetText(sheet.spawnAbility, language)
+    };
+};

@@ -4,7 +4,7 @@ import { translations, Language } from "../translations";
 import { Hero, Mission, HeroClass, HeroTemplate, I18nString } from "../types";
 import { getHeroTransformAvailability, hasAnyHeroWithTransformRule } from "../services/heroVariantRuleService";
 import { preferGithubCharacterImage } from "../services/characterGithubImageService";
-import { getPlayableHeroSheetForHero } from "../services/playableHeroSheetService";
+import { getLocalizedPlayableHeroSheetForHero } from "../services/playableHeroSheetService";
 
 // ... utilities ...
 const resolveI18n = (text: I18nString | undefined, lang: Language): string => {
@@ -233,7 +233,29 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
     const selectedHero = heroes.find(h => h.id === selectedHeroId);
     const selectedHeroLore = selectedHero ? getHeroLoreEntry(selectedHero.alias) : undefined;
     const selectedHeroImageUrl = selectedHero ? preferGithubCharacterImage(selectedHero.alias, selectedHero.alignment || 'ALIVE', selectedHero.imageUrl) : '';
-    const selectedHeroSheet = selectedHero ? getPlayableHeroSheetForHero(selectedHero) : undefined;
+    const selectedHeroSheet = selectedHero ? getLocalizedPlayableHeroSheetForHero(selectedHero, language) : undefined;
+    const heroDossierUi = {
+        combatProfile: language === 'es' ? 'PERFIL DE COMBATE' : 'COMBAT PROFILE',
+        fieldDossier: language === 'es' ? 'EXPEDIENTE DE CAMPO' : 'FIELD DOSSIER',
+        series: language === 'es' ? 'Serie' : 'Series',
+        toughness: language === 'es' ? 'Dureza' : 'Toughness',
+        class: language === 'es' ? 'CLASE' : 'CLASS',
+        status: language === 'es' ? 'ESTADO' : 'STATUS',
+        key: language === 'es' ? 'CLAVE' : 'CLEARANCE',
+        evaluation: language === 'es' ? 'EVALUACION DE S.H.I.E.L.D.' : 'S.H.I.E.L.D. EVALUATION',
+        access: language === 'es' ? 'ACCESO' : 'ACCESS',
+        tabs: {
+            dossier: language === 'es' ? 'Expediente' : 'Dossier',
+            history: language === 'es' ? 'Historia' : 'History',
+            powers: language === 'es' ? 'Poderes' : 'Powers'
+        },
+        abilityLabels: {
+            blue: language === 'es' ? 'AZUL' : 'BLUE',
+            yellow: language === 'es' ? 'AMARILLA' : 'YELLOW',
+            orange: language === 'es' ? 'NARANJA' : 'ORANGE',
+            red: language === 'es' ? 'ROJA' : 'RED'
+        }
+    };
     const dossierIsZombie = playerAlignment === 'ZOMBIE';
     const dossierAccentClass = dossierIsZombie ? 'text-lime-400' : 'text-cyan-400';
     const dossierBorderClass = dossierIsZombie ? 'border-lime-600' : 'border-cyan-600';
@@ -270,10 +292,10 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
     ) : '';
 
     const heroDossierAbilityCards = selectedHeroSheet ? [
-        { key: 'blue', label: 'AZUL', title: selectedHeroSheet.blueSkillName, text: selectedHeroSheet.blueSkillDescription, accent: 'text-cyan-300', border: 'border-cyan-900/60', glow: 'shadow-cyan-900/10' },
-        { key: 'yellow', label: 'AMARILLA', title: selectedHeroSheet.yellowSkillName, text: selectedHeroSheet.yellowSkillDescription, accent: 'text-amber-300', border: 'border-amber-900/60', glow: 'shadow-amber-900/10' },
-        { key: 'orange', label: 'NARANJA', title: selectedHeroSheet.orangeSkillName, text: selectedHeroSheet.orangeSkillDescription, accent: 'text-orange-300', border: 'border-orange-900/60', glow: 'shadow-orange-900/10' },
-        { key: 'red', label: 'ROJA', title: selectedHeroSheet.redSkillName, text: selectedHeroSheet.redSkillDescription, accent: 'text-red-300', border: 'border-red-900/60', glow: 'shadow-red-900/10' },
+        { key: 'blue', label: heroDossierUi.abilityLabels.blue, title: selectedHeroSheet.blueSkillName, text: selectedHeroSheet.blueSkillDescription, accent: 'text-cyan-300', border: 'border-cyan-900/60', glow: 'shadow-cyan-900/10' },
+        { key: 'yellow', label: heroDossierUi.abilityLabels.yellow, title: selectedHeroSheet.yellowSkillName, text: selectedHeroSheet.yellowSkillDescription, accent: 'text-amber-300', border: 'border-amber-900/60', glow: 'shadow-amber-900/10' },
+        { key: 'orange', label: heroDossierUi.abilityLabels.orange, title: selectedHeroSheet.orangeSkillName, text: selectedHeroSheet.orangeSkillDescription, accent: 'text-orange-300', border: 'border-orange-900/60', glow: 'shadow-orange-900/10' },
+        { key: 'red', label: heroDossierUi.abilityLabels.red, title: selectedHeroSheet.redSkillName, text: selectedHeroSheet.redSkillDescription, accent: 'text-red-300', border: 'border-red-900/60', glow: 'shadow-red-900/10' },
     ] : [];
 
     useEffect(() => {
@@ -696,22 +718,22 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
 
                             <div className="mt-4 flex min-h-0 flex-1 flex-col gap-4">
                                 <div className="flex items-start justify-between gap-4 border-b border-cyan-900/40 pb-2">
-                                    <span className="text-[9px] font-black uppercase tracking-[0.3em] text-cyan-500">PERFIL DE COMBATE</span>
-                                    <span className="text-[8px] font-bold uppercase tracking-[0.25em] text-slate-500">{selectedHeroSheet?.set || 'ARCHIVO MD'}</span>
+                                    <span className="text-[9px] font-black uppercase tracking-[0.3em] text-cyan-500">{heroDossierUi.combatProfile}</span>
+                                    <span className="text-[8px] font-bold uppercase tracking-[0.25em] text-slate-500">{selectedHeroSheet?.set || heroDossierUi.series}</span>
                                 </div>
 
                                 <div className="grid grid-cols-2 gap-2 sm:grid-cols-[minmax(0,0.86fr)_minmax(0,1.38fr)_minmax(0,0.86fr)_minmax(0,0.86fr)_minmax(0,0.86fr)]">
                                     <div className="border border-red-900/70 bg-slate-950/80 p-2.5 min-w-0">
-                                        <div className="text-[7px] text-red-500 font-bold uppercase tracking-[0.24em] mb-1">VIDA</div>
+                                        <div className="text-[7px] text-red-500 font-bold uppercase tracking-[0.24em] mb-1">{language === 'es' ? 'VIDA' : 'LIFE'}</div>
                                         <div className="text-[28px] sm:text-[30px] font-black text-white leading-none">{selectedHeroSheet?.life || 'N/D'}</div>
                                     </div>
                                     <div className="border border-cyan-900/70 bg-slate-950/80 p-2.5 min-w-0 flex flex-col justify-between min-h-[88px] overflow-hidden">
-                                        <div className="text-[7px] text-cyan-400 font-bold uppercase tracking-[0.24em] mb-1">TIPO</div>
+                                        <div className="text-[7px] text-cyan-400 font-bold uppercase tracking-[0.24em] mb-1">{language === 'es' ? 'TIPO' : 'TYPE'}</div>
                                         <div className="text-[12px] sm:text-[15px] font-black text-white uppercase leading-tight break-words">{selectedHeroSheet?.type || selectedHero.class}</div>
                                         <div className="mt-1 text-[7px] uppercase tracking-[0.22em] text-slate-500 leading-none">{selectedHeroSheet?.attack || 'ATK'}</div>
                                     </div>
                                     <div className="border border-emerald-900/70 bg-slate-950/80 p-2.5 min-w-0">
-                                        <div className="text-[7px] text-emerald-400 font-bold uppercase tracking-[0.24em] mb-1">DADOS</div>
+                                        <div className="text-[7px] text-emerald-400 font-bold uppercase tracking-[0.24em] mb-1">{language === 'es' ? 'DADOS' : 'DICE'}</div>
                                         <div className="text-[28px] sm:text-[30px] font-black text-white leading-none">{selectedHeroSheet?.dice || 'N/D'}</div>
                                     </div>
                                     <div className="border border-blue-900/70 bg-slate-950/80 p-2.5 min-w-0">
@@ -719,57 +741,57 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
                                         <div className="text-[28px] sm:text-[30px] font-black text-white leading-none">{selectedHeroSheet?.toHit || 'N/D'}</div>
                                     </div>
                                     <div className="border border-violet-900/70 bg-slate-950/80 p-2.5 min-w-0">
-                                        <div className="text-[7px] text-violet-400 font-bold uppercase tracking-[0.24em] mb-1">ALCANCE</div>
+                                        <div className="text-[7px] text-violet-400 font-bold uppercase tracking-[0.24em] mb-1">{language === 'es' ? 'ALCANCE' : 'RANGE'}</div>
                                         <div className="text-[28px] sm:text-[30px] font-black text-white leading-none">{selectedHeroSheet?.range || 'N/D'}</div>
                                     </div>
                                 </div>
 
                                 <div className="rounded border border-slate-800 bg-black/30 p-3 md:p-3.5">
                                     <div className="flex items-center justify-between border-b border-slate-800 pb-2">
-                                        <h4 className="text-[9px] font-black uppercase tracking-[0.28em] text-gray-500">EXPEDIENTE DE CAMPO</h4>
-                                        <span className="text-[8px] font-bold uppercase tracking-[0.25em] text-slate-500">{selectedHeroSheet?.set || 'ARCHIVO MD'}</span>
+                                        <h4 className="text-[9px] font-black uppercase tracking-[0.28em] text-gray-500">{heroDossierUi.fieldDossier}</h4>
+                                        <span className="text-[8px] font-bold uppercase tracking-[0.25em] text-slate-500">{selectedHeroSheet?.set || heroDossierUi.series}</span>
                                     </div>
 
                                     <div className="mt-3 grid grid-cols-3 gap-2">
                                         <div className="border border-slate-800 bg-slate-950/70 p-2.5">
-                                            <div className="text-[7px] font-bold uppercase text-gray-500">CLASE</div>
+                                            <div className="text-[7px] font-bold uppercase text-gray-500">{heroDossierUi.class}</div>
                                             <div className="mt-1 text-[13px] font-black uppercase leading-tight text-cyan-300">{selectedHero.class}</div>
                                         </div>
                                         <div className="border border-slate-800 bg-slate-950/70 p-2.5">
-                                            <div className="text-[7px] font-bold uppercase text-gray-500">ESTADO</div>
+                                            <div className="text-[7px] font-bold uppercase text-gray-500">{heroDossierUi.status}</div>
                                             <div className="mt-1 text-[13px] font-black uppercase leading-tight text-white">{getHeroStatusLabel(selectedHero.status, language)}</div>
                                         </div>
                                         <div className="border border-slate-800 bg-slate-950/70 p-2.5">
-                                            <div className="text-[7px] font-bold uppercase text-gray-500">CLAVE</div>
+                                            <div className="text-[7px] font-bold uppercase text-gray-500">{heroDossierUi.key}</div>
                                             <div className="mt-1 text-[13px] font-black uppercase leading-tight text-yellow-300">{dossierIsZombie ? 'BIOHAZARD' : 'OMEGA'}</div>
                                         </div>
                                     </div>
 
                                     <div className="mt-3 border-l-2 border-violet-900/70 pl-3">
-                                        <div className={`mb-1 text-[8px] font-bold uppercase tracking-[0.25em] ${dossierAccentClass}`}>EVALUACION DE S.H.I.E.L.D.</div>
+                                        <div className={`mb-1 text-[8px] font-bold uppercase tracking-[0.25em] ${dossierAccentClass}`}>{heroDossierUi.evaluation}</div>
                                         <div className="text-[10px] leading-[1.45] text-slate-200">{selectedHeroAssessment}</div>
                                     </div>
                                 </div>
 
                                 <div className="grid grid-cols-3 gap-2">
-                                    <button type="button" onClick={() => setHeroDossierTab('EXPEDIENTE')} className={`border px-3 py-2 text-[8px] font-black uppercase tracking-[0.24em] transition-colors ${heroDossierTab === 'EXPEDIENTE' ? 'border-cyan-500 bg-cyan-950/40 text-cyan-200' : 'border-slate-800 bg-black/30 text-slate-400 hover:text-white'}`}>Expediente</button>
-                                    <button type="button" onClick={() => setHeroDossierTab('HISTORIA')} className={`border px-3 py-2 text-[8px] font-black uppercase tracking-[0.24em] transition-colors ${heroDossierTab === 'HISTORIA' ? 'border-cyan-500 bg-cyan-950/40 text-cyan-200' : 'border-slate-800 bg-black/30 text-slate-400 hover:text-white'}`}>Historia</button>
-                                    <button type="button" onClick={() => setHeroDossierTab('PODERES')} className={`border px-3 py-2 text-[8px] font-black uppercase tracking-[0.24em] transition-colors ${heroDossierTab === 'PODERES' ? 'border-cyan-500 bg-cyan-950/40 text-cyan-200' : 'border-slate-800 bg-black/30 text-slate-400 hover:text-white'}`}>Poderes</button>
+                                    <button type="button" onClick={() => setHeroDossierTab('EXPEDIENTE')} className={`border px-3 py-2 text-[8px] font-black uppercase tracking-[0.24em] transition-colors ${heroDossierTab === 'EXPEDIENTE' ? 'border-cyan-500 bg-cyan-950/40 text-cyan-200' : 'border-slate-800 bg-black/30 text-slate-400 hover:text-white'}`}>{heroDossierUi.tabs.dossier}</button>
+                                    <button type="button" onClick={() => setHeroDossierTab('HISTORIA')} className={`border px-3 py-2 text-[8px] font-black uppercase tracking-[0.24em] transition-colors ${heroDossierTab === 'HISTORIA' ? 'border-cyan-500 bg-cyan-950/40 text-cyan-200' : 'border-slate-800 bg-black/30 text-slate-400 hover:text-white'}`}>{heroDossierUi.tabs.history}</button>
+                                    <button type="button" onClick={() => setHeroDossierTab('PODERES')} className={`border px-3 py-2 text-[8px] font-black uppercase tracking-[0.24em] transition-colors ${heroDossierTab === 'PODERES' ? 'border-cyan-500 bg-cyan-950/40 text-cyan-200' : 'border-slate-800 bg-black/30 text-slate-400 hover:text-white'}`}>{heroDossierUi.tabs.powers}</button>
                                 </div>
 
                                 <div className="min-h-0 flex-1 overflow-y-auto border border-slate-800 bg-black/40 p-4">
-                                    {heroDossierTab === 'EXPEDIENTE' && (
-                                        <div className="space-y-4 text-[11px] leading-[1.5] text-slate-300">
-                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                                <div className="border border-slate-800 bg-slate-950/70 p-3">
-                                                    <div className="text-[8px] font-bold uppercase tracking-[0.25em] text-gray-500">Serie</div>
-                                                    <div className="mt-1 text-sm font-black uppercase text-white">{selectedHeroSheet?.set || 'ARCHIVO MD'}</div>
+                                        {heroDossierTab === 'EXPEDIENTE' && (
+                                            <div className="space-y-4 text-[11px] leading-[1.5] text-slate-300">
+                                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                                    <div className="border border-slate-800 bg-slate-950/70 p-3">
+                                                        <div className="text-[8px] font-bold uppercase tracking-[0.25em] text-gray-500">{heroDossierUi.series}</div>
+                                                        <div className="mt-1 text-sm font-black uppercase text-white">{selectedHeroSheet?.set || heroDossierUi.series}</div>
+                                                    </div>
+                                                    <div className="border border-slate-800 bg-slate-950/70 p-3">
+                                                        <div className="text-[8px] font-bold uppercase tracking-[0.25em] text-gray-500">{heroDossierUi.toughness}</div>
+                                                        <div className="mt-1 text-sm font-black uppercase text-white">{selectedHeroSheet?.toughness || 'N/D'}</div>
+                                                    </div>
                                                 </div>
-                                                <div className="border border-slate-800 bg-slate-950/70 p-3">
-                                                    <div className="text-[8px] font-bold uppercase tracking-[0.25em] text-gray-500">Toughness</div>
-                                                    <div className="mt-1 text-sm font-black uppercase text-white">{selectedHeroSheet?.toughness || 'N/D'}</div>
-                                                </div>
-                                            </div>
                                         </div>
                                     )}
 
@@ -791,16 +813,16 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
                                                 ))}
                                             </div>
 
-                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                                <div className="border border-slate-800 bg-slate-950/70 p-3">
-                                                    <div className="text-[8px] font-bold uppercase tracking-[0.25em] text-gray-500">Regla especial</div>
-                                                    <div className="mt-2 text-[11px] leading-[1.55] text-slate-200">{selectedHeroSheet?.spawnAbility || 'N/D'}</div>
+                                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                                    <div className="border border-slate-800 bg-slate-950/70 p-3">
+                                                        <div className="text-[8px] font-bold uppercase tracking-[0.25em] text-gray-500">{language === 'es' ? 'Regla especial' : 'Special rule'}</div>
+                                                        <div className="mt-2 text-[11px] leading-[1.55] text-slate-200">{selectedHeroSheet?.spawnAbility || 'N/D'}</div>
+                                                    </div>
+                                                    <div className="border border-slate-800 bg-slate-950/70 p-3">
+                                                        <div className="text-[8px] font-bold uppercase tracking-[0.25em] text-gray-500">{heroDossierUi.toughness}</div>
+                                                        <div className="mt-2 text-[11px] leading-[1.55] text-slate-200">{selectedHeroSheet?.toughness || 'N/D'}</div>
+                                                    </div>
                                                 </div>
-                                                <div className="border border-slate-800 bg-slate-950/70 p-3">
-                                                    <div className="text-[8px] font-bold uppercase tracking-[0.25em] text-gray-500">Toughness</div>
-                                                    <div className="mt-2 text-[11px] leading-[1.55] text-slate-200">{selectedHeroSheet?.toughness || 'N/D'}</div>
-                                                </div>
-                                            </div>
                                         </div>
                                     )}
                                 </div>
