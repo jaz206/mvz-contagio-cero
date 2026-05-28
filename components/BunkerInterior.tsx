@@ -4,7 +4,7 @@ import { translations, Language } from "../translations";
 import { Hero, Mission, HeroClass, HeroTemplate, I18nString } from "../types";
 import { getHeroTransformAvailability, hasAnyHeroWithTransformRule } from "../services/heroVariantRuleService";
 import { preferGithubCharacterImage } from "../services/characterGithubImageService";
-import { getLocalizedPlayableHeroSheetsForHero } from "../services/playableHeroSheetService";
+import { getLocalizedPlayableHeroSheetForHero, getLocalizedPlayableHeroSheetsForHero } from "../services/playableHeroSheetService";
 
 // ... utilities ...
 const resolveI18n = (text: I18nString | undefined, lang: Language): string => {
@@ -235,7 +235,8 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
     const selectedHeroLore = selectedHero ? getHeroLoreEntry(selectedHero.alias) : undefined;
     const selectedHeroImageUrl = selectedHero ? preferGithubCharacterImage(selectedHero.alias, selectedHero.alignment || 'ALIVE', selectedHero.imageUrl) : '';
     const selectedHeroSheets = selectedHero ? getLocalizedPlayableHeroSheetsForHero(selectedHero, language) : [];
-    const selectedHeroSheet = selectedHeroSheets[selectedHeroSheetIndex] || selectedHeroSheets[0];
+    const selectedHeroPreferredSheet = selectedHero ? getLocalizedPlayableHeroSheetForHero(selectedHero, language) : undefined;
+    const selectedHeroSheet = selectedHeroSheets[selectedHeroSheetIndex] || selectedHeroPreferredSheet || selectedHeroSheets[0];
     const heroDossierUi = {
         combatProfile: language === 'es' ? 'PERFIL DE COMBATE' : 'COMBAT PROFILE',
         fieldDossier: language === 'es' ? 'EXPEDIENTE DE CAMPO' : 'FIELD DOSSIER',
@@ -302,9 +303,12 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
     useEffect(() => {
         if (selectedHeroId) {
             setHeroDossierTab('EXPEDIENTE');
-            setSelectedHeroSheetIndex(0);
+            const nextIndex = selectedHeroPreferredSheet
+                ? selectedHeroSheets.findIndex((sheet) => sheet.characterName === selectedHeroPreferredSheet.characterName && sheet.set === selectedHeroPreferredSheet.set)
+                : 0;
+            setSelectedHeroSheetIndex(nextIndex >= 0 ? nextIndex : 0);
         }
-    }, [selectedHeroId, language]);
+    }, [selectedHeroId, language, selectedHeroPreferredSheet?.characterName, selectedHeroPreferredSheet?.set, selectedHeroSheets.length]);
 
     const availableHeroes = heroes.filter(h => h.status === 'AVAILABLE');
     const deployedHeroes = heroes.filter(h => h.status === 'DEPLOYED');
