@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Language } from '../translations';
 import { HeroClass, HeroPlayableSheet, HeroPlayableSheetsByLanguage, HeroStats, HeroTemplate, ImageParams } from '../types';
 import { createHeroTemplateInDB, getHeroTemplates, updateHeroTemplate } from '../services/heroService';
+import { buildPlayableHeroSheetCollectionForHero } from '../services/playableHeroSheetService';
 import { CharacterImageOption, fetchCharacterImageOptions } from '../services/characterImageRepositoryService';
 
 interface CharacterEditorProps {
@@ -50,6 +51,23 @@ const buildSheetVariants = (playableSheets?: HeroPlayableSheetsByLanguage, alias
         es: esSheets[index] || createBlankSheet(alias, set),
         en: enSheets[index] || createBlankSheet(alias, set)
     }));
+};
+
+const resolvePlayableSheetsForEditor = (hero?: HeroTemplate | null): HeroPlayableSheetsByLanguage | undefined => {
+    if (!hero) return undefined;
+
+    const storedSheets = hero.playableSheets;
+    const hasStoredSheets = !!storedSheets && (
+        (Array.isArray(storedSheets.es) && storedSheets.es.length > 0) ||
+        (Array.isArray(storedSheets.en) && storedSheets.en.length > 0)
+    );
+
+    if (hasStoredSheets) return storedSheets;
+
+    return buildPlayableHeroSheetCollectionForHero({
+        alias: hero.alias || hero.defaultName || '',
+        name: hero.defaultName || hero.alias || ''
+    });
 };
 
 export const CharacterEditor: React.FC<CharacterEditorProps> = ({ isOpen, onClose, initialData, onSave }) => {
@@ -134,7 +152,7 @@ export const CharacterEditor: React.FC<CharacterEditorProps> = ({ isOpen, onClos
                 setImgY(0);
             }
 
-            setSheetVariants(buildSheetVariants(initialData.playableSheets, initialData.alias, initialData.defaultName));
+            setSheetVariants(buildSheetVariants(resolvePlayableSheetsForEditor(initialData), initialData.alias, initialData.defaultName));
             setActiveSheetIndex(0);
             setActiveSheetLanguage('es');
         } else {
