@@ -694,8 +694,8 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
                                 <button onClick={() => setSelectedHeroId(null)} className="text-slate-500 hover:text-white transition-colors text-2xl font-light">×</button>
                             </div>
 
-                            <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_minmax(340px,0.88fr)] gap-8 mb-6 mt-4 min-h-0 flex-1">
-                                <div className="space-y-3 min-h-0">
+                            <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,0.92fr)_minmax(0,1.08fr)] gap-6 mb-6 mt-4 min-h-0 flex-1">
+                                <div className="flex min-h-0 flex-col gap-4">
                                     <div className="flex items-center justify-between border-b border-cyan-900/40 pb-2">
                                         <span className="text-[9px] font-black uppercase tracking-[0.3em] text-cyan-500">PERFIL DE COMBATE</span>
                                         <span className="text-[8px] font-bold uppercase tracking-[0.25em] text-slate-500">{selectedHeroSheet?.set || 'ARCHIVO MD'}</span>
@@ -724,27 +724,43 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
                                             <div className="text-[28px] sm:text-[30px] font-black text-white leading-none">{selectedHeroSheet?.range || 'N/D'}</div>
                                         </div>
                                     </div>
+
+                                    <div className="rounded border border-slate-800 bg-black/30 p-3 md:p-4">
+                                        <div className="flex items-center justify-between border-b border-slate-800 pb-2">
+                                            <h4 className="text-[9px] font-black uppercase tracking-[0.28em] text-gray-500">EXPEDIENTE DE CAMPO</h4>
+                                            <span className="text-[8px] font-bold uppercase tracking-[0.25em] text-slate-500">{selectedHeroSheet?.set || 'ARCHIVO MD'}</span>
+                                        </div>
+
+                                        <div className="mt-3 grid grid-cols-3 gap-2">
+                                            <div className="border border-slate-800 bg-slate-950/70 p-2.5">
+                                                <div className="text-[7px] font-bold uppercase text-gray-500">CLASE</div>
+                                                <div className="mt-1 text-[13px] font-black uppercase leading-tight text-cyan-300">{selectedHero.class}</div>
+                                            </div>
+                                            <div className="border border-slate-800 bg-slate-950/70 p-2.5">
+                                                <div className="text-[7px] font-bold uppercase text-gray-500">ESTADO</div>
+                                                <div className="mt-1 text-[13px] font-black uppercase leading-tight text-white">{getHeroStatusLabel(selectedHero.status, language)}</div>
+                                            </div>
+                                            <div className="border border-slate-800 bg-slate-950/70 p-2.5">
+                                                <div className="text-[7px] font-bold uppercase text-gray-500">CLAVE</div>
+                                                <div className="mt-1 text-[13px] font-black uppercase leading-tight text-yellow-300">{dossierIsZombie ? 'BIOHAZARD' : 'OMEGA'}</div>
+                                            </div>
+                                        </div>
+
+                                        <div className="mt-3 border-l-2 border-violet-900/70 pl-3">
+                                            <div className={`mb-1 text-[8px] font-bold uppercase tracking-[0.25em] ${dossierAccentClass}`}>EVALUACION DE S.H.I.E.L.D.</div>
+                                            <div className="text-[10px] leading-[1.45] text-slate-200">{selectedHeroAssessment}</div>
+                                        </div>
+
+                                        <div className="mt-3 flex flex-wrap gap-2">
+                                            <span className="border border-cyan-900 bg-cyan-950/30 px-2 py-1 text-[8px] font-bold uppercase text-cyan-300">FIELD ASSET</span>
+                                            <span className="border border-slate-700 bg-slate-900 px-2 py-1 text-[8px] font-bold uppercase text-slate-300">{selectedHero.class}</span>
+                                            <span className="border border-slate-700 bg-slate-900 px-2 py-1 text-[8px] font-bold uppercase text-slate-300">{getHeroStatusLabel(selectedHero.status, language)}</span>
+                                        </div>
+                                    </div>
                                 </div>
 
                                 <div className="flex min-h-0 flex-col">
-                                    <h4 className="text-[10px] font-black text-gray-500 tracking-[0.3em] uppercase border-b border-slate-800 pb-2">EXPEDIENTE DE CAMPO</h4>
-
-                                    <div className="grid grid-cols-3 gap-3 mt-4">
-                                        <div className="border border-slate-800 bg-slate-950/70 p-3">
-                                            <div className="text-[8px] font-bold uppercase text-gray-500">CLASE</div>
-                                            <div className="mt-1 text-sm font-black uppercase text-cyan-300">{selectedHero.class}</div>
-                                        </div>
-                                        <div className="border border-slate-800 bg-slate-950/70 p-3">
-                                            <div className="text-[8px] font-bold uppercase text-gray-500">ESTADO</div>
-                                            <div className="mt-1 text-sm font-black uppercase text-white">{getHeroStatusLabel(selectedHero.status, language)}</div>
-                                        </div>
-                                        <div className="border border-slate-800 bg-slate-950/70 p-3">
-                                            <div className="text-[8px] font-bold uppercase text-gray-500">CLAVE</div>
-                                            <div className="mt-1 text-sm font-black uppercase text-yellow-300">{dossierIsZombie ? 'BIOHAZARD' : 'OMEGA'}</div>
-                                        </div>
-                                    </div>
-
-                                    <div className="mt-4 grid grid-cols-3 gap-2">
+                                    <div className="grid grid-cols-3 gap-2">
                                         <button type="button" onClick={() => setHeroDossierTab('EXPEDIENTE')} className={`border px-3 py-2 text-[8px] font-black uppercase tracking-[0.24em] transition-colors ${heroDossierTab === 'EXPEDIENTE' ? 'border-cyan-500 bg-cyan-950/40 text-cyan-200' : 'border-slate-800 bg-black/30 text-slate-400 hover:text-white'}`}>Expediente</button>
                                         <button type="button" onClick={() => setHeroDossierTab('HISTORIA')} className={`border px-3 py-2 text-[8px] font-black uppercase tracking-[0.24em] transition-colors ${heroDossierTab === 'HISTORIA' ? 'border-cyan-500 bg-cyan-950/40 text-cyan-200' : 'border-slate-800 bg-black/30 text-slate-400 hover:text-white'}`}>Historia</button>
                                         <button type="button" onClick={() => setHeroDossierTab('PODERES')} className={`border px-3 py-2 text-[8px] font-black uppercase tracking-[0.24em] transition-colors ${heroDossierTab === 'PODERES' ? 'border-cyan-500 bg-cyan-950/40 text-cyan-200' : 'border-slate-800 bg-black/30 text-slate-400 hover:text-white'}`}>Poderes</button>
@@ -767,15 +783,6 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
                                                 <div className="border-l-2 border-violet-900/70 pl-4">
                                                     <div className={`mb-2 text-[8px] font-bold uppercase tracking-[0.25em] ${dossierAccentClass}`}>EVALUACION DE S.H.I.E.L.D.</div>
                                                     <div className="text-[11px] leading-[1.55] text-slate-200">{selectedHeroAssessment}</div>
-                                                </div>
-
-                                                <div className="border-t border-slate-800 pt-3">
-                                                    <div className="text-[8px] font-bold uppercase text-gray-500">Acceso</div>
-                                                    <div className="mt-2 flex flex-wrap gap-2">
-                                                        <span className="border border-cyan-900 bg-cyan-950/30 px-2 py-1 text-[8px] font-bold uppercase text-cyan-300">FIELD ASSET</span>
-                                                        <span className="border border-slate-700 bg-slate-900 px-2 py-1 text-[8px] font-bold uppercase text-slate-300">{selectedHero.class}</span>
-                                                        <span className="border border-slate-700 bg-slate-900 px-2 py-1 text-[8px] font-bold uppercase text-slate-300">{getHeroStatusLabel(selectedHero.status, language)}</span>
-                                                    </div>
                                                 </div>
                                             </div>
                                         )}
@@ -811,8 +818,8 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
                                             </div>
                                         )}
                                     </div>
-                             </div>
-                         </div>
+                                </div>
+                            </div>
 
                         </div>
 
