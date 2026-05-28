@@ -1,5 +1,5 @@
 import playableHeroesMarkdown from '../Heroes jugables.md?raw';
-import playableHeroesMarkdownEs from '../Heroes_jugables_castellano.md?raw';
+import playableHeroesMarkdownEs from '../Heroes_jugables_es.md?raw';
 import { Hero } from '../types';
 import { Language } from '../translations';
 
