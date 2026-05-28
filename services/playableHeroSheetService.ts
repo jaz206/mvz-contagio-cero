@@ -2,7 +2,6 @@ import playableHeroesMarkdown from '../Heroes jugables.md?raw';
 import playableHeroesMarkdownEs from '../Heroes_jugables_es.md?raw';
 import { Hero } from '../types';
 import { Language } from '../translations';
-import playableHeroSheetTranslationsEs from '../data/playableHeroSheetTranslations.es.json';
 
 export interface PlayableHeroSheet {
     characterName: string;
@@ -24,8 +23,6 @@ export interface PlayableHeroSheet {
     spawnAbility: string;
     toughness: string;
 }
-
-const PLAYABLE_HERO_SHEET_TRANSLATIONS_ES = playableHeroSheetTranslationsEs as Record<string, string>;
 
 const normalizeSheetKey = (value: string) => value
     .normalize('NFD')
@@ -164,41 +161,11 @@ export const getPlayableHeroSheetByName = (characterName: string) => {
     return SHEET_BY_KEY.get(normalizeSheetKey(characterName));
 };
 
-const translateSheetText = (value: string, language: Language) => {
-    if (!value || language !== 'es') return value;
-    return PLAYABLE_HERO_SHEET_TRANSLATIONS_ES[value] || value;
-};
-
-const localizeSheetField = (englishValue: string, spanishValue: string | undefined, language: Language) => {
-    if (language !== 'es') return englishValue;
-
-    if (spanishValue && spanishValue.trim() && spanishValue.trim() !== englishValue.trim()) {
-        return spanishValue;
-    }
-
-    return translateSheetText(englishValue, language);
-};
-
 export const getLocalizedPlayableHeroSheetForHero = (hero: Pick<Hero, 'alias' | 'name'>, language: Language) => {
-    const sheet = getPlayableHeroSheetForHero(hero);
-    if (!sheet) return undefined;
-    if (language !== 'es') return sheet;
+    const englishSheet = getPlayableHeroSheetForHero(hero);
+    if (!englishSheet) return undefined;
+    if (language !== 'es') return englishSheet;
 
-    const localizedSheet = SHEET_BY_KEY_ES.get(normalizeSheetKey(sheet.characterName));
-
-    return {
-        ...sheet,
-        set: localizeSheetField(sheet.set, localizedSheet?.set, language),
-        attack: localizeSheetField(sheet.attack, localizedSheet?.attack, language),
-        type: localizeSheetField(sheet.type, localizedSheet?.type, language),
-        blueSkillName: localizeSheetField(sheet.blueSkillName, localizedSheet?.blueSkillName, language),
-        blueSkillDescription: localizeSheetField(sheet.blueSkillDescription, localizedSheet?.blueSkillDescription, language),
-        yellowSkillName: localizeSheetField(sheet.yellowSkillName, localizedSheet?.yellowSkillName, language),
-        yellowSkillDescription: localizeSheetField(sheet.yellowSkillDescription, localizedSheet?.yellowSkillDescription, language),
-        orangeSkillName: localizeSheetField(sheet.orangeSkillName, localizedSheet?.orangeSkillName, language),
-        orangeSkillDescription: localizeSheetField(sheet.orangeSkillDescription, localizedSheet?.orangeSkillDescription, language),
-        redSkillName: localizeSheetField(sheet.redSkillName, localizedSheet?.redSkillName, language),
-        redSkillDescription: localizeSheetField(sheet.redSkillDescription, localizedSheet?.redSkillDescription, language),
-        spawnAbility: localizeSheetField(sheet.spawnAbility, localizedSheet?.spawnAbility, language)
-    };
+    const spanishSheet = SHEET_BY_KEY_ES.get(normalizeSheetKey(englishSheet.characterName));
+    return spanishSheet ?? englishSheet;
 };
