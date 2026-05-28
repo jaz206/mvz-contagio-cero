@@ -47,6 +47,8 @@ const normalizeSheetHeader = (value: string) => value
     .replace(/[^a-z0-9]+/g, '')
     .trim();
 
+const isSpanishLanguage = (language: Language | string) => String(language).toLowerCase().startsWith('es');
+
 const HEADER_TO_FIELD: Record<string, keyof PlayableHeroSheet> = {
     charactername: 'characterName',
     set: 'set',
@@ -201,7 +203,7 @@ export const getPlayableHeroSheetsForHero = (hero: Pick<Hero, 'alias' | 'name'>)
 };
 
 export const getLocalizedPlayableHeroSheetsForHero = (hero: Pick<Hero, 'alias' | 'name'>, language: Language) => {
-    const sourceSheets = language === 'es' ? PLAYABLE_HERO_SHEETS_ES : PLAYABLE_HERO_SHEETS;
+    const sourceSheets = isSpanishLanguage(language) ? PLAYABLE_HERO_SHEETS_ES : PLAYABLE_HERO_SHEETS;
     return findMatchingSheets(hero, sourceSheets);
 };
 

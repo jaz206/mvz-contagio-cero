@@ -25,6 +25,7 @@ const FACTION_STATES = {
 const ADMIN_UID = (import.meta as any).env.VITE_ADMIN_UID || '60mH4M1SClV793Nq1WjQ3CExkLp1';
 const ADMIN_EMAIL = ((import.meta as any).env.VITE_ADMIN_EMAIL || 'jorgeaz206@gmail.com').toLowerCase();
 const MAX_OMEGA_CYLINDERS = 10;
+const LANGUAGE_KEY = 'shield_language';
 
 const EMPTY_PERMISSIONS: StaffPermissions = {
     missions: { view: false, create: false, edit: false, delete: false },
@@ -126,7 +127,10 @@ export const useGameLogic = () => {
     const [user, setUser] = useState<User | null>(null);
     const [loading, setLoading] = useState(true);
     const [loadingAuth, setLoadingAuth] = useState(true);
-    const [lang, setLang] = useState<Language>('es');
+    const [lang, setLangState] = useState<Language>(() => {
+        const savedLang = localStorage.getItem(LANGUAGE_KEY);
+        return savedLang === 'en' ? 'en' : 'es';
+    });
 
     const [playerAlignment, setPlayerAlignment] = useState<'ALIVE' | 'ZOMBIE' | null>(null);
     const [heroes, setHeroes] = useState<Hero[]>([]);
@@ -169,6 +173,11 @@ export const useGameLogic = () => {
     const [showExpansionConfig, setShowExpansionConfig] = useState(false);
 
     const t = translations[lang];
+    const setLang = useCallback((nextLang: Language) => {
+        const normalized = nextLang === 'en' ? 'en' : 'es';
+        localStorage.setItem(LANGUAGE_KEY, normalized);
+        setLangState(normalized);
+    }, []);
     const preserveBunkerRoute = () => {
         if (location.pathname === '/bunker') {
             navigate('/bunker');

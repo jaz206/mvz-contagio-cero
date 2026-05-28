@@ -12,6 +12,7 @@ const resolveI18n = (text: I18nString | undefined, lang: Language): string => {
     if (typeof text === 'string') return text;
     return text[lang] || text['es'] || '';
 };
+const isSpanishLanguage = (language: Language | string) => String(language).toLowerCase().startsWith('es');
 import { getHeroTemplates } from "../services/heroService";
 import { RecruitModal } from "./RecruitModal";
 import { ConfirmationModal } from "./ConfirmationModal";
@@ -238,24 +239,24 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
     const selectedHeroPreferredSheet = selectedHero ? getLocalizedPlayableHeroSheetForHero(selectedHero, language) : undefined;
     const selectedHeroSheet = selectedHeroSheets[selectedHeroSheetIndex] || selectedHeroPreferredSheet || selectedHeroSheets[0];
     const heroDossierUi = {
-        combatProfile: language === 'es' ? 'PERFIL DE COMBATE' : 'COMBAT PROFILE',
-        fieldDossier: language === 'es' ? 'EXPEDIENTE DE CAMPO' : 'FIELD DOSSIER',
-        series: language === 'es' ? 'Serie' : 'Series',
-        class: language === 'es' ? 'CLASE' : 'CLASS',
-        status: language === 'es' ? 'ESTADO' : 'STATUS',
-        key: language === 'es' ? 'CLAVE' : 'CLEARANCE',
-        evaluation: language === 'es' ? 'EVALUACION DE S.H.I.E.L.D.' : 'S.H.I.E.L.D. EVALUATION',
-        access: language === 'es' ? 'ACCESO' : 'ACCESS',
+        combatProfile: isSpanishLanguage(language) ? 'PERFIL DE COMBATE' : 'COMBAT PROFILE',
+        fieldDossier: isSpanishLanguage(language) ? 'EXPEDIENTE DE CAMPO' : 'FIELD DOSSIER',
+        series: isSpanishLanguage(language) ? 'Serie' : 'Series',
+        class: isSpanishLanguage(language) ? 'CLASE' : 'CLASS',
+        status: isSpanishLanguage(language) ? 'ESTADO' : 'STATUS',
+        key: isSpanishLanguage(language) ? 'CLAVE' : 'CLEARANCE',
+        evaluation: isSpanishLanguage(language) ? 'EVALUACION DE S.H.I.E.L.D.' : 'S.H.I.E.L.D. EVALUATION',
+        access: isSpanishLanguage(language) ? 'ACCESO' : 'ACCESS',
         tabs: {
-            dossier: language === 'es' ? 'Expediente' : 'Dossier',
-            history: language === 'es' ? 'Historia' : 'History',
-            powers: language === 'es' ? 'Poderes' : 'Powers'
+            dossier: isSpanishLanguage(language) ? 'Expediente' : 'Dossier',
+            history: isSpanishLanguage(language) ? 'Historia' : 'History',
+            powers: isSpanishLanguage(language) ? 'Poderes' : 'Powers'
         },
         abilityLabels: {
-            blue: language === 'es' ? 'AZUL' : 'BLUE',
-            yellow: language === 'es' ? 'AMARILLA' : 'YELLOW',
-            orange: language === 'es' ? 'NARANJA' : 'ORANGE',
-            red: language === 'es' ? 'ROJA' : 'RED'
+            blue: isSpanishLanguage(language) ? 'AZUL' : 'BLUE',
+            yellow: isSpanishLanguage(language) ? 'AMARILLA' : 'YELLOW',
+            orange: isSpanishLanguage(language) ? 'NARANJA' : 'ORANGE',
+            red: isSpanishLanguage(language) ? 'ROJA' : 'RED'
         }
     };
     const dossierIsZombie = playerAlignment === 'ZOMBIE';
@@ -268,7 +269,7 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
         selectedHero.origin,
         selectedHeroLore?.origin,
         language,
-        language === 'es'
+        isSpanishLanguage(language)
             ? 'Sin historial ampliado. Pendiente de revision por el Helitransporte.'
             : 'No extended history available. Pending Helicarrier review.'
     ) : '';
@@ -276,7 +277,7 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
         selectedHero.bio,
         selectedHeroLore?.bio,
         language,
-        language === 'es'
+        isSpanishLanguage(language)
             ? 'No hay datos completos sobre habilidades activas. Expediente en revision.'
             : 'No complete data on active abilities. File under review.'
     ) : '';
@@ -285,10 +286,10 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
         selectedHeroLore?.currentStory,
         language,
         dossierIsZombie
-            ? (language === 'es'
+            ? (isSpanishLanguage(language)
                 ? 'Riesgo de contaminacion extrema. Requiere vigilancia constante y protocolos de contencion reforzados.'
                 : 'Extreme contamination risk. Constant surveillance and reinforced containment required.')
-            : (language === 'es'
+            : (isSpanishLanguage(language)
                 ? 'Activo con valor tactico confirmado. Recomendado para operaciones de alto impacto y respuesta rapida.'
                 : 'Confirmed tactical asset. Recommended for high-impact and rapid-response operations.')
     ) : '';
