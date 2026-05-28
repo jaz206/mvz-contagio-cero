@@ -698,44 +698,78 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
                                     </div>
                                 </div>
 
-                                <div className="space-y-6">
+                                <div className="space-y-5">
                                     <h4 className="text-[10px] font-black text-gray-500 tracking-[0.3em] uppercase border-b border-slate-800 pb-2">EXPEDIENTE DE CAMPO</h4>
-                                    <div className="bg-slate-900/30 p-6 border border-slate-800 relative min-h-[180px]">
-                                        <div className="absolute top-2 right-2 opacity-5 pointer-events-none">
-                                            <div className="w-16 h-16 border-4 border-white rotate-45"></div>
-                                        </div>
 
-                                        <div className="mb-4">
-                                            <div className="text-[8px] text-cyan-600 font-bold uppercase mb-1">HISTORIAL CONOCIDO</div>
-                                            <div className="whitespace-pre-wrap text-[11px] leading-relaxed text-cyan-100 opacity-90">
-                                                {selectedHeroHistory}
-                                            </div>
+                                    <div className="grid grid-cols-3 gap-3">
+                                        <div className="border border-slate-800 bg-slate-950/70 p-3">
+                                            <div className="text-[8px] font-bold uppercase text-gray-500">CLASE</div>
+                                            <div className="mt-1 text-sm font-black uppercase text-cyan-300">{selectedHero.class}</div>
                                         </div>
-
-                                        <div className="text-[8px] text-gray-600 font-bold uppercase mb-1">PERFIL DE PODERES</div>
-                                        <div className="whitespace-pre-wrap text-[11px] leading-relaxed text-slate-300">
-                                            {selectedHeroPowers}
+                                        <div className="border border-slate-800 bg-slate-950/70 p-3">
+                                            <div className="text-[8px] font-bold uppercase text-gray-500">ESTADO</div>
+                                            <div className="mt-1 text-sm font-black uppercase text-white">{getHeroStatusLabel(selectedHero.status, language)}</div>
                                         </div>
-                                        <div className="mt-5">
-                                            <div className={`mb-1 text-[8px] font-bold uppercase ${dossierAccentClass}`}>EVALUACION DE S.H.I.E.L.D.</div>
-                                            <div className="whitespace-pre-wrap text-[11px] leading-relaxed text-slate-300">
-                                                {selectedHeroAssessment}
-                                            </div>
-                                        </div>
-                                        <div className="mt-6 pt-6 border-t border-slate-800 flex justify-between items-center text-[9px] font-mono text-slate-500">
-                                            <span>CLASS_SPEC: {selectedHero.class}</span>
-                                            <span>STATUS: {getHeroStatusLabel(selectedHero.status, language)}</span>
+                                        <div className="border border-slate-800 bg-slate-950/70 p-3">
+                                            <div className="text-[8px] font-bold uppercase text-gray-500">CLAVE</div>
+                                            <div className="mt-1 text-sm font-black uppercase text-yellow-300">{dossierIsZombie ? 'BIOHAZARD' : 'OMEGA'}</div>
                                         </div>
                                     </div>
 
-                                    <div className="flex gap-4">
-                                        <div className="flex-1 bg-black/40 border border-slate-800 p-3">
-                                            <div className="text-[8px] text-gray-600 font-bold mb-1">CLAVE DE ARCHIVO</div>
-                                            <div className="text-xs text-white font-mono">{dossierIsZombie ? 'BIOHAZARD FILE' : 'OMEGA CLEARANCE'}</div>
+                                    <div className="grid gap-3 lg:grid-cols-2">
+                                        <div className="border border-cyan-900/60 bg-slate-950/80 p-4">
+                                            <div className="mb-3 border-b border-cyan-900/50 pb-2">
+                                                <div className="text-[8px] text-cyan-600 font-bold uppercase mb-1">HISTORIAL CONOCIDO</div>
+                                                <div className="text-[11px] leading-relaxed text-cyan-100 opacity-90">
+                                                    {selectedHeroHistory}
+                                                </div>
+                                            </div>
+
+                                            <div className="mb-3 border-b border-slate-800 pb-2">
+                                                <div className="text-[8px] text-gray-500 font-bold uppercase mb-1">PERFIL DE PODERES</div>
+                                                <div className="text-[11px] leading-relaxed text-slate-300">
+                                                    {selectedHeroPowers}
+                                                </div>
+                                            </div>
+
+                                            <div>
+                                                <div className={`mb-1 text-[8px] font-bold uppercase ${dossierAccentClass}`}>EVALUACION DE S.H.I.E.L.D.</div>
+                                                <div className="text-[11px] leading-relaxed text-slate-300">
+                                                    {selectedHeroAssessment}
+                                                </div>
+                                            </div>
                                         </div>
-                                        <div className="flex-1 bg-black/40 border border-slate-800 p-3">
-                                            <div className="text-[8px] text-gray-600 font-bold mb-1">ESTADO OPERATIVO</div>
-                                            <div className="text-xs text-white font-mono">{getHeroStatusLabel(selectedHero.status, language)}</div>
+
+                                        <div className="border border-slate-800 bg-black/40 p-4">
+                                            <div className="mb-3 flex items-center justify-between border-b border-slate-800 pb-2">
+                                                <span className="text-[8px] font-bold uppercase text-gray-500">LECTURA RÁPIDA</span>
+                                                <span className="text-[8px] font-bold uppercase text-slate-400">SHIELD FILE</span>
+                                            </div>
+
+                                            <div className="space-y-3 text-[11px] leading-relaxed text-slate-300">
+                                                <div>
+                                                    <div className="text-[8px] font-bold uppercase text-gray-500">Resumen operativo</div>
+                                                    <div className="mt-1 text-slate-100">
+                                                        {selectedHeroHistory.split('. ')[0] || selectedHeroHistory}
+                                                    </div>
+                                                </div>
+
+                                                <div>
+                                                    <div className="text-[8px] font-bold uppercase text-gray-500">Uso recomendado</div>
+                                                    <div className="mt-1 text-slate-100">
+                                                        {selectedHeroAssessment}
+                                                    </div>
+                                                </div>
+
+                                                <div className="pt-2 border-t border-slate-800">
+                                                    <div className="text-[8px] font-bold uppercase text-gray-500">Acceso</div>
+                                                    <div className="mt-1 flex flex-wrap gap-2">
+                                                        <span className="border border-cyan-900 bg-cyan-950/30 px-2 py-1 text-[8px] font-bold uppercase text-cyan-300">FIELD ASSET</span>
+                                                        <span className="border border-slate-700 bg-slate-900 px-2 py-1 text-[8px] font-bold uppercase text-slate-300">{selectedHero.class}</span>
+                                                        <span className="border border-slate-700 bg-slate-900 px-2 py-1 text-[8px] font-bold uppercase text-slate-300">{getHeroStatusLabel(selectedHero.status, language)}</span>
+                                                    </div>
+                                                </div>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
