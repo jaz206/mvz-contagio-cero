@@ -238,7 +238,6 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
         combatProfile: language === 'es' ? 'PERFIL DE COMBATE' : 'COMBAT PROFILE',
         fieldDossier: language === 'es' ? 'EXPEDIENTE DE CAMPO' : 'FIELD DOSSIER',
         series: language === 'es' ? 'Serie' : 'Series',
-        toughness: language === 'es' ? 'Dureza' : 'Toughness',
         class: language === 'es' ? 'CLASE' : 'CLASS',
         status: language === 'es' ? 'ESTADO' : 'STATUS',
         key: language === 'es' ? 'CLAVE' : 'CLEARANCE',
@@ -782,15 +781,9 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
                                 <div className="min-h-0 flex-1 overflow-y-auto border border-slate-800 bg-black/40 p-4">
                                         {heroDossierTab === 'EXPEDIENTE' && (
                                             <div className="space-y-4 text-[11px] leading-[1.5] text-slate-300">
-                                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                                    <div className="border border-slate-800 bg-slate-950/70 p-3">
-                                                        <div className="text-[8px] font-bold uppercase tracking-[0.25em] text-gray-500">{heroDossierUi.series}</div>
-                                                        <div className="mt-1 text-sm font-black uppercase text-white">{selectedHeroSheet?.set || heroDossierUi.series}</div>
-                                                    </div>
-                                                    <div className="border border-slate-800 bg-slate-950/70 p-3">
-                                                        <div className="text-[8px] font-bold uppercase tracking-[0.25em] text-gray-500">{heroDossierUi.toughness}</div>
-                                                        <div className="mt-1 text-sm font-black uppercase text-white">{selectedHeroSheet?.toughness || 'N/D'}</div>
-                                                    </div>
+                                                <div className="border border-slate-800 bg-slate-950/70 p-3">
+                                                    <div className="text-[8px] font-bold uppercase tracking-[0.25em] text-gray-500">{heroDossierUi.series}</div>
+                                                    <div className="mt-1 text-sm font-black uppercase text-white">{selectedHeroSheet?.set || heroDossierUi.series}</div>
                                                 </div>
                                         </div>
                                     )}
@@ -812,17 +805,6 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
                                                     </div>
                                                 ))}
                                             </div>
-
-                                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                                    <div className="border border-slate-800 bg-slate-950/70 p-3">
-                                                        <div className="text-[8px] font-bold uppercase tracking-[0.25em] text-gray-500">{language === 'es' ? 'Regla especial' : 'Special rule'}</div>
-                                                        <div className="mt-2 text-[11px] leading-[1.55] text-slate-200">{selectedHeroSheet?.spawnAbility || 'N/D'}</div>
-                                                    </div>
-                                                    <div className="border border-slate-800 bg-slate-950/70 p-3">
-                                                        <div className="text-[8px] font-bold uppercase tracking-[0.25em] text-gray-500">{heroDossierUi.toughness}</div>
-                                                        <div className="mt-2 text-[11px] leading-[1.55] text-slate-200">{selectedHeroSheet?.toughness || 'N/D'}</div>
-                                                    </div>
-                                                </div>
                                         </div>
                                     )}
                                 </div>
