@@ -466,37 +466,6 @@ export const CharacterEditor: React.FC<CharacterEditorProps> = ({ isOpen, onClos
                             </div>
                         </div>
 
-                        <div className="border border-slate-800 bg-slate-900/30 p-4">
-                            <label className={`mb-4 block border-b pb-2 text-center text-[10px] font-black uppercase tracking-widest ${accentClass} ${borderClass}`}>ESTADISTICAS</label>
-                            <div className="grid grid-cols-3 gap-6">
-                                {[
-                                    { key: 'strength', label: 'STRENGTH', color: 'text-red-500 border-red-900 hover:border-red-500 hover:text-red-500' },
-                                    { key: 'agility', label: 'AGILITY', color: 'text-emerald-500 border-emerald-900 hover:border-emerald-500 hover:text-emerald-500' },
-                                    { key: 'intellect', label: 'INTELLECT', color: 'text-cyan-500 border-cyan-900 hover:border-cyan-500 hover:text-cyan-500' }
-                                ].map((stat) => (
-                                    <div key={stat.key} className="text-center">
-                                        <label className={`mb-2 block text-[9px] font-black tracking-tighter ${stat.color.split(' ')[0]}`}>{stat.label}</label>
-                                        <div className="flex items-center justify-center gap-2">
-                                            <button
-                                                type="button"
-                                                onClick={() => setStats({ ...stats, [stat.key]: Math.max(1, stats[stat.key as keyof HeroStats] - 1) })}
-                                                className={`h-6 w-6 border text-slate-300 ${stat.color}`}
-                                            >
-                                                -
-                                            </button>
-                                            <span className="w-8 text-xl font-black text-white">{stats[stat.key as keyof HeroStats]}</span>
-                                            <button
-                                                type="button"
-                                                onClick={() => setStats({ ...stats, [stat.key]: Math.min(10, stats[stat.key as keyof HeroStats] + 1) })}
-                                                className={`h-6 w-6 border text-slate-300 ${stat.color}`}
-                                            >
-                                                +
-                                            </button>
-                                        </div>
-                                    </div>
-                                    ))}
-                            </div>
-                        </div>
 
                         <div className="border border-slate-800 bg-slate-900/30 p-4 space-y-4">
                             <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-800 pb-3">
@@ -593,7 +562,7 @@ export const CharacterEditor: React.FC<CharacterEditorProps> = ({ isOpen, onClos
                                     onClick={() => setActiveSheetLanguage('es')}
                                     className={`border px-3 py-1 text-[9px] font-black uppercase tracking-widest ${activeSheetLanguage === 'es' ? `${accentClass} ${borderClass} bg-black` : 'border-slate-800 text-gray-500 hover:text-white'}`}
                                 >
-                                    EspaÃ±ol
+                                    Español
                                 </button>
                                 <button
                                     type="button"
@@ -819,11 +788,6 @@ export const CharacterEditor: React.FC<CharacterEditorProps> = ({ isOpen, onClos
                             </div>
 
                             <div className="absolute inset-x-0 bottom-0 flex h-14 flex-col justify-between border-t border-white/10 bg-black/90 p-2">
-                                <div className="flex items-center justify-between text-[7px] font-black">
-                                    <span className="text-red-500">STR {stats.strength}</span>
-                                    <span className="text-emerald-500">AGI {stats.agility}</span>
-                                    <span className="text-cyan-500">INT {stats.intellect}</span>
-                                </div>
                                 <div className="truncate font-mono text-[8px] italic text-gray-500">
                                     {isZombie ? 'BIOHAZARD DETECTED' : 'CLEARANCE LEVEL OMEGA'}
                                 </div>
