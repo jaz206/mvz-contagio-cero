@@ -154,23 +154,23 @@ const DnaScanner = () => (
 );
 
 // --- COMPONENTE: MONITOR BIOMÃ‰TRICO ---
-const BiometricMonitor = ({ alignment }: { alignment: 'ALIVE' | 'ZOMBIE' }) => {
+const BiometricMonitor = ({ alignment, compact = false }: { alignment: 'ALIVE' | 'ZOMBIE', compact?: boolean }) => {
     const isZombie = alignment === 'ZOMBIE';
     const color = isZombie ? '#84cc16' : '#06b6d4';
 
     return (
-        <div className="flex flex-col gap-4 bg-black/40 p-4 border border-slate-800 rounded relative overflow-hidden">
+        <div className={`flex flex-col gap-${compact ? '2' : '4'} bg-black/40 ${compact ? 'p-2.5' : 'p-4'} border border-slate-800 rounded relative overflow-hidden`}>
             <div className="flex justify-between items-center mb-1">
                 <span className={`text-[9px] font-bold ${isZombie ? 'text-lime-500' : 'text-cyan-500'} tracking-widest uppercase`}>
                     {isZombie ? 'CORRUPTION_LEVEL' : 'BIOMETRIC_STABILITY'}
                 </span>
-                <span className="text-[10px] text-white font-mono animate-pulse">
+                <span className={`text-[10px] text-white font-mono animate-pulse ${compact ? 'hidden sm:inline' : ''}`}>
                     {isZombie ? 'STABLE_DECAY' : 'SIGNALS_OPTIMAL'}
                 </span>
             </div>
 
             {/* ECG Pulse SVG */}
-            <div className="h-16 w-full relative">
+            <div className={`${compact ? 'h-10' : 'h-16'} w-full relative`}>
                 <svg viewBox="0 0 100 40" className="w-full h-full opacity-60">
                     <path
                         d="M 0 20 L 20 20 L 25 10 L 30 30 L 35 20 L 50 20 L 55 5 L 60 35 L 65 20 L 80 20 L 85 10 L 90 30 L 95 20 L 100 20"
@@ -184,7 +184,7 @@ const BiometricMonitor = ({ alignment }: { alignment: 'ALIVE' | 'ZOMBIE' }) => {
             </div>
 
             {/* Diagnostic Bars */}
-            <div className="grid grid-cols-2 gap-4">
+            <div className={`grid grid-cols-2 ${compact ? 'gap-2' : 'gap-4'}`}>
                 <div className="space-y-1">
                     <div className="flex justify-between text-[8px] text-gray-500">
                         <span>{isZombie ? 'NECROSIS' : 'ANTIBODIES'}</span>
@@ -652,7 +652,7 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
 
             {selectedHero && (
                 <div className="fixed inset-0 z-[150] bg-slate-950/95 backdrop-blur-xl flex items-center justify-center p-6 md:p-12 animate-fade-in" onClick={() => setSelectedHeroId(null)}>
-                    <div className={`bg-slate-900 border-2 ${playerAlignment === 'ZOMBIE' ? 'border-lime-600 shadow-lime-900/20' : 'border-cyan-600 shadow-cyan-900/20'} w-full max-w-6xl h-[85vh] shadow-[0_0_100px_rgba(0,0,0,0.5)] flex flex-col md:flex-row overflow-hidden relative group`} onClick={e => e.stopPropagation()}>
+                                        <div className={`bg-slate-900 border-2 ${playerAlignment === 'ZOMBIE' ? 'border-lime-600 shadow-lime-900/20' : 'border-cyan-600 shadow-cyan-900/20'} w-full max-w-6xl h-[85vh] shadow-[0_0_100px_rgba(0,0,0,0.5)] flex flex-col md:flex-row overflow-hidden relative group`} onClick={e => e.stopPropagation()}>
 
                         {/* DECORATIVE GRID */}
                         <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/grid-me.png')] opacity-5 animate-grid-pulse pointer-events-none"></div>
@@ -666,6 +666,9 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
 
                             {/* BIO DATA OVERLAY */}
                             <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/20 to-transparent"></div>
+                            <div className="absolute left-4 right-4 bottom-[92px] sm:bottom-[100px] z-20">
+                                <BiometricMonitor alignment={playerAlignment || 'ALIVE'} compact />
+                            </div>
                             <div className="absolute bottom-0 left-0 right-0 p-8 pt-20">
                                 <div className={`text-[10px] font-bold ${playerAlignment === 'ZOMBIE' ? 'text-lime-500' : 'text-cyan-500'} tracking-[0.4em] mb-2`}>
                                     {dossierIsZombie ? 'ARCHIVO CONTAMINADO' : 'EXPEDIENTE OPERATIVO'}
@@ -683,7 +686,7 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
                         </div>
 
                         {/* RIGHT: BIOMETRICS & REPORT */}
-                        <div className="flex-1 p-6 md:p-10 bg-slate-950/50 relative overflow-hidden flex flex-col">
+                        <div className="flex-1 p-6 md:p-10 bg-slate-950/50 relative overflow-hidden flex flex-col min-h-0">
                             <div className="absolute top-0 right-0 p-6 flex items-center gap-4 z-20">
                                 <div className={`px-3 py-1 border ${playerAlignment === 'ZOMBIE' ? 'border-lime-900 text-lime-500' : 'border-cyan-900 text-cyan-500'} text-[9px] font-bold tracking-[0.2em] bg-black/50`}>
                                     REPORT_REF: {selectedHero.id.substring(0, 8).toUpperCase()}
@@ -691,41 +694,34 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
                                 <button onClick={() => setSelectedHeroId(null)} className="text-slate-500 hover:text-white transition-colors text-2xl font-light">×</button>
                             </div>
 
-                            {/* DIAGNOSTIC SECTION */}
-                            <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1.2fr)_minmax(340px,0.8fr)] gap-8 mb-8 mt-4 min-h-0">
-                                <div className="space-y-6 min-h-0">
-                                    <h4 className="text-[10px] font-black text-gray-500 tracking-[0.3em] uppercase border-b border-slate-800 pb-2">LECTURA TACTICA</h4>
+                            <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_minmax(340px,0.88fr)] gap-8 mb-6 mt-4 min-h-0 flex-1">
+                                <div className="space-y-3 min-h-0">
+                                    <div className="flex items-center justify-between border-b border-cyan-900/40 pb-2">
+                                        <span className="text-[9px] font-black uppercase tracking-[0.3em] text-cyan-500">PERFIL DE COMBATE</span>
+                                        <span className="text-[8px] font-bold uppercase tracking-[0.25em] text-slate-500">{selectedHeroSheet?.set || 'ARCHIVO MD'}</span>
+                                    </div>
 
-                                    <BiometricMonitor alignment={playerAlignment || 'ALIVE'} />
-
-                                    <div className="space-y-3">
-                                        <div className="flex items-center justify-between border-b border-cyan-900/40 pb-2">
-                                            <span className="text-[9px] font-black uppercase tracking-[0.3em] text-cyan-500">PERFIL DE COMBATE</span>
-                                            <span className="text-[8px] font-bold uppercase tracking-[0.25em] text-slate-500">{selectedHeroSheet?.set || 'ARCHIVO MD'}</span>
+                                    <div className="grid grid-cols-2 gap-2 sm:grid-cols-5">
+                                        <div className="border border-red-900/70 bg-slate-950/80 p-2.5 min-w-0">
+                                            <div className="text-[7px] text-red-500 font-bold uppercase tracking-[0.24em] mb-1">VIDA</div>
+                                            <div className="text-[28px] sm:text-[30px] font-black text-white leading-none">{selectedHeroSheet?.life || 'N/D'}</div>
                                         </div>
-
-                                        <div className="grid grid-cols-2 gap-2 sm:grid-cols-5">
-                                            <div className="border border-red-900/70 bg-slate-950/80 p-2.5 min-w-0">
-                                                <div className="text-[7px] text-red-500 font-bold uppercase tracking-[0.24em] mb-1">VIDA</div>
-                                                <div className="text-[28px] sm:text-[30px] font-black text-white leading-none">{selectedHeroSheet?.life || 'N/D'}</div>
-                                            </div>
-                                            <div className="border border-cyan-900/70 bg-slate-950/80 p-2.5 min-w-0">
-                                                <div className="text-[7px] text-cyan-400 font-bold uppercase tracking-[0.24em] mb-1">TIPO</div>
-                                                <div className="text-[16px] sm:text-[18px] font-black text-white uppercase leading-none">{selectedHeroSheet?.type || selectedHero.class}</div>
-                                                <div className="mt-1 text-[7px] uppercase tracking-[0.22em] text-slate-500">{selectedHeroSheet?.attack || 'ATK'}</div>
-                                            </div>
-                                            <div className="border border-emerald-900/70 bg-slate-950/80 p-2.5 min-w-0">
-                                                <div className="text-[7px] text-emerald-400 font-bold uppercase tracking-[0.24em] mb-1">DADOS</div>
-                                                <div className="text-[28px] sm:text-[30px] font-black text-white leading-none">{selectedHeroSheet?.dice || 'N/D'}</div>
-                                            </div>
-                                            <div className="border border-blue-900/70 bg-slate-950/80 p-2.5 min-w-0">
-                                                <div className="text-[7px] text-blue-400 font-bold uppercase tracking-[0.24em] mb-1">TO HIT</div>
-                                                <div className="text-[28px] sm:text-[30px] font-black text-white leading-none">{selectedHeroSheet?.toHit || 'N/D'}</div>
-                                            </div>
-                                            <div className="border border-violet-900/70 bg-slate-950/80 p-2.5 min-w-0">
-                                                <div className="text-[7px] text-violet-400 font-bold uppercase tracking-[0.24em] mb-1">ALCANCE</div>
-                                                <div className="text-[28px] sm:text-[30px] font-black text-white leading-none">{selectedHeroSheet?.range || 'N/D'}</div>
-                                            </div>
+                                        <div className="border border-cyan-900/70 bg-slate-950/80 p-2.5 min-w-0">
+                                            <div className="text-[7px] text-cyan-400 font-bold uppercase tracking-[0.24em] mb-1">TIPO</div>
+                                            <div className="text-[16px] sm:text-[18px] font-black text-white uppercase leading-none">{selectedHeroSheet?.type || selectedHero.class}</div>
+                                            <div className="mt-1 text-[7px] uppercase tracking-[0.22em] text-slate-500">{selectedHeroSheet?.attack || 'ATK'}</div>
+                                        </div>
+                                        <div className="border border-emerald-900/70 bg-slate-950/80 p-2.5 min-w-0">
+                                            <div className="text-[7px] text-emerald-400 font-bold uppercase tracking-[0.24em] mb-1">DADOS</div>
+                                            <div className="text-[28px] sm:text-[30px] font-black text-white leading-none">{selectedHeroSheet?.dice || 'N/D'}</div>
+                                        </div>
+                                        <div className="border border-blue-900/70 bg-slate-950/80 p-2.5 min-w-0">
+                                            <div className="text-[7px] text-blue-400 font-bold uppercase tracking-[0.24em] mb-1">TO HIT</div>
+                                            <div className="text-[28px] sm:text-[30px] font-black text-white leading-none">{selectedHeroSheet?.toHit || 'N/D'}</div>
+                                        </div>
+                                        <div className="border border-violet-900/70 bg-slate-950/80 p-2.5 min-w-0">
+                                            <div className="text-[7px] text-violet-400 font-bold uppercase tracking-[0.24em] mb-1">ALCANCE</div>
+                                            <div className="text-[28px] sm:text-[30px] font-black text-white leading-none">{selectedHeroSheet?.range || 'N/D'}</div>
                                         </div>
                                     </div>
                                 </div>
@@ -749,27 +745,9 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
                                     </div>
 
                                     <div className="mt-4 grid grid-cols-3 gap-2">
-                                        <button
-                                            type="button"
-                                            onClick={() => setHeroDossierTab('EXPEDIENTE')}
-                                            className={`border px-3 py-2 text-[8px] font-black uppercase tracking-[0.24em] transition-colors ${heroDossierTab === 'EXPEDIENTE' ? 'border-cyan-500 bg-cyan-950/40 text-cyan-200' : 'border-slate-800 bg-black/30 text-slate-400 hover:text-white'}`}
-                                        >
-                                            Expediente
-                                        </button>
-                                        <button
-                                            type="button"
-                                            onClick={() => setHeroDossierTab('HISTORIA')}
-                                            className={`border px-3 py-2 text-[8px] font-black uppercase tracking-[0.24em] transition-colors ${heroDossierTab === 'HISTORIA' ? 'border-cyan-500 bg-cyan-950/40 text-cyan-200' : 'border-slate-800 bg-black/30 text-slate-400 hover:text-white'}`}
-                                        >
-                                            Historia
-                                        </button>
-                                        <button
-                                            type="button"
-                                            onClick={() => setHeroDossierTab('PODERES')}
-                                            className={`border px-3 py-2 text-[8px] font-black uppercase tracking-[0.24em] transition-colors ${heroDossierTab === 'PODERES' ? 'border-cyan-500 bg-cyan-950/40 text-cyan-200' : 'border-slate-800 bg-black/30 text-slate-400 hover:text-white'}`}
-                                        >
-                                            Poderes
-                                        </button>
+                                        <button type="button" onClick={() => setHeroDossierTab('EXPEDIENTE')} className={`border px-3 py-2 text-[8px] font-black uppercase tracking-[0.24em] transition-colors ${heroDossierTab === 'EXPEDIENTE' ? 'border-cyan-500 bg-cyan-950/40 text-cyan-200' : 'border-slate-800 bg-black/30 text-slate-400 hover:text-white'}`}>Expediente</button>
+                                        <button type="button" onClick={() => setHeroDossierTab('HISTORIA')} className={`border px-3 py-2 text-[8px] font-black uppercase tracking-[0.24em] transition-colors ${heroDossierTab === 'HISTORIA' ? 'border-cyan-500 bg-cyan-950/40 text-cyan-200' : 'border-slate-800 bg-black/30 text-slate-400 hover:text-white'}`}>Historia</button>
+                                        <button type="button" onClick={() => setHeroDossierTab('PODERES')} className={`border px-3 py-2 text-[8px] font-black uppercase tracking-[0.24em] transition-colors ${heroDossierTab === 'PODERES' ? 'border-cyan-500 bg-cyan-950/40 text-cyan-200' : 'border-slate-800 bg-black/30 text-slate-400 hover:text-white'}`}>Poderes</button>
                                     </div>
 
                                     <div className="mt-4 min-h-0 flex-1 overflow-y-auto border border-slate-800 bg-black/40 p-4">
@@ -788,9 +766,7 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
 
                                                 <div className="border-l-2 border-violet-900/70 pl-4">
                                                     <div className={`mb-2 text-[8px] font-bold uppercase tracking-[0.25em] ${dossierAccentClass}`}>EVALUACION DE S.H.I.E.L.D.</div>
-                                                    <div className="text-[11px] leading-[1.55] text-slate-200">
-                                                        {selectedHeroAssessment}
-                                                    </div>
+                                                    <div className="text-[11px] leading-[1.55] text-slate-200">{selectedHeroAssessment}</div>
                                                 </div>
 
                                                 <div className="border-t border-slate-800 pt-3">
@@ -835,26 +811,9 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
                                             </div>
                                         )}
                                     </div>
-                                </div>
-                            </div>
-                            {/* ACTION FOOTER */}
-                            <div className="mt-auto flex flex-col md:flex-row gap-4 justify-between items-center pt-8 border-t border-slate-800 bg-slate-900/20 -mx-10 px-10">
-                                <div className="flex gap-4 w-full md:w-auto">
-                                    {selectedHero.characterSheetUrl && (
-                                        <button
-                                            onClick={() => setViewingSheet(selectedHero.characterSheetUrl!)}
-                                            className="flex-1 md:flex-none px-6 py-4 bg-yellow-900/10 border border-yellow-600/50 text-yellow-500 hover:bg-yellow-900/40 hover:text-yellow-200 font-black uppercase tracking-[0.2em] text-[10px] transition-all flex items-center justify-center gap-3 group"
-                                        >
-                                            <span className="text-xl group-hover:scale-110 transition-transform">PDF</span>
-                                            ABRIR FICHA COMPLETA
-                                        </button>
-                                    )}
-                                </div>
+                             </div>
+                         </div>
 
-                                <button onClick={() => setSelectedHeroId(null)} className={`w-full md:w-auto px-10 py-4 ${playerAlignment === 'ZOMBIE' ? 'bg-lime-600 shadow-[0_0_20px_rgba(132,204,22,0.4)]' : 'bg-cyan-600 shadow-[0_0_20px_rgba(6,182,212,0.4)]'} hover:opacity-90 text-black font-black uppercase tracking-[0.3em] text-[11px] clip-tactical transition-all transform active:scale-95`}>
-                                    VOLVER AL BUNKER
-                                </button>
-                            </div>
                         </div>
 
                         {/* DECORATIVE CORNER DATA */}
@@ -938,4 +897,7 @@ const RosterHeroCard = ({ hero, language, onClick, actionIcon, onAction, actionM
         </div>
     );
 };
+
+
+
 
