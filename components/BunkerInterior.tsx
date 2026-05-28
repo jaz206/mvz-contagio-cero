@@ -213,6 +213,7 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
 }) => {
     const [activeTab, setActiveTab] = useState<'ROSTER' | 'MEDBAY'>('ROSTER');
     const [selectedHeroId, setSelectedHeroId] = useState<string | null>(null);
+    const [heroDossierTab, setHeroDossierTab] = useState<'EXPEDIENTE' | 'HISTORIA' | 'PODERES'>('EXPEDIENTE');
     const [showRecruitModal, setShowRecruitModal] = useState(false);
     const [dbTemplates, setDbTemplates] = useState<HeroTemplate[]>([]);
     const [viewingSheet, setViewingSheet] = useState<string | null>(null);
@@ -267,6 +268,19 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
                 ? 'Activo con valor tactico confirmado. Recomendado para operaciones de alto impacto y respuesta rapida.'
                 : 'Confirmed tactical asset. Recommended for high-impact and rapid-response operations.')
     ) : '';
+
+    const heroDossierAbilityCards = selectedHeroSheet ? [
+        { key: 'blue', label: 'AZUL', title: selectedHeroSheet.blueSkillName, text: selectedHeroSheet.blueSkillDescription, accent: 'text-cyan-300', border: 'border-cyan-900/60', glow: 'shadow-cyan-900/10' },
+        { key: 'yellow', label: 'AMARILLA', title: selectedHeroSheet.yellowSkillName, text: selectedHeroSheet.yellowSkillDescription, accent: 'text-amber-300', border: 'border-amber-900/60', glow: 'shadow-amber-900/10' },
+        { key: 'orange', label: 'NARANJA', title: selectedHeroSheet.orangeSkillName, text: selectedHeroSheet.orangeSkillDescription, accent: 'text-orange-300', border: 'border-orange-900/60', glow: 'shadow-orange-900/10' },
+        { key: 'red', label: 'ROJA', title: selectedHeroSheet.redSkillName, text: selectedHeroSheet.redSkillDescription, accent: 'text-red-300', border: 'border-red-900/60', glow: 'shadow-red-900/10' },
+    ] : [];
+
+    useEffect(() => {
+        if (selectedHeroId) {
+            setHeroDossierTab('EXPEDIENTE');
+        }
+    }, [selectedHeroId]);
 
     const availableHeroes = heroes.filter(h => h.status === 'AVAILABLE');
     const deployedHeroes = heroes.filter(h => h.status === 'DEPLOYED');
@@ -678,8 +692,8 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
                             </div>
 
                             {/* DIAGNOSTIC SECTION */}
-                            <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1.35fr)_minmax(260px,0.75fr)] gap-8 mb-8 mt-4">
-                                <div className="space-y-6">
+                            <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1.2fr)_minmax(340px,0.8fr)] gap-8 mb-8 mt-4 min-h-0">
+                                <div className="space-y-6 min-h-0">
                                     <h4 className="text-[10px] font-black text-gray-500 tracking-[0.3em] uppercase border-b border-slate-800 pb-2">LECTURA TACTICA</h4>
 
                                     <BiometricMonitor alignment={playerAlignment || 'ALIVE'} />
@@ -692,67 +706,34 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
 
                                         <div className="grid grid-cols-2 gap-2 sm:grid-cols-5">
                                             <div className="border border-red-900/70 bg-slate-950/80 p-2.5 min-w-0">
-                                                <div className="text-[8px] text-red-500 font-bold uppercase tracking-widest mb-1">VIDA</div>
+                                                <div className="text-[7px] text-red-500 font-bold uppercase tracking-[0.24em] mb-1">VIDA</div>
                                                 <div className="text-[28px] sm:text-[30px] font-black text-white leading-none">{selectedHeroSheet?.life || 'N/D'}</div>
                                             </div>
                                             <div className="border border-cyan-900/70 bg-slate-950/80 p-2.5 min-w-0">
-                                                <div className="text-[8px] text-cyan-400 font-bold uppercase tracking-widest mb-1">TIPO</div>
+                                                <div className="text-[7px] text-cyan-400 font-bold uppercase tracking-[0.24em] mb-1">TIPO</div>
                                                 <div className="text-[16px] sm:text-[18px] font-black text-white uppercase leading-none">{selectedHeroSheet?.type || selectedHero.class}</div>
                                                 <div className="mt-1 text-[7px] uppercase tracking-[0.22em] text-slate-500">{selectedHeroSheet?.attack || 'ATK'}</div>
                                             </div>
                                             <div className="border border-emerald-900/70 bg-slate-950/80 p-2.5 min-w-0">
-                                                <div className="text-[8px] text-emerald-400 font-bold uppercase tracking-widest mb-1">DADOS</div>
+                                                <div className="text-[7px] text-emerald-400 font-bold uppercase tracking-[0.24em] mb-1">DADOS</div>
                                                 <div className="text-[28px] sm:text-[30px] font-black text-white leading-none">{selectedHeroSheet?.dice || 'N/D'}</div>
                                             </div>
                                             <div className="border border-blue-900/70 bg-slate-950/80 p-2.5 min-w-0">
-                                                <div className="text-[8px] text-blue-400 font-bold uppercase tracking-widest mb-1">TO HIT</div>
+                                                <div className="text-[7px] text-blue-400 font-bold uppercase tracking-[0.24em] mb-1">TO HIT</div>
                                                 <div className="text-[28px] sm:text-[30px] font-black text-white leading-none">{selectedHeroSheet?.toHit || 'N/D'}</div>
                                             </div>
                                             <div className="border border-violet-900/70 bg-slate-950/80 p-2.5 min-w-0">
-                                                <div className="text-[8px] text-violet-400 font-bold uppercase tracking-widest mb-1">ALCANCE</div>
+                                                <div className="text-[7px] text-violet-400 font-bold uppercase tracking-[0.24em] mb-1">ALCANCE</div>
                                                 <div className="text-[28px] sm:text-[30px] font-black text-white leading-none">{selectedHeroSheet?.range || 'N/D'}</div>
-                                            </div>
-                                        </div>
-
-                                        <div className={`border ${dossierBorderClass} ${dossierPanelClass} p-4 lg:p-5 space-y-4`}>
-                                            <div className="flex items-center justify-between border-b border-white/10 pb-3">
-                                                <div>
-                                                    <div className="text-[8px] font-bold uppercase tracking-[0.35em] text-gray-500">EXPEDIENTE DE CAMPO</div>
-                                                    <div className={`mt-1 text-[10px] font-black uppercase tracking-[0.3em] ${dossierAccentClass}`}>{dossierStamp}</div>
-                                                </div>
-                                                <div className={`text-[8px] font-bold uppercase tracking-[0.3em] ${dossierAccentClass}`}>{selectedHeroSheet?.set || 'ARCHIVO MD'}</div>
-                                            </div>
-
-                                            <div className="grid gap-3">
-                                                <div className="border-l-2 border-cyan-900/70 pl-4">
-                                                    <div className="text-[8px] text-cyan-600 font-bold uppercase mb-2 tracking-[0.25em]">HISTORIAL CONOCIDO</div>
-                                                    <div className="text-[11px] leading-[1.45] text-cyan-50/90">
-                                                        {selectedHeroHistory}
-                                                    </div>
-                                                </div>
-
-                                                <div className="border-l-2 border-slate-700 pl-4">
-                                                    <div className="text-[8px] text-gray-500 font-bold uppercase mb-2 tracking-[0.25em]">PERFIL DE PODERES</div>
-                                                    <div className="text-[11px] leading-[1.45] text-slate-200">
-                                                        {selectedHeroPowers}
-                                                    </div>
-                                                </div>
-
-                                                <div className="border-l-2 border-violet-900/70 pl-4">
-                                                    <div className={`mb-2 text-[8px] font-bold uppercase tracking-[0.25em] ${dossierAccentClass}`}>EVALUACION DE S.H.I.E.L.D.</div>
-                                                    <div className="text-[11px] leading-[1.45] text-slate-200">
-                                                        {selectedHeroAssessment}
-                                                    </div>
-                                                </div>
                                             </div>
                                         </div>
                                     </div>
                                 </div>
 
-                                <div className="space-y-4 lg:pt-14">
+                                <div className="flex min-h-0 flex-col">
                                     <h4 className="text-[10px] font-black text-gray-500 tracking-[0.3em] uppercase border-b border-slate-800 pb-2">EXPEDIENTE DE CAMPO</h4>
 
-                                    <div className="grid grid-cols-3 gap-3">
+                                    <div className="grid grid-cols-3 gap-3 mt-4">
                                         <div className="border border-slate-800 bg-slate-950/70 p-3">
                                             <div className="text-[8px] font-bold uppercase text-gray-500">CLASE</div>
                                             <div className="mt-1 text-sm font-black uppercase text-cyan-300">{selectedHero.class}</div>
@@ -767,29 +748,92 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
                                         </div>
                                     </div>
 
-                                    <div className="border border-slate-800 bg-black/40 p-4">
-                                        <div className="mb-3 flex items-center justify-between border-b border-slate-800 pb-2">
-                                            <span className="text-[8px] font-bold uppercase text-gray-500">RESUMEN OPERATIVO</span>
-                                            <span className="text-[8px] font-bold uppercase text-slate-400">SHIELD FILE</span>
-                                        </div>
+                                    <div className="mt-4 grid grid-cols-3 gap-2">
+                                        <button
+                                            type="button"
+                                            onClick={() => setHeroDossierTab('EXPEDIENTE')}
+                                            className={`border px-3 py-2 text-[8px] font-black uppercase tracking-[0.24em] transition-colors ${heroDossierTab === 'EXPEDIENTE' ? 'border-cyan-500 bg-cyan-950/40 text-cyan-200' : 'border-slate-800 bg-black/30 text-slate-400 hover:text-white'}`}
+                                        >
+                                            Expediente
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => setHeroDossierTab('HISTORIA')}
+                                            className={`border px-3 py-2 text-[8px] font-black uppercase tracking-[0.24em] transition-colors ${heroDossierTab === 'HISTORIA' ? 'border-cyan-500 bg-cyan-950/40 text-cyan-200' : 'border-slate-800 bg-black/30 text-slate-400 hover:text-white'}`}
+                                        >
+                                            Historia
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => setHeroDossierTab('PODERES')}
+                                            className={`border px-3 py-2 text-[8px] font-black uppercase tracking-[0.24em] transition-colors ${heroDossierTab === 'PODERES' ? 'border-cyan-500 bg-cyan-950/40 text-cyan-200' : 'border-slate-800 bg-black/30 text-slate-400 hover:text-white'}`}
+                                        >
+                                            Poderes
+                                        </button>
+                                    </div>
 
-                                        <div className="space-y-3 text-[10px] leading-[1.45] text-slate-300">
-                                            <div>
-                                                <div className="text-[8px] font-bold uppercase text-gray-500">Vista rápida</div>
-                                                <div className="mt-1 text-slate-100">
-                                                    {selectedHeroHistory.split('. ')[0] || selectedHeroHistory}
+                                    <div className="mt-4 min-h-0 flex-1 overflow-y-auto border border-slate-800 bg-black/40 p-4">
+                                        {heroDossierTab === 'EXPEDIENTE' && (
+                                            <div className="space-y-4 text-[11px] leading-[1.5] text-slate-300">
+                                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                                    <div className="border border-slate-800 bg-slate-950/70 p-3">
+                                                        <div className="text-[8px] font-bold uppercase tracking-[0.25em] text-gray-500">Serie</div>
+                                                        <div className="mt-1 text-sm font-black uppercase text-white">{selectedHeroSheet?.set || 'ARCHIVO MD'}</div>
+                                                    </div>
+                                                    <div className="border border-slate-800 bg-slate-950/70 p-3">
+                                                        <div className="text-[8px] font-bold uppercase tracking-[0.25em] text-gray-500">Toughness</div>
+                                                        <div className="mt-1 text-sm font-black uppercase text-white">{selectedHeroSheet?.toughness || 'N/D'}</div>
+                                                    </div>
+                                                </div>
+
+                                                <div className="border-l-2 border-violet-900/70 pl-4">
+                                                    <div className={`mb-2 text-[8px] font-bold uppercase tracking-[0.25em] ${dossierAccentClass}`}>EVALUACION DE S.H.I.E.L.D.</div>
+                                                    <div className="text-[11px] leading-[1.55] text-slate-200">
+                                                        {selectedHeroAssessment}
+                                                    </div>
+                                                </div>
+
+                                                <div className="border-t border-slate-800 pt-3">
+                                                    <div className="text-[8px] font-bold uppercase text-gray-500">Acceso</div>
+                                                    <div className="mt-2 flex flex-wrap gap-2">
+                                                        <span className="border border-cyan-900 bg-cyan-950/30 px-2 py-1 text-[8px] font-bold uppercase text-cyan-300">FIELD ASSET</span>
+                                                        <span className="border border-slate-700 bg-slate-900 px-2 py-1 text-[8px] font-bold uppercase text-slate-300">{selectedHero.class}</span>
+                                                        <span className="border border-slate-700 bg-slate-900 px-2 py-1 text-[8px] font-bold uppercase text-slate-300">{getHeroStatusLabel(selectedHero.status, language)}</span>
+                                                    </div>
                                                 </div>
                                             </div>
+                                        )}
 
-                                            <div>
-                                                <div className="text-[8px] font-bold uppercase text-gray-500">Acceso</div>
-                                                <div className="mt-1 flex flex-wrap gap-2">
-                                                    <span className="border border-cyan-900 bg-cyan-950/30 px-2 py-1 text-[8px] font-bold uppercase text-cyan-300">FIELD ASSET</span>
-                                                    <span className="border border-slate-700 bg-slate-900 px-2 py-1 text-[8px] font-bold uppercase text-slate-300">{selectedHero.class}</span>
-                                                    <span className="border border-slate-700 bg-slate-900 px-2 py-1 text-[8px] font-bold uppercase text-slate-300">{getHeroStatusLabel(selectedHero.status, language)}</span>
+                                        {heroDossierTab === 'HISTORIA' && (
+                                            <div className="space-y-4 text-[11px] leading-[1.6] text-cyan-50/90 whitespace-pre-line">
+                                                {selectedHeroHistory}
+                                            </div>
+                                        )}
+
+                                        {heroDossierTab === 'PODERES' && (
+                                            <div className="space-y-4">
+                                                <div className="grid gap-3 sm:grid-cols-2">
+                                                    {heroDossierAbilityCards.map((ability) => (
+                                                        <div key={ability.key} className={`border ${ability.border} bg-slate-950/80 p-3`}>
+                                                            <div className={`text-[8px] font-bold uppercase tracking-[0.28em] ${ability.accent}`}>{ability.label}</div>
+                                                            <div className="mt-2 text-sm font-black uppercase text-white">{ability.title || 'N/D'}</div>
+                                                            <div className="mt-2 text-[11px] leading-[1.55] text-slate-200">{ability.text || 'Sin información registrada.'}</div>
+                                                        </div>
+                                                    ))}
+                                                </div>
+
+                                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                                    <div className="border border-slate-800 bg-slate-950/70 p-3">
+                                                        <div className="text-[8px] font-bold uppercase tracking-[0.25em] text-gray-500">Regla especial</div>
+                                                        <div className="mt-2 text-[11px] leading-[1.55] text-slate-200">{selectedHeroSheet?.spawnAbility || 'N/D'}</div>
+                                                    </div>
+                                                    <div className="border border-slate-800 bg-slate-950/70 p-3">
+                                                        <div className="text-[8px] font-bold uppercase tracking-[0.25em] text-gray-500">Toughness</div>
+                                                        <div className="mt-2 text-[11px] leading-[1.55] text-slate-200">{selectedHeroSheet?.toughness || 'N/D'}</div>
+                                                    </div>
                                                 </div>
                                             </div>
-                                        </div>
+                                        )}
                                     </div>
                                 </div>
                             </div>
