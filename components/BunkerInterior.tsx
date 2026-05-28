@@ -701,15 +701,15 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
                                         <span className="text-[8px] font-bold uppercase tracking-[0.25em] text-slate-500">{selectedHeroSheet?.set || 'ARCHIVO MD'}</span>
                                     </div>
 
-                                    <div className="grid grid-cols-2 gap-2 sm:grid-cols-5">
+                                    <div className="grid grid-cols-2 gap-2 sm:grid-cols-[minmax(0,0.88fr)_minmax(0,1.35fr)_minmax(0,0.88fr)_minmax(0,0.88fr)_minmax(0,0.88fr)]">
                                         <div className="border border-red-900/70 bg-slate-950/80 p-2.5 min-w-0">
                                             <div className="text-[7px] text-red-500 font-bold uppercase tracking-[0.24em] mb-1">VIDA</div>
                                             <div className="text-[28px] sm:text-[30px] font-black text-white leading-none">{selectedHeroSheet?.life || 'N/D'}</div>
                                         </div>
-                                        <div className="border border-cyan-900/70 bg-slate-950/80 p-2.5 min-w-0">
+                                        <div className="border border-cyan-900/70 bg-slate-950/80 p-2.5 min-w-0 flex flex-col justify-between min-h-[88px]">
                                             <div className="text-[7px] text-cyan-400 font-bold uppercase tracking-[0.24em] mb-1">TIPO</div>
-                                            <div className="text-[16px] sm:text-[18px] font-black text-white uppercase leading-none">{selectedHeroSheet?.type || selectedHero.class}</div>
-                                            <div className="mt-1 text-[7px] uppercase tracking-[0.22em] text-slate-500">{selectedHeroSheet?.attack || 'ATK'}</div>
+                                            <div className="text-[14px] sm:text-[16px] font-black text-white uppercase leading-tight break-words">{selectedHeroSheet?.type || selectedHero.class}</div>
+                                            <div className="mt-1 text-[7px] uppercase tracking-[0.22em] text-slate-500 leading-none">{selectedHeroSheet?.attack || 'ATK'}</div>
                                         </div>
                                         <div className="border border-emerald-900/70 bg-slate-950/80 p-2.5 min-w-0">
                                             <div className="text-[7px] text-emerald-400 font-bold uppercase tracking-[0.24em] mb-1">DADOS</div>
@@ -725,7 +725,7 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
                                         </div>
                                     </div>
 
-                                    <div className="rounded border border-slate-800 bg-black/30 p-3 md:p-4">
+                                    <div className="rounded border border-slate-800 bg-black/30 p-3 md:p-3.5">
                                         <div className="flex items-center justify-between border-b border-slate-800 pb-2">
                                             <h4 className="text-[9px] font-black uppercase tracking-[0.28em] text-gray-500">EXPEDIENTE DE CAMPO</h4>
                                             <span className="text-[8px] font-bold uppercase tracking-[0.25em] text-slate-500">{selectedHeroSheet?.set || 'ARCHIVO MD'}</span>
@@ -750,12 +750,6 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
                                             <div className={`mb-1 text-[8px] font-bold uppercase tracking-[0.25em] ${dossierAccentClass}`}>EVALUACION DE S.H.I.E.L.D.</div>
                                             <div className="text-[10px] leading-[1.45] text-slate-200">{selectedHeroAssessment}</div>
                                         </div>
-
-                                        <div className="mt-3 flex flex-wrap gap-2">
-                                            <span className="border border-cyan-900 bg-cyan-950/30 px-2 py-1 text-[8px] font-bold uppercase text-cyan-300">FIELD ASSET</span>
-                                            <span className="border border-slate-700 bg-slate-900 px-2 py-1 text-[8px] font-bold uppercase text-slate-300">{selectedHero.class}</span>
-                                            <span className="border border-slate-700 bg-slate-900 px-2 py-1 text-[8px] font-bold uppercase text-slate-300">{getHeroStatusLabel(selectedHero.status, language)}</span>
-                                        </div>
                                     </div>
                                 </div>
 
@@ -769,11 +763,7 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
                                     <div className="mt-4 min-h-0 flex-1 overflow-y-auto border border-slate-800 bg-black/40 p-4">
                                         {heroDossierTab === 'EXPEDIENTE' && (
                                             <div className="space-y-4 text-[11px] leading-[1.5] text-slate-300">
-                                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                                    <div className="border border-slate-800 bg-slate-950/70 p-3">
-                                                        <div className="text-[8px] font-bold uppercase tracking-[0.25em] text-gray-500">Serie</div>
-                                                        <div className="mt-1 text-sm font-black uppercase text-white">{selectedHeroSheet?.set || 'ARCHIVO MD'}</div>
-                                                    </div>
+                                                <div className="grid grid-cols-1 sm:grid-cols-1 gap-3">
                                                     <div className="border border-slate-800 bg-slate-950/70 p-3">
                                                         <div className="text-[8px] font-bold uppercase tracking-[0.25em] text-gray-500">Toughness</div>
                                                         <div className="mt-1 text-sm font-black uppercase text-white">{selectedHeroSheet?.toughness || 'N/D'}</div>
