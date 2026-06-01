@@ -209,6 +209,7 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
     const [heroDossierTab, setHeroDossierTab] = useState<'EXPEDIENTE' | 'HISTORIA' | 'PODERES'>('EXPEDIENTE');
     const [selectedHeroSheetIndex, setSelectedHeroSheetIndex] = useState(0);
     const [showRecruitModal, setShowRecruitModal] = useState(false);
+    const [recruitModalMode, setRecruitModalMode] = useState<'RECRUIT' | 'CAPTURE'>('RECRUIT');
     const [dbTemplates, setDbTemplates] = useState<HeroTemplate[]>([]);
     const [viewingSheet, setViewingSheet] = useState<string | null>(null);
     const [canLeaveBunker, setCanLeaveBunker] = useState(false);
@@ -357,10 +358,11 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
         [dbTemplates, heroes, ownedExpansions, transformTargetAlignment]
     );
 
-    const handleOpenRecruit = async () => {
+    const handleOpenRecruit = async (mode: 'RECRUIT' | 'CAPTURE' = 'RECRUIT') => {
         const templates = await getHeroTemplates();
         setDbTemplates(templates);
         setShowRecruitModal(true);
+        setRecruitModalMode(mode);
     };
 
     useEffect(() => {
@@ -492,8 +494,16 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
                         <div className="text-[9px] font-black uppercase tracking-[0.28em] text-cyan-500">
                             ROSTER DE HÉROES Y ALIADOS
                         </div>
-                        <div className="mt-1 text-[10px] uppercase tracking-[0.2em] text-slate-500">
-                            Aliados rescatados y héroes activos en la campaña
+                        <div className="mt-1 flex items-end justify-between gap-3">
+                            <div className="text-[10px] uppercase tracking-[0.2em] text-slate-500">
+                                Aliados rescatados y héroes activos en la campaña
+                            </div>
+                            <button
+                                onClick={() => handleOpenRecruit('RECRUIT')}
+                                className="shrink-0 border border-cyan-600 bg-cyan-950/30 px-3 py-2 text-[8px] font-black uppercase tracking-[0.24em] text-cyan-200 transition-all hover:bg-cyan-500 hover:text-black"
+                            >
+                                {isSpanishLanguage(language) ? 'AÑADIR ALIADO' : 'ADD ALLY'}
+                            </button>
                         </div>
                     </div>
 
@@ -697,8 +707,16 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
                                     Sujetos capturados y listos para contención o purificación
                                 </div>
                             </div>
-                            <div className="text-[9px] font-black uppercase tracking-[0.24em] text-fuchsia-400 border border-fuchsia-900/40 bg-fuchsia-950/20 px-2 py-1">
-                                {capturedHeroes.length} PRISIONEROS
+                            <div className="flex flex-col items-end gap-2">
+                                <div className="text-[9px] font-black uppercase tracking-[0.24em] text-fuchsia-400 border border-fuchsia-900/40 bg-fuchsia-950/20 px-2 py-1">
+                                    {capturedHeroes.length} PRISIONEROS
+                                </div>
+                                <button
+                                    onClick={() => handleOpenRecruit('CAPTURE')}
+                                    className="border border-fuchsia-600 bg-fuchsia-950/30 px-3 py-2 text-[8px] font-black uppercase tracking-[0.24em] text-fuchsia-200 transition-all hover:bg-fuchsia-500 hover:text-black"
+                                >
+                                    {isSpanishLanguage(language) ? 'INGRESAR PRISIONERO' : 'ADD PRISONER'}
+                                </button>
                             </div>
                         </div>
 
@@ -832,6 +850,7 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
                     existingAliases={existingAliases}
                     language={language}
                     playerAlignment={playerAlignment || 'ALIVE'}
+                    initialMode={recruitModalMode}
                 />
             )}
 

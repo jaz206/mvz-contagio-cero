@@ -11,6 +11,7 @@ interface RecruitModalProps {
     existingAliases: Set<string>;
     language: Language;
     playerAlignment: 'ALIVE' | 'ZOMBIE' | null;
+    initialMode?: 'RECRUIT' | 'CAPTURE';
 }
 
 const normalizeAlias = (alias: string) => {
@@ -23,12 +24,16 @@ const normalizeAlias = (alias: string) => {
 };
 
 export const RecruitModal: React.FC<RecruitModalProps> = ({
-    isOpen, onClose, onRecruit, templates, existingAliases, language, playerAlignment
+    isOpen, onClose, onRecruit, templates, existingAliases, language, playerAlignment, initialMode = 'RECRUIT'
 }) => {
     const [searchTerm, setSearchTerm] = useState('');
-    const [mode, setMode] = useState<'RECRUIT' | 'CAPTURE'>('RECRUIT');
+    const [mode, setMode] = useState<'RECRUIT' | 'CAPTURE'>(initialMode);
     const t = translations[language].recruit;
     const isZombiePlayer = playerAlignment === 'ZOMBIE';
+
+    React.useEffect(() => {
+        if (isOpen) setMode(initialMode);
+    }, [isOpen, initialMode]);
 
     const filteredTemplates = useMemo(() => {
         return templates.filter((template) => {
