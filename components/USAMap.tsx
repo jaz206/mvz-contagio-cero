@@ -805,12 +805,13 @@ export const USAMap: React.FC<USAMapProps> = ({
                 dotStroke = '#059669';
             }
 
-            if (isShield) {
+            if (isCompleted) {
+                dotColor = '#10b981';
+                dotStroke = '#059669';
+            } else if (isShield) {
                 dotColor = '#06b6d4';
                 dotStroke = '#0891b2';
-            }
-
-            if (isBoss || isGalactus) {
+            } else if (isBoss || isGalactus) {
                 dotColor = '#9333ea';
                 dotStroke = '#7e22ce';
             }
@@ -818,15 +819,15 @@ export const USAMap: React.FC<USAMapProps> = ({
             grp.select('.mission-halo')
                 .style('display', isBoss || isGalactus ? 'block' : 'none')
                 .attr('r', isBoss || isGalactus ? 14 : 0)
-                .attr('fill', isBoss || isGalactus ? '#ffffff' : 'none')
-                .attr('fill-opacity', isBoss || isGalactus ? 0.12 : 0)
-                .attr('stroke', isBoss || isGalactus ? '#f5f3ff' : 'none')
+                .attr('fill', isCompleted ? '#d1fae5' : '#ffffff')
+                .attr('fill-opacity', isCompleted ? 0.14 : 0.12)
+                .attr('stroke', isCompleted ? '#34d399' : '#f5f3ff')
                 .attr('stroke-width', isBoss || isGalactus ? 2.5 : 0)
-                .style('filter', isBoss || isGalactus ? 'url(#glow-boss)' : 'none');
+                .style('filter', isCompleted ? 'url(#glow-hulk)' : 'url(#glow-boss)');
 
             grp.select('.mission-dot')
                 .attr('r', isOptional ? 4 : (isShield ? 4.5 : (isBoss || isGalactus ? 5.5 : 5)))
-                .attr('fill', isShield && !isCompleted ? '#0f172a' : (isBoss || isGalactus ? '#faf5ff' : dotColor))
+                .attr('fill', isCompleted ? '#10b981' : (isShield ? '#0f172a' : (isBoss || isGalactus ? '#faf5ff' : dotColor)))
                 .attr('stroke', dotStroke)
                 .attr('stroke-width', isBoss || isGalactus ? 2.5 : 2);
 
@@ -843,7 +844,7 @@ export const USAMap: React.FC<USAMapProps> = ({
                     .style('display', 'block')
                     .attr('r', 10)
                     .attr('fill', 'none')
-                    .attr('stroke', '#f5d0fe')
+                    .attr('stroke', isCompleted ? '#34d399' : '#f5d0fe')
                     .attr('stroke-width', 2)
                     .attr('stroke-dasharray', 'none');
             } else {
@@ -862,7 +863,7 @@ export const USAMap: React.FC<USAMapProps> = ({
                     .style('display', 'block')
                     .attr('r', 12)
                     .attr('fill', 'none')
-                    .attr('stroke', '#f5d0fe')
+                    .attr('stroke', isCompleted ? '#34d399' : '#f5d0fe')
                     .attr('class', 'effect-shield-pulse shield-pulse');
             } else {
                 grp.select('.effect-shield-pulse').style('display', 'none');
