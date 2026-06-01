@@ -318,10 +318,14 @@ const GameLayout: React.FC<{ children: React.ReactNode; publishedPreviewMode?: b
                                 </div>
                             </div>
                             <div className="p-3 border-b border-cyan-900">
-                                <button id="tutorial-bunker-btn" onClick={() => navigate('/bunker')} className={`w-full py-3 border-2 flex items-center justify-center gap-2 transition-all duration-300 group relative overflow-hidden ${playerAlignment === 'ZOMBIE' ? 'border-lime-600 bg-lime-900/10 hover:bg-lime-900/30 text-lime-400' : 'border-cyan-500 bg-cyan-900/10 hover:bg-cyan-900/30 text-cyan-300'}`}>
+                                <button id="tutorial-bunker-btn" onClick={() => navigate('/bunker')} className={`w-full py-3 border-2 flex items-center justify-center gap-3 transition-all duration-300 group relative overflow-hidden ${playerAlignment === 'ZOMBIE' ? 'border-lime-600 bg-lime-900/10 hover:bg-lime-900/30 text-lime-400' : 'border-cyan-500 bg-cyan-900/10 hover:bg-cyan-900/30 text-cyan-300'}`}>
                                     <div className={`absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 ${playerAlignment === 'ZOMBIE' ? 'bg-[linear-gradient(45deg,transparent_25%,rgba(132,204,22,0.1)_50%,transparent_75%)]' : 'bg-[linear-gradient(45deg,transparent_25%,rgba(6,182,212,0.1)_50%,transparent_75%)]'} bg-[length:250%_250%] animate-[shimmer_2s_linear_infinite]`} />
-                                    <span className="text-xl group-hover:scale-110 transition-transform">{playerAlignment === 'ZOMBIE' ? 'HZ' : 'HQ'}</span>
-                                    <span className="font-bold tracking-widest text-[10px]">{playerAlignment === 'ZOMBIE' ? t.sidebar.hiveBtn : t.sidebar.bunkerBtn}</span>
+                                    <img
+                                        src="/shield-logo.png"
+                                        alt="SHIELD"
+                                        className={`w-7 h-7 object-contain drop-shadow-[0_0_10px_rgba(34,211,238,0.55)] ${playerAlignment === 'ZOMBIE' ? 'opacity-80' : 'opacity-100'}`}
+                                    />
+                                    <span className="font-black tracking-[0.2em] text-[10px]">{playerAlignment === 'ZOMBIE' ? t.sidebar.hiveBtn : t.sidebar.bunkerBtn}</span>
                                 </button>
                             </div>
                             <div id="tutorial-sidebar-missions" className="flex-1 overflow-y-auto p-3 scrollbar-thin scrollbar-thumb-cyan-900">

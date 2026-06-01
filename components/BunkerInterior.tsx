@@ -395,8 +395,8 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
             {/* TOP BAR */}
             <div className="h-16 border-b border-cyan-900 bg-slate-900/95 flex items-center justify-between px-6 shrink-0 z-20 shadow-[0_0_20px_rgba(0,0,0,0.5)]">
                 <div className="flex items-center gap-4">
-                    <button onClick={() => { if (canLeaveBunker) onBack(); }} disabled={!canLeaveBunker} className={`flex items-center gap-2 text-xs font-bold border px-4 py-2 transition-all clip-tactical ${canLeaveBunker ? 'border-cyan-700 hover:bg-cyan-500 hover:text-black' : 'border-slate-700 text-slate-500 cursor-wait'}`}>
-                        <span>â†</span> MAPA
+                    <button onClick={() => { if (canLeaveBunker) onBack(); }} disabled={!canLeaveBunker} className={`flex items-center gap-2 text-sm font-black border px-4 py-2.5 tracking-[0.18em] transition-all clip-tactical ${canLeaveBunker ? 'border-cyan-700 hover:bg-cyan-500 hover:text-black text-cyan-200' : 'border-slate-700 text-slate-500 cursor-wait'}`}>
+                        <span className="text-base">←</span> VOLVER AL MAPA
                     </button>
                     <div className="h-8 w-px bg-cyan-800/50"></div>
                     <h1 className="text-xl font-black tracking-[0.2em] text-white uppercase text-shadow-neon">

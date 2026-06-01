@@ -506,7 +506,7 @@ export const USAMap: React.FC<USAMapProps> = ({
 
             clipCircle
                 .transition()
-                .duration(1200)
+                .duration(2400)
                 .ease(d3.easeCubicOut)
                 .attr('r', maxRadius);
         });
