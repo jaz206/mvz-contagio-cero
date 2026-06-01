@@ -5,22 +5,7 @@ import { fetchUSATopoJSON } from '../services/topojsonService';
 import { USATopoJSON, Mission, WorldStage } from '../types';
 import { translations, Language } from '../translations';
 
-const SHIELD_ZONE_ICON = `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(`
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
-  <defs>
-    <radialGradient id="shieldGlow" cx="50%" cy="50%" r="50%">
-      <stop offset="0%" stop-color="#67e8f9" stop-opacity="0.35" />
-      <stop offset="100%" stop-color="#0f172a" stop-opacity="0" />
-    </radialGradient>
-  </defs>
-  <circle cx="64" cy="64" r="62" fill="rgba(3, 7, 18, 0.92)" />
-  <circle cx="64" cy="64" r="56" fill="none" stroke="#67e8f9" stroke-width="4" opacity="0.9" />
-  <circle cx="64" cy="64" r="46" fill="url(#shieldGlow)" />
-  <path d="M64 22 L95 34 V57 C95 79 82 97 64 106 C46 97 33 79 33 57 V34 Z" fill="none" stroke="#a5f3fc" stroke-width="5" stroke-linejoin="round" />
-  <path d="M64 37 L84 45 V57 C84 72 76 85 64 92 C52 85 44 72 44 57 V45 Z" fill="none" stroke="#22d3ee" stroke-width="3" stroke-linejoin="round" opacity="0.95" />
-  <path d="M64 44 L72 58 H83 L74 67 L78 80 L64 72 L50 80 L54 67 L45 58 H56 Z" fill="#22d3ee" opacity="0.95" />
-</svg>
-`).replace(/\s+/g, ' ').trim()}`;
+const SHIELD_ZONE_ICON = '/shield-logo.png';
 
 interface USAMapProps {
     language: Language;
@@ -591,7 +576,7 @@ export const USAMap: React.FC<USAMapProps> = ({
         // Definir assets dinámicos fuera del bloque de creación
         const bunkerLogo = playerAlignment === 'ZOMBIE'
             ? "https://i.pinimg.com/736x/7f/31/38/7f31382d4a5c35daa4ba1768a366a917.jpg"
-            : "https://i.pinimg.com/736x/63/1e/3a/631e3a68228c97963e78381ad11bf3bb.jpg";
+            : SHIELD_ZONE_ICON;
         const bunkerColor = playerAlignment === 'ZOMBIE' ? '#65a30d' : '#06b6d4';
 
         if (bunkerCoords) {
