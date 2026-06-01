@@ -506,7 +506,7 @@ export const USAMap: React.FC<USAMapProps> = ({
 
             clipCircle
                 .transition()
-                .duration(2400)
+                .duration(5200)
                 .ease(d3.easeCubicOut)
                 .attr('r', maxRadius);
         });
@@ -596,7 +596,7 @@ export const USAMap: React.FC<USAMapProps> = ({
                 .attr('type', 'rotate')
                 .attr('from', '0 0 0')
                 .attr('to', '360 0 0')
-                .attr('dur', '5s')
+                .attr('dur', '9s')
                 .attr('repeatCount', 'indefinite');
         });
 

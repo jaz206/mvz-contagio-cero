@@ -2,7 +2,7 @@
 import { getHeroLoreEntry } from "../data/heroLore";
 import { translations, Language } from "../translations";
 import { Hero, Mission, HeroClass, HeroTemplate, I18nString } from "../types";
-import { getHeroTransformAvailability, hasAnyHeroWithTransformRule } from "../services/heroVariantRuleService";
+import { hasAnyHeroWithTransformRule } from "../services/heroVariantRuleService";
 import { preferGithubCharacterImage } from "../services/characterGithubImageService";
 import { getLocalizedPlayableHeroSheetForHero, getLocalizedPlayableHeroSheetsForHero } from "../services/playableHeroSheetService";
 
@@ -32,7 +32,7 @@ interface BunkerInteriorProps {
     onTransformHero?: (heroId: string, targetAlignment: 'ALIVE' | 'ZOMBIE') => void;
     onTickerUpdate?: (message: string) => void;
     omegaCylinders?: number;
-    onFindCylinder?: () => void;
+    onSearchAllies?: () => void;
     ownedExpansions: Set<string>;
 }
 
@@ -147,13 +147,6 @@ const HeroCard = ({ hero, onClick, actionIcon, onAction, actionMuted = false }: 
     );
 };
 
-// --- COMPONENTE: ESCÃNER DE ADN (PARA MEDBAY) ---
-const DnaScanner = () => (
-    <div className="absolute inset-x-0 top-0 h-1 bg-red-500/20 z-0 pointer-events-none overflow-hidden">
-        <div className="h-full bg-red-500 shadow-[0_0_15px_#ef4444] animate-scanline"></div>
-    </div>
-);
-
 // --- COMPONENTE: MONITOR BIOMÃ‰TRICO ---
 const BiometricMonitor = ({ alignment, compact = false }: { alignment: 'ALIVE' | 'ZOMBIE', compact?: boolean }) => {
     const isZombie = alignment === 'ZOMBIE';
@@ -210,9 +203,8 @@ const BiometricMonitor = ({ alignment, compact = false }: { alignment: 'ALIVE' |
 };
 
 export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
-    heroes, missions, completedMissionIds = new Set(), onAssign, onUnassign, onAddHero, onToggleObjective, onBack, language, playerAlignment, onTransformHero, onTickerUpdate, omegaCylinders = 0, onFindCylinder, ownedExpansions
+    heroes, missions, completedMissionIds = new Set(), onAssign, onUnassign, onAddHero, onToggleObjective, onBack, language, playerAlignment, onTransformHero, onTickerUpdate, omegaCylinders = 0, onSearchAllies, ownedExpansions
 }) => {
-    const [activeTab, setActiveTab] = useState<'ROSTER' | 'MEDBAY'>('ROSTER');
     const [selectedHeroId, setSelectedHeroId] = useState<string | null>(null);
     const [heroDossierTab, setHeroDossierTab] = useState<'EXPEDIENTE' | 'HISTORIA' | 'PODERES'>('EXPEDIENTE');
     const [selectedHeroSheetIndex, setSelectedHeroSheetIndex] = useState(0);
@@ -220,6 +212,7 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
     const [dbTemplates, setDbTemplates] = useState<HeroTemplate[]>([]);
     const [viewingSheet, setViewingSheet] = useState<string | null>(null);
     const [canLeaveBunker, setCanLeaveBunker] = useState(false);
+    const [selectedCampaignMissionId, setSelectedCampaignMissionId] = useState<string | null>(null);
 
     // ESTADO PARA EL MODAL DE CONFIRMACIÃ“N
     const [confirmModal, setConfirmModal] = useState<{
@@ -301,6 +294,27 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
         { key: 'red', label: heroDossierUi.abilityLabels.red, title: selectedHeroSheet.redSkillName, text: selectedHeroSheet.redSkillDescription, accent: 'text-red-300', border: 'border-red-900/60', glow: 'shadow-red-900/10' },
     ] : [];
 
+    const availableHeroes = heroes.filter((hero) => hero.status === 'AVAILABLE');
+    const deployedHeroes = heroes.filter((hero) => hero.status === 'DEPLOYED');
+    const capturedHeroes = heroes.filter((hero) => hero.status === 'CAPTURED');
+    const completedCampaignMissions = useMemo(
+        () => missions.filter((mission) => completedMissionIds.has(mission.id)),
+        [missions, completedMissionIds]
+    );
+    const selectedCampaignMission = useMemo(
+        () => completedCampaignMissions.find((mission) => mission.id === selectedCampaignMissionId) || completedCampaignMissions[completedCampaignMissions.length - 1] || null,
+        [completedCampaignMissions, selectedCampaignMissionId]
+    );
+    const selectedCampaignNarrative = selectedCampaignMission
+        ? getPreferredDossierText(
+            selectedCampaignMission.outcomeText ? { es: selectedCampaignMission.outcomeText, en: selectedCampaignMission.outcomeText } : undefined,
+            undefined,
+            language,
+            selectedCampaignMission.description?.join('\n\n') || (isSpanishLanguage(language) ? 'Sin cronica disponible.' : 'No campaign chronicle available.')
+        )
+        : (isSpanishLanguage(language) ? 'Aun no hay misiones completadas.' : 'No completed missions yet.');
+    const selectedCampaignObjectives = selectedCampaignMission?.objectives || [];
+
     useEffect(() => {
         if (selectedHeroId) {
             setHeroDossierTab('EXPEDIENTE');
@@ -311,9 +325,16 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
         }
     }, [selectedHeroId, language, selectedHeroPreferredSheet?.characterName, selectedHeroPreferredSheet?.set, selectedHeroSheets.length]);
 
-    const availableHeroes = heroes.filter(h => h.status === 'AVAILABLE');
-    const deployedHeroes = heroes.filter(h => h.status === 'DEPLOYED');
-    const injuredHeroes = heroes.filter(h => h.status === 'INJURED' || h.status === 'CAPTURED');
+    useEffect(() => {
+        if (!completedCampaignMissions.length) {
+            setSelectedCampaignMissionId(null);
+            return;
+        }
+
+        if (!selectedCampaignMissionId || !completedCampaignMissions.some((mission) => mission.id === selectedCampaignMissionId)) {
+            setSelectedCampaignMissionId(completedCampaignMissions[completedCampaignMissions.length - 1].id);
+        }
+    }, [completedCampaignMissions, selectedCampaignMissionId]);
 
     const existingAliases = useMemo(() => {
         const aliases = new Set<string>();
@@ -335,30 +356,6 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
         () => hasAnyHeroWithTransformRule(heroes, transformTargetAlignment, dbTemplates, ownedExpansions),
         [dbTemplates, heroes, ownedExpansions, transformTargetAlignment]
     );
-
-    const getBlockedTransformMessage = (hero: Hero, reason: 'NO_VARIANT' | 'MISSING_EXPANSION' | 'NO_COUNTERPART' | 'STORY_LOCKED', isAlivePlayer: boolean) => {
-        if (reason === 'STORY_LOCKED') {
-            return isAlivePlayer
-                ? `PROTOCOLO RESERVADO.\n\n${hero.alias} forma parte del nucleo narrativo de la campaÃ±a y no puede ser curado, capturado ni infectado.`
-                : `PROTOCOLO RESERVADO.\n\n${hero.alias} forma parte del nucleo narrativo de la campaÃ±a y no puede ser curado, capturado ni infectado.`;
-        }
-
-        if (reason === 'NO_VARIANT') {
-            return isAlivePlayer
-                ? `SUJETO IRRECUPERABLE.\n\nEl tejido de ${hero.alias} ha sufrido una degradacion celular total. No queda ADN humano viable para la reestructuracion.\n\nLA CURA ES INEFICAZ.`
-                : `SUJETO INMUNE.\n\nLa fisiologia de ${hero.alias} rechaza el Evangelio del Hambre. Estructura molecular incompatible o sintetica.\n\nNO SE PUEDE CONSUMIR.`;
-        }
-
-        if (reason === 'MISSING_EXPANSION') {
-            return isAlivePlayer
-                ? `CURA IMPOSIBLE.\n\nNo tienes activada la expansion que contiene la version humana de ${hero.alias}.\n\nCON ESTA CONFIGURACION, LA CURA QUEDA DESACTIVADA.`
-                : `INFECCION IMPOSIBLE.\n\nNo tienes activada la expansion que contiene la version infectada de ${hero.alias}.\n\nCON ESTA CONFIGURACION, LA INFECCION QUEDA DESACTIVADA.`;
-        }
-
-        return isAlivePlayer
-            ? `CURA IMPOSIBLE.\n\nNo existe una version compatible de ${hero.alias} para completar la reestructuracion.\n\nLA REGLA DE CURA NO PUEDE APLICARSE.`
-            : `INFECCION IMPOSIBLE.\n\nNo existe una version compatible de ${hero.alias} para completar la infeccion.\n\nLA REGLA DE INFECCION NO PUEDE APLICARSE.`;
-    };
 
     const handleOpenRecruit = async () => {
         const templates = await getHeroTemplates();
@@ -389,14 +386,83 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
         setConfirmModal(config);
     };
 
+    const handleSearchAllies = () => {
+        if (!onSearchAllies) return;
+        if (omegaCylinders <= 0) {
+            openConfirm({
+                isOpen: true,
+                title: isSpanishLanguage(language) ? 'RECURSOS INSUFICIENTES' : 'INSUFFICIENT RESOURCES',
+                message: isSpanishLanguage(language)
+                    ? 'NO QUEDAN VIALES DE CURA PARA ACTIVAR EL RASTREO CEREBRO.'
+                    : 'NO CURE VIALS REMAIN TO ACTIVATE CEREBRO TRACKING.',
+                confirmText: isSpanishLanguage(language) ? 'ENTENDIDO' : 'UNDERSTOOD',
+                type: 'WARNING',
+                onConfirm: () => { }
+            });
+            return;
+        }
+
+        openConfirm({
+            isOpen: true,
+            title: isSpanishLanguage(language) ? 'RASTREO CEREBRO' : 'CEREBRO TRACKING',
+            message: isSpanishLanguage(language)
+                ? 'SE CONSUMIRA 1 VIAL DE CURA PARA LOCALIZAR ALIADOS VIVOS EN EL MAPA.'
+                : '1 CURE VIAL WILL BE CONSUMED TO LOCATE LIVING ALLIES ON THE MAP.',
+            confirmText: isSpanishLanguage(language) ? 'ACTIVAR' : 'ACTIVATE',
+            type: 'WARNING',
+            onConfirm: () => onSearchAllies()
+        });
+    };
+
+    const handlePrisonAction = (hero: Hero) => {
+        if (!onTransformHero) return;
+
+        const targetAlignment = playerAlignment === 'ZOMBIE' ? 'ZOMBIE' : 'ALIVE';
+        if (targetAlignment === 'ALIVE' && omegaCylinders <= 0) {
+            openConfirm({
+                isOpen: true,
+                title: isSpanishLanguage(language) ? 'RECURSOS INSUFICIENTES' : 'INSUFFICIENT RESOURCES',
+                message: isSpanishLanguage(language)
+                    ? `NO HAY VIALES DE CURA DISPONIBLES PARA PURIFICAR A ${hero.alias}.`
+                    : `NO CURE VIALS AVAILABLE TO PURIFY ${hero.alias}.`,
+                confirmText: isSpanishLanguage(language) ? 'ENTENDIDO' : 'UNDERSTOOD',
+                type: 'WARNING',
+                onConfirm: () => { }
+            });
+            return;
+        }
+
+        openConfirm({
+            isOpen: true,
+            title: targetAlignment === 'ALIVE'
+                ? (isSpanishLanguage(language) ? 'PROTOCOLO DE CURA' : 'CURE PROTOCOL')
+                : (isSpanishLanguage(language) ? 'PROTOCOLO DE CONTENCION' : 'CONTAINMENT PROTOCOL'),
+            message: targetAlignment === 'ALIVE'
+                ? (isSpanishLanguage(language)
+                    ? `INYECTAR VIAL DE CURA A ${hero.alias}. EL SUJETO PASARA AL PANEL IZQUIERDO COMO HÉROE ACTIVO.`
+                    : `INJECT A CURE VIAL INTO ${hero.alias}. THE SUBJECT WILL MOVE TO THE LEFT PANEL AS AN ACTIVE HERO.`)
+                : (isSpanishLanguage(language)
+                    ? `REINTEGRAR A ${hero.alias} A LA HORDA.`
+                    : `REINTEGRATE ${hero.alias} INTO THE HORDE.`),
+            confirmText: targetAlignment === 'ALIVE'
+                ? (isSpanishLanguage(language) ? 'INYECTAR VIAL' : 'INJECT VIAL')
+                : (isSpanishLanguage(language) ? 'INFECTAR' : 'INFECT'),
+            type: targetAlignment === 'ALIVE' ? 'CURE' : 'INFECT',
+            onConfirm: () => onTransformHero(hero.id, targetAlignment)
+        });
+    };
+
     return (
         <div className="w-full h-full bg-slate-950 text-cyan-400 font-mono flex flex-col overflow-hidden relative">
 
             {/* TOP BAR */}
             <div className="h-16 border-b border-cyan-900 bg-slate-900/95 flex items-center justify-between px-6 shrink-0 z-20 shadow-[0_0_20px_rgba(0,0,0,0.5)]">
                 <div className="flex items-center gap-4">
-                    <button onClick={() => { if (canLeaveBunker) onBack(); }} disabled={!canLeaveBunker} className={`flex items-center gap-2 text-sm font-black border px-4 py-2.5 tracking-[0.18em] transition-all clip-tactical ${canLeaveBunker ? 'border-cyan-700 hover:bg-cyan-500 hover:text-black text-cyan-200' : 'border-slate-700 text-slate-500 cursor-wait'}`}>
-                        <span className="text-base">←</span> VOLVER AL MAPA
+                    <button onClick={() => { if (canLeaveBunker) onBack(); }} disabled={!canLeaveBunker} className={`flex items-center gap-3 text-sm font-black border px-4 py-2.5 tracking-[0.18em] transition-all clip-tactical ${canLeaveBunker ? 'border-cyan-700 hover:bg-cyan-500 hover:text-black text-cyan-200' : 'border-slate-700 text-slate-500 cursor-wait'}`}>
+                        <span className="inline-flex h-7 w-7 items-center justify-center rounded-sm border border-current bg-cyan-950/40 text-base">
+                            ←
+                        </span>
+                        <span>MAPA</span>
                     </button>
                     <div className="h-8 w-px bg-cyan-800/50"></div>
                     <h1 className="text-xl font-black tracking-[0.2em] text-white uppercase text-shadow-neon">
@@ -422,97 +488,49 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
                 <div className="col-span-3 border-r border-cyan-900 bg-slate-900/30 flex flex-col min-w-[300px] h-full overflow-hidden relative">
                     <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-5 pointer-events-none"></div>
 
-                    <div className="flex border-b border-cyan-900 shrink-0 bg-slate-900">
-                        <button onClick={() => setActiveTab('ROSTER')} className={`flex-1 py-4 text-[10px] font-black tracking-widest uppercase transition-all ${activeTab === 'ROSTER' ? 'bg-cyan-900/40 text-white border-b-2 border-cyan-500' : 'text-gray-500 hover:text-cyan-300'}`}>
-                            ACTIVOS ({availableHeroes.length + deployedHeroes.length})
-                        </button>
-                        <button onClick={() => setActiveTab('MEDBAY')} className={`flex-1 py-4 text-[10px] font-black tracking-widest uppercase transition-all ${activeTab === 'MEDBAY' ? 'bg-red-900/20 text-red-300 border-b-2 border-red-500' : 'text-gray-500 hover:text-red-400'}`}>
-                            PRISIONEROS ({injuredHeroes.length})
-                        </button>
+                    <div className="shrink-0 border-b border-cyan-900 bg-slate-900 px-4 py-4">
+                        <div className="text-[9px] font-black uppercase tracking-[0.28em] text-cyan-500">
+                            ROSTER DE HÉROES Y ALIADOS
+                        </div>
+                        <div className="mt-1 text-[10px] uppercase tracking-[0.2em] text-slate-500">
+                            Aliados rescatados y héroes activos en la campaña
+                        </div>
                     </div>
 
                     <div className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-cyan-900 pb-24 relative">
-                        {activeTab === 'MEDBAY' && <DnaScanner />}
-                        <div className={`absolute inset-0 pointer-events-none opacity-5 ${activeTab === 'MEDBAY' ? 'bg-[radial-gradient(circle,#ef4444_1px,transparent_1px)] bg-[length:20px_20px]' : ''}`}></div>
-                        {activeTab === 'ROSTER' ? (
-                            <>
-                                {availableHeroes.map(h => <RosterHeroCard key={h.id} hero={h} language={language} onClick={() => setSelectedHeroId(h.id)} />)}
-                                {deployedHeroes.length > 0 && <div className="text-[9px] font-black text-yellow-500 uppercase mt-6 mb-2 px-4 tracking-widest border-b border-yellow-900/30 pb-1">DESPLEGADOS</div>}
-                                {deployedHeroes.map(h => <RosterHeroCard key={h.id} hero={h} language={language} onClick={() => setSelectedHeroId(h.id)} actionIcon="×" onAction={() => onUnassign(h.id)} />)}
-                            </>
-                        ) : (
-                            injuredHeroes.map(h => {
-                                const isAlivePlayer = playerAlignment === 'ALIVE';
-                                const actionIcon = isAlivePlayer ? "ðŸ’‰" : "ðŸ§Ÿ";
-                                const transformAvailability = getHeroTransformAvailability(
-                                    h,
-                                    isAlivePlayer ? 'ALIVE' : 'ZOMBIE',
-                                    dbTemplates,
-                                    ownedExpansions
-                                );
+                        <div className="px-3 py-3 space-y-3">
+                            <div className="text-[9px] font-black uppercase tracking-[0.25em] text-cyan-400 border-b border-cyan-900/30 pb-1">
+                                ACTIVOS ({availableHeroes.length})
+                            </div>
+                            {availableHeroes.map((hero) => (
+                                <RosterHeroCard
+                                    key={hero.id}
+                                    hero={hero}
+                                    language={language}
+                                    onClick={() => setSelectedHeroId(hero.id)}
+                                />
+                            ))}
 
-                                const handleAction = () => {
-                                    if (!onTransformHero) return;
-
-                                    if (!transformAvailability.allowed) {
-                                        openConfirm({
-                                            isOpen: true,
-                                            title: isAlivePlayer ? "OPERACION BLOQUEADA" : "PROTOCOLO BLOQUEADO",
-                                            message: getBlockedTransformMessage(h, transformAvailability.reason, isAlivePlayer),
-                                            confirmText: "ENTENDIDO",
-                                            type: "WARNING",
-                                            onConfirm: () => { }
-                                        });
-                                        return;
-                                    }
-
-                                    if (isAlivePlayer) {
-                                        // MODO HÃ‰ROE: CURAR
-                                        if (omegaCylinders > 0) {
-                                            openConfirm({
-                                                isOpen: true,
-                                                title: "PROTOCOLO DE CURA",
-                                                message: `Â¿INICIAR SECUENCIA DE REESTRUCTURACIÃ“N DE ADN PARA ${h.alias}?\n\nCOSTE: 1 CILINDRO OMEGA`,
-                                                confirmText: "ADMINISTRAR CURA",
-                                                type: "CURE",
-                                                onConfirm: () => onTransformHero(h.id, 'ALIVE')
-                                            });
-                                        } else {
-                                            openConfirm({
-                                                isOpen: true,
-                                                title: "RECURSOS INSUFICIENTES",
-                                                message: "NO HAY CILINDROS OMEGA DISPONIBLES.\n\nBUSCA SUMINISTROS EN EL MAPA.",
-                                                confirmText: "ENTENDIDO",
-                                                type: "WARNING",
-                                                onConfirm: () => { }
-                                            });
-                                        }
-                                    } else {
-                                        // MODO ZOMBIE: INFECTAR
-                                        openConfirm({
-                                            isOpen: true,
-                                            title: "EXPANDIR EL HAMBRE",
-                                            message: `Â¿INFECTAR A ${h.alias}?\n\nEL SUJETO SE UNIRÃ A LA HORDA.`,
-                                            confirmText: "DEVORAR / INFECTAR",
-                                            type: "INFECT",
-                                            onConfirm: () => onTransformHero(h.id, 'ZOMBIE')
-                                        });
-                                    }
-                                };
-
-                                return (
-                                    <RosterHeroCard
-                                        key={h.id}
-                                        hero={h}
-                                        language={language}
-                                        onClick={() => setSelectedHeroId(h.id)}
-                                        actionIcon={actionIcon}
-                                        actionMuted={!transformAvailability.allowed}
-                                        onAction={handleAction}
-                                    />
-                                );
-                            })
-                        )}
+                            {deployedHeroes.length > 0 && (
+                                <div className="pt-3">
+                                    <div className="text-[9px] font-black uppercase tracking-[0.25em] text-yellow-400 border-b border-yellow-900/30 pb-1 mb-3">
+                                        DESPLEGADOS ({deployedHeroes.length})
+                                    </div>
+                                    <div className="space-y-3">
+                                        {deployedHeroes.map((hero) => (
+                                            <RosterHeroCard
+                                                key={hero.id}
+                                                hero={hero}
+                                                language={language}
+                                                onClick={() => setSelectedHeroId(hero.id)}
+                                                actionIcon="×"
+                                                onAction={() => onUnassign(hero.id)}
+                                            />
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+                        </div>
                     </div>
                 </div>
 
@@ -539,92 +557,254 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
                         </div>
                     </div>
 
-                    {/* MISSION LOG */}
-                    <div className="flex-1 p-6 overflow-y-auto pb-24 relative">
+                    {/* CAMPAIGN LOG */}
+                    <div className="flex-1 p-6 overflow-y-auto pb-24 relative flex flex-col">
                         <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/diagmonds-light.png')] opacity-5 pointer-events-none"></div>
-                        <h3 className="text-[10px] font-black text-cyan-600 uppercase tracking-[0.2em] mb-4 flex items-center gap-2">
-                            <span className="w-2 h-2 bg-cyan-500 rounded-full animate-pulse"></span>
-                            REGISTRO DE OPERACIONES
-                        </h3>
-                        <div className="space-y-3">
-                            {missions.map(m => (
-                                <div key={m.id} className="bg-slate-900/80 border-l-4 border-cyan-500 p-4 hover:bg-cyan-900/20 transition-all group cursor-pointer relative overflow-hidden shadow-lg">
-                                    <div className="flex justify-between items-center relative z-10">
-                                        <div>
-                                            <h4 className="text-sm font-bold text-white group-hover:text-cyan-300 uppercase tracking-wider">{m.title}</h4>
-                                            <div className="text-[10px] text-gray-400 mt-1 font-mono">{m.location.state} // {m.threatLevel}</div>
-                                        </div>
-                                        <div className="text-[9px] font-bold border border-cyan-700 px-3 py-1 text-cyan-400 group-hover:bg-cyan-500 group-hover:text-black transition-colors">
-                                            {heroes.filter(h => h.assignedMissionId === m.id).length} AGENTES
-                                        </div>
-                                    </div>
-                                    <div className="absolute inset-0 bg-gradient-to-r from-cyan-900/0 via-cyan-900/10 to-cyan-900/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000 pointer-events-none"></div>
-                                </div>
-                            ))}
+                        <div className="flex items-end justify-between gap-4 mb-4">
+                            <div>
+                                <h3 className="text-[10px] font-black text-cyan-400 uppercase tracking-[0.28em] flex items-center gap-2">
+                                    <span className="w-2 h-2 bg-cyan-500 rounded-full animate-pulse"></span>
+                                    BITÁCORA DE OPERACIONES
+                                </h3>
+                                <p className="mt-1 text-[10px] uppercase tracking-[0.2em] text-slate-500">
+                                    Cronica de campaña y consecuencias narrativas
+                                </p>
+                            </div>
+                            <div className="text-[9px] font-black uppercase tracking-[0.22em] text-emerald-400 border border-emerald-900/40 bg-emerald-950/20 px-3 py-1">
+                                {completedCampaignMissions.length} ENTRADAS
+                            </div>
                         </div>
+
+                        {completedCampaignMissions.length > 0 ? (
+                            <div className="grid min-h-0 flex-1 grid-cols-[minmax(240px,0.42fr)_minmax(0,0.58fr)] gap-4">
+                                <div className="min-h-0 overflow-y-auto space-y-3 pr-2 scrollbar-thin scrollbar-thumb-emerald-900">
+                                    {completedCampaignMissions.map((mission) => {
+                                        const isSelected = selectedCampaignMission?.id === mission.id;
+                                        return (
+                                            <button
+                                                key={mission.id}
+                                                type="button"
+                                                onClick={() => setSelectedCampaignMissionId(mission.id)}
+                                                className={`w-full text-left border-l-4 p-4 transition-all relative overflow-hidden ${isSelected
+                                                    ? 'border-emerald-400 bg-emerald-950/30 shadow-[0_0_20px_rgba(16,185,129,0.12)]'
+                                                    : 'border-emerald-900/60 bg-slate-900/70 hover:bg-emerald-950/20 hover:border-emerald-500'
+                                                    }`}
+                                            >
+                                                <div className="flex items-start justify-between gap-3">
+                                                    <div className="min-w-0">
+                                                        <div className="text-[8px] font-black uppercase tracking-[0.28em] text-emerald-300">
+                                                            MISIÓN COMPLETADA
+                                                        </div>
+                                                        <div className="mt-1 text-sm font-black uppercase tracking-wider text-white">
+                                                            {mission.title}
+                                                        </div>
+                                                        <div className="mt-1 text-[10px] font-mono text-slate-400">
+                                                            {mission.location.state} // {mission.threatLevel}
+                                                        </div>
+                                                    </div>
+                                                    <div className="text-[9px] font-black uppercase tracking-[0.2em] text-emerald-300 border border-emerald-800/60 px-2 py-1">
+                                                        VER
+                                                    </div>
+                                                </div>
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+
+                                <div className="min-h-0 border border-slate-800 bg-slate-950/80 p-4 flex flex-col">
+                                    <div className="flex items-start justify-between gap-4 border-b border-slate-800 pb-3">
+                                        <div>
+                                            <div className="text-[8px] font-black uppercase tracking-[0.28em] text-emerald-300">
+                                                CRÓNICA DE CAMPAÑA
+                                            </div>
+                                            <div className="mt-1 text-lg font-black uppercase tracking-wider text-white">
+                                                {selectedCampaignMission?.title || (isSpanishLanguage(language) ? 'Sin entrada seleccionada' : 'No entry selected')}
+                                            </div>
+                                        </div>
+                                        {selectedCampaignMission && (
+                                            <div className="text-right">
+                                                <div className="text-[8px] font-bold uppercase tracking-[0.22em] text-slate-500">
+                                                    {selectedCampaignMission.location.state}
+                                                </div>
+                                                <div className="text-[10px] font-black uppercase tracking-[0.2em] text-cyan-400">
+                                                    {selectedCampaignMission.threatLevel}
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    <div className="mt-4 min-h-0 flex-1 overflow-y-auto pr-1 space-y-4">
+                                        <div className="border-l-2 border-emerald-500 pl-4">
+                                            <div className="text-[8px] font-black uppercase tracking-[0.28em] text-emerald-400 mb-2">
+                                                RESUMEN NARRATIVO
+                                            </div>
+                                            <div className="text-[12px] leading-[1.65] text-slate-100 whitespace-pre-line">
+                                                {selectedCampaignNarrative}
+                                            </div>
+                                        </div>
+
+                                        {selectedCampaignObjectives.length > 0 && (
+                                            <div className="border border-slate-800 bg-black/30 p-3">
+                                                <div className="text-[8px] font-black uppercase tracking-[0.28em] text-cyan-400 mb-2">
+                                                    CONSECUENCIAS / OBJETIVOS
+                                                </div>
+                                                <div className="grid gap-2 sm:grid-cols-2">
+                                                    {selectedCampaignObjectives.map((objective, index) => (
+                                                        <div key={`${selectedCampaignMission?.id || 'objective'}-${index}`} className="border border-slate-800 bg-slate-950/60 p-3">
+                                                            <div className="text-[8px] font-bold uppercase tracking-[0.2em] text-slate-500">
+                                                                {language === 'es' ? 'OBJETIVO' : 'OBJECTIVE'} {index + 1}
+                                                            </div>
+                                                            <div className="mt-1 text-[12px] font-black uppercase text-emerald-300">
+                                                                {objective.title}
+                                                            </div>
+                                                            <div className="mt-1 text-[11px] leading-[1.45] text-slate-300">
+                                                                {objective.desc}
+                                                            </div>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+                        ) : (
+                            <div className="flex h-full items-center justify-center border border-dashed border-slate-800 bg-black/20 text-center">
+                                <div>
+                                    <div className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-500">
+                                        {isSpanishLanguage(language) ? 'AUN NO HAY ENTRADAS' : 'NO ENTRIES YET'}
+                                    </div>
+                                    <div className="mt-2 text-[12px] text-slate-400 max-w-md">
+                                        {isSpanishLanguage(language)
+                                            ? 'Cuando completes misiones, aqui apareceran sus cronicas y consecuencias narrativas.'
+                                            : 'Once missions are completed, their chronicles and narrative consequences will appear here.'}
+                                    </div>
+                                </div>
+                            </div>
+                        )}
                     </div>
                 </div>
 
                 {/* RIGHT COLUMN: RESOURCES */}
                 <div className="col-span-3 border-l border-cyan-900 bg-slate-900/30 flex flex-col h-full overflow-hidden">
-                    <div className="p-6 border-b border-cyan-900 shrink-0">
-                        {!hasTransformRuleAvailable && (
-                            <div className="mb-4 border border-amber-700 bg-amber-950/30 px-4 py-3 text-[10px] font-bold uppercase tracking-wide text-amber-300">
-                                {playerAlignment === 'ZOMBIE'
-                                    ? 'Regla de cura / infeccion no disponible. Con las expansiones activas, esta funcion no estara operativa en el bunker.'
-                                    : 'Regla de cura / infeccion no disponible. Con las expansiones activas, esta funcion no estara operativa en el bunker.'}
+                    <div className="p-5 border-b border-cyan-900 shrink-0 bg-slate-950/40">
+                        <div className="flex items-start justify-between gap-3">
+                            <div>
+                                <div className="text-[9px] font-black uppercase tracking-[0.28em] text-cyan-500">
+                                    {playerAlignment === 'ZOMBIE' ? 'ALA DE CONTENCIÓN ZOMBI' : 'CÁRCEL DE ALTA SEGURIDAD'}
+                                </div>
+                                <div className="mt-1 text-[10px] uppercase tracking-[0.2em] text-slate-500">
+                                    Sujetos capturados y listos para contención o purificación
+                                </div>
                             </div>
-                        )}
-                        <button onClick={handleOpenRecruit} className="w-full aspect-square border-2 border-cyan-800 hover:border-cyan-400 hover:bg-cyan-900/20 transition-all group flex flex-col items-center justify-center gap-4 rounded-xl relative overflow-hidden bg-slate-950/50">
-                            <div className="absolute inset-0 bg-cyan-500/5 scale-0 group-hover:scale-150 transition-transform duration-1000 rounded-full"></div>
+                            <div className="text-[9px] font-black uppercase tracking-[0.24em] text-fuchsia-400 border border-fuchsia-900/40 bg-fuchsia-950/20 px-2 py-1">
+                                {capturedHeroes.length} PRISIONEROS
+                            </div>
+                        </div>
 
-                            {/* Cerebro Rings effect */}
-                            <div className="absolute w-32 h-32 border border-cyan-500/10 rounded-full animate-ping opacity-0 group-hover:opacity-100"></div>
-                            <div className="absolute w-24 h-24 border border-cyan-500/20 rounded-full animate-pulse opacity-0 group-hover:opacity-100" style={{ animationDelay: '0.5s' }}></div>
-
-                            <div className="w-16 h-16 rounded-full bg-slate-950 border-2 border-cyan-600 flex items-center justify-center group-hover:scale-110 transition-transform shadow-[0_0_30px_rgba(6,182,212,0.4)] z-10 relative">
-                                <span className="text-3xl text-cyan-400 font-black animate-pulse">+</span>
-                                <div className="absolute inset-0 rounded-full bg-cyan-500/10 animate-ping" style={{ animationDuration: '3s' }}></div>
-                            </div>
-                            <div className="flex flex-col items-center z-10">
-                                <span className="text-[11px] font-black tracking-[0.25em] text-white uppercase">{playerAlignment === 'ZOMBIE' ? 'NEXO COLMENA' : 'INTERFAZ CEREBRO'}</span>
-                                <span className="text-[7px] text-cyan-600 tracking-[0.4em] font-mono mt-1">SEARCHING_BIO_SIGNALS...</span>
-                            </div>
-                        </button>
+                        <div className="mt-4 space-y-3">
+                            {capturedHeroes.length > 0 ? (
+                                capturedHeroes.map((hero) => {
+                                    const isAlivePlayer = playerAlignment === 'ALIVE';
+                                    const actionLabel = isAlivePlayer
+                                        ? (isSpanishLanguage(language) ? 'INYECTAR VIAL DE CURA' : 'INJECT CURE VIAL')
+                                        : (isSpanishLanguage(language) ? 'INFECTAR SUJETO' : 'INFECT SUBJECT');
+                                    return (
+                                        <RosterHeroCard
+                                            key={hero.id}
+                                            hero={hero}
+                                            language={language}
+                                            onClick={() => setSelectedHeroId(hero.id)}
+                                            actionIcon={isAlivePlayer ? '💉' : '🧟'}
+                                            actionLabel={actionLabel}
+                                            actionMuted={isAlivePlayer && omegaCylinders <= 0}
+                                            onAction={() => handlePrisonAction(hero)}
+                                        />
+                                    );
+                                })
+                            ) : (
+                                <div className="border border-dashed border-slate-800 bg-black/20 p-4 text-center">
+                                    <div className="text-[9px] font-black uppercase tracking-[0.28em] text-slate-500">
+                                        {isSpanishLanguage(language) ? 'SIN PRISIONEROS' : 'NO PRISONERS'}
+                                    </div>
+                                    <div className="mt-2 text-[11px] text-slate-400">
+                                        {isSpanishLanguage(language)
+                                            ? 'Cuando captures un sujeto, aparecerá aquí con su acción de contención.'
+                                            : 'When a subject is captured, it will appear here with its containment action.'}
+                                    </div>
+                                </div>
+                            )}
+                        </div>
                     </div>
 
-                    <div className="p-6 border-b border-cyan-900 bg-slate-900/50 shrink-0">
-                        <h3 className="text-[10px] font-bold text-blue-400 uppercase tracking-widest mb-4">RECURSOS OMEGA</h3>
-                        <div className="flex items-center justify-between mb-6 bg-black/40 p-3 rounded border border-blue-900/30">
+                    <div className="p-5 border-b border-cyan-900 bg-slate-900/50 shrink-0">
+                        <div className="flex items-center justify-between">
+                            <h3 className="text-[10px] font-black text-cyan-400 uppercase tracking-[0.28em]">
+                                NEVERA OMEGA
+                            </h3>
+                            <div className="flex items-center gap-2 text-[9px] font-bold uppercase tracking-[0.22em] text-slate-500">
+                                <span className="inline-flex h-5 w-5 items-center justify-center border border-cyan-800 bg-cyan-950/60 text-cyan-300">💉</span>
+                                {isSpanishLanguage(language) ? 'VIALES DE CURA' : 'CURE VIALS'}
+                            </div>
+                        </div>
+
+                        <div className="mt-4 flex items-center justify-between gap-4 bg-black/40 p-3 rounded border border-blue-900/30">
                             <div className="flex gap-1.5">
                                 {[...Array(10)].map((_, i) => (
-                                    <div key={i} className={`w-3 h-10 skew-x-[-10deg] border border-slate-700 ${i < omegaCylinders ? 'bg-cyan-500 shadow-[0_0_10px_#06b6d4]' : 'bg-slate-800/50'}`}></div>
+                                    <div
+                                        key={i}
+                                        className={`w-3 h-10 skew-x-[-10deg] border border-slate-700 ${i < omegaCylinders ? 'bg-cyan-500 shadow-[0_0_10px_#06b6d4]' : 'bg-slate-800/50'}`}
+                                    ></div>
                                 ))}
                             </div>
                             <div className="text-right">
                                 <div className="text-3xl font-black text-white leading-none">{omegaCylinders}</div>
-                                <div className="text-[8px] text-gray-500 uppercase">UNIDADES</div>
+                                <div className="text-[8px] text-gray-500 uppercase">
+                                    {isSpanishLanguage(language) ? 'DISPONIBLES' : 'AVAILABLE'}
+                                </div>
                             </div>
                         </div>
-                        {onFindCylinder && (
-                            <button onClick={onFindCylinder} className="w-full py-3 bg-blue-900/30 border border-blue-600 text-blue-300 text-[9px] font-bold hover:bg-blue-600 hover:text-white transition-all uppercase tracking-widest clip-tactical-inv">
-                                BUSCAR SUMINISTROS
-                            </button>
-                        )}
+
+                        <button
+                            onClick={handleSearchAllies}
+                            disabled={!onSearchAllies || omegaCylinders <= 0}
+                            className={`mt-4 w-full border px-4 py-3 text-[9px] font-black uppercase tracking-[0.22em] transition-all clip-tactical-inv ${!onSearchAllies || omegaCylinders <= 0
+                                ? 'cursor-not-allowed border-slate-700 bg-slate-900/40 text-slate-500'
+                                : 'border-cyan-600 bg-cyan-950/30 text-cyan-200 hover:bg-cyan-500 hover:text-black'
+                                }`}
+                        >
+                            {isSpanishLanguage(language)
+                                ? 'ACTIVAR RASTREO CEREBRO: BUSCAR ALIADOS VIVOS'
+                                : 'ACTIVATE CEREBRO TRACKING: SEARCH LIVING ALLIES'}
+                        </button>
                     </div>
 
                     <div className="flex-1 p-6 overflow-y-auto pb-24">
-                        <h3 className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-4">HISTORIAL DE EVENTOS</h3>
+                        <h3 className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-4">
+                            {isSpanishLanguage(language) ? 'REGISTRO DE CONTENCIÓN' : 'CONTAINMENT LOG'}
+                        </h3>
                         <div className="space-y-4">
                             <div className="border-l-2 border-emerald-500 pl-3 py-1 relative">
                                 <div className="absolute w-2 h-2 bg-emerald-500 rounded-full -left-[5px] top-1.5 shadow-[0_0_10px_#10b981]"></div>
-                                <div className="text-[9px] text-emerald-400 font-bold uppercase mb-1">MISIÃ“N COMPLETADA</div>
-                                <div className="text-xs text-gray-400">Base Alpha asegurada.</div>
+                                <div className="text-[9px] text-emerald-400 font-bold uppercase mb-1">
+                                    {isSpanishLanguage(language) ? 'SISTEMA OPERATIVO' : 'SYSTEM ONLINE'}
+                                </div>
+                                <div className="text-xs text-gray-400">
+                                    {isSpanishLanguage(language)
+                                        ? 'Los viales de cura y el rastreo Cerebro comparten el mismo circuito de logística.'
+                                        : 'Cure vials and Cerebro tracking share the same logistics circuit.'}
+                                </div>
                             </div>
-                            <div className="border-l-2 border-red-500 pl-3 py-1 relative">
-                                <div className="absolute w-2 h-2 bg-red-500 rounded-full -left-[5px] top-1.5 shadow-[0_0_10px_#ef4444]"></div>
-                                <div className="text-[9px] text-red-400 font-bold uppercase mb-1">BAJA CONFIRMADA</div>
-                                <div className="text-xs text-gray-400">Agente Coulson perdido en acciÃ³n.</div>
+                            <div className="border-l-2 border-cyan-500 pl-3 py-1 relative">
+                                <div className="absolute w-2 h-2 bg-cyan-500 rounded-full -left-[5px] top-1.5 shadow-[0_0_10px_#06b6d4]"></div>
+                                <div className="text-[9px] text-cyan-400 font-bold uppercase mb-1">
+                                    {isSpanishLanguage(language) ? 'RASTREO LISTO' : 'TRACKING READY'}
+                                </div>
+                                <div className="text-xs text-gray-400">
+                                    {isSpanishLanguage(language)
+                                        ? 'Usa la nevera para buscar supervivientes vivos o para purificar capturados.'
+                                        : 'Use the fridge to search for living survivors or to purify captives.'}
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -848,7 +1028,7 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
     );
 };
 
-const RosterHeroCard = ({ hero, language, onClick, actionIcon, onAction, actionMuted = false }: { hero: Hero, language: Language, onClick: () => void, actionIcon?: string, onAction?: () => void, actionMuted?: boolean }) => {
+const RosterHeroCard = ({ hero, language, onClick, actionIcon, actionLabel, onAction, actionMuted = false }: { hero: Hero, language: Language, onClick: () => void, actionIcon?: string, actionLabel?: string, onAction?: () => void, actionMuted?: boolean }) => {
     const statusColors = {
         AVAILABLE: 'border-emerald-500 shadow-emerald-500/20',
         DEPLOYED: 'border-yellow-500 shadow-yellow-500/20',
@@ -909,9 +1089,11 @@ const RosterHeroCard = ({ hero, language, onClick, actionIcon, onAction, actionM
             {actionIcon && onAction && (
                 <button
                     onClick={(e) => { e.stopPropagation(); onAction(); }}
-                    className={`absolute right-2 top-2 z-20 flex h-8 w-8 items-center justify-center rounded-sm border text-white transition-all backdrop-blur-sm ${actionMuted ? 'border-amber-700/60 bg-slate-900/80 text-amber-300 hover:bg-amber-900/40' : 'border-white/20 bg-black/50 hover:border-red-500 hover:bg-red-600'}`}
+                    className={`absolute ${actionLabel ? 'left-3 right-3 bottom-3 h-auto px-3 py-2 justify-center' : 'right-2 top-2 h-8 w-8'} z-20 flex items-center rounded-sm border text-white transition-all backdrop-blur-sm ${actionMuted ? 'border-amber-700/60 bg-slate-900/80 text-amber-300 hover:bg-amber-900/40' : 'border-white/20 bg-black/50 hover:border-red-500 hover:bg-red-600'}`}
                 >
-                    {actionIcon}
+                    <span className={`font-black ${actionLabel ? 'text-[9px] uppercase tracking-[0.22em] text-center leading-tight' : 'text-base'}`}>
+                        {actionLabel || actionIcon}
+                    </span>
                 </button>
             )}
             <div className="absolute inset-0 bg-scan opacity-0 transition-opacity pointer-events-none group-hover:opacity-10"></div>
