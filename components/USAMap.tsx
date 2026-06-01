@@ -544,6 +544,7 @@ export const USAMap: React.FC<USAMapProps> = ({
             .join(
                 enter => {
                     const grp = enter.append('g').attr('class', 'mission-marker cursor-pointer hover:opacity-100');
+                    grp.append('circle').attr('class', 'mission-halo');
                     grp.append('circle').attr('class', 'effect-shield-pulse');
                     grp.append('circle').attr('class', 'mission-ring');
                     grp.append('circle').attr('class', 'mission-dot');
@@ -594,11 +595,20 @@ export const USAMap: React.FC<USAMapProps> = ({
                 dotStroke = '#7e22ce';
             }
 
+            grp.select('.mission-halo')
+                .style('display', isBoss || isGalactus ? 'block' : 'none')
+                .attr('r', isBoss || isGalactus ? 14 : 0)
+                .attr('fill', isBoss || isGalactus ? '#ffffff' : 'none')
+                .attr('fill-opacity', isBoss || isGalactus ? 0.12 : 0)
+                .attr('stroke', isBoss || isGalactus ? '#f5f3ff' : 'none')
+                .attr('stroke-width', isBoss || isGalactus ? 2.5 : 0)
+                .style('filter', isBoss || isGalactus ? 'url(#glow-boss)' : 'none');
+
             grp.select('.mission-dot')
-                .attr('r', isOptional ? 4 : (isShield ? 4 : 5))
-                .attr('fill', isShield && !isCompleted ? '#0f172a' : dotColor)
+                .attr('r', isOptional ? 4 : (isShield ? 4.5 : (isBoss || isGalactus ? 5.5 : 5)))
+                .attr('fill', isShield && !isCompleted ? '#0f172a' : (isBoss || isGalactus ? '#faf5ff' : dotColor))
                 .attr('stroke', dotStroke)
-                .attr('stroke-width', 2);
+                .attr('stroke-width', isBoss || isGalactus ? 2.5 : 2);
 
             if (isShield || isOptional) {
                 grp.select('.mission-ring')
@@ -608,6 +618,14 @@ export const USAMap: React.FC<USAMapProps> = ({
                     .attr('stroke', isOptional ? '#f59e0b' : '#06b6d4')
                     .attr('stroke-width', 1.5)
                     .attr('stroke-dasharray', isCompleted ? 'none' : (isOptional ? '3,2' : '2,1'));
+            } else if (isBoss || isGalactus) {
+                grp.select('.mission-ring')
+                    .style('display', 'block')
+                    .attr('r', 10)
+                    .attr('fill', 'none')
+                    .attr('stroke', '#f5d0fe')
+                    .attr('stroke-width', 2)
+                    .attr('stroke-dasharray', 'none');
             } else {
                 grp.select('.mission-ring').style('display', 'none');
             }
@@ -618,6 +636,13 @@ export const USAMap: React.FC<USAMapProps> = ({
                     .attr('r', 8)
                     .attr('fill', 'none')
                     .attr('stroke', '#06b6d4')
+                    .attr('class', 'effect-shield-pulse shield-pulse');
+            } else if (isBoss || isGalactus) {
+                grp.select('.effect-shield-pulse')
+                    .style('display', 'block')
+                    .attr('r', 12)
+                    .attr('fill', 'none')
+                    .attr('stroke', '#f5d0fe')
                     .attr('class', 'effect-shield-pulse shield-pulse');
             } else {
                 grp.select('.effect-shield-pulse').style('display', 'none');
