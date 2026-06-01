@@ -21,6 +21,12 @@ interface USAMapProps {
     playerAlignment?: 'ALIVE' | 'ZOMBIE' | null;
     worldStage: WorldStage;
     surferTurnCount?: number;
+    controlledZones: {
+        magneto: boolean;
+        kingpin: boolean;
+        hulk: boolean;
+        doom: boolean;
+    };
 }
 
 export const USAMap: React.FC<USAMapProps> = ({
@@ -32,7 +38,8 @@ export const USAMap: React.FC<USAMapProps> = ({
     factionStates,
     playerAlignment,
     worldStage,
-    surferTurnCount = 0
+    surferTurnCount = 0,
+    controlledZones
 }) => {
     const svgRef = useRef<SVGSVGElement>(null);
     const containerRef = useRef<HTMLDivElement>(null);
@@ -162,6 +169,14 @@ export const USAMap: React.FC<USAMapProps> = ({
             doom: false
         };
         return unlocks[zone];
+    };
+
+    const isControlledState = (stateName: string) => {
+        if (factionStates.magneto.has(stateName)) return controlledZones.magneto;
+        if (factionStates.kingpin.has(stateName)) return controlledZones.kingpin;
+        if (factionStates.hulk.has(stateName)) return controlledZones.hulk;
+        if (factionStates.doom.has(stateName)) return controlledZones.doom;
+        return false;
     };
 
     const getFactionName = (state: string) => {
@@ -364,6 +379,16 @@ export const USAMap: React.FC<USAMapProps> = ({
             .join('path')
             .attr('class', (d: any) => `state ${getFactionStyle(d.properties.name)} transition-all duration-200 cursor-crosshair`)
             .attr('d', pathGenerator as any)
+            .attr('data-controlled', (d: any) => (isControlledState(d.properties.name) ? 'true' : 'false'))
+            .style('filter', (d: any) => {
+                if (!isControlledState(d.properties.name)) return 'none';
+                if (factionStates.magneto.has(d.properties.name)) return 'drop-shadow(0 0 10px rgba(248,113,113,0.45))';
+                if (factionStates.kingpin.has(d.properties.name)) return 'drop-shadow(0 0 10px rgba(216,180,254,0.45))';
+                if (factionStates.hulk.has(d.properties.name)) return 'drop-shadow(0 0 10px rgba(190,242,100,0.45))';
+                if (factionStates.doom.has(d.properties.name)) return 'drop-shadow(0 0 10px rgba(125,211,252,0.45))';
+                return 'none';
+            })
+            .style('stroke-width', (d: any) => (isControlledState(d.properties.name) ? 2.5 : 1))
             .on('click', (event, d: any) => {
                 event.stopPropagation();
                 const bounds = pathGenerator.bounds(d);

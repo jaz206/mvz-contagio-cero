@@ -221,6 +221,12 @@ export const useGameLogic = () => {
     const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
     const [ownedExpansions, setOwnedExpansions] = useState<Set<string>>(new Set(['core_box']));
     const [showExpansionConfig, setShowExpansionConfig] = useState(false);
+    const previousControlledZonesRef = useRef<Record<'magneto' | 'kingpin' | 'hulk' | 'doom', boolean>>({
+        magneto: false,
+        kingpin: false,
+        hulk: false,
+        doom: false
+    });
 
     const t = translations[lang];
     const setLang = useCallback((nextLang: Language) => {
@@ -945,6 +951,36 @@ export const useGameLogic = () => {
         return groups;
     }, [visibleMissions, completedMissionIds]);
 
+    const controlledZones = useMemo(() => {
+        const zones: Record<'magneto' | 'kingpin' | 'hulk' | 'doom', boolean> = {
+            magneto: false,
+            kingpin: false,
+            hulk: false,
+            doom: false
+        };
+
+        (['magneto', 'kingpin', 'hulk', 'doom'] as const).forEach((zone) => {
+            const zoneMissions = visibleMissions.filter((mission) => {
+                if ((mission.missionRole || 'PRIMARY') === 'OPTIONAL') return false;
+                return getFactionForState(mission.location.state) === zone;
+            });
+
+            zones[zone] = zoneMissions.length > 0 && zoneMissions.every((mission) => completedMissionIds.has(mission.id));
+        });
+
+        return zones;
+    }, [visibleMissions, completedMissionIds]);
+
+    useEffect(() => {
+        (['magneto', 'kingpin', 'hulk', 'doom'] as const).forEach((zone) => {
+            if (controlledZones[zone] && !previousControlledZonesRef.current[zone]) {
+                handleTickerUpdate(`ZONA CONTROLADA: ${zone.toUpperCase()}.`);
+            }
+        });
+
+        previousControlledZonesRef.current = controlledZones;
+    }, [controlledZones]);
+
     return {
         state: {
             user,
@@ -987,6 +1023,7 @@ export const useGameLogic = () => {
             allMissions,
             visibleMissions,
             groupedMissions,
+            controlledZones,
             FACTION_STATES
         },
         actions: {
