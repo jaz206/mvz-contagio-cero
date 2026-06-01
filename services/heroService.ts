@@ -84,6 +84,7 @@ export const getHeroTemplates = async (): Promise<HeroTemplate[]> => {
             const relatedHeroId = findField(data, ['relatedHeroId', 'relatedId', 'counterpart', 'version_contraria']);
             const imageParams = findField(data, ['imageParams', 'ajusteImagen', 'crop']);
             const playableSheets = normalizePlayableSheets(findField(data, ['playableSheets', 'heroSheets', 'sheets', 'fichas']));
+            const isSelectable = findField(data, ['isSelectable', 'selectable', 'jugable', 'playable']);
             const resolvedAlignment = defaultAlignment || 'ALIVE';
             const resolvedAlias = alias || name || '';
             const loreEntry = resolvedAlignment === 'ALIVE' ? getHeroLoreEntry(resolvedAlias) : undefined;
@@ -111,7 +112,8 @@ export const getHeroTemplates = async (): Promise<HeroTemplate[]> => {
                 expansionId: expansionId || 'unknown',
                 relatedHeroId: relatedHeroId || undefined,
                 imageParams: imageParams || undefined,
-                playableSheets
+                playableSheets,
+                isSelectable: isSelectable !== undefined ? Boolean(isSelectable) : true
             });
         });
         return templates;
@@ -199,6 +201,7 @@ export const syncHeroRepositoryToDB = async (): Promise<number> => {
             const loreEntry = getHeroLoreEntry(resolvedAlias);
             const existingPlayables = normalizePlayableSheets(findField(existing, ['playableSheets', 'heroSheets', 'sheets', 'fichas']));
             const playableSheets = existingPlayables || buildPlayableHeroSheetCollectionForHero({ alias: resolvedAlias, name: resolvedName });
+            const isSelectable = findField(existing, ['isSelectable', 'selectable', 'jugable', 'playable']);
 
             const templateData: HeroTemplate = {
                 id: heroId,
@@ -216,7 +219,8 @@ export const syncHeroRepositoryToDB = async (): Promise<number> => {
                 relatedHeroId: findField(existing, ['relatedHeroId', 'relatedId', 'counterpart', 'version_contraria']) || undefined,
                 imageParams: findField(existing, ['imageParams', 'ajusteImagen', 'crop']) || undefined,
                 characterSheetUrl: resolvedCharacterSheetUrl || '',
-                playableSheets
+                playableSheets,
+                isSelectable: isSelectable !== undefined ? Boolean(isSelectable) : true
             };
 
             const docRef = doc(db, COLLECTION_NAME, heroId);

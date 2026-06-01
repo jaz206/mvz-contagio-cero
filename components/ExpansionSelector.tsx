@@ -91,7 +91,8 @@ export const ExpansionSelector: React.FC<ExpansionSelectorProps> = ({
                             currentStory: hasDetailedNarrative(dbVersion.currentStory) ? dbVersion.currentStory : (loreEntry?.currentStory || dbVersion.currentStory || localHero.currentStory),
                             expansionId: dbVersion.expansionId || exp.id,
                             relatedHeroId: dbVersion.relatedHeroId,
-                            playableSheets: dbVersion.playableSheets
+                            playableSheets: dbVersion.playableSheets,
+                            isSelectable: dbVersion.isSelectable
                         };
                     }
 
@@ -99,7 +100,8 @@ export const ExpansionSelector: React.FC<ExpansionSelectorProps> = ({
                     ...localHero,
                     imageUrl: preferGithubCharacterImage(localHero.alias, playerAlignment, localHero.imageUrl),
                     expansionId: exp.id,
-                    playableSheets: dbVersion?.playableSheets
+                    playableSheets: dbVersion?.playableSheets,
+                    isSelectable: dbVersion?.isSelectable ?? localHero.isSelectable
                 };
             });
 
@@ -133,7 +135,8 @@ export const ExpansionSelector: React.FC<ExpansionSelectorProps> = ({
                 currentStory: h.currentStory || '',
                 imageParams: h.imageParams,
                 characterSheetUrl: h.characterSheetUrl,
-                playableSheets: h.playableSheets
+                playableSheets: h.playableSheets,
+                isSelectable: h.isSelectable
             }));
 
             allHeroes = [...allHeroes, ...formattedCustomHeroes];
@@ -154,7 +157,7 @@ export const ExpansionSelector: React.FC<ExpansionSelectorProps> = ({
         hasAnyHeroWithTransformRule(selectedHeroes, transformTargetAlignment, dbHeroes, ownedExpansions)
     ), [dbHeroes, ownedExpansions, selectedHeroes, transformTargetAlignment]);
 
-    const isBlockedHero = (hero: Hero) => isStoryLockedAlias(hero.alias);
+    const isBlockedHero = (hero: Hero) => isStoryLockedAlias(hero.alias) || hero.isSelectable === false;
 
     const toggleHero = (hero: Hero) => {
         if (isBlockedHero(hero)) return;

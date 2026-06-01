@@ -52,8 +52,14 @@ const saveStoredAlignment = (uid: string, alignment: 'ALIVE' | 'ZOMBIE') => {
 const getSetupDoneKey = (uid?: string | null) => uid ? `shield_setup_done_${uid}` : 'shield_setup_done_guest';
 const getFlowStepKey = (uid?: string | null) => uid ? `shield_flow_step_${uid}` : 'shield_flow_step_guest';
 const getCampaignCacheKey = (uid?: string | null) => uid ? `shield_campaign_cache_${uid}` : 'shield_campaign_cache_guest';
+const getGalactusPlanKey = (uid?: string | null) => uid ? `shield_galactus_plan_${uid}` : 'shield_galactus_plan_guest';
 type FlowStep = 'story' | 'setup' | 'intro' | 'mission0' | 'tutorial' | 'map';
 type CampaignCache = { heroes: Hero[]; completedMissionIds: string[]; omegaCylinders: number };
+type GalactusEventPlan = {
+    anomalyAt: number;
+    surferAt: number;
+    galactusAt: number;
+};
 type StoredCampaignProgress = CampaignCache | {
     heroes: Hero[];
     completedMissionIds: string[];
@@ -111,6 +117,50 @@ const writeCampaignCache = (
 
 const clearCampaignCache = (uid?: string | null) => {
     localStorage.removeItem(getCampaignCacheKey(uid));
+};
+
+const readGalactusEventPlan = (uid?: string | null): GalactusEventPlan | null => {
+    const raw = localStorage.getItem(getGalactusPlanKey(uid));
+    if (!raw) return null;
+
+    try {
+        const parsed = JSON.parse(raw);
+        if (
+            typeof parsed?.anomalyAt === 'number'
+            && typeof parsed?.surferAt === 'number'
+            && typeof parsed?.galactusAt === 'number'
+        ) {
+            return {
+                anomalyAt: parsed.anomalyAt,
+                surferAt: parsed.surferAt,
+                galactusAt: parsed.galactusAt
+            };
+        }
+        return null;
+    } catch {
+        return null;
+    }
+};
+
+const writeGalactusEventPlan = (plan: GalactusEventPlan, uid?: string | null) => {
+    localStorage.setItem(getGalactusPlanKey(uid), JSON.stringify(plan));
+};
+
+const clearGalactusEventPlan = (uid?: string | null) => {
+    localStorage.removeItem(getGalactusPlanKey(uid));
+};
+
+const createGalactusEventPlan = (): GalactusEventPlan => {
+    const pickInt = (min: number, max: number) => Math.floor(Math.random() * (max - min + 1)) + min;
+    const anomalyAt = pickInt(3, 5);
+    const surferAt = pickInt(Math.max(anomalyAt + 3, 7), Math.max(anomalyAt + 4, 10));
+    const galactusAt = pickInt(Math.max(surferAt + 3, 11), 15);
+
+    return {
+        anomalyAt,
+        surferAt,
+        galactusAt: Math.max(galactusAt, surferAt + 3)
+    };
 };
 
 const getStoredOmegaCylinders = (progress: StoredCampaignProgress) => {
@@ -261,7 +311,8 @@ export const useGameLogic = () => {
                     characterSheetUrl: template.characterSheetUrl || hero.characterSheetUrl,
                     relatedHeroId: template.relatedHeroId || hero.relatedHeroId,
                     expansionId: template.expansionId || hero.expansionId,
-                    playableSheets: template.playableSheets || hero.playableSheets
+                    playableSheets: template.playableSheets || hero.playableSheets,
+                    isSelectable: template.isSelectable ?? hero.isSelectable
                 };
             };
             const hydratedCoreHeroes = coreHeroes.map(hydrateHeroFromTemplate);
@@ -440,11 +491,21 @@ export const useGameLogic = () => {
             saveStoredAlignment(user.uid, playerAlignment);
             localStorage.setItem(getSetupDoneKey(user.uid), 'true');
             saveFlowStep('intro', user.uid);
+            if (ownedExpansions.has('galactus')) {
+                writeGalactusEventPlan(createGalactusEventPlan(), user.uid);
+            } else {
+                clearGalactusEventPlan(user.uid);
+            }
             writeCampaignCache(selectedHeroes, [], omegaCylinders, user.uid);
             await saveUserProfile(user.uid, playerAlignment, selectedHeroes, [], { omegaCylinders });
         } else {
             localStorage.setItem(getSetupDoneKey(), 'true');
             saveFlowStep('intro');
+            if (ownedExpansions.has('galactus')) {
+                writeGalactusEventPlan(createGalactusEventPlan());
+            } else {
+                clearGalactusEventPlan();
+            }
             writeCampaignCache(selectedHeroes, [], omegaCylinders);
         }
         isDataLoadedRef.current = true;
@@ -466,6 +527,7 @@ export const useGameLogic = () => {
         setPlayerAlignment(null);
         clearFlowStep(user?.uid);
         clearCampaignCache(user?.uid);
+        clearGalactusEventPlan(user?.uid);
         navigate('/');
     };
 
@@ -582,6 +644,10 @@ export const useGameLogic = () => {
 
             if (introMission && mission.id === introMission.id && !isCompleted) return true;
 
+            if (mission.type === 'GALACTUS' && !ownedExpansions.has('galactus')) {
+                return false;
+            }
+
             const isGalactusType = mission.type === 'GALACTUS';
             const isBossType = mission.type === 'BOSS' || (mission.type && mission.type.startsWith('BOSS_'));
 
@@ -604,19 +670,32 @@ export const useGameLogic = () => {
     }, [allMissions, completedMissionIds, isEditorMode, worldStage, playerAlignment, ownedExpansions, introMission]);
 
     const checkGlobalEvents = (missionSet: Set<string>) => {
-        const count = missionSet.size;
         if (missionSet.has('boss-galactus')) return;
 
-        if (count >= 15 && worldStage !== 'GALACTUS') {
+        if (!ownedExpansions.has('galactus')) {
+            if (worldStage !== 'NORMAL' || activeGlobalEvent) {
+                setWorldStage('NORMAL');
+                setActiveGlobalEvent(null);
+            }
+            return;
+        }
+
+        const count = missionSet.size;
+        const plan = readGalactusEventPlan(user?.uid) || createGalactusEventPlan();
+        if (!readGalactusEventPlan(user?.uid)) {
+            writeGalactusEventPlan(plan, user?.uid);
+        }
+
+        if (count >= plan.galactusAt && worldStage !== 'GALACTUS') {
             setActiveGlobalEvent({ stage: 'GALACTUS', title: '', description: '' });
             setWorldStage('GALACTUS');
             handleTickerUpdate('ALERTA OMEGA. GALACTUS HA LLEGADO.');
-        } else if (count >= 10 && count < 15 && worldStage !== 'SURFER' && worldStage !== 'GALACTUS') {
+        } else if (count >= plan.surferAt && count < plan.galactusAt && worldStage !== 'SURFER' && worldStage !== 'GALACTUS') {
             setActiveGlobalEvent({ stage: 'SURFER', title: '', description: '' });
             setWorldStage('SURFER');
             setSurferTurnCount(0);
             handleTickerUpdate('OBJETO PLATEADO ENTRANDO EN LA ATMOSFERA.');
-        } else if (count >= 4 && count < 10 && worldStage === 'NORMAL') {
+        } else if (count >= plan.anomalyAt && count < plan.surferAt && worldStage === 'NORMAL') {
             setActiveGlobalEvent({ stage: 'ANOMALY', title: '', description: '' });
             setWorldStage('ANOMALY');
             handleTickerUpdate('LECTURAS DE ENERGIA ANOMALAS EN EL ESPACIO PROFUNDO.');
@@ -640,6 +719,7 @@ export const useGameLogic = () => {
         if (id === 'boss-galactus') {
             setWorldStage('NORMAL');
             setActiveGlobalEvent(null);
+            clearGalactusEventPlan(user?.uid);
             handleTickerUpdate('AMENAZA OMEGA NEUTRALIZADA.');
         } else {
             checkGlobalEvents(nextSet);
@@ -695,6 +775,7 @@ export const useGameLogic = () => {
         setActiveGlobalEvent(null);
         setOmegaCylinders(0);
         setSurferTurnCount(0);
+        clearGalactusEventPlan(user?.uid);
     };
 
     const handleSaveIntroConfig = async (nextIntroConfig: IntroConfig) => {
@@ -717,11 +798,13 @@ export const useGameLogic = () => {
             localStorage.removeItem(getSetupDoneKey(currentUid));
             clearFlowStep(currentUid);
             clearCampaignCache(currentUid);
+            clearGalactusEventPlan(currentUid);
         } else {
             localStorage.removeItem('shield_tutorial_seen_guest');
             localStorage.removeItem(getSetupDoneKey());
             clearFlowStep();
             clearCampaignCache();
+            clearGalactusEventPlan();
         }
 
         setCompletedMissionIds(new Set());
@@ -800,7 +883,8 @@ export const useGameLogic = () => {
             currentStory: targetTemplate.currentStory || '',
             relatedHeroId: currentHero.templateId || currentHero.id,
             imageParams: targetTemplate.imageParams,
-            playableSheets: targetTemplate.playableSheets
+            playableSheets: targetTemplate.playableSheets,
+            isSelectable: targetTemplate.isSelectable
         };
 
         const nextHeroes = [...heroes];

@@ -65,6 +65,7 @@ export interface Hero {
   relatedHeroId?: string;
   imageParams?: ImageParams;
   playableSheets?: HeroPlayableSheetsByLanguage;
+  isSelectable?: boolean;
 }
 
 export interface HeroTemplate {
@@ -84,6 +85,7 @@ export interface HeroTemplate {
   relatedHeroId?: string;
   imageParams?: ImageParams;
   playableSheets?: HeroPlayableSheetsByLanguage;
+  isSelectable?: boolean;
 }
 
 export interface Location {

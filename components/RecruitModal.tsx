@@ -70,7 +70,8 @@ export const RecruitModal: React.FC<RecruitModalProps> = ({
             relatedHeroId: template.relatedHeroId,
             imageParams: template.imageParams,
             expansionId: template.expansionId,
-            playableSheets: template.playableSheets
+            playableSheets: template.playableSheets,
+            isSelectable: template.isSelectable
         };
 
         onRecruit(newHero);
@@ -132,7 +133,7 @@ export const RecruitModal: React.FC<RecruitModalProps> = ({
                             const imgStyle = template.imageParams ? {
                                 transform: `scale(${template.imageParams.scale}) translate(${template.imageParams.x}%, ${template.imageParams.y}%)`
                             } : {};
-                            const isBlocked = isStoryLockedAlias(template.alias);
+            const isBlocked = isStoryLockedAlias(template.alias) || template.isSelectable === false;
 
                             return (
                                 <div

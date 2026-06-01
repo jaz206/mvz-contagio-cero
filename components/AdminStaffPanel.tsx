@@ -7,8 +7,9 @@ import {
     updateStaffStatus
 } from '../services/staffService';
 import { getLoginAccessConfig, saveLoginAccessMode } from '../services/accessControlService';
-import { deleteHeroInDB, getHeroTemplates, syncHeroRepositoryToDB } from '../services/heroService';
+import { deleteHeroInDB, getHeroTemplates, syncHeroRepositoryToDB, updateHeroTemplate } from '../services/heroService';
 import { preferGithubCharacterImage } from '../services/characterGithubImageService';
+import { isStoryLockedAlias } from '../services/storyLockService';
 import { CharacterEditor } from './CharacterEditor';
 
 interface AdminStaffPanelProps {
@@ -350,6 +351,21 @@ export const AdminStaffPanel: React.FC<AdminStaffPanelProps> = ({
         }
     };
 
+    const handleToggleHeroPlayable = async (hero: HeroTemplate) => {
+        if (isStoryLockedAlias(hero.alias)) {
+            alert('Este personaje queda bloqueado por la historia y no se puede cambiar desde aqui.');
+            return;
+        }
+
+        try {
+            await updateHeroTemplate(hero.id, { isSelectable: hero.isSelectable === false });
+            await loadHeroes();
+        } catch (err) {
+            console.error(err);
+            setError('No se pudo cambiar el estado del personaje.');
+        }
+    };
+
     const handleSyncHeroes = async () => {
         const confirmed = window.confirm('Voy a guardar toda la ficha de cada heroe en Firebase. ¿Continuar?');
         if (!confirmed) return;
@@ -674,6 +690,16 @@ export const AdminStaffPanel: React.FC<AdminStaffPanelProps> = ({
                                             </div>
 
                                             <div className="flex flex-col gap-2 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
+                                                <button
+                                                    onClick={() => handleToggleHeroPlayable(hero)}
+                                                    className={`border px-3 py-2 text-xs font-black uppercase ${hero.isSelectable === false
+                                                        ? 'border-emerald-800 bg-emerald-900/20 text-emerald-300 hover:bg-emerald-900/40'
+                                                        : 'border-amber-800 bg-amber-900/20 text-amber-300 hover:bg-amber-900/40'}`}
+                                                >
+                                                    {isStoryLockedAlias(hero.alias)
+                                                        ? 'Bloqueo fijo'
+                                                        : hero.isSelectable === false ? 'Bloqueado' : 'Jugable'}
+                                                </button>
                                                 <button
                                                     onClick={() => setEditingHero(hero)}
                                                     className="border border-blue-800 bg-blue-900/20 px-3 py-2 text-xs font-black uppercase text-blue-300 hover:bg-blue-900/40"
