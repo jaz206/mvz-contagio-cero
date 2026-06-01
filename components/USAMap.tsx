@@ -182,6 +182,14 @@ export const USAMap: React.FC<USAMapProps> = ({
         return false;
     };
 
+    const getControlledZoneKey = (stateName: string): 'magneto' | 'kingpin' | 'hulk' | 'doom' | null => {
+        if (factionStates.magneto.has(stateName)) return 'magneto';
+        if (factionStates.kingpin.has(stateName)) return 'kingpin';
+        if (factionStates.hulk.has(stateName)) return 'hulk';
+        if (factionStates.doom.has(stateName)) return 'doom';
+        return null;
+    };
+
     const getFactionName = (state: string) => {
         if (playerAlignment === 'ZOMBIE') {
             if (factionStates.magneto.has(state) && isZoneUnlocked('magneto')) return t.factions.magneto.name;
