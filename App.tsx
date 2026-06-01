@@ -133,6 +133,9 @@ const GameLayout: React.FC<{ children: React.ReactNode; publishedPreviewMode?: b
                 onSaveIntroConfig={actions.handleSaveIntroConfig}
                 storyConfig={state.storyConfig}
                 onSaveStoryConfig={actions.handleSaveStoryConfig}
+                missions={state.allMissions}
+                zoneControlConfig={state.zoneControlConfig}
+                onSaveZoneControlConfig={actions.handleSaveZoneControlConfig}
                 omegaCylinders={state.omegaCylinders}
                 onSetOmegaCylinders={(value) => actions.setOmegaCylinders(Math.max(0, Math.min(10, value)))}
             />

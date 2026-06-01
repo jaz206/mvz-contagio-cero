@@ -5,6 +5,8 @@ import { fetchUSATopoJSON } from '../services/topojsonService';
 import { USATopoJSON, Mission, WorldStage } from '../types';
 import { translations, Language } from '../translations';
 
+const SHIELD_ZONE_ICON = 'https://i.pinimg.com/736x/63/1e/3a/631e3a68228c97963e78381ad11bf3bb.jpg';
+
 interface USAMapProps {
     language: Language;
     missions: Mission[];
@@ -402,6 +404,124 @@ export const USAMap: React.FC<USAMapProps> = ({
                 // @ts-ignore
                 svg.transition().duration(750).call(svg.zoom().transform, d3.zoomIdentity.translate(translate[0], translate[1]).scale(scale));
             });
+
+        const controlledFeatures = statesFeatures.filter((d: any) => isControlledState(d.properties.name));
+        const controlledOverlay = gMap.selectAll('g.controlled-zone-overlay')
+            .data(controlledFeatures, (d: any) => d.properties.name)
+            .join(
+                (enter) => {
+                    const group = enter.append('g').attr('class', 'controlled-zone-overlay pointer-events-none');
+
+                    group.append('path')
+                        .attr('class', 'controlled-zone-fill')
+                        .attr('d', pathGenerator as any)
+                        .style('fill', 'rgba(34, 211, 238, 0.78)')
+                        .style('stroke', '#a5f3fc')
+                        .style('stroke-width', 2)
+                        .style('stroke-dasharray', '7 6')
+                        .style('filter', 'drop-shadow(0 0 16px rgba(34,211,238,0.75))');
+
+                    group.append('path')
+                        .attr('class', 'controlled-zone-border')
+                        .attr('d', pathGenerator as any)
+                        .style('fill', 'none')
+                        .style('stroke', '#cffafe')
+                        .style('stroke-width', 1.2)
+                        .style('stroke-dasharray', '2 10')
+                        .style('filter', 'drop-shadow(0 0 8px rgba(34,211,238,0.85))');
+
+                    return group;
+                },
+                (update) => update,
+                (exit) => exit.remove()
+            );
+
+        controlledOverlay.each(function (d: any) {
+            const group = d3.select(this as SVGGElement);
+            const pathNode = group.select<SVGPathElement>('path.controlled-zone-fill').node();
+            if (!pathNode) return;
+
+            const length = pathNode.getTotalLength();
+            const samples = [0.1, 0.32, 0.54, 0.76, 0.92]
+                .map((ratio) => pathNode.getPointAtLength(length * ratio))
+                .filter(Boolean);
+
+            group.selectAll('circle.zone-node').remove();
+            samples.forEach((point) => {
+                group.append('circle')
+                    .attr('class', 'zone-node')
+                    .attr('cx', point.x)
+                    .attr('cy', point.y)
+                    .attr('r', 3.5)
+                    .style('fill', '#ccfbf1')
+                    .style('stroke', '#06b6d4')
+                    .style('stroke-width', 1)
+                    .style('filter', 'drop-shadow(0 0 6px rgba(34,211,238,0.8))');
+            });
+
+            const centroid = pathGenerator.centroid(d);
+            const cx = centroid?.[0];
+            const cy = centroid?.[1];
+            if (!cx || !cy || Number.isNaN(cx) || Number.isNaN(cy)) return;
+
+            group.selectAll('g.zone-core').remove();
+            const core = group.append('g')
+                .attr('class', 'zone-core')
+                .attr('transform', `translate(${cx},${cy})`);
+
+            core.append('circle')
+                .attr('r', 26)
+                .style('fill', 'rgba(6, 182, 212, 0.12)')
+                .style('stroke', '#67e8f9')
+                .style('stroke-width', 2)
+                .style('stroke-dasharray', '6 5')
+                .style('filter', 'drop-shadow(0 0 14px rgba(34,211,238,0.9))');
+
+            core.append('circle')
+                .attr('r', 16)
+                .style('fill', 'rgba(8, 47, 73, 0.95)')
+                .style('stroke', '#67e8f9')
+                .style('stroke-width', 1.5);
+
+            core.append('image')
+                .attr('href', SHIELD_ZONE_ICON)
+                .attr('x', -10)
+                .attr('y', -10)
+                .attr('width', 20)
+                .attr('height', 20)
+                .attr('opacity', 0.95)
+                .attr('referrerpolicy', 'no-referrer');
+
+            const scanner = core.append('g')
+                .attr('class', 'zone-scanner')
+                .style('filter', 'drop-shadow(0 0 10px rgba(34,211,238,0.75))');
+
+            scanner.append('line')
+                .attr('x1', 0)
+                .attr('y1', 0)
+                .attr('x2', 0)
+                .attr('y2', -30)
+                .style('stroke', '#22d3ee')
+                .style('stroke-width', 2)
+                .style('stroke-linecap', 'round');
+
+            scanner.append('circle')
+                .attr('r', 30)
+                .style('fill', 'none')
+                .style('stroke', '#22d3ee')
+                .style('stroke-width', 1)
+                .style('stroke-dasharray', '4 7')
+                .style('opacity', 0.9);
+
+            scanner.append('animateTransform')
+                .attr('attributeName', 'transform')
+                .attr('attributeType', 'XML')
+                .attr('type', 'rotate')
+                .attr('from', '0 0 0')
+                .attr('to', '360 0 0')
+                .attr('dur', '5s')
+                .attr('repeatCount', 'indefinite');
+        });
 
         gMap.selectAll('text.label')
             .data(statesFeatures)

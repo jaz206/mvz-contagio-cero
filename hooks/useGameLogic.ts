@@ -9,9 +9,10 @@ import { getDefaultIntroConfig, getIntroConfig, saveIntroConfig } from '../servi
 import { getDefaultStoryConfig, getStoryConfig, saveStoryConfig } from '../services/storyService';
 import { getCustomMissions, deleteMissionInDB, syncInitialMissionRepository } from '../services/missionService';
 import { getUserProfile, resetUserProfiles, saveUserProfile } from '../services/userService';
+import { getDefaultZoneControlConfig, getZoneControlConfig, saveZoneControlConfig } from '../services/zoneControlService';
 import { logout, signInEditor } from '../services/authService';
 import { ensureAdminStaffAccount, getStaffAccount } from '../services/staffService';
-import { Mission, Hero, WorldStage, GlobalEvent, HeroTemplate, StaffAccount, StaffPermissions, IntroConfig, StoryConfig } from '../types';
+import { Mission, Hero, WorldStage, GlobalEvent, HeroTemplate, StaffAccount, StaffPermissions, IntroConfig, StoryConfig, ZoneControlConfig } from '../types';
 import { GAME_EXPANSIONS } from '../data/gameContent';
 import { getInitialMissions } from '../data/initialMissions';
 
@@ -227,6 +228,7 @@ export const useGameLogic = () => {
         hulk: false,
         doom: false
     });
+    const [zoneControlConfig, setZoneControlConfig] = useState<ZoneControlConfig | null>(null);
 
     const t = translations[lang];
     const setLang = useCallback((nextLang: Language) => {
@@ -269,6 +271,20 @@ export const useGameLogic = () => {
         };
 
         loadStoryConfig();
+    }, []);
+
+    useEffect(() => {
+        const loadZoneConfig = async () => {
+            try {
+                const loaded = await getZoneControlConfig();
+                setZoneControlConfig(loaded);
+            } catch (error) {
+                console.error(error);
+                setZoneControlConfig(null);
+            }
+        };
+
+        loadZoneConfig();
     }, []);
 
     useEffect(() => {
@@ -794,6 +810,11 @@ export const useGameLogic = () => {
         setStoryConfig(nextStoryConfig);
     };
 
+    const handleSaveZoneControlConfig = async (nextZoneControlConfig: ZoneControlConfig) => {
+        await saveZoneControlConfig(nextZoneControlConfig);
+        setZoneControlConfig(nextZoneControlConfig);
+    };
+
     const handleRestartCampaign = async () => {
         const currentUid = user?.uid;
 
@@ -952,6 +973,7 @@ export const useGameLogic = () => {
     }, [visibleMissions, completedMissionIds]);
 
     const controlledZones = useMemo(() => {
+        const sourceConfig = zoneControlConfig || getDefaultZoneControlConfig(allMissions);
         const zones: Record<'magneto' | 'kingpin' | 'hulk' | 'doom', boolean> = {
             magneto: false,
             kingpin: false,
@@ -960,16 +982,12 @@ export const useGameLogic = () => {
         };
 
         (['magneto', 'kingpin', 'hulk', 'doom'] as const).forEach((zone) => {
-            const zoneMissions = visibleMissions.filter((mission) => {
-                if ((mission.missionRole || 'PRIMARY') === 'OPTIONAL') return false;
-                return getFactionForState(mission.location.state) === zone;
-            });
-
-            zones[zone] = zoneMissions.length > 0 && zoneMissions.every((mission) => completedMissionIds.has(mission.id));
+            const zoneMissions = sourceConfig.zones[zone] || [];
+            zones[zone] = zoneMissions.length > 0 && zoneMissions.every((missionId) => completedMissionIds.has(missionId));
         });
 
         return zones;
-    }, [visibleMissions, completedMissionIds]);
+    }, [allMissions, completedMissionIds, zoneControlConfig]);
 
     useEffect(() => {
         (['magneto', 'kingpin', 'hulk', 'doom'] as const).forEach((zone) => {
@@ -1024,6 +1042,7 @@ export const useGameLogic = () => {
             visibleMissions,
             groupedMissions,
             controlledZones,
+            zoneControlConfig,
             FACTION_STATES
         },
         actions: {
@@ -1077,6 +1096,7 @@ export const useGameLogic = () => {
             handleRestartCampaign,
             handleSaveIntroConfig,
             handleSaveStoryConfig,
+            handleSaveZoneControlConfig,
             handleEventAcknowledge,
             handleToggleHeroObjective,
             handleTransformHero,

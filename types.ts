@@ -88,6 +88,12 @@ export interface HeroTemplate {
   isSelectable?: boolean;
 }
 
+export type ZoneControlKey = 'magneto' | 'kingpin' | 'hulk' | 'doom';
+
+export interface ZoneControlConfig {
+  zones: Record<ZoneControlKey, string[]>;
+}
+
 export interface Location {
   state: string;
   coordinates: [number, number];

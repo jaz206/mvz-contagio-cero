@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { HeroTemplate, IntroConfig, IntroSlide, LoginAccessMode, StaffAccount, StaffPermissions, StoryConfig, StorySlide } from '../types';
+import { HeroTemplate, IntroConfig, IntroSlide, LoginAccessMode, Mission, StaffAccount, StaffPermissions, StoryConfig, StorySlide, ZoneControlConfig, ZoneControlKey } from '../types';
 import {
     createEditorAccount,
     listStaffAccounts,
@@ -10,6 +10,7 @@ import { getLoginAccessConfig, saveLoginAccessMode } from '../services/accessCon
 import { deleteHeroInDB, getHeroTemplates, syncHeroRepositoryToDB, updateHeroTemplate } from '../services/heroService';
 import { preferGithubCharacterImage } from '../services/characterGithubImageService';
 import { isStoryLockedAlias } from '../services/storyLockService';
+import { getDefaultZoneControlConfig } from '../services/zoneControlService';
 import { CharacterEditor } from './CharacterEditor';
 
 interface AdminStaffPanelProps {
@@ -20,6 +21,9 @@ interface AdminStaffPanelProps {
     onSaveIntroConfig: (config: IntroConfig) => Promise<void>;
     storyConfig: StoryConfig;
     onSaveStoryConfig: (config: StoryConfig) => Promise<void>;
+    missions: Mission[];
+    zoneControlConfig: ZoneControlConfig | null;
+    onSaveZoneControlConfig: (config: ZoneControlConfig) => Promise<void>;
     omegaCylinders: number;
     onSetOmegaCylinders: (value: number) => void;
 }
@@ -52,6 +56,31 @@ const createEmptyStorySlide = (index: number): StorySlide => ({
     image: ''
 });
 
+const ZONE_STATE_SETS: Record<ZoneControlKey, Set<string>> = {
+    magneto: new Set(['Washington', 'Oregon', 'California', 'Nevada', 'Idaho', 'Montana', 'Wyoming', 'Utah', 'Arizona', 'Colorado', 'Alaska', 'Hawaii']),
+    kingpin: new Set(['Maine', 'New Hampshire', 'Vermont', 'New York', 'Massachusetts', 'Rhode Island', 'Connecticut', 'New Jersey', 'Pennsylvania', 'Delaware', 'Maryland', 'West Virginia', 'Virginia', 'District of Columbia']),
+    hulk: new Set(['North Dakota', 'South Dakota', 'Nebraska', 'Kansas', 'Oklahoma', 'Texas', 'New Mexico', 'Minnesota', 'Iowa', 'Missouri', 'Wisconsin', 'Illinois', 'Michigan', 'Indiana', 'Ohio']),
+    doom: new Set(['Arkansas', 'Louisiana', 'Mississippi', 'Alabama', 'Tennessee', 'Kentucky', 'Georgia', 'Florida', 'South Carolina', 'North Carolina'])
+};
+
+const getMissionZone = (mission: Mission): ZoneControlKey | 'neutral' => {
+    const state = mission.location?.state || '';
+    if (ZONE_STATE_SETS.magneto.has(state)) return 'magneto';
+    if (ZONE_STATE_SETS.kingpin.has(state)) return 'kingpin';
+    if (ZONE_STATE_SETS.hulk.has(state)) return 'hulk';
+    if (ZONE_STATE_SETS.doom.has(state)) return 'doom';
+    return 'neutral';
+};
+
+const cloneZoneDraft = (config: ZoneControlConfig): ZoneControlConfig => ({
+    zones: {
+        magneto: [...config.zones.magneto],
+        kingpin: [...config.zones.kingpin],
+        hulk: [...config.zones.hulk],
+        doom: [...config.zones.doom]
+    }
+});
+
 export const AdminStaffPanel: React.FC<AdminStaffPanelProps> = ({
     isOpen,
     onClose,
@@ -60,10 +89,13 @@ export const AdminStaffPanel: React.FC<AdminStaffPanelProps> = ({
     onSaveIntroConfig,
     storyConfig,
     onSaveStoryConfig,
+    missions,
+    zoneControlConfig,
+    onSaveZoneControlConfig,
     omegaCylinders,
     onSetOmegaCylinders
 }) => {
-    const [activeTab, setActiveTab] = useState<'staff' | 'characters' | 'story' | 'intro'>('staff');
+    const [activeTab, setActiveTab] = useState<'staff' | 'characters' | 'story' | 'intro' | 'zones'>('staff');
     const [introMode, setIntroMode] = useState<'alive' | 'zombie'>('alive');
 
     const [accounts, setAccounts] = useState<StaffAccount[]>([]);
@@ -87,6 +119,8 @@ export const AdminStaffPanel: React.FC<AdminStaffPanelProps> = ({
     const [heroSearch, setHeroSearch] = useState('');
     const [editingHero, setEditingHero] = useState<HeroTemplate | null>(null);
     const [creatingHero, setCreatingHero] = useState(false);
+    const [zoneDraft, setZoneDraft] = useState<ZoneControlConfig>(cloneZoneDraft(zoneControlConfig || getDefaultZoneControlConfig(missions)));
+    const [savingZones, setSavingZones] = useState(false);
 
     const loadAccounts = async () => {
         setLoading(true);
@@ -127,8 +161,9 @@ export const AdminStaffPanel: React.FC<AdminStaffPanelProps> = ({
         setCreatingHero(false);
         setIntroDraft(cloneIntroConfig(introConfig));
         setStoryDraft(cloneStoryConfig(storyConfig));
+        setZoneDraft(cloneZoneDraft(zoneControlConfig || getDefaultZoneControlConfig(missions)));
         loadAccounts();
-    }, [isOpen, introConfig, storyConfig]);
+    }, [isOpen, introConfig, storyConfig, zoneControlConfig, missions]);
 
     useEffect(() => {
         if (!isOpen || activeTab !== 'characters' || heroes.length > 0) return;
@@ -323,6 +358,35 @@ export const AdminStaffPanel: React.FC<AdminStaffPanelProps> = ({
         }
     };
 
+    const handleToggleZoneMission = (zone: ZoneControlKey, missionId: string) => {
+        setZoneDraft((prev) => {
+            const next = cloneZoneDraft(prev);
+            const current = next.zones[zone];
+            next.zones[zone] = current.includes(missionId)
+                ? current.filter((item) => item !== missionId)
+                : [...current, missionId];
+            return next;
+        });
+    };
+
+    const handleResetZoneDraft = () => {
+        setZoneDraft(cloneZoneDraft(getDefaultZoneControlConfig(missions)));
+    };
+
+    const handleSaveZoneControl = async () => {
+        setSavingZones(true);
+        setError(null);
+
+        try {
+            await onSaveZoneControlConfig(zoneDraft);
+        } catch (err) {
+            console.error(err);
+            setError('No se pudo guardar el control de zonas.');
+        } finally {
+            setSavingZones(false);
+        }
+    };
+
     const handleAccessModeChange = async (mode: LoginAccessMode) => {
         setSavingAccessMode(true);
         setError(null);
@@ -394,6 +458,35 @@ export const AdminStaffPanel: React.FC<AdminStaffPanelProps> = ({
         ));
     }, [heroSearch, heroes]);
 
+    const zoneMissionGroups = useMemo(() => {
+        const groups: Record<ZoneControlKey, Mission[]> = {
+            magneto: [],
+            kingpin: [],
+            hulk: [],
+            doom: []
+        };
+
+        missions.forEach((mission) => {
+            if (!mission?.id) return;
+            if (mission.type === 'GALACTUS') return;
+            const zone = getMissionZone(mission);
+            if (zone !== 'neutral') {
+                groups[zone].push(mission);
+            }
+        });
+
+        (Object.keys(groups) as ZoneControlKey[]).forEach((zone) => {
+            groups[zone].sort((a, b) => {
+                const roleA = a.missionRole || 'PRIMARY';
+                const roleB = b.missionRole || 'PRIMARY';
+                if (roleA !== roleB) return roleA === 'PRIMARY' ? -1 : 1;
+                return a.title.localeCompare(b.title, 'es');
+            });
+        });
+
+        return groups;
+    }, [missions]);
+
     if (!isOpen) return null;
 
     return (
@@ -446,6 +539,12 @@ export const AdminStaffPanel: React.FC<AdminStaffPanelProps> = ({
                         className={`px-4 py-2 text-xs font-black uppercase ${activeTab === 'characters' ? 'border border-cyan-700 bg-cyan-900/20 text-cyan-300' : 'border border-slate-800 text-gray-400 hover:text-white'}`}
                     >
                         Personajes
+                    </button>
+                    <button
+                        onClick={() => setActiveTab('zones')}
+                        className={`px-4 py-2 text-xs font-black uppercase ${activeTab === 'zones' ? 'border border-cyan-700 bg-cyan-900/20 text-cyan-300' : 'border border-slate-800 text-gray-400 hover:text-white'}`}
+                    >
+                        Zonas
                     </button>
                     <button
                         onClick={() => setActiveTab('story')}
@@ -717,6 +816,112 @@ export const AdminStaffPanel: React.FC<AdminStaffPanelProps> = ({
                                     ))}
                                 </div>
                             )}
+
+                            {error && (
+                                <div className="mt-4 border border-red-900 bg-red-950/30 p-3 text-xs text-red-300">
+                                    {error}
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                ) : activeTab === 'zones' ? (
+                    <div className="flex min-h-0 flex-1 flex-col">
+                        <div className="flex items-center justify-between border-b border-slate-800 p-4">
+                            <div className="text-[11px] text-gray-400">
+                                Elige qué misiones deben quedar hechas para que cada zona cambie de color.
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <button
+                                    onClick={handleResetZoneDraft}
+                                    className="border border-slate-700 px-3 py-2 text-xs font-black uppercase text-slate-200 hover:bg-slate-800"
+                                >
+                                    Volver a base
+                                </button>
+                                <button
+                                    onClick={handleSaveZoneControl}
+                                    disabled={savingZones}
+                                    className="border border-emerald-800 bg-emerald-900/20 px-3 py-2 text-xs font-black uppercase text-emerald-300 hover:bg-emerald-900/40 disabled:opacity-50"
+                                >
+                                    {savingZones ? 'Guardando...' : 'Guardar Zonas'}
+                                </button>
+                            </div>
+                        </div>
+
+                        <div className="overflow-y-auto p-4 space-y-4">
+                            {(Object.keys(zoneMissionGroups) as ZoneControlKey[]).map((zone) => {
+                                const selectedIds = zoneDraft.zones[zone] || [];
+                                const zoneLabel = zone.toUpperCase();
+                                const missionsForZone = zoneMissionGroups[zone];
+
+                                return (
+                                    <div key={zone} className="border border-slate-800 bg-slate-900/40 p-4">
+                                        <div className="mb-3 flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+                                            <div>
+                                                <div className="text-sm font-black uppercase tracking-widest text-white">{zoneLabel}</div>
+                                                <div className="text-[10px] uppercase tracking-[0.3em] text-cyan-600">
+                                                    {selectedIds.length} misiones marcadas
+                                                </div>
+                                            </div>
+                                            <div className="flex items-center gap-2">
+                                                <button
+                                                    onClick={() => setZoneDraft((prev) => ({
+                                                        zones: {
+                                                            ...prev.zones,
+                                                            [zone]: missionsForZone.map((mission) => mission.id)
+                                                        }
+                                                    }))}
+                                                    className="border border-cyan-800 bg-cyan-900/20 px-3 py-2 text-xs font-black uppercase text-cyan-300 hover:bg-cyan-900/40"
+                                                >
+                                                    Marcar todas
+                                                </button>
+                                                <button
+                                                    onClick={() => setZoneDraft((prev) => ({
+                                                        zones: {
+                                                            ...prev.zones,
+                                                            [zone]: []
+                                                        }
+                                                    }))}
+                                                    className="border border-red-900 px-3 py-2 text-xs font-black uppercase text-red-300 hover:bg-red-900/20"
+                                                >
+                                                    Limpiar
+                                                </button>
+                                            </div>
+                                        </div>
+
+                                        <div className="grid grid-cols-1 gap-2 md:grid-cols-2 xl:grid-cols-3">
+                                            {missionsForZone.length === 0 ? (
+                                                <div className="border border-slate-800 bg-black/30 p-3 text-xs text-gray-500">
+                                                    No hay misiones en esta zona.
+                                                </div>
+                                            ) : missionsForZone.map((mission) => {
+                                                const checked = selectedIds.includes(mission.id);
+                                                return (
+                                                    <button
+                                                        key={mission.id}
+                                                        type="button"
+                                                        onClick={() => handleToggleZoneMission(zone, mission.id)}
+                                                        className={`text-left border p-3 transition-colors ${checked
+                                                            ? 'border-cyan-500 bg-cyan-950/30 text-cyan-200'
+                                                            : 'border-slate-800 bg-black/25 text-slate-300 hover:bg-slate-800/70'}`}
+                                                    >
+                                                        <div className="flex items-start justify-between gap-2">
+                                                            <div>
+                                                                <div className="text-sm font-black uppercase tracking-wide text-white">{mission.title}</div>
+                                                                <div className="text-[10px] uppercase tracking-[0.25em] text-cyan-600">
+                                                                    {mission.location.state}
+                                                                </div>
+                                                            </div>
+                                                            <div className="text-[10px] uppercase tracking-[0.25em] text-gray-400">
+                                                                {(mission.missionRole || 'PRIMARY') === 'OPTIONAL' ? 'Opcional' : 'Principal'}
+                                                            </div>
+                                                        </div>
+                                                    </button>
+                                                );
+                                            })}
+                                        </div>
+                                    </div>
+                                );
+                            })}
 
                             {error && (
                                 <div className="mt-4 border border-red-900 bg-red-950/30 p-3 text-xs text-red-300">
