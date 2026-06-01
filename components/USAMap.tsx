@@ -5,7 +5,22 @@ import { fetchUSATopoJSON } from '../services/topojsonService';
 import { USATopoJSON, Mission, WorldStage } from '../types';
 import { translations, Language } from '../translations';
 
-const SHIELD_ZONE_ICON = 'https://i.pinimg.com/736x/63/1e/3a/631e3a68228c97963e78381ad11bf3bb.jpg';
+const SHIELD_ZONE_ICON = `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(`
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
+  <defs>
+    <radialGradient id="shieldGlow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#67e8f9" stop-opacity="0.35" />
+      <stop offset="100%" stop-color="#0f172a" stop-opacity="0" />
+    </radialGradient>
+  </defs>
+  <circle cx="64" cy="64" r="62" fill="rgba(3, 7, 18, 0.92)" />
+  <circle cx="64" cy="64" r="56" fill="none" stroke="#67e8f9" stroke-width="4" opacity="0.9" />
+  <circle cx="64" cy="64" r="46" fill="url(#shieldGlow)" />
+  <path d="M64 22 L95 34 V57 C95 79 82 97 64 106 C46 97 33 79 33 57 V34 Z" fill="none" stroke="#a5f3fc" stroke-width="5" stroke-linejoin="round" />
+  <path d="M64 37 L84 45 V57 C84 72 76 85 64 92 C52 85 44 72 44 57 V45 Z" fill="none" stroke="#22d3ee" stroke-width="3" stroke-linejoin="round" opacity="0.95" />
+  <path d="M64 44 L72 58 H83 L74 67 L78 80 L64 72 L50 80 L54 67 L45 58 H56 Z" fill="#22d3ee" opacity="0.95" />
+</svg>
+`).replace(/\s+/g, ' ').trim()}`;
 
 interface USAMapProps {
     language: Language;
@@ -458,60 +473,86 @@ export const USAMap: React.FC<USAMapProps> = ({
                     .style('stroke-width', 1)
                     .style('filter', 'drop-shadow(0 0 6px rgba(34,211,238,0.8))');
             });
+        });
 
-            const centroid = pathGenerator.centroid(d);
-            const cx = centroid?.[0];
-            const cy = centroid?.[1];
-            if (!cx || !cy || Number.isNaN(cx) || Number.isNaN(cy)) return;
+        const zoneCoreData = (['magneto', 'kingpin', 'hulk', 'doom'] as const)
+            .filter((zoneKey) => controlledZones[zoneKey])
+            .map((zoneKey) => ({
+                zoneKey,
+                features: statesFeatures.filter((feature: any) => factionStates[zoneKey].has(feature.properties.name))
+            }))
+            .filter((entry) => entry.features.length > 0);
 
-            group.selectAll('g.zone-core').remove();
-            const core = group.append('g')
-                .attr('class', 'zone-core')
-                .attr('transform', `translate(${cx},${cy})`);
+        const controlledZoneCore = gMap.selectAll('g.controlled-zone-core')
+            .data(zoneCoreData, (d: any) => d.zoneKey)
+            .join(
+                (enter) => enter.append('g').attr('class', 'controlled-zone-core pointer-events-none'),
+                (update) => update,
+                (exit) => exit.remove()
+            );
 
-            core.append('circle')
-                .attr('r', 26)
-                .style('fill', 'rgba(6, 182, 212, 0.12)')
+        controlledZoneCore.each(function (d: any) {
+            const group = d3.select(this as SVGGElement);
+            const centroids = d.features
+                .map((feature: any) => pathGenerator.centroid(feature))
+                .filter((centroid: [number, number]) => centroid && !Number.isNaN(centroid[0]) && !Number.isNaN(centroid[1]));
+
+            if (!centroids.length) return;
+
+            const cx = d3.mean(centroids, (item: [number, number]) => item[0]);
+            const cy = d3.mean(centroids, (item: [number, number]) => item[1]);
+            if (cx === undefined || cy === undefined) return;
+
+            group.attr('transform', `translate(${cx},${cy})`);
+            group.selectAll('*').remove();
+
+            const outerRadius = Math.max(36, Math.min(62, 24 + d.features.length * 4));
+
+            group.append('circle')
+                .attr('r', outerRadius)
+                .style('fill', 'rgba(34, 211, 238, 0.08)')
                 .style('stroke', '#67e8f9')
                 .style('stroke-width', 2)
-                .style('stroke-dasharray', '6 5')
-                .style('filter', 'drop-shadow(0 0 14px rgba(34,211,238,0.9))');
+                .style('stroke-dasharray', '9 7')
+                .style('filter', 'drop-shadow(0 0 16px rgba(34,211,238,0.95))');
 
-            core.append('circle')
-                .attr('r', 16)
-                .style('fill', 'rgba(8, 47, 73, 0.95)')
-                .style('stroke', '#67e8f9')
-                .style('stroke-width', 1.5);
-
-            core.append('image')
-                .attr('href', SHIELD_ZONE_ICON)
-                .attr('x', -10)
-                .attr('y', -10)
-                .attr('width', 20)
-                .attr('height', 20)
-                .attr('opacity', 0.95)
-                .attr('referrerpolicy', 'no-referrer');
-
-            const scanner = core.append('g')
-                .attr('class', 'zone-scanner')
+            group.append('circle')
+                .attr('r', outerRadius + 10)
+                .style('fill', 'none')
+                .style('stroke', '#22d3ee')
+                .style('stroke-width', 1.5)
+                .style('stroke-dasharray', '4 8')
+                .style('opacity', 0.85)
                 .style('filter', 'drop-shadow(0 0 10px rgba(34,211,238,0.75))');
+
+            const scanner = group.append('g')
+                .attr('class', 'zone-scanner')
+                .style('filter', 'drop-shadow(0 0 10px rgba(34,211,238,0.8))');
 
             scanner.append('line')
                 .attr('x1', 0)
                 .attr('y1', 0)
                 .attr('x2', 0)
-                .attr('y2', -30)
+                .attr('y2', -(outerRadius + 14))
                 .style('stroke', '#22d3ee')
                 .style('stroke-width', 2)
                 .style('stroke-linecap', 'round');
 
             scanner.append('circle')
-                .attr('r', 30)
+                .attr('r', outerRadius + 12)
                 .style('fill', 'none')
                 .style('stroke', '#22d3ee')
                 .style('stroke-width', 1)
                 .style('stroke-dasharray', '4 7')
-                .style('opacity', 0.9);
+                .style('opacity', 0.95);
+
+            scanner.append('image')
+                .attr('href', SHIELD_ZONE_ICON)
+                .attr('x', -18)
+                .attr('y', -18)
+                .attr('width', 36)
+                .attr('height', 36)
+                .attr('opacity', 0.98);
 
             scanner.append('animateTransform')
                 .attr('attributeName', 'transform')
@@ -536,7 +577,11 @@ export const USAMap: React.FC<USAMapProps> = ({
             .attr('dominant-baseline', 'central')
             .style('fill', 'rgba(255, 255, 255, 0.9)')
             .style('font-size', '10px')
-            .style('text-shadow', '0px 0px 3px #000')
+            .style('paint-order', 'stroke fill')
+            .style('stroke', '#000')
+            .style('stroke-width', '2.5px')
+            .style('stroke-linejoin', 'round')
+            .style('filter', 'drop-shadow(0 2px 0 rgba(0,0,0,1)) drop-shadow(0 0 4px rgba(0,0,0,0.95))')
             .text((d: any) => d.properties.name ? d.properties.name.toUpperCase() : '')
             .raise();
 
