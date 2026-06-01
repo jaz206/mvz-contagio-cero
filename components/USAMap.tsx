@@ -51,6 +51,7 @@ export const USAMap: React.FC<USAMapProps> = ({
     const gTokensRef = useRef<d3.Selection<SVGGElement, unknown, null, undefined> | null>(null);
 
     const animatedRoutesRef = useRef<Set<string>>(new Set());
+    const previousControlledZonesRef = useRef(controlledZones);
 
     const [usData, setUsData] = useState<USATopoJSON | null>(null);
     const [loading, setLoading] = useState(true);
@@ -280,6 +281,7 @@ export const USAMap: React.FC<USAMapProps> = ({
         if (!usData || !svgRef.current || !projection || !pathGenerator) return;
 
         const svg = d3.select(svgRef.current);
+        const defs = svg.select('defs');
 
         if (svg.select('g.layer-map').empty()) {
             svg.selectAll('*').remove();
@@ -405,6 +407,10 @@ export const USAMap: React.FC<USAMapProps> = ({
                 svg.transition().duration(750).call(svg.zoom().transform, d3.zoomIdentity.translate(translate[0], translate[1]).scale(scale));
             });
 
+        const newlyControlledZoneKeys = (['magneto', 'kingpin', 'hulk', 'doom'] as const).filter((zoneKey) => {
+            return controlledZones[zoneKey] && !previousControlledZonesRef.current[zoneKey];
+        });
+
         const controlledFeatures = statesFeatures.filter((d: any) => isControlledState(d.properties.name));
         const controlledOverlay = gMap.selectAll('g.controlled-zone-overlay')
             .data(controlledFeatures, (d: any) => d.properties.name)
@@ -441,6 +447,9 @@ export const USAMap: React.FC<USAMapProps> = ({
             const pathNode = group.select<SVGPathElement>('path.controlled-zone-fill').node();
             if (!pathNode) return;
 
+            const zoneKey = getControlledZoneKey(d.properties.name);
+            const shouldExpand = zoneKey ? newlyControlledZoneKeys.includes(zoneKey) : false;
+
             const length = pathNode.getTotalLength();
             const samples = [0.1, 0.32, 0.54, 0.76, 0.92]
                 .map((ratio) => pathNode.getPointAtLength(length * ratio))
@@ -458,6 +467,40 @@ export const USAMap: React.FC<USAMapProps> = ({
                     .style('stroke-width', 1)
                     .style('filter', 'drop-shadow(0 0 6px rgba(34,211,238,0.8))');
             });
+
+            const centroid = pathGenerator.centroid(d);
+            const cx = centroid?.[0];
+            const cy = centroid?.[1];
+            if (!shouldExpand || cx === undefined || cy === undefined || Number.isNaN(cx) || Number.isNaN(cy)) return;
+
+            const bounds = pathGenerator.bounds(d);
+            const maxRadius = Math.max(
+                Math.abs(bounds[1][0] - cx),
+                Math.abs(bounds[1][1] - cy),
+                Math.abs(bounds[0][0] - cx),
+                Math.abs(bounds[0][1] - cy)
+            ) + 12;
+
+            const clipId = `controlled-zone-clip-${d.properties.name.replace(/\s+/g, '-').toLowerCase()}`;
+            defs.select(`#${clipId}`).remove();
+            const clipPath = defs.append('clipPath')
+                .attr('id', clipId);
+
+            const clipCircle = clipPath.append('circle')
+                .attr('cx', cx)
+                .attr('cy', cy)
+                .attr('r', 0);
+
+            group.select('path.controlled-zone-fill')
+                .attr('clip-path', `url(#${clipId})`)
+                .style('fill', 'rgba(34, 211, 238, 0.9)')
+                .style('opacity', 1);
+
+            clipCircle
+                .transition()
+                .duration(1200)
+                .ease(d3.easeCubicOut)
+                .attr('r', maxRadius);
         });
 
         const zoneCoreData = (['magneto', 'kingpin', 'hulk', 'doom'] as const)
@@ -548,6 +591,8 @@ export const USAMap: React.FC<USAMapProps> = ({
                 .attr('dur', '5s')
                 .attr('repeatCount', 'indefinite');
         });
+
+        previousControlledZonesRef.current = { ...controlledZones };
 
         gMap.selectAll('text.label')
             .data(statesFeatures)
