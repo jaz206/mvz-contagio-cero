@@ -114,10 +114,10 @@ export const MissionModal: React.FC<MissionModalProps> = ({
 
     if (!isOpen) return null;
 
-    const commitCompletion = () => {
+    const commitCompletion = async () => {
         if (completionCommittedRef.current) return;
         completionCommittedRef.current = true;
-        onComplete(mission.id, { foundCureVial });
+        await onComplete(mission.id, { foundCureVial });
         onClose();
     };
 
@@ -133,8 +133,7 @@ export const MissionModal: React.FC<MissionModalProps> = ({
                 const closeTimeout = setTimeout(() => {
                     if (completionCommittedRef.current) return;
                     completionCommittedRef.current = true;
-                    onComplete(mission.id, { foundCureVial: vialFound });
-                    onClose();
+                    void onComplete(mission.id, { foundCureVial: vialFound }).then(() => onClose());
                 }, 1500);
                 flowTimeoutsRef.current.push(closeTimeout);
             }
@@ -143,7 +142,7 @@ export const MissionModal: React.FC<MissionModalProps> = ({
     };
 
     const handleManualCloseReport = () => {
-        commitCompletion();
+        void commitCompletion();
     };
 
     const handleReactivateClick = () => {
@@ -162,7 +161,7 @@ export const MissionModal: React.FC<MissionModalProps> = ({
                 onClick={
                     disableClose
                         ? undefined
-                        : (reportSuccess ? commitCompletion : onClose)
+                        : (reportSuccess ? () => { void commitCompletion(); } : onClose)
                 }
             />
 

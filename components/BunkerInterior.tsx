@@ -233,7 +233,13 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
     const t = translations[language];
     const selectedHero = heroes.find(h => h.id === selectedHeroId);
     const selectedHeroLore = selectedHero ? getHeroLoreEntry(selectedHero.alias) : undefined;
-    const selectedHeroImageUrl = selectedHero ? preferGithubCharacterImage(selectedHero.alias, selectedHero.alignment || 'ALIVE', selectedHero.imageUrl) : '';
+    const selectedHeroImageUrl = selectedHero
+        ? preferGithubCharacterImage(
+            selectedHero.alias,
+            selectedHero.status === 'CAPTURED' ? 'ZOMBIE' : ((selectedHero as any).alignment || 'ALIVE'),
+            selectedHero.imageUrl
+        )
+        : '';
     const selectedHeroSheets = selectedHero ? getLocalizedPlayableHeroSheetsForHero(selectedHero, language) : [];
     const selectedHeroPreferredSheet = selectedHero ? getLocalizedPlayableHeroSheetForHero(selectedHero, language) : undefined;
     const selectedHeroSheet = selectedHeroSheets[selectedHeroSheetIndex] || selectedHeroPreferredSheet || selectedHeroSheets[0];
@@ -581,11 +587,11 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
                 </div>
 
                 {/* CENTER COLUMN: INTEL */}
-                <div className="col-span-6 flex flex-col bg-slate-950 relative h-full overflow-hidden">
+                <div className="col-span-6 grid grid-rows-[37%_63%] bg-slate-950 relative h-full overflow-hidden min-h-0">
                     <div className="absolute inset-0 opacity-10 pointer-events-none bg-[linear-gradient(45deg,transparent_25%,rgba(6,182,212,0.1)_50%,transparent_75%)] bg-[length:30px_30px]"></div>
 
                     {/* THREAT MONITOR */}
-                    <div className="h-2/5 border-b border-cyan-900 p-6 flex gap-6 shrink-0 bg-slate-900/20">
+                    <div className="border-b border-cyan-900 p-6 flex gap-6 shrink-0 bg-slate-900/20 min-h-0">
                         <div className="flex-1 border border-cyan-800/50 bg-slate-900/50 p-4 relative shadow-[0_0_30px_rgba(0,0,0,0.5)] clip-tactical">
                             <h3 className="text-[10px] font-black text-cyan-500 uppercase tracking-[0.2em] mb-4 border-b border-cyan-900/50 pb-2">
                                 PROGRESO TERRITORIAL POR ZONA
@@ -611,7 +617,7 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
                     </div>
 
                     {/* CAMPAIGN LOG */}
-                    <div className="flex-1 p-6 overflow-y-auto pb-24 relative flex flex-col">
+                    <div className="p-6 overflow-y-auto pb-24 relative flex flex-col min-h-0">
                         <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/diagmonds-light.png')] opacity-5 pointer-events-none"></div>
                         <div className="flex items-end justify-between gap-4 mb-4">
                             <div>

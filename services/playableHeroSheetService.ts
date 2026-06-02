@@ -143,24 +143,15 @@ PLAYABLE_HERO_SHEETS_ES.forEach((sheet) => {
 
 type HeroSheetSource = Pick<Hero, 'alias' | 'name'> & { playableSheets?: HeroPlayableSheetsByLanguage };
 
-const getSheetsFromHeroSource = (hero: HeroSheetSource, language: Language) => {
-    const languageKey = isSpanishLanguage(language) ? 'es' : 'en';
-    const heroSheets = hero.playableSheets?.[languageKey];
-    if (Array.isArray(heroSheets) && heroSheets.length > 0) {
-        return heroSheets;
-    }
-    return undefined;
-};
-
 export const getPlayableHeroSheetForHero = (hero: HeroSheetSource) => {
-    const cachedSheets = hero.playableSheets?.en || hero.playableSheets?.es;
-    if (Array.isArray(cachedSheets) && cachedSheets.length > 0) {
-        return cachedSheets[0];
-    }
-
     for (const key of candidateKeys(hero)) {
         const sheet = SHEET_BY_KEY.get(normalizeSheetKey(key));
         if (sheet) return sheet;
+    }
+
+    const cachedSheets = hero.playableSheets?.en || hero.playableSheets?.es;
+    if (Array.isArray(cachedSheets) && cachedSheets.length > 0) {
+        return cachedSheets[0];
     }
 
     return undefined;
@@ -200,11 +191,17 @@ export const getPlayableHeroSheetsForHero = (hero: Pick<Hero, 'alias' | 'name'>)
 };
 
 export const getLocalizedPlayableHeroSheetsForHero = (hero: HeroSheetSource, language: Language) => {
-    const cachedSheets = getSheetsFromHeroSource(hero, language);
-    if (cachedSheets) return cachedSheets;
-
     const sourceSheets = isSpanishLanguage(language) ? PLAYABLE_HERO_SHEETS_ES : PLAYABLE_HERO_SHEETS;
-    return findMatchingSheets(hero, sourceSheets);
+    const localSheets = findMatchingSheets(hero, sourceSheets);
+    if (localSheets.length > 0) return localSheets;
+
+    const languageKey = isSpanishLanguage(language) ? 'es' : 'en';
+    const cachedSheets = hero.playableSheets?.[languageKey];
+    if (Array.isArray(cachedSheets) && cachedSheets.length > 0) {
+        return cachedSheets;
+    }
+
+    return findMatchingSheets(hero, sourceSheets === PLAYABLE_HERO_SHEETS_ES ? PLAYABLE_HERO_SHEETS : PLAYABLE_HERO_SHEETS_ES);
 };
 
 export const getLocalizedPlayableHeroSheetForHero = (hero: HeroSheetSource, language: Language) => {
