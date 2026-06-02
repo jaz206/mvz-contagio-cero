@@ -320,7 +320,8 @@ export const useGameLogic = () => {
             const coreHeroes = coreExpansion ? coreExpansion.heroes : [];
             const heroTemplates = await getHeroTemplates();
             const savedAlignment = getStoredAlignment(currentUser.uid);
-            const cachedCampaign = readCampaignCache(currentUser.uid, savedAlignment || 'ALIVE');
+            const preferredAlignment = savedAlignment || 'ALIVE';
+            const cachedCampaign = readCampaignCache(currentUser.uid, preferredAlignment);
             const hydrateHeroFromTemplate = (hero: Hero): Hero => {
                 const template = heroTemplates.find((item) => item.id === hero.id);
                 if (!template) return hero;
@@ -367,7 +368,7 @@ export const useGameLogic = () => {
                 setIsFullAdmin(true);
                 setIsGuest(false);
                 setIsStartingCampaign(false);
-                setPlayerAlignment('ALIVE');
+                setPlayerAlignment(preferredAlignment);
                 setShowStory(false);
                 setShowTutorial(false);
                 setHeroes(campaignHeroes);
@@ -394,7 +395,7 @@ export const useGameLogic = () => {
                 setIsFullAdmin(linkedStaffAccount.role === 'admin');
                 setIsGuest(false);
                 setIsStartingCampaign(false);
-                setPlayerAlignment('ALIVE');
+                setPlayerAlignment(preferredAlignment);
                 setShowStory(false);
                 setShowTutorial(false);
                 setHeroes(campaignHeroes);
