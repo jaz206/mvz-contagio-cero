@@ -587,12 +587,12 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
                 </div>
 
                 {/* CENTER COLUMN: INTEL */}
-                <div className="col-span-6 grid grid-rows-[37%_63%] bg-slate-950 relative h-full overflow-hidden min-h-0">
+                <div className="col-span-6 grid grid-rows-[minmax(290px,40%)_minmax(0,60%)] bg-slate-950 relative h-full overflow-hidden min-h-0">
                     <div className="absolute inset-0 opacity-10 pointer-events-none bg-[linear-gradient(45deg,transparent_25%,rgba(6,182,212,0.1)_50%,transparent_75%)] bg-[length:30px_30px]"></div>
 
                     {/* THREAT MONITOR */}
-                    <div className="border-b border-cyan-900 p-6 flex gap-6 shrink-0 bg-slate-900/20 min-h-0">
-                        <div className="flex-1 border border-cyan-800/50 bg-slate-900/50 p-4 relative shadow-[0_0_30px_rgba(0,0,0,0.5)] clip-tactical">
+                    <div className="border-b border-cyan-900 p-6 flex gap-6 shrink-0 bg-slate-900/20 min-h-0 overflow-hidden">
+                        <div className="flex-1 border border-cyan-800/50 bg-slate-900/50 p-4 relative shadow-[0_0_30px_rgba(0,0,0,0.5)] clip-tactical overflow-hidden">
                             <h3 className="text-[10px] font-black text-cyan-500 uppercase tracking-[0.2em] mb-4 border-b border-cyan-900/50 pb-2">
                                 PROGRESO TERRITORIAL POR ZONA
                             </h3>
@@ -607,8 +607,8 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
                             ))}
                         </div>
 
-                        <div className="w-1/3 flex flex-col gap-4">
-                            <div className="flex-1 bg-slate-900/50 border border-cyan-800/50 p-4 flex flex-col items-center justify-center text-center clip-tactical">
+                        <div className="w-1/3 flex flex-col gap-4 overflow-hidden">
+                            <div className="flex-1 bg-slate-900/50 border border-cyan-800/50 p-4 flex flex-col items-center justify-center text-center clip-tactical overflow-hidden">
                                 <div className="text-[9px] text-gray-500 uppercase tracking-widest mb-1">MISIONES ACTIVAS</div>
                                 <div className="text-5xl font-black text-white text-shadow-neon">{missions.length}</div>
                                 <div className="text-[9px] text-cyan-400 mt-2 bg-cyan-900/30 px-2 py-1 rounded border border-cyan-800">PRIORIDAD ALTA</div>
@@ -617,7 +617,7 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
                     </div>
 
                     {/* CAMPAIGN LOG */}
-                    <div className="p-6 overflow-y-auto pb-24 relative flex flex-col min-h-0">
+                    <div className="p-6 relative flex flex-col min-h-0 overflow-hidden">
                         <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/diagmonds-light.png')] opacity-5 pointer-events-none"></div>
                         <div className="flex items-end justify-between gap-4 mb-4">
                             <div>
@@ -635,7 +635,7 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
                         </div>
 
                         {completedCampaignMissions.length > 0 ? (
-                            <div className="grid min-h-0 flex-1 grid-cols-[minmax(240px,0.42fr)_minmax(0,0.58fr)] gap-4">
+                            <div className="grid min-h-0 flex-1 grid-cols-[minmax(240px,0.42fr)_minmax(0,0.58fr)] gap-4 overflow-hidden">
                                 <div className="min-h-0 overflow-y-auto space-y-3 pr-2 scrollbar-thin scrollbar-thumb-emerald-900">
                                     {completedCampaignMissions.map((mission) => {
                                         const isSelected = selectedCampaignMission?.id === mission.id;
@@ -670,7 +670,7 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
                                     })}
                                 </div>
 
-                                <div className="min-h-0 border border-slate-800 bg-slate-950/80 p-4 flex flex-col">
+                                <div className="min-h-0 border border-slate-800 bg-slate-950/80 p-4 flex flex-col overflow-hidden">
                                     <div className="flex items-start justify-between gap-4 border-b border-slate-800 pb-3">
                                         <div>
                                             <div className="text-[8px] font-black uppercase tracking-[0.28em] text-emerald-300">
@@ -692,7 +692,8 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
                                         )}
                                     </div>
 
-                                <div className="mt-4 min-h-0 flex-1 overflow-y-auto pr-1 space-y-4">
+                                <div className="mt-4 min-h-0 flex-1 overflow-hidden">
+                                    <div className="h-full overflow-y-auto pr-1 space-y-4">
                                     <div className="border-l-2 border-cyan-500 pl-4">
                                         <div className="text-[8px] font-black uppercase tracking-[0.28em] text-cyan-400 mb-2">
                                             {isSpanishLanguage(language) ? 'INTRODUCCION' : 'INTRODUCTION'}
@@ -733,6 +734,7 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
                                             </div>
                                         </div>
                                     )}
+                                    </div>
                                 </div>
                             </div>
                             </div>

@@ -114,11 +114,13 @@ export const MissionModal: React.FC<MissionModalProps> = ({
 
     if (!isOpen) return null;
 
-    const commitCompletion = async () => {
+    const commitCompletion = async (shouldClose = true) => {
         if (completionCommittedRef.current) return;
         completionCommittedRef.current = true;
         await onComplete(mission.id, { foundCureVial });
-        onClose();
+        if (shouldClose) {
+            onClose();
+        }
     };
 
     const handleReportClick = () => {
@@ -129,11 +131,11 @@ export const MissionModal: React.FC<MissionModalProps> = ({
             setFoundCureVial(vialFound);
             setReportSuccess(true);
 
-            if (!mission.outcomeText) {
+            if (mission.outcomeText) {
+                void commitCompletion(false);
+            } else {
                 const closeTimeout = setTimeout(() => {
-                    if (completionCommittedRef.current) return;
-                    completionCommittedRef.current = true;
-                    void onComplete(mission.id, { foundCureVial: vialFound }).then(() => onClose());
+                    void commitCompletion();
                 }, 1500);
                 flowTimeoutsRef.current.push(closeTimeout);
             }
@@ -142,6 +144,10 @@ export const MissionModal: React.FC<MissionModalProps> = ({
     };
 
     const handleManualCloseReport = () => {
+        if (completionCommittedRef.current) {
+            onClose();
+            return;
+        }
         void commitCompletion();
     };
 

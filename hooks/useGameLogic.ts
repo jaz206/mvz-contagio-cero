@@ -420,18 +420,32 @@ export const useGameLogic = () => {
     }, []);
 
     const saveData = useCallback(async (currentHeroes: Hero[], currentMissions: Set<string>, currentCylinders: number) => {
-        if (isEditorMode || !user || !playerAlignment || !isDataLoadedRef.current) return;
+        if (isEditorMode || !playerAlignment || !isDataLoadedRef.current) return;
 
         setIsSaving(true);
-        writeCampaignCache(currentHeroes, currentMissions, currentCylinders, user.uid);
+        writeCampaignCache(currentHeroes, currentMissions, currentCylinders, user?.uid);
         try {
-            await saveUserProfile(user.uid, playerAlignment, currentHeroes, Array.from(currentMissions), { omegaCylinders: currentCylinders });
+            if (user) {
+                await saveUserProfile(user.uid, playerAlignment, currentHeroes, Array.from(currentMissions), { omegaCylinders: currentCylinders });
+            }
         } catch (error) {
             console.error('Auto-save failed', error);
         } finally {
             setTimeout(() => setIsSaving(false), 1000);
         }
     }, [user, playerAlignment, isEditorMode]);
+
+    useEffect(() => {
+        if (user || isDataLoadedRef.current || playerAlignment === null) return;
+
+        const cached = readCampaignCache();
+        if (!cached || cached.heroes.length === 0) return;
+
+        setHeroes(cached.heroes);
+        setCompletedMissionIds(new Set(cached.completedMissionIds));
+        setOmegaCylinders(cached.omegaCylinders);
+        isDataLoadedRef.current = true;
+    }, [user, playerAlignment]);
 
     useEffect(() => {
         if (heroes.length === 0) return;
