@@ -129,6 +129,7 @@
   'Zombis/juggernaut_z.jpg',
   'Zombis/kingpin_z.jpg',
   'Zombis/kraven_z.jpg',
+  'Zombis/lizard_z.jpg',
   'Zombis/loki_z.jpg',
   'Zombis/luke_cage_z.jpg',
   'Zombis/magneto_z.jpg',
