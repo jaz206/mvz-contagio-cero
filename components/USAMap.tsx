@@ -4,9 +4,7 @@ import { feature } from 'topojson-client';
 import { fetchUSATopoJSON } from '../services/topojsonService';
 import { USATopoJSON, Mission, WorldStage } from '../types';
 import { translations, Language } from '../translations';
-import { GITHUB_ZOMBIE_LOGO_URL } from '../services/characterGithubImageService';
-
-const SHIELD_ZONE_ICON = '/shield-logo.png';
+import { GITHUB_ZOMBIE_LOGO_URL, GITHUB_SHIELD_LOGO_URL } from '../services/characterGithubImageService';
 
 interface USAMapProps {
     language: Language;
@@ -630,7 +628,7 @@ export const USAMap: React.FC<USAMapProps> = ({
         // Definir assets dinámicos fuera del bloque de creación
         const bunkerLogo = playerAlignment === 'ZOMBIE'
             ? GITHUB_ZOMBIE_LOGO_URL
-            : SHIELD_ZONE_ICON;
+            : GITHUB_SHIELD_LOGO_URL;
         const bunkerColor = playerAlignment === 'ZOMBIE' ? '#65a30d' : '#06b6d4';
 
         if (bunkerCoords) {

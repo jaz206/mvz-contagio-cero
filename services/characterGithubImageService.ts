@@ -4,6 +4,7 @@ const GITHUB_OWNER = 'jaz206';
 const GITHUB_REPO = 'MisionesMZC';
 const GITHUB_BRANCH = 'main';
 export const GITHUB_ZOMBIE_LOGO_URL = 'https://raw.githubusercontent.com/jaz206/MisionesMZC/main/icono%20%20Zombie%20logo.png';
+export const GITHUB_SHIELD_LOGO_URL = 'https://cdn.jsdelivr.net/gh/jaz206/MisionesMZC@main/icono%20SHIELDpng.png';
 
 const normalizeLookupKey = (value: string) => value
     .normalize('NFD')
