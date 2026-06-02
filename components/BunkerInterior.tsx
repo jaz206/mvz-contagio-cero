@@ -20,6 +20,7 @@ import { ConfirmationModal } from "./ConfirmationModal";
 interface BunkerInteriorProps {
     heroes: Hero[];
     missions: Mission[];
+    completedMissions?: Mission[];
     completedMissionIds?: Set<string>;
     onAssign: (heroId: string, missionId: string) => boolean;
     onUnassign: (heroId: string) => void;
@@ -203,7 +204,7 @@ const BiometricMonitor = ({ alignment, compact = false }: { alignment: 'ALIVE' |
 };
 
 export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
-    heroes, missions, completedMissionIds = new Set(), onAssign, onUnassign, onAddHero, onToggleObjective, onBack, language, playerAlignment, onTransformHero, onTickerUpdate, omegaCylinders = 0, onSearchAllies, ownedExpansions
+    heroes, missions, completedMissions = [], completedMissionIds = new Set(), onAssign, onUnassign, onAddHero, onToggleObjective, onBack, language, playerAlignment, onTransformHero, onTickerUpdate, omegaCylinders = 0, onSearchAllies, ownedExpansions
 }) => {
     const [selectedHeroId, setSelectedHeroId] = useState<string | null>(null);
     const [heroDossierTab, setHeroDossierTab] = useState<'EXPEDIENTE' | 'HISTORIA' | 'PODERES'>('EXPEDIENTE');
@@ -299,8 +300,8 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
     const deployedHeroes = heroes.filter((hero) => hero.status === 'DEPLOYED');
     const capturedHeroes = heroes.filter((hero) => hero.status === 'CAPTURED');
     const completedCampaignMissions = useMemo(
-        () => missions.filter((mission) => completedMissionIds.has(mission.id)),
-        [missions, completedMissionIds]
+        () => completedMissions,
+        [completedMissions]
     );
     const selectedCampaignMission = useMemo(
         () => completedCampaignMissions.find((mission) => mission.id === selectedCampaignMissionId) || completedCampaignMissions[completedCampaignMissions.length - 1] || null,
@@ -1055,7 +1056,7 @@ const RosterHeroCard = ({ hero, language, onClick, actionIcon, actionLabel, onAc
         CAPTURED: 'border-red-900 shadow-red-900/20 grayscale'
     };
     const colorClass = statusColors[hero.status] || 'border-slate-600';
-    const displayImageUrl = preferGithubCharacterImage(hero.alias, hero.alignment || 'ALIVE', hero.imageUrl);
+    const displayImageUrl = preferGithubCharacterImage(hero.alias, hero.status === 'CAPTURED' ? 'ZOMBIE' : (hero.alignment || 'ALIVE'), hero.imageUrl);
     const dossierSummary = getSafeDossierText(resolveI18n(hero.currentStory, language), hero.name || '');
     const imgStyle = hero.imageParams ? {
         transform: `scale(${hero.imageParams.scale}) translate(${hero.imageParams.x}%, ${hero.imageParams.y}%)`

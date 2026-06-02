@@ -100,22 +100,13 @@ export const RecruitModal: React.FC<RecruitModalProps> = ({
                 </div>
 
                 <div className="flex border-b border-cyan-900 bg-slate-950">
-                    <button
-                        onClick={() => setMode('RECRUIT')}
-                        className={`flex-1 border-r border-cyan-900 py-3 text-xs font-bold uppercase tracking-widest transition-all ${mode === 'RECRUIT'
-                            ? (isZombiePlayer ? 'bg-lime-900/40 text-lime-400' : 'bg-cyan-900/40 text-cyan-400')
-                            : 'text-gray-500 hover:bg-slate-800 hover:text-white'}`}
-                    >
-                        {isZombiePlayer ? 'EXTENDER LA COLMENA (ALIADOS)' : 'RECLUTAR AGENTES (ALIADOS)'}
-                    </button>
-                    <button
-                        onClick={() => setMode('CAPTURE')}
-                        className={`flex-1 py-3 text-xs font-bold uppercase tracking-widest transition-all ${mode === 'CAPTURE'
-                            ? 'bg-red-900/40 text-red-400'
-                            : 'text-gray-500 hover:bg-slate-800 hover:text-white'}`}
-                    >
-                        {isZombiePlayer ? 'CAZAR COMIDA (HUMANOS)' : 'CAPTURAR ZOMBIES (ENEMIGOS)'}
-                    </button>
+                    <div className={`flex-1 py-3 text-center text-xs font-bold uppercase tracking-widest ${mode === 'RECRUIT'
+                        ? (isZombiePlayer ? 'bg-lime-900/40 text-lime-400' : 'bg-cyan-900/40 text-cyan-400')
+                        : 'bg-red-900/40 text-red-400'}`}>
+                        {mode === 'RECRUIT'
+                            ? (isZombiePlayer ? 'EXTENDER LA COLMENA (ALIADOS)' : 'RECLUTAR AGENTES (ALIADOS)')
+                            : (isZombiePlayer ? 'CAZAR COMIDA (HUMANOS)' : 'CAPTURAR ZOMBIES (ENEMIGOS)')}
+                    </div>
                 </div>
 
                 <div className="border-b border-cyan-900 bg-slate-950 p-4">
