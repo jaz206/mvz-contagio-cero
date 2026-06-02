@@ -756,7 +756,7 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
                 </div>
 
                 {/* RIGHT COLUMN: RESOURCES */}
-                <div className="col-span-3 border-l border-cyan-900 bg-slate-900/30 flex flex-col h-full overflow-hidden">
+                <div className="col-span-3 border-l border-cyan-900 bg-slate-900/30 flex flex-col h-full min-h-0 overflow-hidden">
                     <div className="p-5 border-b border-cyan-900 shrink-0 bg-slate-950/40">
                         <div className="flex items-start justify-between gap-3">
                             <div>
@@ -780,7 +780,7 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
                             </div>
                         </div>
 
-                        <div className="mt-4 space-y-3">
+                        <div className="mt-4 min-h-0 flex-1 overflow-y-auto pr-1 space-y-3 scrollbar-thin scrollbar-thumb-fuchsia-900 scrollbar-track-slate-950/50">
                             {capturedHeroes.length > 0 ? (
                                 capturedHeroes.map((hero) => {
                                     const isAlivePlayer = playerAlignment === 'ALIVE';
@@ -826,19 +826,24 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
                             </div>
                         </div>
 
-                        <div className="mt-4 flex items-center justify-between gap-4 bg-black/40 p-3 rounded border border-blue-900/30">
-                            <div className="flex gap-1.5">
+                        <div className="mt-4 rounded border border-blue-900/30 bg-black/40 p-3">
+                            <div className="flex gap-1.5 overflow-hidden">
                                 {[...Array(15)].map((_, i) => (
                                     <div
                                         key={i}
-                                        className={`w-3 h-10 skew-x-[-10deg] border border-slate-700 ${i < omegaCylinders ? 'bg-cyan-500 shadow-[0_0_10px_#06b6d4]' : 'bg-slate-800/50'}`}
+                                        className={`w-3 h-10 shrink-0 skew-x-[-10deg] border border-slate-700 ${i < omegaCylinders ? 'bg-cyan-500 shadow-[0_0_10px_#06b6d4]' : 'bg-slate-800/50'}`}
                                     ></div>
                                 ))}
                             </div>
-                            <div className="text-right">
-                                <div className="text-3xl font-black text-white leading-none">{omegaCylinders}</div>
-                                <div className="text-[8px] text-gray-500 uppercase">
-                                    {isSpanishLanguage(language) ? 'DISPONIBLES' : 'AVAILABLE'}
+                            <div className="mt-3 flex items-center justify-between gap-3">
+                                <div className="text-[8px] uppercase tracking-[0.24em] text-slate-500">
+                                    {isSpanishLanguage(language) ? 'RESERVA ACTIVA' : 'ACTIVE STOCK'}
+                                </div>
+                                <div className="text-right">
+                                    <div className="text-3xl font-black text-white leading-none">{omegaCylinders}</div>
+                                    <div className="text-[8px] text-gray-500 uppercase">
+                                        {isSpanishLanguage(language) ? 'DISPONIBLES' : 'AVAILABLE'}
+                                    </div>
                                 </div>
                             </div>
                         </div>
