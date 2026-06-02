@@ -21,6 +21,7 @@ export type I18nString = string | { es: string; en: string };
 
 export interface MissionCompletionReward {
   foundCureVial?: boolean;
+  keepModalOpen?: boolean;
 }
 
 export interface HeroPlayableSheet {

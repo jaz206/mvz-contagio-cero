@@ -748,7 +748,10 @@ export const useGameLogic = () => {
         const nextSet = new Set(completedMissionIds);
         nextSet.add(id);
         setCompletedMissionIds(nextSet);
-        setSelectedMission(null);
+
+        if (!reward?.keepModalOpen) {
+            setSelectedMission(null);
+        }
 
         if (worldStage === 'SURFER') {
             setSurferTurnCount((prev) => prev + 1);

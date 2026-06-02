@@ -114,10 +114,14 @@ export const MissionModal: React.FC<MissionModalProps> = ({
 
     if (!isOpen) return null;
 
-    const commitCompletion = async (shouldClose = true) => {
+    const commitCompletion = async (shouldClose = true, vialFoundOverride?: boolean) => {
         if (completionCommittedRef.current) return;
         completionCommittedRef.current = true;
-        await onComplete(mission.id, { foundCureVial });
+        const reward = {
+            foundCureVial: typeof vialFoundOverride === 'boolean' ? vialFoundOverride : foundCureVial,
+            keepModalOpen: !shouldClose
+        };
+        await onComplete(mission.id, reward);
         if (shouldClose) {
             onClose();
         }
@@ -132,10 +136,10 @@ export const MissionModal: React.FC<MissionModalProps> = ({
             setReportSuccess(true);
 
             if (mission.outcomeText) {
-                void commitCompletion(false);
+                void commitCompletion(false, vialFound);
             } else {
                 const closeTimeout = setTimeout(() => {
-                    void commitCompletion();
+                    void commitCompletion(true, vialFound);
                 }, 1500);
                 flowTimeoutsRef.current.push(closeTimeout);
             }
@@ -148,7 +152,7 @@ export const MissionModal: React.FC<MissionModalProps> = ({
             onClose();
             return;
         }
-        void commitCompletion();
+        void commitCompletion(true);
     };
 
     const handleReactivateClick = () => {
