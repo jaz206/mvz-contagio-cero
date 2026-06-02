@@ -857,35 +857,6 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
                         </button>
                     </div>
 
-                    <div className="flex-1 p-6 overflow-y-auto pb-24">
-                        <h3 className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-4">
-                            {isSpanishLanguage(language) ? 'REGISTRO DE CONTENCIÓN' : 'CONTAINMENT LOG'}
-                        </h3>
-                        <div className="space-y-4">
-                            <div className="border-l-2 border-emerald-500 pl-3 py-1 relative">
-                                <div className="absolute w-2 h-2 bg-emerald-500 rounded-full -left-[5px] top-1.5 shadow-[0_0_10px_#10b981]"></div>
-                                <div className="text-[9px] text-emerald-400 font-bold uppercase mb-1">
-                                    {isSpanishLanguage(language) ? 'SISTEMA OPERATIVO' : 'SYSTEM ONLINE'}
-                                </div>
-                                <div className="text-xs text-gray-400">
-                                    {isSpanishLanguage(language)
-                                        ? 'Los viales de cura y el rastreo Cerebro comparten el mismo circuito de logística.'
-                                        : 'Cure vials and Cerebro tracking share the same logistics circuit.'}
-                                </div>
-                            </div>
-                            <div className="border-l-2 border-cyan-500 pl-3 py-1 relative">
-                                <div className="absolute w-2 h-2 bg-cyan-500 rounded-full -left-[5px] top-1.5 shadow-[0_0_10px_#06b6d4]"></div>
-                                <div className="text-[9px] text-cyan-400 font-bold uppercase mb-1">
-                                    {isSpanishLanguage(language) ? 'RASTREO LISTO' : 'TRACKING READY'}
-                                </div>
-                                <div className="text-xs text-gray-400">
-                                    {isSpanishLanguage(language)
-                                        ? 'Usa la nevera para buscar supervivientes vivos o para purificar capturados.'
-                                        : 'Use the fridge to search for living survivors or to purify captives.'}
-                                </div>
-                            </div>
-                        </div>
-                    </div>
                 </div>
             </div>
 

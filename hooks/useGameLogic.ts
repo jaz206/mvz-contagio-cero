@@ -921,12 +921,23 @@ export const useGameLogic = () => {
         const targetTemplate = transformAvailability.targetTemplate;
 
         if (!transformAvailability.allowed || !targetTemplate) {
+            if (targetAlignment === 'ALIVE' && (transformAvailability.reason === 'NO_COUNTERPART' || transformAvailability.reason === 'NO_VARIANT')) {
+                alert(
+                    lang === 'es'
+                        ? `SUJETO IRRECUPERABLE.\n\nEl tejido de ${currentHero.alias.toUpperCase()} (Z) ha sufrido una degradacion celular total. No queda ADN humano viable para la reestructuracion.\n\nLA CURA ES INEFICAZ.`
+                        : `UNRECOVERABLE SUBJECT.\n\nThe tissue of ${currentHero.alias.toUpperCase()} (Z) has suffered total cellular degradation. No viable human DNA remains for reconstitution.\n\nTHE CURE IS INEFFECTIVE.`
+                );
+                return;
+            }
+
             if (transformAvailability.reason === 'MISSING_EXPANSION') {
                 alert(targetAlignment === 'ALIVE'
                     ? `No puedes curar a ${currentHero.alias} con las expansiones activas.`
                     : `No puedes infectar a ${currentHero.alias} con las expansiones activas.`);
             } else {
-                alert(`No se encontro una version compatible de ${currentHero.alias}.`);
+                alert(lang === 'es'
+                    ? `No se encontro una version compatible de ${currentHero.alias}.`
+                    : `No compatible version found for ${currentHero.alias}.`);
             }
             return;
         }
