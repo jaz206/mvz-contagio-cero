@@ -85,12 +85,12 @@ const TacticalBar = ({ label, completed, total, accentClass }: { label: string, 
     const progress = total === 0 ? 0 : (completed / total) * 100;
     const remaining = Math.max(0, total - completed);
     return (
-        <div className="mb-4 group">
-            <div className="flex justify-between text-[9px] font-black mb-1 uppercase tracking-wider px-1">
+        <div className="mb-2.5 group">
+            <div className="flex justify-between text-[8px] font-black mb-0.5 uppercase tracking-wider px-1">
                 <span className="text-cyan-400 drop-shadow-[0_0_3px_rgba(6,182,212,0.8)]">S.H.I.E.L.D. <span className="text-xs">[{completed}/{total}]</span></span>
                 <span className={`${accentClass} drop-shadow-[0_0_3px_currentColor]`}>{label} <span className="text-xs">[{Math.round(progress)}%]</span></span>
             </div>
-            <div className="h-4 w-full bg-slate-950 border border-slate-700 relative overflow-hidden flex skew-x-[-10deg]">
+            <div className="h-3.5 w-full bg-slate-950 border border-slate-700 relative overflow-hidden flex skew-x-[-10deg]">
                 <div className="h-full bg-gradient-to-r from-cyan-900 to-cyan-500 transition-all duration-1000 ease-out relative border-r-2 border-white" style={{ width: `${progress}%` }}>
                     <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/diagmonds-light.png')] opacity-30"></div>
                 </div>
@@ -98,7 +98,7 @@ const TacticalBar = ({ label, completed, total, accentClass }: { label: string, 
                     <div className="absolute inset-0 bg-slate-700 opacity-40"></div>
                 </div>
             </div>
-            <div className="mt-1 text-[8px] uppercase tracking-[0.28em] text-slate-500 text-right px-1">
+            <div className="mt-0.5 text-[7px] uppercase tracking-[0.28em] text-slate-500 text-right px-1">
                 {remaining} pendientes
             </div>
         </div>
@@ -591,11 +591,13 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
                     <div className="absolute inset-0 opacity-10 pointer-events-none bg-[linear-gradient(45deg,transparent_25%,rgba(6,182,212,0.1)_50%,transparent_75%)] bg-[length:30px_30px]"></div>
 
                     {/* THREAT MONITOR */}
-                    <div className="border-b border-cyan-900 p-6 flex gap-6 shrink-0 bg-slate-900/20 min-h-0 overflow-hidden">
-                        <div className="flex-1 border border-cyan-800/50 bg-slate-900/50 p-4 relative shadow-[0_0_30px_rgba(0,0,0,0.5)] clip-tactical overflow-hidden">
-                            <h3 className="text-[10px] font-black text-cyan-500 uppercase tracking-[0.2em] mb-4 border-b border-cyan-900/50 pb-2">
+                    <div className="border-b border-cyan-900 p-3 md:p-4 flex flex-col gap-2 shrink-0 bg-slate-900/20 min-h-0 overflow-hidden">
+                        <div className="w-full border border-cyan-800/50 bg-slate-900/50 p-2.5 md:p-3 relative shadow-[0_0_30px_rgba(0,0,0,0.5)] clip-tactical overflow-hidden">
+                            <div className="flex items-center justify-between gap-3 mb-2 border-b border-cyan-900/50 pb-2">
+                                <h3 className="text-[10px] font-black text-cyan-500 uppercase tracking-[0.2em]">
                                 PROGRESO TERRITORIAL POR ZONA
-                            </h3>
+                                </h3>
+                            </div>
                             {zoneProgressRows.map((row) => (
                                 <TacticalBar
                                     key={row.zone}
@@ -606,18 +608,10 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
                                 />
                             ))}
                         </div>
-
-                        <div className="w-1/3 flex flex-col gap-4 overflow-hidden">
-                            <div className="flex-1 bg-slate-900/50 border border-cyan-800/50 p-4 flex flex-col items-center justify-center text-center clip-tactical overflow-hidden">
-                                <div className="text-[9px] text-gray-500 uppercase tracking-widest mb-1">MISIONES ACTIVAS</div>
-                                <div className="text-5xl font-black text-white text-shadow-neon">{missions.length}</div>
-                                <div className="text-[9px] text-cyan-400 mt-2 bg-cyan-900/30 px-2 py-1 rounded border border-cyan-800">PRIORIDAD ALTA</div>
-                            </div>
-                        </div>
                     </div>
 
                     {/* CAMPAIGN LOG */}
-                    <div className="p-6 relative flex flex-col min-h-0 overflow-hidden">
+                    <div className="p-4 md:p-5 relative flex flex-col min-h-0 overflow-hidden">
                         <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/diagmonds-light.png')] opacity-5 pointer-events-none"></div>
                         <div className="flex items-end justify-between gap-4 mb-4">
                             <div>
