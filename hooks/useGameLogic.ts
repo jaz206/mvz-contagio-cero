@@ -52,7 +52,10 @@ const saveStoredAlignment = (uid: string, alignment: 'ALIVE' | 'ZOMBIE') => {
 
 const getSetupDoneKey = (uid?: string | null) => uid ? `shield_setup_done_${uid}` : 'shield_setup_done_guest';
 const getFlowStepKey = (uid?: string | null) => uid ? `shield_flow_step_${uid}` : 'shield_flow_step_guest';
-const getCampaignCacheKey = (uid?: string | null) => uid ? `shield_campaign_cache_${uid}` : 'shield_campaign_cache_guest';
+const getCampaignCacheKey = (uid?: string | null, alignment?: 'ALIVE' | 'ZOMBIE' | null) => {
+    const modeKey = alignment || 'ALIVE';
+    return uid ? `shield_campaign_cache_${uid}_${modeKey}` : `shield_campaign_cache_guest_${modeKey}`;
+};
 const getGalactusPlanKey = (uid?: string | null) => uid ? `shield_galactus_plan_${uid}` : 'shield_galactus_plan_guest';
 type FlowStep = 'story' | 'setup' | 'intro' | 'mission0' | 'tutorial' | 'map';
 type CampaignCache = { heroes: Hero[]; completedMissionIds: string[]; omegaCylinders: number };
@@ -87,8 +90,8 @@ const clearFlowStep = (uid?: string | null) => {
     localStorage.removeItem(getFlowStepKey(uid));
 };
 
-const readCampaignCache = (uid?: string | null): CampaignCache | null => {
-    const raw = localStorage.getItem(getCampaignCacheKey(uid));
+const readCampaignCache = (uid?: string | null, alignment?: 'ALIVE' | 'ZOMBIE' | null): CampaignCache | null => {
+    const raw = localStorage.getItem(getCampaignCacheKey(uid, alignment));
     if (!raw) return null;
 
     try {
@@ -107,9 +110,10 @@ const writeCampaignCache = (
     heroes: Hero[],
     completedMissionIds: Iterable<string>,
     omegaCylinders: number,
-    uid?: string | null
+    uid?: string | null,
+    alignment?: 'ALIVE' | 'ZOMBIE' | null
 ) => {
-    localStorage.setItem(getCampaignCacheKey(uid), JSON.stringify({
+    localStorage.setItem(getCampaignCacheKey(uid, alignment), JSON.stringify({
         heroes,
         completedMissionIds: Array.from(completedMissionIds),
         omegaCylinders
@@ -117,7 +121,8 @@ const writeCampaignCache = (
 };
 
 const clearCampaignCache = (uid?: string | null) => {
-    localStorage.removeItem(getCampaignCacheKey(uid));
+    localStorage.removeItem(getCampaignCacheKey(uid, 'ALIVE'));
+    localStorage.removeItem(getCampaignCacheKey(uid, 'ZOMBIE'));
 };
 
 const readGalactusEventPlan = (uid?: string | null): GalactusEventPlan | null => {
@@ -314,7 +319,8 @@ export const useGameLogic = () => {
             const coreExpansion = GAME_EXPANSIONS.find((item) => item.id === 'core_box');
             const coreHeroes = coreExpansion ? coreExpansion.heroes : [];
             const heroTemplates = await getHeroTemplates();
-            const cachedCampaign = readCampaignCache(currentUser.uid);
+            const savedAlignment = getStoredAlignment(currentUser.uid);
+            const cachedCampaign = readCampaignCache(currentUser.uid, savedAlignment || 'ALIVE');
             const hydrateHeroFromTemplate = (hero: Hero): Hero => {
                 const template = heroTemplates.find((item) => item.id === hero.id);
                 if (!template) return hero;
@@ -429,7 +435,7 @@ export const useGameLogic = () => {
         if (!playerAlignment || !isDataLoadedRef.current) return;
 
         setIsSaving(true);
-        writeCampaignCache(currentHeroes, currentMissions, currentCylinders, user?.uid);
+        writeCampaignCache(currentHeroes, currentMissions, currentCylinders, user?.uid, playerAlignment || 'ALIVE');
         try {
             if (user) {
                 await saveUserProfile(user.uid, playerAlignment, currentHeroes, Array.from(currentMissions), { omegaCylinders: currentCylinders });
@@ -444,7 +450,7 @@ export const useGameLogic = () => {
     useEffect(() => {
         if (user || isDataLoadedRef.current || playerAlignment === null) return;
 
-        const cached = readCampaignCache();
+        const cached = readCampaignCache(undefined, playerAlignment || 'ALIVE');
         if (!cached || cached.heroes.length === 0) return;
 
         setHeroes(cached.heroes);
@@ -538,7 +544,7 @@ export const useGameLogic = () => {
             } else {
                 clearGalactusEventPlan(user.uid);
             }
-            writeCampaignCache(selectedHeroes, [], omegaCylinders, user.uid);
+            writeCampaignCache(selectedHeroes, [], omegaCylinders, user.uid, playerAlignment || 'ALIVE');
             await saveUserProfile(user.uid, playerAlignment, selectedHeroes, [], { omegaCylinders });
         } else {
             localStorage.setItem(getSetupDoneKey(), 'true');
@@ -548,7 +554,7 @@ export const useGameLogic = () => {
             } else {
                 clearGalactusEventPlan();
             }
-            writeCampaignCache(selectedHeroes, [], omegaCylinders);
+            writeCampaignCache(selectedHeroes, [], omegaCylinders, undefined, playerAlignment || 'ALIVE');
         }
         isDataLoadedRef.current = true;
         navigate('/intro', { replace: true });
