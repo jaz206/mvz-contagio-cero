@@ -3,6 +3,7 @@ import { GITHUB_CHARACTER_IMAGE_PATHS } from '../data/githubCharacterImagePaths'
 const GITHUB_OWNER = 'jaz206';
 const GITHUB_REPO = 'MisionesMZC';
 const GITHUB_BRANCH = 'main';
+export const GITHUB_ZOMBIE_LOGO_URL = 'https://raw.githubusercontent.com/jaz206/MisionesMZC/main/icono%20%20Zombie%20logo.png';
 
 const normalizeLookupKey = (value: string) => value
     .normalize('NFD')
@@ -40,13 +41,14 @@ export const getGithubCharacterImageUrl = (alias?: string, alignment: 'ALIVE' | 
     if (!alias) return null;
 
     const normalizedAlias = normalizeLookupKey(alias);
-    const directMatch = IMAGE_URL_BY_KEY.get(normalizedAlias);
-    if (directMatch) return directMatch;
 
     if (alignment === 'ZOMBIE') {
         const zombieMatch = IMAGE_URL_BY_KEY.get(`${normalizedAlias}z`);
         if (zombieMatch) return zombieMatch;
     }
+
+    const directMatch = IMAGE_URL_BY_KEY.get(normalizedAlias);
+    if (directMatch) return directMatch;
 
     const strippedAlias = normalizedAlias.replace(/zombie$/, '').replace(/z$/, '');
     if (strippedAlias !== normalizedAlias) {

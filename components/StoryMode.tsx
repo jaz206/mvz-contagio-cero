@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { translations, Language } from '../translations';
 import { useTypewriter } from '../hooks/useTypewriter';
 import { StorySlide } from '../types';
+import { GITHUB_ZOMBIE_LOGO_URL } from '../services/characterGithubImageService';
 
 interface StoryModeProps {
     language: Language;
@@ -183,7 +184,7 @@ export const StoryMode: React.FC<StoryModeProps> = ({ language, onComplete, onSk
                                 {/* LOGO ZOMBIE (CORREGIDO) */}
                                 <div className="w-24 h-24 rounded-full border-2 border-lime-600 flex items-center justify-center mb-6 shadow-[0_0_30px_rgba(101,163,13,0.4)] group-hover:scale-110 transition-transform duration-300 bg-slate-900/80 backdrop-blur-sm overflow-hidden">
                                     <img
-                                        src="https://i.pinimg.com/736x/7b/e8/d2/7be8d2f25242523d131ff8d81b1385fc.jpg"
+                                        src={GITHUB_ZOMBIE_LOGO_URL}
                                         alt="Zombie Logo"
                                         className="w-full h-full object-cover"
                                         referrerPolicy="no-referrer"

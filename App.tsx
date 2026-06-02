@@ -19,9 +19,10 @@ import { MissionControlPanel } from './components/MissionControlPanel';
 import { NotFound } from './components/NotFound';
 import { Mission } from './types';
 import { GAME_EXPANSIONS } from './data/gameContent';
+import { GITHUB_ZOMBIE_LOGO_URL } from './services/characterGithubImageService';
 
 const LOGO_SHIELD = 'https://i.pinimg.com/736x/63/1e/3a/631e3a68228c97963e78381ad11bf3bb.jpg';
-const LOGO_ZOMBIE = 'https://i.pinimg.com/736x/7f/31/38/7f31382d4a5c35daa4ba1768a366a917.jpg';
+const LOGO_ZOMBIE = GITHUB_ZOMBIE_LOGO_URL;
 
 const buildGroupedMissions = (
     missions: Mission[],
