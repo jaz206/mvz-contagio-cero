@@ -322,9 +322,11 @@ const GameLayout: React.FC<{ children: React.ReactNode; publishedPreviewMode?: b
                                 <button id="tutorial-bunker-btn" onClick={() => navigate('/bunker')} aria-label={playerAlignment === 'ZOMBIE' ? 'NEXO COLMENA' : 'ACCESO BÚNKER'} className={`w-full py-3 border-2 flex items-center justify-center gap-3 transition-all duration-300 group relative overflow-hidden ${playerAlignment === 'ZOMBIE' ? 'border-lime-600 bg-lime-900/10 hover:bg-lime-900/30 text-lime-400' : 'border-cyan-500 bg-cyan-900/10 hover:bg-cyan-900/30 text-cyan-300'}`}>
                                     <div className={`absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 ${playerAlignment === 'ZOMBIE' ? 'bg-[linear-gradient(45deg,transparent_25%,rgba(132,204,22,0.1)_50%,transparent_75%)]' : 'bg-[linear-gradient(45deg,transparent_25%,rgba(6,182,212,0.1)_50%,transparent_75%)]'} bg-[length:250%_250%] animate-[shimmer_2s_linear_infinite]`} />
                                     <img
-                                        src="/shield-logo.png"
-                                        alt="SHIELD"
-                                        className={`w-10 h-10 object-contain drop-shadow-[0_0_12px_rgba(34,211,238,0.65)] ${playerAlignment === 'ZOMBIE' ? 'opacity-80' : 'opacity-100'}`}
+                                        src={playerAlignment === 'ZOMBIE' ? LOGO_ZOMBIE : LOGO_SHIELD}
+                                        alt={playerAlignment === 'ZOMBIE' ? 'ZOMBIE' : 'SHIELD'}
+                                        className={`w-10 h-10 object-contain ${playerAlignment === 'ZOMBIE'
+                                            ? 'drop-shadow-[0_0_12px_rgba(132,204,22,0.85)] opacity-90'
+                                            : 'drop-shadow-[0_0_12px_rgba(34,211,238,0.65)] opacity-100'}`}
                                     />
                                     <span className="sr-only">{playerAlignment === 'ZOMBIE' ? t.sidebar.hiveBtn : t.sidebar.bunkerBtn}</span>
                                 </button>
