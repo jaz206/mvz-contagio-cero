@@ -137,7 +137,7 @@ const GameLayout: React.FC<{ children: React.ReactNode; publishedPreviewMode?: b
                 zoneControlConfig={state.zoneControlConfig}
                 onSaveZoneControlConfig={actions.handleSaveZoneControlConfig}
                 omegaCylinders={state.omegaCylinders}
-                onSetOmegaCylinders={(value) => actions.setOmegaCylinders(Math.max(0, Math.min(10, value)))}
+                onSetOmegaCylinders={(value) => actions.setOmegaCylinders(Math.max(0, Math.min(15, value)))}
             />
 
             <MissionControlPanel
@@ -467,6 +467,23 @@ const GameContent: React.FC = () => {
         [state.visibleMissions]
     );
     const mapMissions = isPublishedPreviewActive ? publishedViewMissions : state.visibleMissions;
+    const bunkerCompletedMissions = React.useMemo(() => {
+        const list: Mission[] = [];
+        const seen = new Set<string>();
+
+        if (state.introMission && completedMissionIds.has(state.introMission.id)) {
+            list.push(state.introMission);
+            seen.add(state.introMission.id);
+        }
+
+        state.allMissions.forEach((mission) => {
+            if (!mission?.id || !completedMissionIds.has(mission.id) || seen.has(mission.id)) return;
+            seen.add(mission.id);
+            list.push(mission);
+        });
+
+        return list;
+    }, [completedMissionIds, state.allMissions, state.introMission]);
     const bunkerMissions = mapMissions.filter((mission) => mission && !completedMissionIds.has(mission.id));
     const sidebarGroupedMissions = React.useMemo(
         () => buildGroupedMissions(mapMissions, completedMissionIds, state.FACTION_STATES),
@@ -566,7 +583,7 @@ const GameContent: React.FC = () => {
                 }
             />
 
-            <Route path="/bunker" element={<GameLayout publishedPreviewMode={isPublishedPreviewActive} sidebarGroupedMissions={sidebarGroupedMissions}><BunkerInterior heroes={heroes} missions={bunkerMissions} completedMissions={mapMissions.filter((mission) => completedMissionIds.has(mission.id))} onAssign={(heroId, missionId) => { const heroIndex = heroes.findIndex((hero) => hero.id === heroId); if (heroIndex >= 0) { const nextHeroes = [...heroes]; nextHeroes[heroIndex] = { ...nextHeroes[heroIndex], status: 'DEPLOYED', assignedMissionId: missionId }; actions.setHeroes(nextHeroes); return true; } return false; }} onUnassign={(heroId) => { const heroIndex = heroes.findIndex((hero) => hero.id === heroId); if (heroIndex >= 0) { const nextHeroes = [...heroes]; nextHeroes[heroIndex] = { ...nextHeroes[heroIndex], status: 'AVAILABLE', assignedMissionId: null }; actions.setHeroes(nextHeroes); } }} onAddHero={(hero) => actions.setHeroes([...heroes, hero])} onToggleObjective={actions.handleToggleHeroObjective} onBack={() => navigate(currentFlowStep === 'tutorial' ? '/tutorial' : '/map')} language={lang} playerAlignment={playerAlignment} isEditorMode={!isPublishedPreviewActive && isEditorMode} onTransformHero={actions.handleTransformHero} onTickerUpdate={actions.handleTickerUpdate} omegaCylinders={omegaCylinders} onSearchAllies={() => actions.setOmegaCylinders((prev) => Math.max(0, prev - 1))} ownedExpansions={state.ownedExpansions} /></GameLayout>} />
+            <Route path="/bunker" element={<GameLayout publishedPreviewMode={isPublishedPreviewActive} sidebarGroupedMissions={sidebarGroupedMissions}><BunkerInterior heroes={heroes} missions={bunkerMissions} completedMissions={bunkerCompletedMissions} completedMissionIds={completedMissionIds} zoneControlConfig={state.zoneControlConfig} onAssign={(heroId, missionId) => { const heroIndex = heroes.findIndex((hero) => hero.id === heroId); if (heroIndex >= 0) { const nextHeroes = [...heroes]; nextHeroes[heroIndex] = { ...nextHeroes[heroIndex], status: 'DEPLOYED', assignedMissionId: missionId }; actions.setHeroes(nextHeroes); return true; } return false; }} onUnassign={(heroId) => { const heroIndex = heroes.findIndex((hero) => hero.id === heroId); if (heroIndex >= 0) { const nextHeroes = [...heroes]; nextHeroes[heroIndex] = { ...nextHeroes[heroIndex], status: 'AVAILABLE', assignedMissionId: null }; actions.setHeroes(nextHeroes); } }} onAddHero={(hero) => actions.setHeroes([...heroes, hero])} onToggleObjective={actions.handleToggleHeroObjective} onBack={() => navigate(currentFlowStep === 'tutorial' ? '/tutorial' : '/map')} language={lang} playerAlignment={playerAlignment} isEditorMode={!isPublishedPreviewActive && isEditorMode} onTransformHero={actions.handleTransformHero} onTickerUpdate={actions.handleTickerUpdate} omegaCylinders={omegaCylinders} onSearchAllies={() => actions.setOmegaCylinders((prev) => Math.max(0, prev - 1))} ownedExpansions={state.ownedExpansions} /></GameLayout>} />
 
             <Route path="/tutorial" element={<div className="absolute inset-0 z-40"><USAMap language={lang} missions={state.visibleMissions} completedMissionIds={completedMissionIds} onMissionComplete={() => { }} onMissionSelect={() => { }} onBunkerClick={() => navigate('/bunker')} factionStates={state.FACTION_STATES} playerAlignment={playerAlignment} worldStage={worldStage} controlledZones={state.controlledZones} /><TutorialOverlay language={lang} onComplete={() => { localStorage.setItem(tutorialKey, 'true'); if (state.user) { localStorage.setItem(`shield_flow_step_${state.user.uid}`, 'map'); } else { localStorage.setItem('shield_flow_step_guest', 'map'); } navigate('/map'); }} onStepChange={(stepKey) => { if (['roster', 'file', 'recruit'].includes(stepKey)) { navigate('/bunker'); } }} /></div>} />
 

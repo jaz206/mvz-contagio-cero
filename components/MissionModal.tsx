@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Mission } from '../types';
+import { Mission, MissionCompletionReward } from '../types';
 import { translations, Language } from '../translations';
 import { DraggablePdfWindow } from './DraggablePdfWindow';
 
@@ -7,7 +7,7 @@ interface MissionModalProps {
     mission: Mission;
     isOpen: boolean;
     onClose: () => void;
-    onComplete: (missionId: string) => void;
+    onComplete: (missionId: string, reward?: MissionCompletionReward) => void;
     onReactivate?: (missionId: string) => void;
     onEdit?: (mission: Mission) => void;
     onDelete?: (missionId: string) => void;
@@ -36,10 +36,18 @@ export const MissionModal: React.FC<MissionModalProps> = ({
     const [showPdf, setShowPdf] = useState(false);
     const [typedDescription, setTypedDescription] = useState<string[]>([]);
     const [isTyping, setIsTyping] = useState(false);
+    const [foundCureVial, setFoundCureVial] = useState(false);
+    const completionCommittedRef = useRef(false);
     const t = translations[language].missionModal;
     const typingTimeoutsRef = useRef<NodeJS.Timeout[]>([]);
     const flowTimeoutsRef = useRef<NodeJS.Timeout[]>([]);
     const isPdfAttachment = mission.pdfUrl?.toLowerCase().includes('.pdf') ?? false;
+    const vialChance = Math.max(0, Math.min(100, mission.cureVialChance || 0));
+    const rollCureVial = () => {
+        if (mission.guaranteedCureVial) return true;
+        if (vialChance <= 0) return false;
+        return Math.random() * 100 < vialChance;
+    };
     const missionRoleLabel = (mission.missionRole || 'PRIMARY') === 'OPTIONAL'
         ? (language === 'es' ? 'SECUNDARIA OPCIONAL' : 'OPTIONAL SIDE MISSION')
         : (language === 'es' ? 'MISION PRINCIPAL' : 'MAIN MISSION');
@@ -49,10 +57,12 @@ export const MissionModal: React.FC<MissionModalProps> = ({
             return;
         }
 
+        completionCommittedRef.current = false;
         setReporting(false);
         setReportSuccess(false);
         setShowMap(false);
         setShowPdf(false);
+        setFoundCureVial(false);
 
         if (isOpen && mission.description && !isCompleted && !reportSuccess) {
             setTypedDescription([]);
@@ -104,15 +114,26 @@ export const MissionModal: React.FC<MissionModalProps> = ({
 
     if (!isOpen) return null;
 
+    const commitCompletion = () => {
+        if (completionCommittedRef.current) return;
+        completionCommittedRef.current = true;
+        onComplete(mission.id, { foundCureVial });
+        onClose();
+    };
+
     const handleReportClick = () => {
         setReporting(true);
         const timeout = setTimeout(() => {
             setReporting(false);
+            const vialFound = rollCureVial();
+            setFoundCureVial(vialFound);
             setReportSuccess(true);
 
             if (!mission.outcomeText) {
                 const closeTimeout = setTimeout(() => {
-                    onComplete(mission.id);
+                    if (completionCommittedRef.current) return;
+                    completionCommittedRef.current = true;
+                    onComplete(mission.id, { foundCureVial: vialFound });
                     onClose();
                 }, 1500);
                 flowTimeoutsRef.current.push(closeTimeout);
@@ -122,8 +143,7 @@ export const MissionModal: React.FC<MissionModalProps> = ({
     };
 
     const handleManualCloseReport = () => {
-        onComplete(mission.id);
-        onClose();
+        commitCompletion();
     };
 
     const handleReactivateClick = () => {
@@ -133,10 +153,18 @@ export const MissionModal: React.FC<MissionModalProps> = ({
     };
 
     const showOutcome = reportSuccess && mission.outcomeText;
+    const foundVialNotice = reportSuccess && foundCureVial;
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <div className="absolute inset-0 bg-slate-950/60 backdrop-blur-md" onClick={disableClose ? undefined : onClose} />
+            <div
+                className="absolute inset-0 bg-slate-950/60 backdrop-blur-md"
+                onClick={
+                    disableClose
+                        ? undefined
+                        : (reportSuccess ? commitCompletion : onClose)
+                }
+            />
 
             {showPdf && mission.pdfUrl && isPdfAttachment && (
                 <DraggablePdfWindow
@@ -190,6 +218,11 @@ export const MissionModal: React.FC<MissionModalProps> = ({
                             <h4 className="text-[10px] font-black tracking-[0.4em] uppercase text-emerald-500 flex items-center gap-2">
                                 <span className="w-8 h-[1px] bg-emerald-500/30" /> {t.outcomeTitle}
                             </h4>
+                            {foundVialNotice && (
+                                <div className="border border-emerald-500/40 bg-emerald-950/30 p-4 text-emerald-200 font-black uppercase tracking-[0.2em] text-sm">
+                                    {language === 'es' ? 'HABEIS ENCONTRADO UN VIAL DE CURA' : 'YOU HAVE FOUND A CURE VIAL'}
+                                </div>
+                            )}
                             <div className="p-6 bg-emerald-950/20 border border-emerald-500/30 text-emerald-100 text-sm md:text-base leading-relaxed whitespace-pre-wrap font-medium rounded-sm">
                                 {mission.outcomeText}
                             </div>
@@ -219,6 +252,11 @@ export const MissionModal: React.FC<MissionModalProps> = ({
                                 <h4 className={`text-[10px] font-black tracking-[0.4em] mb-4 uppercase flex items-center gap-2 ${isCompleted ? 'text-emerald-500' : 'text-cyan-500'}`}>
                                     <span className={`w-8 h-[1px] ${isCompleted ? 'bg-emerald-500/30' : 'bg-cyan-500/30'}`} /> {t.briefing}
                                 </h4>
+                                {foundVialNotice && (
+                                    <div className="mb-4 border border-emerald-500/40 bg-emerald-950/30 px-4 py-3 text-[10px] font-black uppercase tracking-[0.22em] text-emerald-200">
+                                        {language === 'es' ? 'HABEIS ENCONTRADO UN VIAL DE CURA' : 'YOU HAVE FOUND A CURE VIAL'}
+                                    </div>
+                                )}
                                 <div className="space-y-4 text-sm md:text-base leading-relaxed text-slate-300 font-medium font-sans">
                                     {(isTyping ? typedDescription : mission.description).map((paragraph, index) => (
                                         <p key={index} className={isTyping && index === typedDescription.length - 1 ? "after:content-['_'] after:animate-pulse after:text-cyan-400" : ''}>

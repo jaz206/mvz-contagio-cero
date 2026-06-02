@@ -19,6 +19,10 @@ export interface ImageParams {
 
 export type I18nString = string | { es: string; en: string };
 
+export interface MissionCompletionReward {
+  foundCureVial?: boolean;
+}
+
 export interface HeroPlayableSheet {
   characterName: string;
   set: string;
@@ -136,6 +140,8 @@ export interface Mission {
   setupInstructions?: string[];
   layoutUrl?: string;
   outcomeText?: string;
+  cureVialChance?: number;
+  guaranteedCureVial?: boolean;
   isIntroMission?: boolean;
   status?: MissionStatus;
   missionRole?: MissionRole;

@@ -1,10 +1,11 @@
 ﻿import React, { useState, useMemo, useEffect } from "react";
 import { getHeroLoreEntry } from "../data/heroLore";
 import { translations, Language } from "../translations";
-import { Hero, Mission, HeroClass, HeroTemplate, I18nString } from "../types";
+import { Hero, Mission, HeroClass, HeroTemplate, I18nString, ZoneControlConfig, ZoneControlKey } from "../types";
 import { hasAnyHeroWithTransformRule } from "../services/heroVariantRuleService";
 import { preferGithubCharacterImage } from "../services/characterGithubImageService";
 import { getLocalizedPlayableHeroSheetForHero, getLocalizedPlayableHeroSheetsForHero } from "../services/playableHeroSheetService";
+import { getDefaultZoneControlConfig } from "../services/zoneControlService";
 
 // ... utilities ...
 const resolveI18n = (text: I18nString | undefined, lang: Language): string => {
@@ -22,6 +23,7 @@ interface BunkerInteriorProps {
     missions: Mission[];
     completedMissions?: Mission[];
     completedMissionIds?: Set<string>;
+    zoneControlConfig?: ZoneControlConfig | null;
     onAssign: (heroId: string, missionId: string) => boolean;
     onUnassign: (heroId: string) => void;
     onAddHero: (hero: Hero) => void;
@@ -79,23 +81,25 @@ const getHeroStatusLabel = (status: Hero['status'], language: Language) => {
 };
 
 // --- COMPONENTE: BARRA TÃCTICA ---
-const TacticalBar = ({ label, shieldVal, enemyVal, enemyColor }: { label: string, shieldVal: number, enemyVal: number, enemyColor: string }) => {
-    const total = shieldVal + enemyVal;
-    const shieldPct = total === 0 ? 50 : (shieldVal / total) * 100;
-    const enemyBg = enemyColor.replace('text-', 'bg-');
+const TacticalBar = ({ label, completed, total, accentClass }: { label: string, completed: number, total: number, accentClass: string }) => {
+    const progress = total === 0 ? 0 : (completed / total) * 100;
+    const remaining = Math.max(0, total - completed);
     return (
         <div className="mb-4 group">
             <div className="flex justify-between text-[9px] font-black mb-1 uppercase tracking-wider px-1">
-                <span className="text-cyan-400 drop-shadow-[0_0_3px_rgba(6,182,212,0.8)]">S.H.I.E.L.D. <span className="text-xs">[{shieldVal}]</span></span>
-                <span className={`${enemyColor} drop-shadow-[0_0_3px_currentColor]`}>{label} <span className="text-xs">[{enemyVal}]</span></span>
+                <span className="text-cyan-400 drop-shadow-[0_0_3px_rgba(6,182,212,0.8)]">S.H.I.E.L.D. <span className="text-xs">[{completed}/{total}]</span></span>
+                <span className={`${accentClass} drop-shadow-[0_0_3px_currentColor]`}>{label} <span className="text-xs">[{Math.round(progress)}%]</span></span>
             </div>
             <div className="h-4 w-full bg-slate-950 border border-slate-700 relative overflow-hidden flex skew-x-[-10deg]">
-                <div className="h-full bg-gradient-to-r from-cyan-900 to-cyan-500 transition-all duration-1000 ease-out relative border-r-2 border-white" style={{ width: `${shieldPct}%` }}>
+                <div className="h-full bg-gradient-to-r from-cyan-900 to-cyan-500 transition-all duration-1000 ease-out relative border-r-2 border-white" style={{ width: `${progress}%` }}>
                     <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/diagmonds-light.png')] opacity-30"></div>
                 </div>
-                <div className={`flex-1 h-full bg-gradient-to-l from-slate-900 to-${enemyBg.split('-')[1]}-600 opacity-80 relative`}>
-                    <div className={`absolute inset-0 ${enemyBg} opacity-40`}></div>
+                <div className="flex-1 h-full bg-gradient-to-l from-slate-900 to-slate-700 opacity-80 relative">
+                    <div className="absolute inset-0 bg-slate-700 opacity-40"></div>
                 </div>
+            </div>
+            <div className="mt-1 text-[8px] uppercase tracking-[0.28em] text-slate-500 text-right px-1">
+                {remaining} pendientes
             </div>
         </div>
     );
@@ -204,7 +208,7 @@ const BiometricMonitor = ({ alignment, compact = false }: { alignment: 'ALIVE' |
 };
 
 export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
-    heroes, missions, completedMissions = [], completedMissionIds = new Set(), onAssign, onUnassign, onAddHero, onToggleObjective, onBack, language, playerAlignment, onTransformHero, onTickerUpdate, omegaCylinders = 0, onSearchAllies, ownedExpansions
+    heroes, missions, completedMissions = [], completedMissionIds = new Set(), zoneControlConfig, onAssign, onUnassign, onAddHero, onToggleObjective, onBack, language, playerAlignment, onTransformHero, onTickerUpdate, omegaCylinders = 0, onSearchAllies, ownedExpansions
 }) => {
     const [selectedHeroId, setSelectedHeroId] = useState<string | null>(null);
     const [heroDossierTab, setHeroDossierTab] = useState<'EXPEDIENTE' | 'HISTORIA' | 'PODERES'>('EXPEDIENTE');
@@ -307,14 +311,12 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
         () => completedCampaignMissions.find((mission) => mission.id === selectedCampaignMissionId) || completedCampaignMissions[completedCampaignMissions.length - 1] || null,
         [completedCampaignMissions, selectedCampaignMissionId]
     );
-    const selectedCampaignNarrative = selectedCampaignMission
-        ? getPreferredDossierText(
-            selectedCampaignMission.outcomeText ? { es: selectedCampaignMission.outcomeText, en: selectedCampaignMission.outcomeText } : undefined,
-            undefined,
-            language,
-            selectedCampaignMission.description?.join('\n\n') || (isSpanishLanguage(language) ? 'Sin cronica disponible.' : 'No campaign chronicle available.')
-        )
+    const selectedCampaignIntro = selectedCampaignMission
+        ? (selectedCampaignMission.description?.join('\n\n') || (isSpanishLanguage(language) ? 'Sin introduccion disponible.' : 'No intro available.'))
         : (isSpanishLanguage(language) ? 'Aun no hay misiones completadas.' : 'No completed missions yet.');
+    const selectedCampaignEnding = selectedCampaignMission
+        ? (selectedCampaignMission.outcomeText || (isSpanishLanguage(language) ? 'Sin desenlace registrado.' : 'No ending recorded.'))
+        : (isSpanishLanguage(language) ? 'Selecciona una mision completada para ver su desenlace.' : 'Select a completed mission to see its ending.');
     const selectedCampaignObjectives = selectedCampaignMission?.objectives || [];
 
     useEffect(() => {
@@ -346,12 +348,45 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
         return aliases;
     }, [heroes]);
 
-    const threatAnalysis = {
-        magneto: { shield: 2, enemy: 5, color: 'text-red-500' },
-        kingpin: { shield: 4, enemy: 3, color: 'text-purple-500' },
-        hulk: { shield: 1, enemy: 8, color: 'text-lime-500' },
-        doom: { shield: 3, enemy: 4, color: 'text-cyan-500' }
-    };
+    const allCampaignMissions = useMemo(() => {
+        const map = new Map<string, Mission>();
+        [...missions, ...completedMissions].forEach((mission) => {
+            if (mission?.id) map.set(mission.id, mission);
+        });
+        return Array.from(map.values());
+    }, [missions, completedMissions]);
+
+    const zoneProgressRows = useMemo(() => {
+        const sourceConfig = zoneControlConfig || getDefaultZoneControlConfig(allCampaignMissions);
+        const labels: Record<ZoneControlKey, string> = {
+            magneto: 'MAGNETO',
+            kingpin: 'KINGPIN',
+            hulk: 'HULK',
+            doom: 'DOOM'
+        };
+        const accents: Record<ZoneControlKey, string> = {
+            magneto: 'text-red-500',
+            kingpin: 'text-purple-400',
+            hulk: 'text-lime-400',
+            doom: 'text-cyan-400'
+        };
+
+        return (['magneto', 'kingpin', 'hulk', 'doom'] as const).map((zone) => {
+            const ids = Array.from(new Set(sourceConfig.zones[zone] || []));
+            const completed = ids.filter((missionId) => completedMissionIds.has(missionId)).length;
+            const total = ids.length;
+            const percent = total > 0 ? Math.round((completed / total) * 100) : 0;
+
+            return {
+                zone,
+                label: labels[zone],
+                accentClass: accents[zone],
+                completed,
+                total,
+                percent
+            };
+        });
+    }, [allCampaignMissions, completedMissionIds, zoneControlConfig]);
 
     const transformTargetAlignment = playerAlignment === 'ZOMBIE' ? 'ALIVE' : 'ZOMBIE';
     const hasTransformRuleAvailable = useMemo(
@@ -552,11 +587,18 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
                     {/* THREAT MONITOR */}
                     <div className="h-2/5 border-b border-cyan-900 p-6 flex gap-6 shrink-0 bg-slate-900/20">
                         <div className="flex-1 border border-cyan-800/50 bg-slate-900/50 p-4 relative shadow-[0_0_30px_rgba(0,0,0,0.5)] clip-tactical">
-                            <h3 className="text-[10px] font-black text-cyan-500 uppercase tracking-[0.2em] mb-4 border-b border-cyan-900/50 pb-2">CONTROL TERRITORIAL GLOBAL</h3>
-                            <TacticalBar label="MAGNETO" shieldVal={threatAnalysis.magneto.shield} enemyVal={threatAnalysis.magneto.enemy} enemyColor={threatAnalysis.magneto.color} />
-                            <TacticalBar label="KINGPIN" shieldVal={threatAnalysis.kingpin.shield} enemyVal={threatAnalysis.kingpin.enemy} enemyColor={threatAnalysis.kingpin.color} />
-                            <TacticalBar label="HULK" shieldVal={threatAnalysis.hulk.shield} enemyVal={threatAnalysis.hulk.enemy} enemyColor={threatAnalysis.hulk.color} />
-                            <TacticalBar label="DOOM" shieldVal={threatAnalysis.doom.shield} enemyVal={threatAnalysis.doom.enemy} enemyColor={threatAnalysis.doom.color} />
+                            <h3 className="text-[10px] font-black text-cyan-500 uppercase tracking-[0.2em] mb-4 border-b border-cyan-900/50 pb-2">
+                                PROGRESO TERRITORIAL POR ZONA
+                            </h3>
+                            {zoneProgressRows.map((row) => (
+                                <TacticalBar
+                                    key={row.zone}
+                                    label={row.label}
+                                    completed={row.completed}
+                                    total={row.total}
+                                    accentClass={row.accentClass}
+                                />
+                            ))}
                         </div>
 
                         <div className="w-1/3 flex flex-col gap-4">
@@ -644,40 +686,49 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
                                         )}
                                     </div>
 
-                                    <div className="mt-4 min-h-0 flex-1 overflow-y-auto pr-1 space-y-4">
-                                        <div className="border-l-2 border-emerald-500 pl-4">
-                                            <div className="text-[8px] font-black uppercase tracking-[0.28em] text-emerald-400 mb-2">
-                                                RESUMEN NARRATIVO
+                                <div className="mt-4 min-h-0 flex-1 overflow-y-auto pr-1 space-y-4">
+                                    <div className="border-l-2 border-cyan-500 pl-4">
+                                        <div className="text-[8px] font-black uppercase tracking-[0.28em] text-cyan-400 mb-2">
+                                            {isSpanishLanguage(language) ? 'INTRODUCCION' : 'INTRODUCTION'}
+                                        </div>
+                                        <div className="text-[12px] leading-[1.65] text-slate-100 whitespace-pre-line">
+                                            {selectedCampaignIntro}
+                                        </div>
+                                    </div>
+
+                                    <div className="border-l-2 border-emerald-500 pl-4">
+                                        <div className="text-[8px] font-black uppercase tracking-[0.28em] text-emerald-400 mb-2">
+                                            {isSpanishLanguage(language) ? 'DESENLACE' : 'ENDING'}
+                                        </div>
+                                        <div className="text-[12px] leading-[1.65] text-slate-100 whitespace-pre-line">
+                                            {selectedCampaignEnding}
+                                        </div>
+                                    </div>
+
+                                    {selectedCampaignObjectives.length > 0 && (
+                                        <div className="border border-slate-800 bg-black/30 p-3">
+                                            <div className="text-[8px] font-black uppercase tracking-[0.28em] text-cyan-400 mb-2">
+                                                CONSECUENCIAS / OBJETIVOS
                                             </div>
-                                            <div className="text-[12px] leading-[1.65] text-slate-100 whitespace-pre-line">
-                                                {selectedCampaignNarrative}
+                                            <div className="grid gap-2 sm:grid-cols-2">
+                                                {selectedCampaignObjectives.map((objective, index) => (
+                                                    <div key={`${selectedCampaignMission?.id || 'objective'}-${index}`} className="border border-slate-800 bg-slate-950/60 p-3">
+                                                        <div className="text-[8px] font-bold uppercase tracking-[0.2em] text-slate-500">
+                                                            {language === 'es' ? 'OBJETIVO' : 'OBJECTIVE'} {index + 1}
+                                                        </div>
+                                                        <div className="mt-1 text-[12px] font-black uppercase text-emerald-300">
+                                                            {objective.title}
+                                                        </div>
+                                                        <div className="mt-1 text-[11px] leading-[1.45] text-slate-300">
+                                                            {objective.desc}
+                                                        </div>
+                                                    </div>
+                                                ))}
                                             </div>
                                         </div>
-
-                                        {selectedCampaignObjectives.length > 0 && (
-                                            <div className="border border-slate-800 bg-black/30 p-3">
-                                                <div className="text-[8px] font-black uppercase tracking-[0.28em] text-cyan-400 mb-2">
-                                                    CONSECUENCIAS / OBJETIVOS
-                                                </div>
-                                                <div className="grid gap-2 sm:grid-cols-2">
-                                                    {selectedCampaignObjectives.map((objective, index) => (
-                                                        <div key={`${selectedCampaignMission?.id || 'objective'}-${index}`} className="border border-slate-800 bg-slate-950/60 p-3">
-                                                            <div className="text-[8px] font-bold uppercase tracking-[0.2em] text-slate-500">
-                                                                {language === 'es' ? 'OBJETIVO' : 'OBJECTIVE'} {index + 1}
-                                                            </div>
-                                                            <div className="mt-1 text-[12px] font-black uppercase text-emerald-300">
-                                                                {objective.title}
-                                                            </div>
-                                                            <div className="mt-1 text-[11px] leading-[1.45] text-slate-300">
-                                                                {objective.desc}
-                                                            </div>
-                                                        </div>
-                                                    ))}
-                                                </div>
-                                            </div>
-                                        )}
-                                    </div>
+                                    )}
                                 </div>
+                            </div>
                             </div>
                         ) : (
                             <div className="flex h-full items-center justify-center border border-dashed border-slate-800 bg-black/20 text-center">
@@ -769,7 +820,7 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
 
                         <div className="mt-4 flex items-center justify-between gap-4 bg-black/40 p-3 rounded border border-blue-900/30">
                             <div className="flex gap-1.5">
-                                {[...Array(10)].map((_, i) => (
+                                {[...Array(15)].map((_, i) => (
                                     <div
                                         key={i}
                                         className={`w-3 h-10 skew-x-[-10deg] border border-slate-700 ${i < omegaCylinders ? 'bg-cyan-500 shadow-[0_0_10px_#06b6d4]' : 'bg-slate-800/50'}`}

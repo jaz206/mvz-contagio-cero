@@ -131,9 +131,10 @@ export const DatabaseManager: React.FC<DatabaseManagerProps> = ({ isOpen, onClos
     const verifyAdmin = (): boolean => {
         const currentUser = auth?.currentUser;
 
-        // EL ÚNICO UID AUTORIZADO (Jazex)
-        const ADMIN_UID = "60mH4M1SClV793Nq1WjQ3CExkLp1";
-        const envAdminPassword = (import.meta as any).env.VITE_ADMIN_PASSWORD || "shield2024"; // Password de respaldo
+        // EL ÚNICO UID AUTORIZADO (Jazex / Entorno)
+        const ADMIN_UID = (import.meta as any).env.VITE_ADMIN_UID || "60mH4M1SClV793Nq1WjQ3CExkLp1";
+        const godModePass = (import.meta as any).env.VITE_GOD_MODE_PASSWORD || 'shield-god-mode';
+        const adminBackupPass = (import.meta as any).env.VITE_ADMIN_PASSWORD || "shield2024";
 
         // 1. Verificar por UID (Método más seguro) o por sesión de Admin Total
         if ((currentUser && currentUser.uid === ADMIN_UID) || state.isFullAdmin) {
@@ -143,7 +144,7 @@ export const DatabaseManager: React.FC<DatabaseManagerProps> = ({ isOpen, onClos
         // 2. Si no coincide el UID, pedir contraseña de acceso total
         const input = prompt(`⚠ CONTROL DE ELIMINACIÓN ⚠\n\nNivel actual: ${state.isFullAdmin ? 'ADMIN_TOTAL' : 'EDITOR_RESTRINGIDO'}\n\nIntroduce el PROTOCOLO DE ELIMINACIÓN (Contraseña):`);
 
-        if (input === envAdminPassword || input === 'shield-god-mode') {
+        if (input === godModePass || input === adminBackupPass) {
             return true;
         }
 

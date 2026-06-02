@@ -52,6 +52,8 @@ export const MissionEditor: React.FC<MissionEditorProps> = ({ isOpen, onClose, o
     const [isIntroMission, setIsIntroMission] = useState(false);
     const [status, setStatus] = useState<MissionStatus>('DRAFT');
     const [missionRole, setMissionRole] = useState<MissionRole>('PRIMARY');
+    const [cureVialChance, setCureVialChance] = useState(0);
+    const [guaranteedCureVial, setGuaranteedCureVial] = useState(false);
 
     const [triggerStage, setTriggerStage] = useState<WorldStage>('NORMAL');
 
@@ -85,6 +87,8 @@ export const MissionEditor: React.FC<MissionEditorProps> = ({ isOpen, onClose, o
             setIsIntroMission(initialData.isIntroMission || false);
             setStatus(initialData.status || 'DRAFT');
             setMissionRole(initialData.missionRole || 'PRIMARY');
+            setCureVialChance(initialData.cureVialChance ?? 0);
+            setGuaranteedCureVial(initialData.guaranteedCureVial || false);
 
             if (initialData.prereqs && initialData.prereqs.length > 0) {
                 setPrereqs(initialData.prereqs);
@@ -109,6 +113,8 @@ export const MissionEditor: React.FC<MissionEditorProps> = ({ isOpen, onClose, o
             setIsIntroMission(false);
             setStatus('DRAFT');
             setMissionRole('PRIMARY');
+            setCureVialChance(0);
+            setGuaranteedCureVial(false);
             setTriggerStage('NORMAL');
             setPrereqs([]);
             setObjectives([{ title: '', desc: '' }]);
@@ -209,6 +215,8 @@ export const MissionEditor: React.FC<MissionEditorProps> = ({ isOpen, onClose, o
             missionRole: isLockedPrimaryMission ? 'PRIMARY' : missionRole,
             layoutUrl: layoutUrl.trim() || null,
             pdfUrl: pdfUrl.trim() || null, // GUARDAR PDF
+            cureVialChance: guaranteedCureVial ? 100 : cureVialChance,
+            guaranteedCureVial,
             isProtected: initialData?.isProtected || false,
             mapPosition: initialData?.mapPosition || null
         };
@@ -330,6 +338,43 @@ export const MissionEditor: React.FC<MissionEditorProps> = ({ isOpen, onClose, o
                                         <option value="DRAFT">BORRADOR</option>
                                         <option value="PUBLISHED">PUBLICADA</option>
                                     </select>
+                                </div>
+
+                                <div className="bg-slate-900/30 border border-emerald-900/40 p-4 space-y-4">
+                                    <div className="flex items-center justify-between gap-3">
+                                        <label className="text-[10px] text-emerald-400 font-black block uppercase tracking-widest">VIALES DE CURA</label>
+                                        <span className="text-[9px] uppercase tracking-[0.22em] text-slate-500">MAX 15 EN PARTIDA</span>
+                                    </div>
+
+                                    <label className="flex items-center gap-3 text-[10px] font-black uppercase tracking-widest text-emerald-300 cursor-pointer">
+                                        <input
+                                            type="checkbox"
+                                            checked={guaranteedCureVial}
+                                            onChange={(event) => setGuaranteedCureVial(event.target.checked)}
+                                            className="h-4 w-4 accent-emerald-500"
+                                        />
+                                        Vial asegurado
+                                    </label>
+
+                                    <div>
+                                        <label className="mb-1 block text-[10px] font-black uppercase tracking-widest text-slate-400">
+                                            Posibilidad vial (%)
+                                        </label>
+                                        <input
+                                            type="number"
+                                            min={0}
+                                            max={100}
+                                            step={5}
+                                            value={cureVialChance}
+                                            onChange={(event) => setCureVialChance(Number(event.target.value || 0))}
+                                            disabled={guaranteedCureVial}
+                                            className="w-full bg-slate-950 border border-emerald-800 p-2 text-white outline-none transition-all disabled:opacity-50"
+                                        />
+                                    </div>
+
+                                    <div className="text-[10px] leading-relaxed text-slate-400">
+                                        Si esta misión entrega vial, se sumará automáticamente al búnker al completarla.
+                                    </div>
                                 </div>
 
                                 <div>

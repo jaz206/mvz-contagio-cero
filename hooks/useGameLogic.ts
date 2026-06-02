@@ -12,7 +12,7 @@ import { getUserProfile, resetUserProfiles, saveUserProfile } from '../services/
 import { getDefaultZoneControlConfig, getZoneControlConfig, saveZoneControlConfig } from '../services/zoneControlService';
 import { logout, signInEditor } from '../services/authService';
 import { ensureAdminStaffAccount, getStaffAccount } from '../services/staffService';
-import { Mission, Hero, WorldStage, GlobalEvent, HeroTemplate, StaffAccount, StaffPermissions, IntroConfig, StoryConfig, ZoneControlConfig } from '../types';
+import { Mission, Hero, WorldStage, GlobalEvent, HeroTemplate, StaffAccount, StaffPermissions, IntroConfig, StoryConfig, ZoneControlConfig, MissionCompletionReward } from '../types';
 import { GAME_EXPANSIONS } from '../data/gameContent';
 import { getInitialMissions } from '../data/initialMissions';
 
@@ -25,7 +25,7 @@ const FACTION_STATES = {
 
 const ADMIN_UID = (import.meta as any).env.VITE_ADMIN_UID || '60mH4M1SClV793Nq1WjQ3CExkLp1';
 const ADMIN_EMAIL = ((import.meta as any).env.VITE_ADMIN_EMAIL || 'jorgeaz206@gmail.com').toLowerCase();
-const MAX_OMEGA_CYLINDERS = 10;
+const MAX_OMEGA_CYLINDERS = 15;
 const LANGUAGE_KEY = 'shield_language';
 
 const EMPTY_PERMISSIONS: StaffPermissions = {
@@ -724,7 +724,7 @@ export const useGameLogic = () => {
         }
     };
 
-    const handleMissionComplete = async (id: string) => {
+    const handleMissionComplete = async (id: string, reward?: MissionCompletionReward) => {
         const nextSet = new Set(completedMissionIds);
         nextSet.add(id);
         setCompletedMissionIds(nextSet);
@@ -734,8 +734,22 @@ export const useGameLogic = () => {
             setSurferTurnCount((prev) => prev + 1);
         }
 
+        const foundCureVial = reward?.foundCureVial === true;
+        const nextCylinders = foundCureVial
+            ? Math.min(MAX_OMEGA_CYLINDERS, omegaCylinders + 1)
+            : omegaCylinders;
+
+        if (foundCureVial) {
+            setOmegaCylinders(nextCylinders);
+            handleTickerUpdate(
+                lang === 'es'
+                    ? 'HABEIS ENCONTRADO UN VIAL DE CURA.'
+                    : 'YOU HAVE FOUND A CURE VIAL.'
+            );
+        }
+
         if (user && playerAlignment) {
-            await saveData(heroes, nextSet, omegaCylinders);
+            await saveData(heroes, nextSet, nextCylinders);
         }
 
         if (id === 'boss-galactus') {

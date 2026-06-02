@@ -38,6 +38,21 @@ const normalizeComparableText = (value?: string) => (
         .toLowerCase()
 );
 
+const normalizeOptionalChance = (value: unknown): number | undefined => {
+    if (typeof value === 'number' && Number.isFinite(value)) {
+        return Math.max(0, Math.min(100, Math.round(value)));
+    }
+
+    if (typeof value === 'string' && value.trim()) {
+        const parsed = Number(value);
+        if (Number.isFinite(parsed)) {
+            return Math.max(0, Math.min(100, Math.round(parsed)));
+        }
+    }
+
+    return undefined;
+};
+
 const isHeroMissionZero = (mission: Mission) => {
     const normalizedTitle = normalizeComparableText(mission.title);
     return mission.id === 'm_intro_0'
@@ -116,6 +131,8 @@ const normalizeMission = (id: string, data: Partial<Mission>): Mission => {
         setupInstructions: Array.isArray(data.setupInstructions) ? data.setupInstructions : [],
         layoutUrl: data.layoutUrl || undefined,
         outcomeText: data.outcomeText || undefined,
+        cureVialChance: normalizeOptionalChance(data.cureVialChance),
+        guaranteedCureVial: data.guaranteedCureVial === true,
         isIntroMission: data.isIntroMission === true,
         status: (data.status as MissionStatus) || 'PUBLISHED',
         missionRole: normalizeMissionRole(id, data),
@@ -152,6 +169,8 @@ const buildMissionWritePayload = (data: Partial<Mission>, useDefaults = false): 
     if (useDefaults || 'pdfUrl' in data) assign('pdfUrl', data.pdfUrl || null);
     if (useDefaults || 'layoutUrl' in data) assign('layoutUrl', data.layoutUrl || null);
     if (useDefaults || 'outcomeText' in data) assign('outcomeText', data.outcomeText || null);
+    if (useDefaults || 'cureVialChance' in data) assign('cureVialChance', normalizeOptionalChance(data.cureVialChance));
+    if (useDefaults || 'guaranteedCureVial' in data) assign('guaranteedCureVial', data.guaranteedCureVial === true);
     if (useDefaults || 'isIntroMission' in data) assign('isIntroMission', data.isIntroMission === true);
     if (useDefaults || 'status' in data) assign('status', (data.status as MissionStatus) || (useDefaults ? 'PUBLISHED' : undefined));
     if (useDefaults || 'missionRole' in data) assign('missionRole', normalizeMissionRole(String((data as Mission).id || ''), data));
