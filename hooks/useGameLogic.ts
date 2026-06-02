@@ -314,6 +314,7 @@ export const useGameLogic = () => {
             const coreExpansion = GAME_EXPANSIONS.find((item) => item.id === 'core_box');
             const coreHeroes = coreExpansion ? coreExpansion.heroes : [];
             const heroTemplates = await getHeroTemplates();
+            const cachedCampaign = readCampaignCache(currentUser.uid);
             const hydrateHeroFromTemplate = (hero: Hero): Hero => {
                 const template = heroTemplates.find((item) => item.id === hero.id);
                 if (!template) return hero;
@@ -338,6 +339,11 @@ export const useGameLogic = () => {
                 };
             };
             const hydratedCoreHeroes = coreHeroes.map(hydrateHeroFromTemplate);
+            const cachedHeroes = (cachedCampaign?.heroes || []).map(hydrateHeroFromTemplate);
+            const hasCachedCampaign = cachedHeroes.length > 0 || (cachedCampaign?.completedMissionIds?.length || 0) > 0 || (cachedCampaign?.omegaCylinders || 0) > 0;
+            const campaignHeroes = hasCachedCampaign ? cachedHeroes : hydratedCoreHeroes;
+            const campaignCompletedMissions = hasCachedCampaign ? new Set(cachedCampaign?.completedMissionIds || []) : new Set<string>();
+            const campaignOmega = hasCachedCampaign ? Math.max(0, Math.min(MAX_OMEGA_CYLINDERS, cachedCampaign?.omegaCylinders || 0)) : 0;
 
             const currentEmail = (currentUser.email || '').toLowerCase();
             const isAdminUser = currentUser.uid === ADMIN_UID || currentEmail === ADMIN_EMAIL;
@@ -358,9 +364,9 @@ export const useGameLogic = () => {
                 setPlayerAlignment('ALIVE');
                 setShowStory(false);
                 setShowTutorial(false);
-                setHeroes(hydratedCoreHeroes);
-                setCompletedMissionIds(new Set());
-                setOmegaCylinders(0);
+                setHeroes(campaignHeroes);
+                setCompletedMissionIds(campaignCompletedMissions);
+                setOmegaCylinders(campaignOmega);
                 setWorldStage('NORMAL');
                 isDataLoadedRef.current = true;
                 if (!preserveBunkerRoute()) navigate('/map');
@@ -385,9 +391,9 @@ export const useGameLogic = () => {
                 setPlayerAlignment('ALIVE');
                 setShowStory(false);
                 setShowTutorial(false);
-                setHeroes(hydratedCoreHeroes);
-                setCompletedMissionIds(new Set());
-                setOmegaCylinders(0);
+                setHeroes(campaignHeroes);
+                setCompletedMissionIds(campaignCompletedMissions);
+                setOmegaCylinders(campaignOmega);
                 setWorldStage('NORMAL');
                 isDataLoadedRef.current = true;
                 if (!preserveBunkerRoute()) navigate('/map');
@@ -420,7 +426,7 @@ export const useGameLogic = () => {
     }, []);
 
     const saveData = useCallback(async (currentHeroes: Hero[], currentMissions: Set<string>, currentCylinders: number) => {
-        if (isEditorMode || !playerAlignment || !isDataLoadedRef.current) return;
+        if (!playerAlignment || !isDataLoadedRef.current) return;
 
         setIsSaving(true);
         writeCampaignCache(currentHeroes, currentMissions, currentCylinders, user?.uid);
@@ -433,7 +439,7 @@ export const useGameLogic = () => {
         } finally {
             setTimeout(() => setIsSaving(false), 1000);
         }
-    }, [user, playerAlignment, isEditorMode]);
+    }, [user, playerAlignment]);
 
     useEffect(() => {
         if (user || isDataLoadedRef.current || playerAlignment === null) return;
