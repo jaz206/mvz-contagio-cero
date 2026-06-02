@@ -236,7 +236,7 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
     const selectedHeroImageUrl = selectedHero
         ? preferGithubCharacterImage(
             selectedHero.alias,
-            selectedHero.status === 'CAPTURED' ? 'ZOMBIE' : ((selectedHero as any).alignment || 'ALIVE'),
+            playerAlignment || ((selectedHero as any).alignment || 'ALIVE'),
             selectedHero.imageUrl
         )
         : '';
@@ -538,13 +538,17 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
                         </div>
                         <div className="mt-1 flex items-end justify-between gap-3">
                             <div className="text-[10px] uppercase tracking-[0.2em] text-slate-500">
-                                Aliados rescatados y héroes activos en la campaña
+                                {playerAlignment === 'ZOMBIE'
+                                    ? (isSpanishLanguage(language) ? 'Zombis reclutados y activos en la campaña' : 'Recruited zombies active in the campaign')
+                                    : (isSpanishLanguage(language) ? 'Aliados rescatados y héroes activos en la campaña' : 'Rescued allies and active heroes in the campaign')}
                             </div>
                             <button
                                 onClick={() => handleOpenRecruit('RECRUIT')}
                                 className="shrink-0 border border-cyan-600 bg-cyan-950/30 px-3 py-2 text-[8px] font-black uppercase tracking-[0.24em] text-cyan-200 transition-all hover:bg-cyan-500 hover:text-black"
                             >
-                                {isSpanishLanguage(language) ? 'AÑADIR ALIADO' : 'ADD ALLY'}
+                                {playerAlignment === 'ZOMBIE'
+                                    ? (isSpanishLanguage(language) ? 'AÑADIR ZOMBI' : 'ADD ZOMBIE')
+                                    : (isSpanishLanguage(language) ? 'AÑADIR ALIADO' : 'ADD ALLY')}
                             </button>
                         </div>
                     </div>
@@ -555,12 +559,13 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
                                 ACTIVOS ({availableHeroes.length})
                             </div>
                             {availableHeroes.map((hero) => (
-                                <RosterHeroCard
-                                    key={hero.id}
-                                    hero={hero}
-                                    language={language}
-                                    onClick={() => setSelectedHeroId(hero.id)}
-                                />
+                                                <RosterHeroCard
+                                                    key={hero.id}
+                                                    hero={hero}
+                                                    language={language}
+                                                    playerAlignment={playerAlignment || 'ALIVE'}
+                                                    onClick={() => setSelectedHeroId(hero.id)}
+                                                />
                             ))}
 
                             {deployedHeroes.length > 0 && (
@@ -574,6 +579,7 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
                                                 key={hero.id}
                                                 hero={hero}
                                                 language={language}
+                                                playerAlignment={playerAlignment || 'ALIVE'}
                                                 onClick={() => setSelectedHeroId(hero.id)}
                                                 actionIcon="×"
                                                 onAction={() => onUnassign(hero.id)}
@@ -1077,7 +1083,7 @@ export const BunkerInterior: React.FC<BunkerInteriorProps> = ({
     );
 };
 
-const RosterHeroCard = ({ hero, language, onClick, actionIcon, actionLabel, onAction, actionMuted = false }: { hero: Hero, language: Language, onClick: () => void, actionIcon?: string, actionLabel?: string, onAction?: () => void, actionMuted?: boolean }) => {
+const RosterHeroCard = ({ hero, language, playerAlignment, onClick, actionIcon, actionLabel, onAction, actionMuted = false }: { hero: Hero, language: Language, playerAlignment: 'ALIVE' | 'ZOMBIE', onClick: () => void, actionIcon?: string, actionLabel?: string, onAction?: () => void, actionMuted?: boolean }) => {
     const statusColors = {
         AVAILABLE: 'border-emerald-500 shadow-emerald-500/20',
         DEPLOYED: 'border-yellow-500 shadow-yellow-500/20',
@@ -1085,7 +1091,7 @@ const RosterHeroCard = ({ hero, language, onClick, actionIcon, actionLabel, onAc
         CAPTURED: 'border-red-900 shadow-red-900/20 grayscale'
     };
     const colorClass = statusColors[hero.status] || 'border-slate-600';
-    const displayImageUrl = preferGithubCharacterImage(hero.alias, hero.status === 'CAPTURED' ? 'ZOMBIE' : (hero.alignment || 'ALIVE'), hero.imageUrl);
+    const displayImageUrl = preferGithubCharacterImage(hero.alias, hero.status === 'CAPTURED' ? 'ZOMBIE' : playerAlignment, hero.imageUrl);
     const dossierSummary = getSafeDossierText(resolveI18n(hero.currentStory, language), hero.name || '');
     const imgStyle = hero.imageParams ? {
         transform: `scale(${hero.imageParams.scale}) translate(${hero.imageParams.x}%, ${hero.imageParams.y}%)`

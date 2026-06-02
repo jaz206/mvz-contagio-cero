@@ -120,12 +120,13 @@ const buildGithubImageUrl = (folder: 'Heroes' | 'Zombis', fileName: string) => {
 };
 
 export const getGithubCharacterImageUrl = (alias?: string, alignment: 'ALIVE' | 'ZOMBIE' = 'ALIVE') => {
-    if (!alias || alignment !== 'ALIVE') return null;
+    if (!alias) return null;
 
     const fileName = HERO_IMAGE_FILES[normalizeAlias(alias)];
     if (!fileName) return null;
 
-    return buildGithubImageUrl('Heroes', fileName);
+    const folder = alignment === 'ZOMBIE' ? 'Zombis' : 'Heroes';
+    return buildGithubImageUrl(folder, fileName);
 };
 
 export const preferGithubCharacterImage = (
