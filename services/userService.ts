@@ -4,6 +4,36 @@ import { Hero } from '../types';
 
 const USERS_COLLECTION = 'users';
 
+const sanitizeFirestoreValue = (value: any): any => {
+    if (value === undefined) return undefined;
+    if (value === null) return null;
+
+    if (Array.isArray(value)) {
+        return value.map((item) => {
+            const cleaned = sanitizeFirestoreValue(item);
+            return cleaned === undefined ? null : cleaned;
+        });
+    }
+
+    if (value instanceof Date) {
+        return value;
+    }
+
+    if (typeof value !== 'object') {
+        return value;
+    }
+
+    const cleanedEntries = Object.entries(value).reduce<Record<string, any>>((acc, [key, entryValue]) => {
+        const cleaned = sanitizeFirestoreValue(entryValue);
+        if (cleaned !== undefined) {
+            acc[key] = cleaned;
+        }
+        return acc;
+    }, {});
+
+    return cleanedEntries;
+};
+
 const isDbReady = (): boolean => {
     if (!db) {
         console.warn('⚠️ Operación de base de datos omitida: Firebase no está inicializado.');
@@ -90,16 +120,18 @@ export const saveUserProfile = async (
     if (!isDbReady() || !db) return;
     try {
         const docRef = doc(db, USERS_COLLECTION, uid);
-        const updateData = {
+        const updateData = sanitizeFirestoreValue({
             [campaignMode]: {
                 heroes,
                 missions: completedMissionIds,
                 resources: resources || { omegaCylinders: 0 }
             },
             ...(meta ? { campaignMeta: meta } : {}),
+        });
+        await setDoc(docRef, {
+            ...updateData,
             lastUpdated: Timestamp.now()
-        };
-        await setDoc(docRef, updateData, { merge: true });
+        }, { merge: true });
     } catch (error) {
         console.error('Error saving user profile:', error);
     }
@@ -109,10 +141,10 @@ export const saveUserCampaignMeta = async (uid: string, meta: UserCampaignMeta):
     if (!isDbReady() || !db) return;
     try {
         const docRef = doc(db, USERS_COLLECTION, uid);
-        await setDoc(docRef, {
+        await setDoc(docRef, sanitizeFirestoreValue({
             campaignMeta: meta,
             lastUpdated: Timestamp.now()
-        }, { merge: true });
+        }), { merge: true });
     } catch (error) {
         console.error('Error saving user campaign meta:', error);
     }
