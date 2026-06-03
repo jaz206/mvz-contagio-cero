@@ -447,9 +447,37 @@ export const useGameLogic = () => {
             }
 
             if (linkedStaffAccount) {
+                if (linkedStaffAccount.role === 'tester') {
+                    setStaffAccount(linkedStaffAccount);
+                    setStaffPermissions(EMPTY_PERMISSIONS);
+                    setIsEditorMode(false);
+                    setIsFullAdmin(false);
+                    setIsGuest(false);
+                    setIsStartingCampaign(false);
+                    setPlayerAlignment(null);
+                    setShowStory(true);
+                    setShowTutorial(false);
+                    setHeroes([]);
+                    setCompletedMissionIds(new Set());
+                    setOmegaCylinders(0);
+                    setWorldStage('NORMAL');
+                    setStartStoryAtChoice(false);
+                    isDataLoadedRef.current = true;
+                    if (user) {
+                        localStorage.removeItem(`shield_intro_seen_${user.uid}`);
+                        localStorage.removeItem(getSetupDoneKey(user.uid));
+                        saveFlowStep('story', user.uid);
+                    } else {
+                        saveFlowStep('story');
+                    }
+                    if (!preserveBunkerRoute()) navigate('/story');
+                    setLoading(false);
+                    return;
+                }
+
                 applyCampaignState({
                     staff: linkedStaffAccount,
-                    editorMode: linkedStaffAccount.role !== 'tester',
+                    editorMode: true,
                     fullAdmin: linkedStaffAccount.role === 'admin'
                 });
                 if (!preserveBunkerRoute()) navigate('/map');
