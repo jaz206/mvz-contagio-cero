@@ -203,6 +203,17 @@ export const useGameLogic = () => {
     const [startStoryAtChoice, setStartStoryAtChoice] = useState(false);
     const isDataLoadedRef = useRef(false);
 
+    const findStaffAccount = async (email: string, uid: string) => {
+        try {
+            const byEmail = await getStaffAccountByEmail(email);
+            if (byEmail) return byEmail;
+        } catch (error) {
+            console.warn('No se pudo leer la cuenta por correo, pruebo por identificador.');
+        }
+
+        return getStaffAccount(uid);
+    };
+
     const [isEditorMode, setIsEditorMode] = useState(false);
     const [isFullAdmin, setIsFullAdmin] = useState(false);
     const [staffAccount, setStaffAccount] = useState<StaffAccount | null>(null);
@@ -381,7 +392,7 @@ export const useGameLogic = () => {
                 return;
             }
 
-            const linkedStaffAccount = (await getStaffAccountByEmail(currentEmail)) || await getStaffAccount(currentUser.uid);
+            const linkedStaffAccount = await findStaffAccount(currentEmail, currentUser.uid);
             if (linkedStaffAccount) {
                 if (!linkedStaffAccount.isActive) {
                     await logout();

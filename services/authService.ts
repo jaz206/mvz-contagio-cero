@@ -19,6 +19,17 @@ const ensureAuth = () => {
   }
 };
 
+const findStaffAccount = async (email: string, uid: string) => {
+  try {
+    const byEmail = await getStaffAccountByEmail(email);
+    if (byEmail) return byEmail;
+  } catch (error) {
+    console.warn('No se pudo leer la cuenta por correo, pruebo por identificador.');
+  }
+
+  return getStaffAccount(uid);
+};
+
 export const signInWithGoogle = async (): Promise<User> => {
   ensureAuth();
 
@@ -26,7 +37,7 @@ export const signInWithGoogle = async (): Promise<User> => {
     const result = await signInWithPopup(auth!, googleProvider);
     const currentEmail = (result.user.email || '').toLowerCase();
     const isAdminUser = result.user.uid === ADMIN_UID || currentEmail === ADMIN_EMAIL;
-    const staffAccount = (await getStaffAccountByEmail(currentEmail)) || await getStaffAccount(result.user.uid);
+    const staffAccount = await findStaffAccount(currentEmail, result.user.uid);
     const isApprovedStaff = !!staffAccount && staffAccount.isActive && (
       staffAccount.role === 'editor'
       || staffAccount.role === 'admin'
@@ -50,7 +61,7 @@ export const signInEditor = async (email: string, password: string): Promise<Use
 
   try {
     const result = await signInWithEmailAndPassword(auth!, email.trim(), password);
-    const staffAccount = (await getStaffAccountByEmail(result.user.email || email)) || await getStaffAccount(result.user.uid);
+    const staffAccount = await findStaffAccount(result.user.email || email, result.user.uid);
 
     if (!staffAccount || (staffAccount.role !== 'editor' && staffAccount.role !== 'admin' && staffAccount.role !== 'tester')) {
       await firebaseSignOut(auth!);
