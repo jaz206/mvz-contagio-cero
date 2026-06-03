@@ -3,10 +3,8 @@ import {
     doc,
     getDoc,
     getDocs,
-    limit,
     orderBy,
     query,
-    where,
     serverTimestamp,
     setDoc,
     updateDoc
@@ -96,19 +94,7 @@ export const getStaffAccountByEmail = async (email: string): Promise<StaffAccoun
         return staffDocToAccount(directSnapshot.id, directSnapshot.data());
     }
 
-    const staffQuery = query(
-        collection(db!, STAFF_COLLECTION),
-        where('email', '==', normalizedEmail),
-        limit(1)
-    );
-    const snapshot = await getDocs(staffQuery);
-
-    if (snapshot.empty) {
-        return null;
-    }
-
-    const first = snapshot.docs[0];
-    return staffDocToAccount(first.id, first.data());
+    return null;
 };
 
 export const ensureAdminStaffAccount = async (uid: string, email: string, displayName?: string): Promise<StaffAccount> => {

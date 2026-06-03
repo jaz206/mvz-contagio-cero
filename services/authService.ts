@@ -1,6 +1,7 @@
 import {
   GoogleAuthProvider,
   signInWithPopup,
+  signInWithRedirect,
   signOut as firebaseSignOut,
   User
 } from "firebase/auth";
@@ -28,7 +29,7 @@ const findStaffAccount = async (email: string) => {
   return null;
 };
 
-export const signInWithGoogle = async (): Promise<User> => {
+export const signInWithGoogle = async (): Promise<User | null> => {
   ensureAuth();
 
   try {
@@ -55,6 +56,15 @@ export const signInWithGoogle = async (): Promise<User> => {
 
     return result.user;
   } catch (error) {
+    const message = String((error as any)?.message || error || '');
+    const code = String((error as any)?.code || '');
+    const isPopupIssue = /cross-origin-opener-policy|window\.closed|popup/i.test(message) || /popup/i.test(code);
+
+    if (isPopupIssue) {
+      await signInWithRedirect(auth!, googleProvider);
+      return null;
+    }
+
     console.error("Error signing in with Google", error);
     throw error;
   }
