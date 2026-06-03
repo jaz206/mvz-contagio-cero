@@ -9,7 +9,7 @@ service cloud.firestore {
       return isSignedIn()
         && (
           request.auth.uid == '60mH4M1SClV793Nq1WjQ3CExkLp1'
-          || request.auth.token.email == 'jorgeaz206@gmail.com'
+          || (request.auth.token.email != null && request.auth.token.email.lower() == 'jorgeaz206@gmail.com')
         );
     }
 

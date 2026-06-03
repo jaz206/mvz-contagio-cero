@@ -489,22 +489,31 @@ export const useGameLogic = () => {
             }
 
             if (isAdminUser) {
-                const adminAccount = await ensureAdminStaffAccount(
-                    currentUser.uid,
-                    currentUser.email || '',
-                    currentUser.displayName || undefined
-                );
+                try {
+                    const adminAccount = await ensureAdminStaffAccount(
+                        currentUser.uid,
+                        currentUser.email || '',
+                        currentUser.displayName || undefined
+                    );
 
-                applyCampaignState({
-                    staff: adminAccount,
-                    editorMode: true,
-                    fullAdmin: true
-                });
-                if (hasLoadedCampaign) {
-                    writeCampaignCache(campaignHeroes, campaignCompletedMissions, campaignOmega, currentUser.uid, preferredAlignment);
+                    applyCampaignState({
+                        staff: adminAccount,
+                        editorMode: true,
+                        fullAdmin: true
+                    });
+                    if (hasLoadedCampaign) {
+                        writeCampaignCache(campaignHeroes, campaignCompletedMissions, campaignOmega, currentUser.uid, preferredAlignment);
+                    }
+                    if (!preserveBunkerRoute()) navigate('/map');
+                    setLoading(false);
+                } catch (error) {
+                    console.error('Error al asegurar la cuenta de administrador', error);
+                    setAuthError(lang === 'es'
+                        ? 'Error al inicializar la cuenta de administrador. Comprueba las reglas de base de datos.'
+                        : 'Error initializing admin account. Check database rules.');
+                    await logout();
+                    setLoading(false);
                 }
-                if (!preserveBunkerRoute()) navigate('/map');
-                setLoading(false);
                 return;
             }
 
