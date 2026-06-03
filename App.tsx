@@ -521,7 +521,17 @@ const GameContent: React.FC = () => {
 
     return (
         <Routes>
-            <Route path="/" element={<LoginScreen onLocalAccess={actions.handleGuestLogin} language={lang} setLanguage={actions.setLang} />} />
+            <Route
+                path="/"
+                element={(
+                    <LoginScreen
+                        onLocalAccess={actions.handleGuestLogin}
+                        onEditorAccess={actions.handleEditorLogin}
+                        language={lang}
+                        setLanguage={actions.setLang}
+                    />
+                )}
+            />
 
             <Route path="/story" element={<StoryMode language={lang} slides={state.storyConfig.slides} onComplete={actions.handleStoryChoice} onSkip={() => { actions.setStartStoryAtChoice(true); if (state.user) { localStorage.setItem(`shield_flow_step_${state.user.uid}`, 'story'); } else { localStorage.setItem('shield_flow_step_guest', 'story'); } navigate('/story', { replace: true }); }} startAtChoice={state.startStoryAtChoice} />} />
 
