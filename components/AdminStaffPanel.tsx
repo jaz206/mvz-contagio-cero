@@ -108,7 +108,7 @@ export const AdminStaffPanel: React.FC<AdminStaffPanelProps> = ({
     const [displayName, setDisplayName] = useState('');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
-    const [newRole, setNewRole] = useState<'admin' | 'editor'>('editor');
+    const [newRole, setNewRole] = useState<'admin' | 'editor' | 'tester'>('editor');
     const [creating, setCreating] = useState(false);
     const [loginAccessMode, setLoginAccessMode] = useState<LoginAccessMode>('DEVELOPMENT');
     const [savingAccessMode, setSavingAccessMode] = useState(false);
@@ -211,7 +211,7 @@ export const AdminStaffPanel: React.FC<AdminStaffPanelProps> = ({
         }
     };
 
-    const handleRoleChange = async (account: StaffAccount, role: 'admin' | 'editor') => {
+    const handleRoleChange = async (account: StaffAccount, role: 'admin' | 'editor' | 'tester') => {
         try {
             await updateStaffRole(account.uid, role);
             setAccounts((prev) => prev.map((item) => (
@@ -649,7 +649,7 @@ export const AdminStaffPanel: React.FC<AdminStaffPanelProps> = ({
                                 </div>
                             </div>
 
-                            <div className="mb-3 text-[10px] font-black uppercase tracking-[0.3em] text-cyan-500">Nuevo Editor</div>
+                            <div className="mb-3 text-[10px] font-black uppercase tracking-[0.3em] text-cyan-500">Nueva Cuenta</div>
                             <form onSubmit={handleCreateEditor} className="space-y-3">
                                 <input
                                     value={displayName}
@@ -670,16 +670,16 @@ export const AdminStaffPanel: React.FC<AdminStaffPanelProps> = ({
                                     type="password"
                                     value={password}
                                     onChange={(event) => setPassword(event.target.value)}
-                                    placeholder="Contrasena temporal"
+                                    placeholder="Contrasena temporal opcional"
                                     className="w-full border border-slate-800 bg-black p-3 text-sm text-white outline-none focus:border-cyan-500"
                                     minLength={6}
-                                    required
                                 />
                                 <select
                                     value={newRole}
-                                    onChange={(event) => setNewRole(event.target.value as 'admin' | 'editor')}
+                                    onChange={(event) => setNewRole(event.target.value as 'admin' | 'editor' | 'tester')}
                                     className="w-full border border-slate-800 bg-black p-3 text-sm text-white outline-none focus:border-cyan-500"
                                 >
+                                    <option value="tester">Tester</option>
                                     <option value="editor">Editor</option>
                                     <option value="admin">Admin</option>
                                 </select>
@@ -693,7 +693,7 @@ export const AdminStaffPanel: React.FC<AdminStaffPanelProps> = ({
                             </form>
 
                             <div className="mt-6 border-t border-slate-800 pt-4 text-[11px] leading-relaxed text-gray-400">
-                                <div>Las cuentas nuevas nacen con permisos de misiones.</div>
+                                <div>Las cuentas nuevas pueden nacer como editor, tester o admin.</div>
                                 <div>El borrado sigue siendo solo para admin hasta que tu lo abras.</div>
                             </div>
 
@@ -723,16 +723,17 @@ export const AdminStaffPanel: React.FC<AdminStaffPanelProps> = ({
                                                     <div className="font-black uppercase tracking-wide text-white">{account.displayName}</div>
                                                     <div className="text-sm text-gray-400">{account.email}</div>
                                                     <div className="mt-1 text-[10px] uppercase tracking-[0.3em] text-cyan-600">
-                                                        {account.role === 'admin' ? 'Admin' : 'Editor'}
+                                                        {account.role === 'admin' ? 'Admin' : account.role === 'tester' ? 'Tester' : 'Editor'}
                                                     </div>
                                                 </div>
                                                 <div className="flex items-center gap-2">
                                                     {account.role !== 'admin' && (
                                                         <select
                                                             value={account.role}
-                                                            onChange={(event) => handleRoleChange(account, event.target.value as 'admin' | 'editor')}
+                                                            onChange={(event) => handleRoleChange(account, event.target.value as 'admin' | 'editor' | 'tester')}
                                                             className="border border-slate-700 bg-black px-2 py-2 text-[10px] font-black uppercase text-cyan-300"
                                                         >
+                                                            <option value="tester">Tester</option>
                                                             <option value="editor">Editor</option>
                                                             <option value="admin">Admin</option>
                                                         </select>

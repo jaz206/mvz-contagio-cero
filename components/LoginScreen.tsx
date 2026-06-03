@@ -206,12 +206,12 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLocalAccess, onEdito
                     </button>
 
                     <form onSubmit={handleEditorAccess} className="space-y-2 border border-cyan-900/40 bg-slate-950/50 p-3">
-                        <div className="text-[10px] font-black tracking-[0.3em] uppercase text-cyan-500">Acceso editor</div>
+                        <div className="text-[10px] font-black tracking-[0.3em] uppercase text-cyan-500">Acceso autorizado</div>
                         <input
                             value={editorEmail}
                             onChange={(event) => setEditorEmail(event.target.value)}
                             type="email"
-                            placeholder="Correo del editor"
+                            placeholder="Correo autorizado"
                             className="w-full border border-slate-800 bg-black px-3 py-2 text-sm text-white outline-none focus:border-cyan-500"
                             autoComplete="email"
                             disabled={scanning || success || editorBusy}

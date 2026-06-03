@@ -13,8 +13,19 @@ service cloud.firestore {
         );
     }
 
+    function staffDocByUid() {
+      return exists(/databases/$(database)/documents/staffAccounts/$(request.auth.uid));
+    }
+
+    function staffDocByEmail() {
+      return request.auth.token.email != null
+        && exists(/databases/$(database)/documents/staffAccounts/$(request.auth.token.email));
+    }
+
     function staffDoc() {
-      return get(/databases/$(database)/documents/staffAccounts/$(request.auth.uid));
+      return staffDocByUid()
+        ? get(/databases/$(database)/documents/staffAccounts/$(request.auth.uid))
+        : get(/databases/$(database)/documents/staffAccounts/$(request.auth.token.email));
     }
 
     function isActiveStaff() {
@@ -22,7 +33,7 @@ service cloud.firestore {
         && (
           isAdmin()
           || (
-            exists(/databases/$(database)/documents/staffAccounts/$(request.auth.uid))
+            (staffDocByUid() || staffDocByEmail())
             && staffDoc().data.isActive == true
           )
         );
@@ -69,7 +80,7 @@ service cloud.firestore {
 
     match /staffAccounts/{uid} {
       allow get: if isAdmin() || (isSignedIn() && (request.auth.uid == uid || resource.data.email == request.auth.token.email));
-      allow list: if isAdmin() || (isSignedIn() && resource.data.email == request.auth.token.email);
+      allow list: if isAdmin() || (isSignedIn() && request.auth.token.email != null && resource.data.email == request.auth.token.email);
       allow create, update, delete: if isAdmin();
     }
 

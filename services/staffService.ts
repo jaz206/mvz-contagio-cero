@@ -41,13 +41,24 @@ export const buildEditorPermissions = (): StaffPermissions => ({
     characters: buildPermissionBlock(false, false, false, false)
 });
 
-const normalizePermissions = (permissions?: Partial<StaffPermissions> | null): StaffPermissions => ({
+export const buildTesterPermissions = (): StaffPermissions => ({
+    missions: buildPermissionBlock(false, false, false, false),
+    characters: buildPermissionBlock(false, false, false, false)
+});
+
+const getBasePermissions = (role?: 'admin' | 'editor' | 'tester' | null): StaffPermissions => {
+    if (role === 'admin') return buildAdminPermissions();
+    if (role === 'tester') return buildTesterPermissions();
+    return buildEditorPermissions();
+};
+
+const normalizePermissions = (permissions?: Partial<StaffPermissions> | null, role?: 'admin' | 'editor' | 'tester' | null): StaffPermissions => ({
     missions: {
-        ...buildEditorPermissions().missions,
+        ...getBasePermissions(role).missions,
         ...(permissions?.missions || {})
     },
     characters: {
-        ...buildEditorPermissions().characters,
+        ...getBasePermissions(role).characters,
         ...(permissions?.characters || {})
     }
 });
@@ -64,7 +75,7 @@ const staffDocToAccount = (uid: string, data: any): StaffAccount => ({
     displayName: data.displayName || data.email || 'Editor',
     role: data.role || 'editor',
     isActive: data.isActive !== false,
-    permissions: normalizePermissions(data.permissions),
+    permissions: normalizePermissions(data.permissions, data.role),
     createdAt: data.createdAt,
     updatedAt: data.updatedAt
 });
@@ -134,9 +145,9 @@ export const listStaffAccounts = async (): Promise<StaffAccount[]> => {
 
 export const createEditorAccount = async (payload: {
     email: string;
-    password: string;
+    password?: string;
     displayName: string;
-    role?: 'admin' | 'editor';
+    role?: 'admin' | 'editor' | 'tester';
     permissions?: Partial<StaffPermissions>;
 }): Promise<StaffAccount> => {
     ensureDb();
@@ -144,28 +155,40 @@ export const createEditorAccount = async (payload: {
 
     const secondaryApp = getScopedFirebaseApp('staff-account-admin');
     const secondaryAuth = getAuth(secondaryApp);
-    const credentials = await createUserWithEmailAndPassword(secondaryAuth, normalizedEmail, payload.password);
+    let credentials: Awaited<ReturnType<typeof createUserWithEmailAndPassword>> | null = null;
 
-    if (payload.displayName.trim()) {
-        await updateProfile(credentials.user, { displayName: payload.displayName.trim() });
+    if (payload.password && payload.password.length > 0) {
+        try {
+            credentials = await createUserWithEmailAndPassword(secondaryAuth, normalizedEmail, payload.password);
+
+            if (payload.displayName.trim()) {
+                await updateProfile(credentials.user, { displayName: payload.displayName.trim() });
+            }
+        } catch (error: any) {
+            if (error?.code !== 'auth/email-already-in-use') {
+                throw error;
+            }
+        }
     }
 
     const account: StaffAccount = {
-        uid: credentials.user.uid,
+        uid: credentials?.user.uid || normalizedEmail,
         email: normalizedEmail,
         displayName: payload.displayName.trim() || normalizedEmail,
         role: payload.role || 'editor',
         isActive: true,
-        permissions: normalizePermissions(payload.permissions)
-    };
+        permissions: normalizePermissions(payload.permissions, payload.role)
+    }
 
-    await setDoc(doc(db!, STAFF_COLLECTION, credentials.user.uid), {
+    await setDoc(doc(db!, STAFF_COLLECTION, account.uid), {
         ...account,
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp()
     });
 
-    await signOut(secondaryAuth);
+    if (credentials) {
+        await signOut(secondaryAuth);
+    }
 
     return account;
 };
@@ -186,10 +209,11 @@ export const updateStaffStatus = async (uid: string, isActive: boolean): Promise
     });
 };
 
-export const updateStaffRole = async (uid: string, role: 'admin' | 'editor'): Promise<void> => {
+export const updateStaffRole = async (uid: string, role: 'admin' | 'editor' | 'tester'): Promise<void> => {
     ensureDb();
     await updateDoc(doc(db!, STAFF_COLLECTION, uid), {
         role,
+        permissions: normalizePermissions(null, role),
         updatedAt: serverTimestamp()
     });
 };

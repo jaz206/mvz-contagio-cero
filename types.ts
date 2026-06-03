@@ -1,7 +1,7 @@
 export type HeroClass = 'SCOUT' | 'BRAWLER' | 'TACTICIAN' | 'BLASTER';
 export type HeroStatus = 'AVAILABLE' | 'DEPLOYED' | 'INJURED' | 'CAPTURED';
 export type WorldStage = 'NORMAL' | 'ANOMALY' | 'SURFER' | 'GALACTUS';
-export type StaffRole = 'admin' | 'editor';
+export type StaffRole = 'admin' | 'editor' | 'tester';
 export type LoginAccessMode = 'PUBLIC' | 'DEVELOPMENT';
 
 export interface HeroStats {

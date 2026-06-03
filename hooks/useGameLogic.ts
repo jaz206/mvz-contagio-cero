@@ -390,8 +390,8 @@ export const useGameLogic = () => {
                 }
 
                 setStaffAccount(linkedStaffAccount);
-                setStaffPermissions(linkedStaffAccount.permissions);
-                setIsEditorMode(true);
+                setStaffPermissions(linkedStaffAccount.role === 'tester' ? EMPTY_PERMISSIONS : linkedStaffAccount.permissions);
+                setIsEditorMode(linkedStaffAccount.role !== 'tester');
                 setIsFullAdmin(linkedStaffAccount.role === 'admin');
                 setIsGuest(false);
                 setIsStartingCampaign(false);

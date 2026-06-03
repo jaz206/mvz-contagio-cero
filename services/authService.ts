@@ -27,7 +27,11 @@ export const signInWithGoogle = async (): Promise<User> => {
     const currentEmail = (result.user.email || '').toLowerCase();
     const isAdminUser = result.user.uid === ADMIN_UID || currentEmail === ADMIN_EMAIL;
     const staffAccount = (await getStaffAccountByEmail(currentEmail)) || await getStaffAccount(result.user.uid);
-    const isApprovedStaff = !!staffAccount && staffAccount.isActive && (staffAccount.role === 'editor' || staffAccount.role === 'admin');
+    const isApprovedStaff = !!staffAccount && staffAccount.isActive && (
+      staffAccount.role === 'editor'
+      || staffAccount.role === 'admin'
+      || staffAccount.role === 'tester'
+    );
 
     if (!isAdminUser && !isApprovedStaff) {
       await firebaseSignOut(auth!);
@@ -48,9 +52,9 @@ export const signInEditor = async (email: string, password: string): Promise<Use
     const result = await signInWithEmailAndPassword(auth!, email.trim(), password);
     const staffAccount = (await getStaffAccountByEmail(result.user.email || email)) || await getStaffAccount(result.user.uid);
 
-    if (!staffAccount || (staffAccount.role !== 'editor' && staffAccount.role !== 'admin')) {
+    if (!staffAccount || (staffAccount.role !== 'editor' && staffAccount.role !== 'admin' && staffAccount.role !== 'tester')) {
       await firebaseSignOut(auth!);
-      throw new Error("Esta cuenta no tiene acceso de edicion.");
+      throw new Error("Esta cuenta no tiene acceso autorizado.");
     }
 
     if (!staffAccount.isActive) {
