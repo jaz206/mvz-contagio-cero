@@ -8,7 +8,7 @@ import { getHeroTransformAvailability } from '../services/heroVariantRuleService
 import { getDefaultIntroConfig, getIntroConfig, saveIntroConfig } from '../services/introService';
 import { getDefaultStoryConfig, getStoryConfig, saveStoryConfig } from '../services/storyService';
 import { getCustomMissions, deleteMissionInDB, syncInitialMissionRepository } from '../services/missionService';
-import { getUserProfile, resetUserProfiles, saveUserProfile } from '../services/userService';
+import { getUserCampaignMeta, getUserProfile, resetUserProfiles, saveUserCampaignMeta, saveUserProfile } from '../services/userService';
 import { getDefaultZoneControlConfig, getZoneControlConfig, saveZoneControlConfig } from '../services/zoneControlService';
 import { logout } from '../services/authService';
 import { getLoginAccessConfig } from '../services/accessControlService';
@@ -89,6 +89,11 @@ const saveFlowStep = (step: FlowStep, uid?: string | null) => {
 
 const clearFlowStep = (uid?: string | null) => {
     localStorage.removeItem(getFlowStepKey(uid));
+};
+
+const setStoredFlowStep = (step: FlowStep | null, uid?: string | null) => {
+    if (step) saveFlowStep(step, uid);
+    else clearFlowStep(uid);
 };
 
 const readCampaignCache = (uid?: string | null, alignment?: 'ALIVE' | 'ZOMBIE' | null): CampaignCache | null => {
@@ -203,6 +208,34 @@ export const useGameLogic = () => {
     const [surferTurnCount, setSurferTurnCount] = useState(0);
     const [startStoryAtChoice, setStartStoryAtChoice] = useState(false);
     const isDataLoadedRef = useRef(false);
+
+    const persistCampaignMeta = useCallback(async (alignment: 'ALIVE' | 'ZOMBIE' | null, flowStep: FlowStep | null) => {
+        const uid = user?.uid;
+
+        if (uid) {
+            if (alignment) {
+                saveStoredAlignment(uid, alignment);
+            } else {
+                localStorage.removeItem(`shield_alignment_${uid}`);
+            }
+
+            setStoredFlowStep(flowStep, uid);
+
+            try {
+                await saveUserCampaignMeta(uid, { alignment, flowStep });
+            } catch (error) {
+                console.error('Error saving campaign meta', error);
+            }
+            return;
+        }
+
+        if (alignment) {
+            localStorage.setItem('shield_alignment_guest', alignment);
+        } else {
+            localStorage.removeItem('shield_alignment_guest');
+        }
+        setStoredFlowStep(flowStep, undefined);
+    }, [user?.uid]);
 
     const findStaffAccount = async (email: string, uid: string) => {
         try {
@@ -353,8 +386,10 @@ export const useGameLogic = () => {
             const coreExpansion = GAME_EXPANSIONS.find((item) => item.id === 'core_box');
             const coreHeroes = coreExpansion ? coreExpansion.heroes : [];
             const heroTemplates = await getHeroTemplates();
-            const savedAlignment = getStoredAlignment(currentUser.uid);
+            const remoteCampaignMeta = await getUserCampaignMeta(currentUser.uid);
+            const savedAlignment = getStoredAlignment(currentUser.uid) || remoteCampaignMeta?.alignment || null;
             const preferredAlignment = savedAlignment || 'ALIVE';
+            const savedFlowStep = getSavedFlowStep(currentUser.uid) || (remoteCampaignMeta?.flowStep as FlowStep | null) || null;
             const cachedCampaign = readCampaignCache(currentUser.uid, preferredAlignment);
             const hydrateHeroFromTemplate = (hero: Hero): Hero => {
                 const template = heroTemplates.find((item) => item.id === hero.id);
@@ -408,7 +443,14 @@ export const useGameLogic = () => {
 
             const currentEmail = (currentUser.email || '').toLowerCase();
             const isAdminUser = currentUser.uid === ADMIN_UID || currentEmail === ADMIN_EMAIL;
-            const currentFlowStep = getSavedFlowStep(currentUser.uid);
+            const hasSavedCampaignProgress = !!savedFlowStep || !!cachedCampaign || !!savedAlignment;
+
+            if (savedAlignment) {
+                saveStoredAlignment(currentUser.uid, savedAlignment);
+            }
+            if (savedFlowStep) {
+                saveFlowStep(savedFlowStep, currentUser.uid);
+            }
 
             if (isAdminUser) {
                 const adminAccount = await ensureAdminStaffAccount(
@@ -455,7 +497,7 @@ export const useGameLogic = () => {
                     setIsFullAdmin(false);
                     setIsGuest(false);
                     setIsStartingCampaign(false);
-                    if (!currentFlowStep || currentFlowStep === 'story') {
+                    if (!hasSavedCampaignProgress || savedFlowStep === 'story') {
                         setPlayerAlignment(null);
                         setShowStory(true);
                         setShowTutorial(false);
@@ -465,13 +507,10 @@ export const useGameLogic = () => {
                         setWorldStage('NORMAL');
                         setStartStoryAtChoice(false);
                         isDataLoadedRef.current = true;
-                        if (user) {
-                            localStorage.removeItem(`shield_intro_seen_${user.uid}`);
-                            localStorage.removeItem(getSetupDoneKey(user.uid));
-                            saveFlowStep('story', user.uid);
-                        } else {
-                            saveFlowStep('story');
-                        }
+                        localStorage.removeItem(`shield_intro_seen_${currentUser.uid}`);
+                        localStorage.removeItem(getSetupDoneKey(currentUser.uid));
+                        saveFlowStep('story', currentUser.uid);
+                        await saveUserCampaignMeta(currentUser.uid, { alignment: null, flowStep: 'story' });
                         if (!preserveBunkerRoute()) navigate('/story');
                         setLoading(false);
                         return;
@@ -483,13 +522,13 @@ export const useGameLogic = () => {
                         fullAdmin: false
                     });
                     if (!preserveBunkerRoute()) {
-                        const testerRoute = currentFlowStep === 'setup'
+                        const testerRoute = savedFlowStep === 'setup'
                             ? '/setup'
-                            : currentFlowStep === 'intro'
+                            : savedFlowStep === 'intro'
                                 ? '/intro'
-                                : currentFlowStep === 'mission0'
+                                : savedFlowStep === 'mission0'
                                     ? '/mission0'
-                                    : currentFlowStep === 'tutorial'
+                                    : savedFlowStep === 'tutorial'
                                         ? '/tutorial'
                                         : '/map';
                         navigate(testerRoute);
@@ -521,8 +560,28 @@ export const useGameLogic = () => {
             setCompletedMissionIds(campaignCompletedMissions);
             setOmegaCylinders(campaignOmega);
             setWorldStage('NORMAL');
+            if (!hasSavedCampaignProgress) {
+                setShowStory(true);
+                setStartStoryAtChoice(false);
+                setPlayerAlignment(null);
+                await saveUserCampaignMeta(currentUser.uid, { alignment: null, flowStep: 'story' });
+                if (!preserveBunkerRoute()) navigate('/story');
+                setLoading(false);
+                return;
+            }
             isDataLoadedRef.current = true;
-            if (!preserveBunkerRoute()) navigate('/map');
+            if (!preserveBunkerRoute()) {
+                const playerRoute = savedFlowStep === 'setup'
+                    ? '/setup'
+                    : savedFlowStep === 'intro'
+                        ? '/intro'
+                        : savedFlowStep === 'mission0'
+                            ? '/mission0'
+                            : savedFlowStep === 'tutorial'
+                                ? '/tutorial'
+                                : '/map';
+                navigate(playerRoute);
+            }
             setLoading(false);
             return;
         });
@@ -546,7 +605,14 @@ export const useGameLogic = () => {
         writeCampaignCache(currentHeroes, currentMissions, currentCylinders, user?.uid, playerAlignment || 'ALIVE');
         try {
             if (user) {
-                await saveUserProfile(user.uid, playerAlignment, currentHeroes, Array.from(currentMissions), { omegaCylinders: currentCylinders });
+                await saveUserProfile(
+                    user.uid,
+                    playerAlignment,
+                    currentHeroes,
+                    Array.from(currentMissions),
+                    { omegaCylinders: currentCylinders },
+                    { alignment: playerAlignment, flowStep: getSavedFlowStep(user.uid) }
+                );
             }
         } catch (error) {
             console.error('Auto-save failed', error);
@@ -621,11 +687,10 @@ export const useGameLogic = () => {
         setPlayerAlignment(choice);
 
         if (user) {
-            saveStoredAlignment(user.uid, choice);
-            saveFlowStep('setup', user.uid);
+            persistCampaignMeta(choice, 'setup');
             localStorage.removeItem(getSetupDoneKey(user.uid));
         } else {
-            saveFlowStep('setup');
+            persistCampaignMeta(choice, 'setup');
             localStorage.removeItem(getSetupDoneKey());
         }
 
@@ -640,19 +705,18 @@ export const useGameLogic = () => {
         setIsStartingCampaign(true);
         if (user) {
             localStorage.setItem(`shield_intro_seen_${user.uid}`, 'true');
-            saveStoredAlignment(user.uid, playerAlignment);
             localStorage.setItem(getSetupDoneKey(user.uid), 'true');
-            saveFlowStep('intro', user.uid);
+            await persistCampaignMeta(playerAlignment, 'intro');
             if (ownedExpansions.has('galactus')) {
                 writeGalactusEventPlan(createGalactusEventPlan(), user.uid);
             } else {
                 clearGalactusEventPlan(user.uid);
             }
             writeCampaignCache(selectedHeroes, [], omegaCylinders, user.uid, playerAlignment || 'ALIVE');
-            await saveUserProfile(user.uid, playerAlignment, selectedHeroes, [], { omegaCylinders });
+            await saveUserProfile(user.uid, playerAlignment, selectedHeroes, [], { omegaCylinders }, { alignment: playerAlignment, flowStep: 'intro' });
         } else {
             localStorage.setItem(getSetupDoneKey(), 'true');
-            saveFlowStep('intro');
+            await persistCampaignMeta(playerAlignment, 'intro');
             if (ownedExpansions.has('galactus')) {
                 writeGalactusEventPlan(createGalactusEventPlan());
             } else {
@@ -970,6 +1034,7 @@ export const useGameLogic = () => {
             localStorage.removeItem(`shield_tutorial_seen_${currentUid}`);
             localStorage.removeItem(`shield_alignment_${currentUid}`);
             localStorage.removeItem(getSetupDoneKey(currentUid));
+            await saveUserCampaignMeta(currentUid, { alignment: null, flowStep: 'story' });
             clearFlowStep(currentUid);
             clearCampaignCache(currentUid);
             clearGalactusEventPlan(currentUid);
@@ -1242,6 +1307,7 @@ export const useGameLogic = () => {
             handleStoryChoice,
             handleExpansionConfirm,
             handleLogout,
+            syncCampaignMeta: persistCampaignMeta,
             toggleDimension,
             handleTickerUpdate,
             handleMissionComplete,
