@@ -3,8 +3,10 @@ import {
     doc,
     getDoc,
     getDocs,
+    limit,
     orderBy,
     query,
+    where,
     serverTimestamp,
     setDoc,
     updateDoc
@@ -19,6 +21,8 @@ import { db, getScopedFirebaseApp, firebaseReady } from '../firebaseConfig';
 import { StaffAccount, StaffPermissions, PermissionBlock } from '../types';
 
 const STAFF_COLLECTION = 'staffAccounts';
+
+const normalizeEmail = (email: string) => email.trim().toLowerCase();
 
 const buildPermissionBlock = (view = false, create = false, edit = false, remove = false): PermissionBlock => ({
     view,
@@ -56,7 +60,7 @@ const ensureDb = () => {
 
 const staffDocToAccount = (uid: string, data: any): StaffAccount => ({
     uid,
-    email: data.email || '',
+    email: (data.email || '').toLowerCase(),
     displayName: data.displayName || data.email || 'Editor',
     role: data.role || 'editor',
     isActive: data.isActive !== false,
@@ -78,13 +82,33 @@ export const getStaffAccount = async (uid: string): Promise<StaffAccount | null>
     return staffDocToAccount(snapshot.id, snapshot.data());
 };
 
+export const getStaffAccountByEmail = async (email: string): Promise<StaffAccount | null> => {
+    ensureDb();
+
+    const normalizedEmail = normalizeEmail(email);
+    const staffQuery = query(
+        collection(db!, STAFF_COLLECTION),
+        where('email', '==', normalizedEmail),
+        limit(1)
+    );
+    const snapshot = await getDocs(staffQuery);
+
+    if (snapshot.empty) {
+        return null;
+    }
+
+    const first = snapshot.docs[0];
+    return staffDocToAccount(first.id, first.data());
+};
+
 export const ensureAdminStaffAccount = async (uid: string, email: string, displayName?: string): Promise<StaffAccount> => {
     ensureDb();
+    const normalizedEmail = normalizeEmail(email);
 
     const account: StaffAccount = {
         uid,
-        email,
-        displayName: displayName || email || 'Admin',
+        email: normalizedEmail,
+        displayName: displayName || normalizedEmail || 'Admin',
         role: 'admin',
         isActive: true,
         permissions: buildAdminPermissions()
@@ -112,13 +136,15 @@ export const createEditorAccount = async (payload: {
     email: string;
     password: string;
     displayName: string;
+    role?: 'admin' | 'editor';
     permissions?: Partial<StaffPermissions>;
 }): Promise<StaffAccount> => {
     ensureDb();
+    const normalizedEmail = normalizeEmail(payload.email);
 
     const secondaryApp = getScopedFirebaseApp('staff-account-admin');
     const secondaryAuth = getAuth(secondaryApp);
-    const credentials = await createUserWithEmailAndPassword(secondaryAuth, payload.email, payload.password);
+    const credentials = await createUserWithEmailAndPassword(secondaryAuth, normalizedEmail, payload.password);
 
     if (payload.displayName.trim()) {
         await updateProfile(credentials.user, { displayName: payload.displayName.trim() });
@@ -126,9 +152,9 @@ export const createEditorAccount = async (payload: {
 
     const account: StaffAccount = {
         uid: credentials.user.uid,
-        email: payload.email.trim(),
-        displayName: payload.displayName.trim() || payload.email.trim(),
-        role: 'editor',
+        email: normalizedEmail,
+        displayName: payload.displayName.trim() || normalizedEmail,
+        role: payload.role || 'editor',
         isActive: true,
         permissions: normalizePermissions(payload.permissions)
     };
@@ -156,6 +182,14 @@ export const updateStaffStatus = async (uid: string, isActive: boolean): Promise
     ensureDb();
     await updateDoc(doc(db!, STAFF_COLLECTION, uid), {
         isActive,
+        updatedAt: serverTimestamp()
+    });
+};
+
+export const updateStaffRole = async (uid: string, role: 'admin' | 'editor'): Promise<void> => {
+    ensureDb();
+    await updateDoc(doc(db!, STAFF_COLLECTION, uid), {
+        role,
         updatedAt: serverTimestamp()
     });
 };

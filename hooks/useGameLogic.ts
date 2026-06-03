@@ -11,7 +11,7 @@ import { getCustomMissions, deleteMissionInDB, syncInitialMissionRepository } fr
 import { getUserProfile, resetUserProfiles, saveUserProfile } from '../services/userService';
 import { getDefaultZoneControlConfig, getZoneControlConfig, saveZoneControlConfig } from '../services/zoneControlService';
 import { logout, signInEditor } from '../services/authService';
-import { ensureAdminStaffAccount, getStaffAccount } from '../services/staffService';
+import { ensureAdminStaffAccount, getStaffAccount, getStaffAccountByEmail } from '../services/staffService';
 import { Mission, Hero, WorldStage, GlobalEvent, HeroTemplate, StaffAccount, StaffPermissions, IntroConfig, StoryConfig, ZoneControlConfig, MissionCompletionReward } from '../types';
 import { GAME_EXPANSIONS } from '../data/gameContent';
 import { getInitialMissions } from '../data/initialMissions';
@@ -381,7 +381,7 @@ export const useGameLogic = () => {
                 return;
             }
 
-            const linkedStaffAccount = await getStaffAccount(currentUser.uid);
+            const linkedStaffAccount = (await getStaffAccountByEmail(currentEmail)) || await getStaffAccount(currentUser.uid);
             if (linkedStaffAccount) {
                 if (!linkedStaffAccount.isActive) {
                     await logout();

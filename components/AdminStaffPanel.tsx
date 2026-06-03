@@ -3,6 +3,7 @@ import { HeroTemplate, IntroConfig, IntroSlide, LoginAccessMode, Mission, StaffA
 import {
     createEditorAccount,
     listStaffAccounts,
+    updateStaffRole,
     updateStaffPermissions,
     updateStaffStatus
 } from '../services/staffService';
@@ -107,6 +108,7 @@ export const AdminStaffPanel: React.FC<AdminStaffPanelProps> = ({
     const [displayName, setDisplayName] = useState('');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
+    const [newRole, setNewRole] = useState<'admin' | 'editor'>('editor');
     const [creating, setCreating] = useState(false);
     const [loginAccessMode, setLoginAccessMode] = useState<LoginAccessMode>('DEVELOPMENT');
     const [savingAccessMode, setSavingAccessMode] = useState(false);
@@ -181,11 +183,13 @@ export const AdminStaffPanel: React.FC<AdminStaffPanelProps> = ({
             await createEditorAccount({
                 displayName,
                 email,
-                password
+                password,
+                role: newRole
             });
             setDisplayName('');
             setEmail('');
             setPassword('');
+            setNewRole('editor');
             await loadAccounts();
         } catch (err: any) {
             console.error(err);
@@ -204,6 +208,18 @@ export const AdminStaffPanel: React.FC<AdminStaffPanelProps> = ({
         } catch (err) {
             console.error(err);
             setError('No se pudo cambiar el estado de la cuenta.');
+        }
+    };
+
+    const handleRoleChange = async (account: StaffAccount, role: 'admin' | 'editor') => {
+        try {
+            await updateStaffRole(account.uid, role);
+            setAccounts((prev) => prev.map((item) => (
+                item.uid === account.uid ? { ...item, role } : item
+            )));
+        } catch (err) {
+            console.error(err);
+            setError('No se pudo cambiar el rol.');
         }
     };
 
@@ -659,6 +675,14 @@ export const AdminStaffPanel: React.FC<AdminStaffPanelProps> = ({
                                     minLength={6}
                                     required
                                 />
+                                <select
+                                    value={newRole}
+                                    onChange={(event) => setNewRole(event.target.value as 'admin' | 'editor')}
+                                    className="w-full border border-slate-800 bg-black p-3 text-sm text-white outline-none focus:border-cyan-500"
+                                >
+                                    <option value="editor">Editor</option>
+                                    <option value="admin">Admin</option>
+                                </select>
                                 <button
                                     type="submit"
                                     disabled={creating}
@@ -703,6 +727,16 @@ export const AdminStaffPanel: React.FC<AdminStaffPanelProps> = ({
                                                     </div>
                                                 </div>
                                                 <div className="flex items-center gap-2">
+                                                    {account.role !== 'admin' && (
+                                                        <select
+                                                            value={account.role}
+                                                            onChange={(event) => handleRoleChange(account, event.target.value as 'admin' | 'editor')}
+                                                            className="border border-slate-700 bg-black px-2 py-2 text-[10px] font-black uppercase text-cyan-300"
+                                                        >
+                                                            <option value="editor">Editor</option>
+                                                            <option value="admin">Admin</option>
+                                                        </select>
+                                                    )}
                                                     <span className={`border px-3 py-1 text-[10px] font-black uppercase ${account.isActive ? 'border-emerald-700 text-emerald-300' : 'border-yellow-700 text-yellow-300'}`}>
                                                         {account.isActive ? 'Activo' : 'Pausado'}
                                                     </span>

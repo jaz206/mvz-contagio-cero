@@ -1,0 +1,80 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      return isSignedIn()
+        && (
+          request.auth.uid == '60mH4M1SClV793Nq1WjQ3CExkLp1'
+          || request.auth.token.email == 'jorgeaz206@gmail.com'
+        );
+    }
+
+    function staffDoc() {
+      return get(/databases/$(database)/documents/staffAccounts/$(request.auth.uid));
+    }
+
+    function isActiveStaff() {
+      return isSignedIn()
+        && (
+          isAdmin()
+          || (
+            exists(/databases/$(database)/documents/staffAccounts/$(request.auth.uid))
+            && staffDoc().data.isActive == true
+          )
+        );
+    }
+
+    function missionPerm(action) {
+      return isAdmin()
+        || (
+          isActiveStaff()
+          && staffDoc().data.permissions.missions[action] == true
+        );
+    }
+
+    function characterPerm(action) {
+      return isAdmin()
+        || (
+          isActiveStaff()
+          && staffDoc().data.permissions.characters[action] == true
+        );
+    }
+
+    match /users/{uid} {
+      allow read, create, update, delete: if isSignedIn() && request.auth.uid == uid;
+    }
+
+    match /missions/{missionId} {
+      allow read: if true;
+      allow create: if missionPerm('create');
+      allow update: if missionPerm('edit');
+      allow delete: if missionPerm('delete');
+    }
+
+    match /heroes/{heroId} {
+      allow read: if true;
+      allow create: if characterPerm('create');
+      allow update: if characterPerm('edit');
+      allow delete: if characterPerm('delete');
+    }
+
+    match /appConfig/{docId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /staffAccounts/{uid} {
+      allow get: if isAdmin() || (isSignedIn() && (request.auth.uid == uid || resource.data.email == request.auth.token.email));
+      allow list: if isAdmin() || (isSignedIn() && resource.data.email == request.auth.token.email);
+      allow create, update, delete: if isAdmin();
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
