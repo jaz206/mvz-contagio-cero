@@ -408,6 +408,7 @@ export const useGameLogic = () => {
 
             const currentEmail = (currentUser.email || '').toLowerCase();
             const isAdminUser = currentUser.uid === ADMIN_UID || currentEmail === ADMIN_EMAIL;
+            const currentFlowStep = getSavedFlowStep(currentUser.uid);
 
             if (isAdminUser) {
                 const adminAccount = await ensureAdminStaffAccount(
@@ -454,23 +455,45 @@ export const useGameLogic = () => {
                     setIsFullAdmin(false);
                     setIsGuest(false);
                     setIsStartingCampaign(false);
-                    setPlayerAlignment(null);
-                    setShowStory(true);
-                    setShowTutorial(false);
-                    setHeroes([]);
-                    setCompletedMissionIds(new Set());
-                    setOmegaCylinders(0);
-                    setWorldStage('NORMAL');
-                    setStartStoryAtChoice(false);
-                    isDataLoadedRef.current = true;
-                    if (user) {
-                        localStorage.removeItem(`shield_intro_seen_${user.uid}`);
-                        localStorage.removeItem(getSetupDoneKey(user.uid));
-                        saveFlowStep('story', user.uid);
-                    } else {
-                        saveFlowStep('story');
+                    if (!currentFlowStep || currentFlowStep === 'story') {
+                        setPlayerAlignment(null);
+                        setShowStory(true);
+                        setShowTutorial(false);
+                        setHeroes([]);
+                        setCompletedMissionIds(new Set());
+                        setOmegaCylinders(0);
+                        setWorldStage('NORMAL');
+                        setStartStoryAtChoice(false);
+                        isDataLoadedRef.current = true;
+                        if (user) {
+                            localStorage.removeItem(`shield_intro_seen_${user.uid}`);
+                            localStorage.removeItem(getSetupDoneKey(user.uid));
+                            saveFlowStep('story', user.uid);
+                        } else {
+                            saveFlowStep('story');
+                        }
+                        if (!preserveBunkerRoute()) navigate('/story');
+                        setLoading(false);
+                        return;
                     }
-                    if (!preserveBunkerRoute()) navigate('/story');
+
+                    applyCampaignState({
+                        staff: linkedStaffAccount,
+                        editorMode: false,
+                        fullAdmin: false
+                    });
+                    if (!preserveBunkerRoute()) {
+                        const testerRoute = currentFlowStep === 'setup'
+                            ? '/setup'
+                            : currentFlowStep === 'intro'
+                                ? '/intro'
+                                : currentFlowStep === 'mission0'
+                                    ? '/mission0'
+                                    : currentFlowStep === 'tutorial'
+                                        ? '/tutorial'
+                                        : '/map';
+                        navigate(testerRoute);
+                    }
                     setLoading(false);
                     return;
                 }
