@@ -208,6 +208,16 @@ export const useGameLogic = () => {
     const [surferTurnCount, setSurferTurnCount] = useState(0);
     const [startStoryAtChoice, setStartStoryAtChoice] = useState(false);
     const isDataLoadedRef = useRef(false);
+    const currentPathRef = useRef(location.pathname);
+    const guestSessionRef = useRef(isGuest);
+
+    useEffect(() => {
+        currentPathRef.current = location.pathname;
+    }, [location.pathname]);
+
+    useEffect(() => {
+        guestSessionRef.current = isGuest;
+    }, [isGuest]);
 
     const persistCampaignMeta = useCallback(async (alignment: 'ALIVE' | 'ZOMBIE' | null, flowStep: FlowStep | null) => {
         const uid = user?.uid;
@@ -289,7 +299,7 @@ export const useGameLogic = () => {
         setLangState(normalized);
     }, []);
     const preserveBunkerRoute = () => {
-        if (location.pathname === '/bunker') {
+        if (currentPathRef.current === '/bunker') {
             navigate('/bunker');
             return true;
         }
@@ -376,7 +386,7 @@ export const useGameLogic = () => {
                 setStaffPermissions(EMPTY_PERMISSIONS);
                 setIsEditorMode(false);
                 setIsFullAdmin(false);
-                if (!isGuest) {
+                if (!guestSessionRef.current) {
                     navigate('/');
                 }
                 setLoading(false);
@@ -623,7 +633,7 @@ export const useGameLogic = () => {
         });
 
         return () => unsubscribe();
-    }, [isGuest, location.pathname, navigate, loginAccessLoaded, loginAccessMode]);
+    }, [navigate, loginAccessLoaded, loginAccessMode]);
 
     useEffect(() => {
         const loadMissions = async () => {
