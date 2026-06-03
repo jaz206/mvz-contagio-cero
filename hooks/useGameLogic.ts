@@ -10,9 +10,10 @@ import { getDefaultStoryConfig, getStoryConfig, saveStoryConfig } from '../servi
 import { getCustomMissions, deleteMissionInDB, syncInitialMissionRepository } from '../services/missionService';
 import { getUserProfile, resetUserProfiles, saveUserProfile } from '../services/userService';
 import { getDefaultZoneControlConfig, getZoneControlConfig, saveZoneControlConfig } from '../services/zoneControlService';
-import { logout, signInEditor } from '../services/authService';
+import { logout } from '../services/authService';
+import { getLoginAccessConfig } from '../services/accessControlService';
 import { ensureAdminStaffAccount, getStaffAccount, getStaffAccountByEmail } from '../services/staffService';
-import { Mission, Hero, WorldStage, GlobalEvent, HeroTemplate, StaffAccount, StaffPermissions, IntroConfig, StoryConfig, ZoneControlConfig, MissionCompletionReward } from '../types';
+import { Mission, Hero, WorldStage, GlobalEvent, HeroTemplate, StaffAccount, StaffPermissions, IntroConfig, StoryConfig, ZoneControlConfig, MissionCompletionReward, LoginAccessMode } from '../types';
 import { GAME_EXPANSIONS } from '../data/gameContent';
 import { getInitialMissions } from '../data/initialMissions';
 
@@ -218,6 +219,8 @@ export const useGameLogic = () => {
     const [isFullAdmin, setIsFullAdmin] = useState(false);
     const [staffAccount, setStaffAccount] = useState<StaffAccount | null>(null);
     const [staffPermissions, setStaffPermissions] = useState<StaffPermissions>(EMPTY_PERMISSIONS);
+    const [loginAccessMode, setLoginAccessMode] = useState<LoginAccessMode>('DEVELOPMENT');
+    const [loginAccessLoaded, setLoginAccessLoaded] = useState(false);
 
     const [showMissionEditor, setShowMissionEditor] = useState(false);
     const [missionToEdit, setMissionToEdit] = useState<Mission | null>(null);
@@ -304,6 +307,26 @@ export const useGameLogic = () => {
     }, []);
 
     useEffect(() => {
+        const loadAccessMode = async () => {
+            try {
+                const config = await getLoginAccessConfig();
+                setLoginAccessMode(config.mode);
+            } catch (error) {
+                console.error(error);
+                setLoginAccessMode('DEVELOPMENT');
+            } finally {
+                setLoginAccessLoaded(true);
+            }
+        };
+
+        loadAccessMode();
+    }, []);
+
+    useEffect(() => {
+        if (!loginAccessLoaded) {
+            return;
+        }
+
         if (!auth) {
             console.warn('Auth no inicializado. Modo offline/limitado.');
             setLoadingAuth(false);
@@ -362,6 +385,26 @@ export const useGameLogic = () => {
             const campaignHeroes = hasCachedCampaign ? cachedHeroes : hydratedCoreHeroes;
             const campaignCompletedMissions = hasCachedCampaign ? new Set(cachedCampaign?.completedMissionIds || []) : new Set<string>();
             const campaignOmega = hasCachedCampaign ? Math.max(0, Math.min(MAX_OMEGA_CYLINDERS, cachedCampaign?.omegaCylinders || 0)) : 0;
+            const applyCampaignState = (options: {
+                staff?: StaffAccount | null;
+                editorMode: boolean;
+                fullAdmin: boolean;
+            }) => {
+                setStaffAccount(options.staff || null);
+                setStaffPermissions(options.staff && options.staff.role === 'tester' ? EMPTY_PERMISSIONS : (options.staff?.permissions || EMPTY_PERMISSIONS));
+                setIsEditorMode(options.editorMode);
+                setIsFullAdmin(options.fullAdmin);
+                setIsGuest(false);
+                setIsStartingCampaign(false);
+                setPlayerAlignment(preferredAlignment);
+                setShowStory(false);
+                setShowTutorial(false);
+                setHeroes(campaignHeroes);
+                setCompletedMissionIds(campaignCompletedMissions);
+                setOmegaCylinders(campaignOmega);
+                setWorldStage('NORMAL');
+                isDataLoadedRef.current = true;
+            };
 
             const currentEmail = (currentUser.email || '').toLowerCase();
             const isAdminUser = currentUser.uid === ADMIN_UID || currentEmail === ADMIN_EMAIL;
@@ -373,66 +416,68 @@ export const useGameLogic = () => {
                     currentUser.displayName || undefined
                 );
 
-                setStaffAccount(adminAccount);
-                setStaffPermissions(adminAccount.permissions);
-                setIsEditorMode(true);
-                setIsFullAdmin(true);
-                setIsGuest(false);
-                setIsStartingCampaign(false);
-                setPlayerAlignment(preferredAlignment);
-                setShowStory(false);
-                setShowTutorial(false);
-                setHeroes(campaignHeroes);
-                setCompletedMissionIds(campaignCompletedMissions);
-                setOmegaCylinders(campaignOmega);
-                setWorldStage('NORMAL');
-                isDataLoadedRef.current = true;
+                applyCampaignState({
+                    staff: adminAccount,
+                    editorMode: true,
+                    fullAdmin: true
+                });
                 if (!preserveBunkerRoute()) navigate('/map');
                 setLoading(false);
                 return;
             }
 
             const linkedStaffAccount = await findStaffAccount(currentEmail, currentUser.uid);
-            if (linkedStaffAccount) {
-                if (!linkedStaffAccount.isActive) {
-                    await logout();
-                    setLoading(false);
-                    return;
-                }
+            if (linkedStaffAccount && !linkedStaffAccount.isActive) {
+                await logout();
+                setLoading(false);
+                return;
+            }
 
-                setStaffAccount(linkedStaffAccount);
-                setStaffPermissions(linkedStaffAccount.role === 'tester' ? EMPTY_PERMISSIONS : linkedStaffAccount.permissions);
-                setIsEditorMode(linkedStaffAccount.role !== 'tester');
-                setIsFullAdmin(linkedStaffAccount.role === 'admin');
-                setIsGuest(false);
+            if (loginAccessMode === 'DEVELOPMENT' && !linkedStaffAccount) {
+                await logout();
+                setStaffAccount(null);
+                setStaffPermissions(EMPTY_PERMISSIONS);
+                setIsEditorMode(false);
+                setIsFullAdmin(false);
                 setIsStartingCampaign(false);
-                setPlayerAlignment(preferredAlignment);
-                setShowStory(false);
-                setShowTutorial(false);
-                setHeroes(campaignHeroes);
-                setCompletedMissionIds(campaignCompletedMissions);
-                setOmegaCylinders(campaignOmega);
-                setWorldStage('NORMAL');
-                isDataLoadedRef.current = true;
+                setPlayerAlignment(null);
+                setLoading(false);
+                navigate('/');
+                return;
+            }
+
+            if (linkedStaffAccount) {
+                applyCampaignState({
+                    staff: linkedStaffAccount,
+                    editorMode: linkedStaffAccount.role !== 'tester',
+                    fullAdmin: linkedStaffAccount.role === 'admin'
+                });
                 if (!preserveBunkerRoute()) navigate('/map');
                 setLoading(false);
                 return;
             }
 
-            await logout();
             setStaffAccount(null);
             setStaffPermissions(EMPTY_PERMISSIONS);
             setIsEditorMode(false);
             setIsFullAdmin(false);
+            setIsGuest(false);
             setIsStartingCampaign(false);
-            setPlayerAlignment(null);
+            setPlayerAlignment(preferredAlignment);
+            setShowStory(false);
+            setShowTutorial(false);
+            setHeroes(campaignHeroes);
+            setCompletedMissionIds(campaignCompletedMissions);
+            setOmegaCylinders(campaignOmega);
+            setWorldStage('NORMAL');
+            isDataLoadedRef.current = true;
+            if (!preserveBunkerRoute()) navigate('/map');
             setLoading(false);
-            navigate('/');
             return;
         });
 
         return () => unsubscribe();
-    }, [isGuest, location.pathname, navigate]);
+    }, [isGuest, location.pathname, navigate, loginAccessLoaded, loginAccessMode]);
 
     useEffect(() => {
         const loadMissions = async () => {
@@ -504,10 +549,6 @@ export const useGameLogic = () => {
         } else {
             updateOwnedExpansions(new Set(['core_box']));
         }
-    };
-
-    const handleEditorLogin = async (email: string, password: string) => {
-        await signInEditor(email, password);
     };
 
     const handleGuestLogin = () => {
@@ -1146,7 +1187,6 @@ export const useGameLogic = () => {
             updateOwnedExpansions,
             toggleExpansion,
             toggleAllExpansions,
-            handleEditorLogin,
             handleGuestLogin,
             handleStoryChoice,
             handleExpansionConfirm,

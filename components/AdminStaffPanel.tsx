@@ -107,7 +107,6 @@ export const AdminStaffPanel: React.FC<AdminStaffPanelProps> = ({
 
     const [displayName, setDisplayName] = useState('');
     const [email, setEmail] = useState('');
-    const [password, setPassword] = useState('');
     const [newRole, setNewRole] = useState<'admin' | 'editor' | 'tester'>('editor');
     const [creating, setCreating] = useState(false);
     const [loginAccessMode, setLoginAccessMode] = useState<LoginAccessMode>('DEVELOPMENT');
@@ -183,12 +182,10 @@ export const AdminStaffPanel: React.FC<AdminStaffPanelProps> = ({
             await createEditorAccount({
                 displayName,
                 email,
-                password,
                 role: newRole
             });
             setDisplayName('');
             setEmail('');
-            setPassword('');
             setNewRole('editor');
             await loadAccounts();
         } catch (err: any) {
@@ -582,7 +579,7 @@ export const AdminStaffPanel: React.FC<AdminStaffPanelProps> = ({
                     <div className="grid min-h-0 flex-1 grid-cols-1 gap-0 xl:grid-cols-[320px_1fr]">
                         <div className="overflow-y-auto border-r border-slate-800 p-4">
                             <div className="mb-6 border border-slate-800 bg-slate-900/40 p-4">
-                                <div className="mb-2 text-[10px] font-black uppercase tracking-[0.3em] text-cyan-500">Acceso con Cuenta</div>
+                                <div className="mb-2 text-[10px] font-black uppercase tracking-[0.3em] text-cyan-500">Acceso con Google</div>
                                 <div className="grid grid-cols-1 gap-2">
                                     <button
                                         disabled={savingAccessMode}
@@ -601,8 +598,8 @@ export const AdminStaffPanel: React.FC<AdminStaffPanelProps> = ({
                                 </div>
                                 <div className="mt-3 text-[11px] leading-relaxed text-gray-400">
                                     {loginAccessMode === 'PUBLIC'
-                                        ? 'Ahora puede entrar cualquiera con cuenta.'
-                                        : 'Ahora solo pueden entrar las cuentas activas que tu hayas marcado. La via local sigue funcionando.'}
+                                        ? 'Ahora puede entrar cualquiera con su cuenta de Google. La vía local sigue funcionando.'
+                                        : 'Ahora solo pueden entrar las cuentas activas que tu hayas marcado. La vía local sigue funcionando.'}
                                 </div>
                             </div>
 
@@ -649,7 +646,7 @@ export const AdminStaffPanel: React.FC<AdminStaffPanelProps> = ({
                                 </div>
                             </div>
 
-                            <div className="mb-3 text-[10px] font-black uppercase tracking-[0.3em] text-cyan-500">Nueva Cuenta</div>
+                            <div className="mb-3 text-[10px] font-black uppercase tracking-[0.3em] text-cyan-500">Nuevo Acceso Google</div>
                             <form onSubmit={handleCreateEditor} className="space-y-3">
                                 <input
                                     value={displayName}
@@ -665,14 +662,6 @@ export const AdminStaffPanel: React.FC<AdminStaffPanelProps> = ({
                                     placeholder="email@dominio.com"
                                     className="w-full border border-slate-800 bg-black p-3 text-sm text-white outline-none focus:border-cyan-500"
                                     required
-                                />
-                                <input
-                                    type="password"
-                                    value={password}
-                                    onChange={(event) => setPassword(event.target.value)}
-                                    placeholder="Contrasena temporal opcional"
-                                    className="w-full border border-slate-800 bg-black p-3 text-sm text-white outline-none focus:border-cyan-500"
-                                    minLength={6}
                                 />
                                 <select
                                     value={newRole}
@@ -693,6 +682,7 @@ export const AdminStaffPanel: React.FC<AdminStaffPanelProps> = ({
                             </form>
 
                             <div className="mt-6 border-t border-slate-800 pt-4 text-[11px] leading-relaxed text-gray-400">
+                                <div>Las cuentas nuevas se crean solo para acceso con Google.</div>
                                 <div>Las cuentas nuevas pueden nacer como editor, tester o admin.</div>
                                 <div>El borrado sigue siendo solo para admin hasta que tu lo abras.</div>
                             </div>

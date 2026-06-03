@@ -7,20 +7,16 @@ import { LoginAccessMode } from '../types';
 
 interface LoginScreenProps {
     onLocalAccess: () => void;
-    onEditorAccess: (email: string, password: string) => Promise<void>;
     language: Language;
     setLanguage: (lang: Language) => void;
 }
 
-export const LoginScreen: React.FC<LoginScreenProps> = ({ onLocalAccess, onEditorAccess, language, setLanguage }) => {
+export const LoginScreen: React.FC<LoginScreenProps> = ({ onLocalAccess, language, setLanguage }) => {
     const [scanning, setScanning] = useState(false);
     const [success, setSuccess] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [activeMode, setActiveMode] = useState<'account' | 'local' | null>(null);
     const [accessMode, setAccessMode] = useState<LoginAccessMode>('DEVELOPMENT');
-    const [editorEmail, setEditorEmail] = useState('');
-    const [editorPassword, setEditorPassword] = useState('');
-    const [editorBusy, setEditorBusy] = useState(false);
 
     const t = translations[language];
     const accountReady = firebaseReady;
@@ -76,24 +72,6 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLocalAccess, onEdito
                 onLocalAccess();
             }, 400);
         }, 800);
-    };
-
-    const handleEditorAccess = async (event: React.FormEvent) => {
-        event.preventDefault();
-        setEditorBusy(true);
-        setError(null);
-        setActiveMode('account');
-
-        try {
-            await onEditorAccess(editorEmail, editorPassword);
-            setSuccess(true);
-        } catch (err: any) {
-            console.error(err);
-            setScanning(false);
-            setError(err?.message || t.login.error);
-        } finally {
-            setEditorBusy(false);
-        }
     };
 
     return (
@@ -204,35 +182,6 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLocalAccess, onEdito
                             {scanning && activeMode === 'account' ? '...' : (success ? 'SYSTEM UNLOCKED' : t.login.scanBtn)}
                         </span>
                     </button>
-
-                    <form onSubmit={handleEditorAccess} className="space-y-2 border border-cyan-900/40 bg-slate-950/50 p-3">
-                        <div className="text-[10px] font-black tracking-[0.3em] uppercase text-cyan-500">Acceso autorizado</div>
-                        <input
-                            value={editorEmail}
-                            onChange={(event) => setEditorEmail(event.target.value)}
-                            type="email"
-                            placeholder="Correo autorizado"
-                            className="w-full border border-slate-800 bg-black px-3 py-2 text-sm text-white outline-none focus:border-cyan-500"
-                            autoComplete="email"
-                            disabled={scanning || success || editorBusy}
-                        />
-                        <input
-                            value={editorPassword}
-                            onChange={(event) => setEditorPassword(event.target.value)}
-                            type="password"
-                            placeholder="Contraseña"
-                            className="w-full border border-slate-800 bg-black px-3 py-2 text-sm text-white outline-none focus:border-cyan-500"
-                            autoComplete="current-password"
-                            disabled={scanning || success || editorBusy}
-                        />
-                        <button
-                            type="submit"
-                            disabled={scanning || success || editorBusy || !editorEmail || !editorPassword}
-                            className="w-full py-3 border border-emerald-700 bg-emerald-950/20 text-emerald-300 text-[10px] font-bold tracking-widest hover:bg-emerald-900/30 transition-all uppercase disabled:opacity-50"
-                        >
-                            {editorBusy ? '...' : 'Entrar con cuenta'}
-                        </button>
-                    </form>
 
                     <button
                         onClick={handleLocalAccess}

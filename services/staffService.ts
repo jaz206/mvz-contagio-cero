@@ -11,13 +11,7 @@ import {
     setDoc,
     updateDoc
 } from 'firebase/firestore';
-import {
-    createUserWithEmailAndPassword,
-    getAuth,
-    signOut,
-    updateProfile
-} from 'firebase/auth';
-import { db, getScopedFirebaseApp, firebaseReady } from '../firebaseConfig';
+import { db, firebaseReady } from '../firebaseConfig';
 import { StaffAccount, StaffPermissions, PermissionBlock } from '../types';
 
 const STAFF_COLLECTION = 'staffAccounts';
@@ -97,6 +91,11 @@ export const getStaffAccountByEmail = async (email: string): Promise<StaffAccoun
     ensureDb();
 
     const normalizedEmail = normalizeEmail(email);
+    const directSnapshot = await getDoc(doc(db!, STAFF_COLLECTION, normalizedEmail));
+    if (directSnapshot.exists()) {
+        return staffDocToAccount(directSnapshot.id, directSnapshot.data());
+    }
+
     const staffQuery = query(
         collection(db!, STAFF_COLLECTION),
         where('email', '==', normalizedEmail),
@@ -145,7 +144,6 @@ export const listStaffAccounts = async (): Promise<StaffAccount[]> => {
 
 export const createEditorAccount = async (payload: {
     email: string;
-    password?: string;
     displayName: string;
     role?: 'admin' | 'editor' | 'tester';
     permissions?: Partial<StaffPermissions>;
@@ -153,42 +151,20 @@ export const createEditorAccount = async (payload: {
     ensureDb();
     const normalizedEmail = normalizeEmail(payload.email);
 
-    const secondaryApp = getScopedFirebaseApp('staff-account-admin');
-    const secondaryAuth = getAuth(secondaryApp);
-    let credentials: Awaited<ReturnType<typeof createUserWithEmailAndPassword>> | null = null;
-
-    if (payload.password && payload.password.length > 0) {
-        try {
-            credentials = await createUserWithEmailAndPassword(secondaryAuth, normalizedEmail, payload.password);
-
-            if (payload.displayName.trim()) {
-                await updateProfile(credentials.user, { displayName: payload.displayName.trim() });
-            }
-        } catch (error: any) {
-            if (error?.code !== 'auth/email-already-in-use') {
-                throw error;
-            }
-        }
-    }
-
     const account: StaffAccount = {
-        uid: credentials?.user.uid || normalizedEmail,
+        uid: normalizedEmail,
         email: normalizedEmail,
         displayName: payload.displayName.trim() || normalizedEmail,
         role: payload.role || 'editor',
         isActive: true,
         permissions: normalizePermissions(payload.permissions, payload.role)
-    }
+    };
 
     await setDoc(doc(db!, STAFF_COLLECTION, account.uid), {
         ...account,
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp()
     });
-
-    if (credentials) {
-        await signOut(secondaryAuth);
-    }
 
     return account;
 };

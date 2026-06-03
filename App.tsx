@@ -526,7 +526,6 @@ const GameContent: React.FC = () => {
                 element={(
                     <LoginScreen
                         onLocalAccess={actions.handleGuestLogin}
-                        onEditorAccess={actions.handleEditorLogin}
                         language={lang}
                         setLanguage={actions.setLang}
                     />

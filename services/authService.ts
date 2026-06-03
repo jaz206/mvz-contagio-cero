@@ -1,13 +1,12 @@
 import {
   GoogleAuthProvider,
-  signInWithEmailAndPassword,
   signInWithPopup,
   signOut as firebaseSignOut,
   User
 } from "firebase/auth";
 import { auth } from "../firebaseConfig";
-import { getStaffAccount } from "./staffService";
 import { getStaffAccountByEmail } from "./staffService";
+import { getLoginAccessConfig } from "./accessControlService";
 
 const googleProvider = new GoogleAuthProvider();
 const ADMIN_UID = (import.meta as any).env.VITE_ADMIN_UID || '60mH4M1SClV793Nq1WjQ3CExkLp1';
@@ -19,15 +18,14 @@ const ensureAuth = () => {
   }
 };
 
-const findStaffAccount = async (email: string, uid: string) => {
+const findStaffAccount = async (email: string) => {
   try {
     const byEmail = await getStaffAccountByEmail(email);
     if (byEmail) return byEmail;
   } catch (error) {
-    console.warn('No se pudo leer la cuenta por correo, pruebo por identificador.');
+    console.warn('No se pudo leer la cuenta por correo.');
   }
-
-  return getStaffAccount(uid);
+  return null;
 };
 
 export const signInWithGoogle = async (): Promise<User> => {
@@ -37,45 +35,27 @@ export const signInWithGoogle = async (): Promise<User> => {
     const result = await signInWithPopup(auth!, googleProvider);
     const currentEmail = (result.user.email || '').toLowerCase();
     const isAdminUser = result.user.uid === ADMIN_UID || currentEmail === ADMIN_EMAIL;
-    const staffAccount = await findStaffAccount(currentEmail, result.user.uid);
+    const accessConfig = await getLoginAccessConfig();
+    const staffAccount = await findStaffAccount(currentEmail);
     const isApprovedStaff = !!staffAccount && staffAccount.isActive && (
       staffAccount.role === 'editor'
       || staffAccount.role === 'admin'
       || staffAccount.role === 'tester'
     );
 
-    if (!isAdminUser && !isApprovedStaff) {
+    if (staffAccount && !staffAccount.isActive) {
       await firebaseSignOut(auth!);
-      throw new Error("Solo pueden entrar con cuenta el admin y los editores activos. El resto debe usar el modo local.");
+      throw new Error("Esta cuenta está desactivada.");
+    }
+
+    if (!isAdminUser && accessConfig.mode === 'DEVELOPMENT' && !isApprovedStaff) {
+      await firebaseSignOut(auth!);
+      throw new Error("Solo pueden entrar las cuentas autorizadas por el admin. El resto debe usar el modo local.");
     }
 
     return result.user;
   } catch (error) {
     console.error("Error signing in with Google", error);
-    throw error;
-  }
-};
-
-export const signInEditor = async (email: string, password: string): Promise<User> => {
-  ensureAuth();
-
-  try {
-    const result = await signInWithEmailAndPassword(auth!, email.trim(), password);
-    const staffAccount = await findStaffAccount(result.user.email || email, result.user.uid);
-
-    if (!staffAccount || (staffAccount.role !== 'editor' && staffAccount.role !== 'admin' && staffAccount.role !== 'tester')) {
-      await firebaseSignOut(auth!);
-      throw new Error("Esta cuenta no tiene acceso autorizado.");
-    }
-
-    if (!staffAccount.isActive) {
-      await firebaseSignOut(auth!);
-      throw new Error("Esta cuenta esta desactivada.");
-    }
-
-    return result.user;
-  } catch (error) {
-    console.error("Error signing in editor", error);
     throw error;
   }
 };
