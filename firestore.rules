@@ -78,9 +78,21 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
+    match /systemSettings/{docId} {
+      allow read: if docId == 'loginAccess';
+      allow write: if isAdmin();
+    }
+
     match /staffAccounts/{uid} {
-      allow get: if isAdmin() || (isSignedIn() && (request.auth.uid == uid || resource.data.email == request.auth.token.email));
-      allow list: if isAdmin() || (isSignedIn() && request.auth.token.email != null && resource.data.email == request.auth.token.email);
+      allow get: if isAdmin()
+        || (
+          isSignedIn()
+          && (
+            request.auth.uid == uid
+            || (request.auth.token.email != null && uid == request.auth.token.email)
+          )
+        );
+      allow list: if isAdmin();
       allow create, update, delete: if isAdmin();
     }
 
