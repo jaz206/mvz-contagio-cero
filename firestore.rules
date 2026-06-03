@@ -98,10 +98,7 @@ service cloud.firestore {
         || (
           isSignedIn()
           && (request.auth.token.email != null && uid == request.auth.token.email.lower())
-          && request.resource.data.email == resource.data.email
-          && request.resource.data.role == resource.data.role
-          && request.resource.data.isActive == resource.data.isActive
-          && request.resource.data.permissions == resource.data.permissions
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['uid', 'updatedAt'])
           && request.resource.data.uid == request.auth.uid
         );
     }
