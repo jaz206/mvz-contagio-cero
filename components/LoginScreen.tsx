@@ -9,9 +9,11 @@ interface LoginScreenProps {
     onLocalAccess: () => void;
     language: Language;
     setLanguage: (lang: Language) => void;
+    authError?: string | null;
+    onClearAuthError?: () => void;
 }
 
-export const LoginScreen: React.FC<LoginScreenProps> = ({ onLocalAccess, language, setLanguage }) => {
+export const LoginScreen: React.FC<LoginScreenProps> = ({ onLocalAccess, language, setLanguage, authError, onClearAuthError }) => {
     const [scanning, setScanning] = useState(false);
     const [success, setSuccess] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -20,6 +22,15 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLocalAccess, languag
 
     const t = translations[language];
     const accountReady = firebaseReady;
+
+    React.useEffect(() => {
+        if (authError) {
+            setError(authError);
+            if (onClearAuthError) {
+                onClearAuthError();
+            }
+        }
+    }, [authError, onClearAuthError]);
 
     React.useEffect(() => {
         let mounted = true;
@@ -50,6 +61,9 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLocalAccess, languag
         setActiveMode('account');
         setScanning(true);
         setError(null);
+        if (onClearAuthError) {
+            onClearAuthError();
+        }
 
         try {
             await signInWithGoogle();
@@ -64,6 +78,9 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLocalAccess, languag
         setActiveMode('local');
         setScanning(true);
         setError(null);
+        if (onClearAuthError) {
+            onClearAuthError();
+        }
 
         setTimeout(() => {
             setSuccess(true);

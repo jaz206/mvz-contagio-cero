@@ -179,3 +179,18 @@ export const updateStaffRole = async (uid: string, role: 'admin' | 'editor' | 't
         updatedAt: serverTimestamp()
     });
 };
+
+/**
+ * Actualiza el UID de autenticación de un usuario staff en su documento de Firestore.
+ * Esto es necesario porque las cuentas de editores/testers se crean inicialmente
+ * usando su correo como ID y UID provisional. Al iniciar sesión por primera vez
+ * con Google Auth, se asocia su identificador único real de Firebase para que
+ * coincida en futuras validaciones locales y de cliente.
+ */
+export const updateStaffUid = async (docId: string, newUid: string): Promise<void> => {
+    ensureDb();
+    await updateDoc(doc(db!, STAFF_COLLECTION, docId), {
+        uid: newUid,
+        updatedAt: serverTimestamp()
+    });
+};

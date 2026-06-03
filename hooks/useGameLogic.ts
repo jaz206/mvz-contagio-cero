@@ -12,7 +12,7 @@ import { getUserCampaignMeta, getUserProfile, resetUserProfiles, saveUserCampaig
 import { getDefaultZoneControlConfig, getZoneControlConfig, saveZoneControlConfig } from '../services/zoneControlService';
 import { logout } from '../services/authService';
 import { getLoginAccessConfig } from '../services/accessControlService';
-import { ensureAdminStaffAccount, getStaffAccount, getStaffAccountByEmail } from '../services/staffService';
+import { ensureAdminStaffAccount, getStaffAccount, getStaffAccountByEmail, updateStaffUid } from '../services/staffService';
 import { Mission, Hero, WorldStage, GlobalEvent, HeroTemplate, StaffAccount, StaffPermissions, IntroConfig, StoryConfig, ZoneControlConfig, MissionCompletionReward, LoginAccessMode } from '../types';
 import { GAME_EXPANSIONS } from '../data/gameContent';
 import { getInitialMissions } from '../data/initialMissions';
@@ -264,6 +264,7 @@ export const useGameLogic = () => {
     const [staffPermissions, setStaffPermissions] = useState<StaffPermissions>(EMPTY_PERMISSIONS);
     const [loginAccessMode, setLoginAccessMode] = useState<LoginAccessMode>('DEVELOPMENT');
     const [loginAccessLoaded, setLoginAccessLoaded] = useState(false);
+    const [authError, setAuthError] = useState<string | null>(null);
 
     const [showMissionEditor, setShowMissionEditor] = useState(false);
     const [missionToEdit, setMissionToEdit] = useState<Mission | null>(null);
@@ -393,6 +394,7 @@ export const useGameLogic = () => {
                 return;
             }
 
+            setAuthError(null);
             isDataLoadedRef.current = false;
             setPlayerAlignment(null);
             setHeroes([]);
@@ -507,13 +509,30 @@ export const useGameLogic = () => {
             }
 
             const linkedStaffAccount = await findStaffAccount(currentEmail, currentUser.uid);
+
+            if (linkedStaffAccount && linkedStaffAccount.uid !== currentUser.uid) {
+                try {
+                    const docId = linkedStaffAccount.email;
+                    await updateStaffUid(docId, currentUser.uid);
+                    linkedStaffAccount.uid = currentUser.uid;
+                } catch (error) {
+                    console.error('Error actualizando UID en cuenta staff', error);
+                }
+            }
+
             if (linkedStaffAccount && !linkedStaffAccount.isActive) {
+                setAuthError(lang === 'es' 
+                    ? 'Cuenta desactivada por el administrador.' 
+                    : 'Account deactivated by administrator.');
                 await logout();
                 setLoading(false);
                 return;
             }
 
             if (loginAccessMode === 'DEVELOPMENT' && !linkedStaffAccount) {
+                setAuthError(lang === 'es'
+                    ? 'Acceso limitado a cuentas autorizadas en modo Desarrollo.'
+                    : 'Access restricted to authorized accounts in Development mode.');
                 await logout();
                 setStaffAccount(null);
                 setStaffPermissions(EMPTY_PERMISSIONS);
@@ -783,6 +802,7 @@ export const useGameLogic = () => {
         setIsFullAdmin(false);
         setStaffAccount(null);
         setStaffPermissions(EMPTY_PERMISSIONS);
+        setAuthError(null);
         setShowAdminPanel(false);
         setIsStartingCampaign(false);
         isDataLoadedRef.current = false;
@@ -877,7 +897,8 @@ export const useGameLogic = () => {
         );
 
         const alignmentFiltered = allMissions.filter((mission) => {
-            if (!isEditorMode && (mission.status || 'PUBLISHED') === 'DRAFT') return false;
+            const isStaff = !!staffAccount;
+            if (!isEditorMode && !isStaff && (mission.status || 'PUBLISHED') === 'DRAFT') return false;
             if (!mission.alignment || mission.alignment === 'BOTH') return true;
             return mission.alignment === playerAlignment;
         });
@@ -1288,6 +1309,7 @@ export const useGameLogic = () => {
             isFullAdmin,
             staffAccount,
             staffPermissions,
+            authError,
             showMissionEditor,
             missionToEdit,
             showCharacterEditor,
@@ -1330,6 +1352,7 @@ export const useGameLogic = () => {
             setStartStoryAtChoice,
             setStaffAccount,
             setStaffPermissions,
+            setAuthError,
             setShowMissionEditor,
             setMissionToEdit,
             setShowCharacterEditor,

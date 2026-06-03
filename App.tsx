@@ -528,6 +528,8 @@ const GameContent: React.FC = () => {
                         onLocalAccess={actions.handleGuestLogin}
                         language={lang}
                         setLanguage={actions.setLang}
+                        authError={state.authError}
+                        onClearAuthError={() => actions.setAuthError(null)}
                     />
                 )}
             />
