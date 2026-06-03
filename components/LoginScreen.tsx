@@ -66,7 +66,11 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLocalAccess, languag
         }
 
         try {
-            await signInWithGoogle();
+            const signedUser = await signInWithGoogle();
+            if (signedUser) {
+                setScanning(false);
+                setSuccess(true);
+            }
         } catch (err: any) {
             console.error(err);
             setScanning(false);

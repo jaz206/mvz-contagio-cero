@@ -1,5 +1,8 @@
 import {
   GoogleAuthProvider,
+  browserLocalPersistence,
+  setPersistence,
+  signInWithPopup,
   signInWithRedirect,
   signOut as firebaseSignOut,
   User
@@ -17,10 +20,32 @@ const ensureAuth = () => {
   }
 };
 
+const shouldFallbackToRedirect = (error: any) => {
+  const code = String(error?.code || '').toLowerCase();
+  return (
+    code.includes('popup-blocked')
+    || code.includes('popup-closed-by-user')
+    || code.includes('cancelled-popup-request')
+    || code.includes('operation-not-supported')
+  );
+};
+
 export const signInWithGoogle = async (): Promise<User | null> => {
   ensureAuth();
-  await signInWithRedirect(auth!, googleProvider);
-  return null;
+
+  await setPersistence(auth!, browserLocalPersistence);
+
+  try {
+    const result = await signInWithPopup(auth!, googleProvider);
+    return result.user;
+  } catch (error) {
+    if (!shouldFallbackToRedirect(error)) {
+      throw error;
+    }
+
+    await signInWithRedirect(auth!, googleProvider);
+    return null;
+  }
 };
 
 export const logout = async () => {
