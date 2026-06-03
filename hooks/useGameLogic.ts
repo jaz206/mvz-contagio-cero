@@ -383,14 +383,35 @@ export const useGameLogic = () => {
                 return;
             }
 
+            isDataLoadedRef.current = false;
+            setPlayerAlignment(null);
+            setHeroes([]);
+            setCompletedMissionIds(new Set());
+            setOmegaCylinders(0);
+            setWorldStage('NORMAL');
+            setActiveGlobalEvent(null);
+
             const coreExpansion = GAME_EXPANSIONS.find((item) => item.id === 'core_box');
             const coreHeroes = coreExpansion ? coreExpansion.heroes : [];
-            const heroTemplates = await getHeroTemplates();
-            const remoteCampaignMeta = await getUserCampaignMeta(currentUser.uid);
+            const [heroTemplates, remoteCampaignMeta, remoteAliveProfile, remoteZombieProfile] = await Promise.all([
+                getHeroTemplates(),
+                getUserCampaignMeta(currentUser.uid),
+                getUserProfile(currentUser.uid, 'ALIVE'),
+                getUserProfile(currentUser.uid, 'ZOMBIE')
+            ]);
             const savedAlignment = getStoredAlignment(currentUser.uid) || remoteCampaignMeta?.alignment || null;
-            const preferredAlignment = savedAlignment || 'ALIVE';
             const savedFlowStep = getSavedFlowStep(currentUser.uid) || (remoteCampaignMeta?.flowStep as FlowStep | null) || null;
-            const cachedCampaign = readCampaignCache(currentUser.uid, preferredAlignment);
+            const remoteProfile = savedAlignment === 'ZOMBIE'
+                ? remoteZombieProfile
+                : savedAlignment === 'ALIVE'
+                    ? remoteAliveProfile
+                    : remoteAliveProfile || remoteZombieProfile || null;
+            const resolvedAlignment = savedAlignment
+                || (remoteProfile === remoteZombieProfile ? 'ZOMBIE' : remoteProfile === remoteAliveProfile ? 'ALIVE' : null)
+                || remoteCampaignMeta?.alignment
+                || null;
+            const preferredAlignment = resolvedAlignment || 'ALIVE';
+            const cachedCampaign = remoteProfile ? null : readCampaignCache(currentUser.uid, preferredAlignment);
             const hydrateHeroFromTemplate = (hero: Hero): Hero => {
                 const template = heroTemplates.find((item) => item.id === hero.id);
                 if (!template) return hero;
@@ -415,11 +436,14 @@ export const useGameLogic = () => {
                 };
             };
             const hydratedCoreHeroes = coreHeroes.map(hydrateHeroFromTemplate);
-            const cachedHeroes = (cachedCampaign?.heroes || []).map(hydrateHeroFromTemplate);
-            const hasCachedCampaign = cachedHeroes.length > 0 || (cachedCampaign?.completedMissionIds?.length || 0) > 0 || (cachedCampaign?.omegaCylinders || 0) > 0;
-            const campaignHeroes = hasCachedCampaign ? cachedHeroes : hydratedCoreHeroes;
-            const campaignCompletedMissions = hasCachedCampaign ? new Set(cachedCampaign?.completedMissionIds || []) : new Set<string>();
-            const campaignOmega = hasCachedCampaign ? Math.max(0, Math.min(MAX_OMEGA_CYLINDERS, cachedCampaign?.omegaCylinders || 0)) : 0;
+            const loadedCampaign = remoteProfile || cachedCampaign;
+            const loadedHeroes = (loadedCampaign?.heroes || []).map(hydrateHeroFromTemplate);
+            const hasLoadedCampaign = loadedHeroes.length > 0
+                || (loadedCampaign?.completedMissionIds?.length || 0) > 0
+                || (loadedCampaign?.omegaCylinders || 0) > 0;
+            const campaignHeroes = hasLoadedCampaign ? loadedHeroes : hydratedCoreHeroes;
+            const campaignCompletedMissions = hasLoadedCampaign ? new Set(loadedCampaign?.completedMissionIds || []) : new Set<string>();
+            const campaignOmega = hasLoadedCampaign ? Math.max(0, Math.min(MAX_OMEGA_CYLINDERS, loadedCampaign?.omegaCylinders || 0)) : 0;
             const applyCampaignState = (options: {
                 staff?: StaffAccount | null;
                 editorMode: boolean;
@@ -443,7 +467,7 @@ export const useGameLogic = () => {
 
             const currentEmail = (currentUser.email || '').toLowerCase();
             const isAdminUser = currentUser.uid === ADMIN_UID || currentEmail === ADMIN_EMAIL;
-            const hasSavedCampaignProgress = !!savedFlowStep || !!cachedCampaign || !!savedAlignment;
+            const hasSavedCampaignProgress = !!savedFlowStep || !!loadedCampaign || !!savedAlignment;
 
             if (savedAlignment) {
                 saveStoredAlignment(currentUser.uid, savedAlignment);
@@ -464,6 +488,9 @@ export const useGameLogic = () => {
                     editorMode: true,
                     fullAdmin: true
                 });
+                if (hasLoadedCampaign) {
+                    writeCampaignCache(campaignHeroes, campaignCompletedMissions, campaignOmega, currentUser.uid, preferredAlignment);
+                }
                 if (!preserveBunkerRoute()) navigate('/map');
                 setLoading(false);
                 return;
@@ -521,6 +548,9 @@ export const useGameLogic = () => {
                         editorMode: false,
                         fullAdmin: false
                     });
+                    if (hasLoadedCampaign) {
+                        writeCampaignCache(campaignHeroes, campaignCompletedMissions, campaignOmega, currentUser.uid, preferredAlignment);
+                    }
                     if (!preserveBunkerRoute()) {
                         const testerRoute = savedFlowStep === 'setup'
                             ? '/setup'
@@ -542,6 +572,9 @@ export const useGameLogic = () => {
                     editorMode: true,
                     fullAdmin: linkedStaffAccount.role === 'admin'
                 });
+                if (hasLoadedCampaign) {
+                    writeCampaignCache(campaignHeroes, campaignCompletedMissions, campaignOmega, currentUser.uid, preferredAlignment);
+                }
                 if (!preserveBunkerRoute()) navigate('/map');
                 setLoading(false);
                 return;
@@ -560,6 +593,9 @@ export const useGameLogic = () => {
             setCompletedMissionIds(campaignCompletedMissions);
             setOmegaCylinders(campaignOmega);
             setWorldStage('NORMAL');
+            if (hasLoadedCampaign) {
+                writeCampaignCache(campaignHeroes, campaignCompletedMissions, campaignOmega, currentUser.uid, preferredAlignment);
+            }
             if (!hasSavedCampaignProgress) {
                 setShowStory(true);
                 setStartStoryAtChoice(false);
