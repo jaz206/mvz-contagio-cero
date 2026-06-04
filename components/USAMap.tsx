@@ -582,7 +582,7 @@ export const USAMap: React.FC<USAMapProps> = ({
                 .style('opacity', 0.95);
 
             scanner.append('image')
-                .attr('href', SHIELD_ZONE_ICON)
+                .attr('href', GITHUB_SHIELD_LOGO_URL)
                 .attr('x', -18)
                 .attr('y', -18)
                 .attr('width', 36)
