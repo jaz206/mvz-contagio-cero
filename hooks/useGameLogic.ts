@@ -208,6 +208,7 @@ export const useGameLogic = () => {
     const [surferTurnCount, setSurferTurnCount] = useState(0);
     const [startStoryAtChoice, setStartStoryAtChoice] = useState(false);
     const isDataLoadedRef = useRef(false);
+    const authLoadTokenRef = useRef(0);
     const currentPathRef = useRef(location.pathname);
     const guestSessionRef = useRef(isGuest);
 
@@ -379,6 +380,9 @@ export const useGameLogic = () => {
         }
 
         const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
+            const authLoadToken = ++authLoadTokenRef.current;
+            const isStaleLoad = () => authLoadTokenRef.current !== authLoadToken;
+
             setUser(currentUser);
             setLoadingAuth(false);
 
@@ -411,6 +415,7 @@ export const useGameLogic = () => {
                 getUserProfile(currentUser.uid, 'ALIVE'),
                 getUserProfile(currentUser.uid, 'ZOMBIE')
             ]);
+            if (isStaleLoad()) return;
             const savedAlignment = getStoredAlignment(currentUser.uid) || remoteCampaignMeta?.alignment || null;
             const savedFlowStep = getSavedFlowStep(currentUser.uid) || (remoteCampaignMeta?.flowStep as FlowStep | null) || null;
             const remoteProfile = savedAlignment === 'ZOMBIE'
@@ -495,6 +500,7 @@ export const useGameLogic = () => {
                         currentUser.email || '',
                         currentUser.displayName || undefined
                     );
+                    if (isStaleLoad()) return;
 
                     applyCampaignState({
                         staff: adminAccount,
@@ -518,11 +524,13 @@ export const useGameLogic = () => {
             }
 
             const linkedStaffAccount = await findStaffAccount(currentEmail, currentUser.uid);
+            if (isStaleLoad()) return;
 
             if (linkedStaffAccount && linkedStaffAccount.uid !== currentUser.uid) {
                 try {
                     const docId = linkedStaffAccount.email;
                     await updateStaffUid(docId, currentUser.uid);
+                    if (isStaleLoad()) return;
                     linkedStaffAccount.uid = currentUser.uid;
                 } catch (error) {
                     console.error('Error actualizando UID en cuenta staff', error);
@@ -576,6 +584,7 @@ export const useGameLogic = () => {
                         localStorage.removeItem(getSetupDoneKey(currentUser.uid));
                         saveFlowStep('story', currentUser.uid);
                         await saveUserCampaignMeta(currentUser.uid, { alignment: null, flowStep: 'story' });
+                        if (isStaleLoad()) return;
                         if (!preserveBunkerRoute()) navigate('/story');
                         setLoading(false);
                         return;
@@ -906,8 +915,8 @@ export const useGameLogic = () => {
         );
 
         const alignmentFiltered = allMissions.filter((mission) => {
-            const isStaff = !!staffAccount;
-            if (!isEditorMode && !isStaff && (mission.status || 'PUBLISHED') === 'DRAFT') return false;
+            const canSeeDraftMissions = !!staffAccount && staffAccount.role !== 'tester';
+            if (!isEditorMode && !canSeeDraftMissions && (mission.status || 'PUBLISHED') === 'DRAFT') return false;
             if (!mission.alignment || mission.alignment === 'BOTH') return true;
             return mission.alignment === playerAlignment;
         });
