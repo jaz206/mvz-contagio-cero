@@ -59,7 +59,7 @@ const getCampaignCacheKey = (uid?: string | null, alignment?: 'ALIVE' | 'ZOMBIE'
 };
 const getGalactusPlanKey = (uid?: string | null) => uid ? `shield_galactus_plan_${uid}` : 'shield_galactus_plan_guest';
 type FlowStep = 'story' | 'setup' | 'intro' | 'mission0' | 'tutorial' | 'map';
-type CampaignCache = { heroes: Hero[]; completedMissionIds: string[]; omegaCylinders: number };
+type CampaignCache = { heroes: Hero[]; completedMissionIds: string[]; omegaCylinders: number; prisonerIds: string[] };
 type GalactusEventPlan = {
     anomalyAt: number;
     surferAt: number;
@@ -68,7 +68,9 @@ type GalactusEventPlan = {
 type StoredCampaignProgress = CampaignCache | {
     heroes: Hero[];
     completedMissionIds: string[];
+    prisonerIds?: string[];
     resources?: { omegaCylinders?: number };
+    omegaCylinders?: number;
 };
 
 const getSavedFlowStep = (uid?: string | null): FlowStep | null => {
@@ -105,7 +107,8 @@ const readCampaignCache = (uid?: string | null, alignment?: 'ALIVE' | 'ZOMBIE' |
         return {
             heroes: Array.isArray(parsed?.heroes) ? parsed.heroes : [],
             completedMissionIds: Array.isArray(parsed?.completedMissionIds) ? parsed.completedMissionIds : [],
-            omegaCylinders: typeof parsed?.omegaCylinders === 'number' ? parsed.omegaCylinders : 0
+            omegaCylinders: typeof parsed?.omegaCylinders === 'number' ? parsed.omegaCylinders : 0,
+            prisonerIds: Array.isArray(parsed?.prisonerIds) ? parsed.prisonerIds.filter((id: unknown): id is string => typeof id === 'string') : []
         };
     } catch {
         return null;
@@ -122,7 +125,8 @@ const writeCampaignCache = (
     localStorage.setItem(getCampaignCacheKey(uid, alignment), JSON.stringify({
         heroes,
         completedMissionIds: Array.from(completedMissionIds),
-        omegaCylinders
+        omegaCylinders,
+        prisonerIds: heroes.filter((hero) => hero.status === 'CAPTURED').map((hero) => hero.id)
     }));
 };
 
@@ -181,6 +185,17 @@ const getStoredOmegaCylinders = (progress: StoredCampaignProgress) => {
     }
 
     return Math.max(0, Math.min(MAX_OMEGA_CYLINDERS, progress.resources?.omegaCylinders || 0));
+};
+
+const applyCapturedHeroIds = (heroes: Hero[], capturedIds: string[] = []) => {
+    if (!capturedIds.length) return heroes;
+    const capturedSet = new Set(capturedIds);
+
+    return heroes.map((hero) => (
+        capturedSet.has(hero.id)
+            ? { ...hero, status: 'CAPTURED', assignedMissionId: null }
+            : hero
+    ));
 };
 
 export const useGameLogic = () => {
@@ -454,13 +469,17 @@ export const useGameLogic = () => {
             };
             const hydratedCoreHeroes = coreHeroes.map(hydrateHeroFromTemplate);
             const loadedCampaign = remoteProfile || cachedCampaign;
-            const loadedHeroes = (loadedCampaign?.heroes || []).map(hydrateHeroFromTemplate);
+            const loadedHeroes = applyCapturedHeroIds(
+                (loadedCampaign?.heroes || []).map(hydrateHeroFromTemplate),
+                loadedCampaign?.prisonerIds || []
+            );
             const hasLoadedCampaign = loadedHeroes.length > 0
                 || (loadedCampaign?.completedMissionIds?.length || 0) > 0
-                || (loadedCampaign?.omegaCylinders || 0) > 0;
+                || (loadedCampaign?.prisonerIds?.length || 0) > 0
+                || getStoredOmegaCylinders(loadedCampaign || { heroes: [], completedMissionIds: [] }) > 0;
             const campaignHeroes = hasLoadedCampaign ? loadedHeroes : hydratedCoreHeroes;
             const campaignCompletedMissions = hasLoadedCampaign ? new Set(loadedCampaign?.completedMissionIds || []) : new Set<string>();
-            const campaignOmega = hasLoadedCampaign ? Math.max(0, Math.min(MAX_OMEGA_CYLINDERS, loadedCampaign?.omegaCylinders || 0)) : 0;
+            const campaignOmega = hasLoadedCampaign ? getStoredOmegaCylinders(loadedCampaign || { heroes: [], completedMissionIds: [] }) : 0;
             const applyCampaignState = (options: {
                 staff?: StaffAccount | null;
                 editorMode: boolean;
@@ -703,6 +722,17 @@ export const useGameLogic = () => {
             setTimeout(() => setIsSaving(false), 1000);
         }
     }, [user, playerAlignment]);
+
+    const persistHeroes = useCallback(async (nextHeroes: Hero[]) => {
+        setHeroes(nextHeroes);
+        await saveData(nextHeroes, completedMissionIds, omegaCylinders);
+    }, [completedMissionIds, omegaCylinders, saveData]);
+
+    const persistOmegaCylinders = useCallback(async (nextCylinders: number) => {
+        const safeCylinders = Math.max(0, Math.min(MAX_OMEGA_CYLINDERS, nextCylinders));
+        setOmegaCylinders(safeCylinders);
+        await saveData(heroes, completedMissionIds, safeCylinders);
+    }, [heroes, completedMissionIds, saveData]);
 
     useEffect(() => {
         if (user || isDataLoadedRef.current || playerAlignment === null) return;
@@ -1228,9 +1258,12 @@ export const useGameLogic = () => {
 
         if (targetAlignment === 'ALIVE') {
             handleTickerUpdate(`SUJETO ${transformedHero.alias} CURADO.`);
-            setOmegaCylinders((prev) => Math.max(0, Math.min(MAX_OMEGA_CYLINDERS, prev - 1)));
+            const nextCylinders = Math.max(0, Math.min(MAX_OMEGA_CYLINDERS, omegaCylinders - 1));
+            setOmegaCylinders(nextCylinders);
+            await saveData(nextHeroes, completedMissionIds, nextCylinders);
         } else {
             handleTickerUpdate(`SUJETO ${transformedHero.alias} INFECTADO.`);
+            await saveData(nextHeroes, completedMissionIds, omegaCylinders);
         }
     };
 
@@ -1360,6 +1393,8 @@ export const useGameLogic = () => {
             setHeroes,
             setCompletedMissionIds,
             setOmegaCylinders,
+            persistHeroes,
+            persistOmegaCylinders,
             setWorldStage,
             setActiveGlobalEvent,
             setIsGuest,

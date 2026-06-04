@@ -45,6 +45,7 @@ const isDbReady = (): boolean => {
 interface UserProfileData {
     heroes: Hero[];
     completedMissionIds: string[];
+    prisonerIds: string[];
     resources: { omegaCylinders: number };
     lastUpdated: any;
 }
@@ -67,7 +68,11 @@ export const getUserProfile = async (uid: string, campaignMode: 'ALIVE' | 'ZOMBI
                 const heroes = campaignData.heroes || [];
                 const missions = campaignData.missions || [];
                 const resources = campaignData.resources || { omegaCylinders: 0 };
-                const hasProgress = heroes.length > 0 || missions.length > 0 || (resources.omegaCylinders || 0) > 0;
+                const prisonerIds = Array.isArray(campaignData.prisonerIds) ? campaignData.prisonerIds.filter((id: unknown): id is string => typeof id === 'string') : [];
+                const hasProgress = heroes.length > 0
+                    || missions.length > 0
+                    || prisonerIds.length > 0
+                    || (resources.omegaCylinders || campaignData.omegaCylinders || 0) > 0;
 
                 if (!hasProgress) {
                     return null;
@@ -76,6 +81,7 @@ export const getUserProfile = async (uid: string, campaignMode: 'ALIVE' | 'ZOMBI
                 return {
                     heroes,
                     completedMissionIds: missions,
+                    prisonerIds,
                     resources,
                     lastUpdated: data.lastUpdated
                 };
@@ -119,12 +125,19 @@ export const saveUserProfile = async (
 ): Promise<void> => {
     if (!isDbReady() || !db) return;
     try {
+        const prisonerIds = heroes
+            .filter((hero) => hero?.status === 'CAPTURED')
+            .map((hero) => hero.id)
+            .filter((id): id is string => typeof id === 'string');
+
         const docRef = doc(db, USERS_COLLECTION, uid);
         const updateData = sanitizeFirestoreValue({
             [campaignMode]: {
                 heroes,
                 missions: completedMissionIds,
-                resources: resources || { omegaCylinders: 0 }
+                prisonerIds,
+                resources: resources || { omegaCylinders: 0 },
+                omegaCylinders: resources?.omegaCylinders ?? 0
             },
             ...(meta ? { campaignMeta: meta } : {}),
         });
